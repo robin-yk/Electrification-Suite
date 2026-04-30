@@ -1,0 +1,17 @@
+# Keep source documents private (may contain personal/sensitive content)
+_sources/
+!_sources/.gitkeep
+
+# Keep inbox private
+_inbox/
+!_inbox/.gitkeep
+
+# Lint report (generated artifact)
+_scripts/lint_report.md
+_scripts/last_response.txt
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/

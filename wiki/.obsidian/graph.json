@@ -1,0 +1,15 @@
+{
+  "collapse-filter": false,
+  "search": "",
+  "showTags": true,
+  "showAttachments": false,
+  "hideUnresolved": false,
+  "showOrphans": true,
+  "collapse-color-groups": false,
+  "colorGroups": [
+    { "query": "tag:#concept", "color": { "a": 1, "rgb": 4494847 } },
+    { "query": "tag:#entity", "color": { "a": 1, "rgb": 16744272 } },
+    { "query": "tag:#topic", "color": { "a": 1, "rgb": 5636095 } },
+    { "query": "tag:#contradiction", "color": { "a": 1, "rgb": 16711680 } }
+  ]
+}
