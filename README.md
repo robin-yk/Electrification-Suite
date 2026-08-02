@@ -4,6 +4,8 @@ Interactive, browser-based models of chemical process electrification, by Yeonsu
 
 The site is a single self-contained `index.html` — all styling and logic are inline, and calculations run entirely client-side (no backend, no build step required to view it).
 
+Please check https://robin-yk.github.io/Electrification/
+
 ## Projects
 
 - **Microwave Heating 2D Model** — steady-state powder-bed temperature fields with dielectric response, penetration depth, heat transfer, and experimental calibration.
