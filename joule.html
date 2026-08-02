@@ -2008,14 +2008,25 @@
       const T=Array.from({length:mesh.nz},(_,j)=>Array.from({length:mesh.nr},(_,i)=>{const code=mesh.materialAt(i,j);return ambientK+(code===0?0.65:code===1?0.25:code===2?0.10:code===4?0.08:0)*(seedK-ambientK);}));
       const elementAverage=()=>{let sum=0,vol=0;for(let j=0;j<mesh.nz;j++)for(let i=0;i<mesh.nr;i++)if(mesh.materialAt(i,j)===0){const v=mesh.cellVolume(i,j);sum+=T[j][i]*v;vol+=v;}return sum/vol;};
       let maxStep=Infinity,outer=0,totalLinear=0,linearResidual=Infinity,op=operating2DAt(ambientK,x,g,cfg,material);
+      let relaxation=0.62,stallStreak=0;
       for(outer=0;outer<cfg.maxIter&&maxStep>cfg.tolerance;outer++){
         op=operating2DAt(elementAverage(),x,g,cfg,material);
         const system=assemble2DSystem(T,x,g,cfg,material,mesh,op),initial=Float64Array.from(T.flat()),linear=bicgstab2D(system,initial);
-        totalLinear+=linear.iterations;linearResidual=linear.relativeResidual;maxStep=0;
-        const relaxation=outer<4?0.62:0.86;
+        totalLinear+=linear.iterations;linearResidual=linear.relativeResidual;
+        const stepBefore=maxStep;
+        maxStep=0;
         for(let j=0;j<mesh.nz;j++)for(let i=0;i<mesh.nr;i++){
           const old=T[j][i],solved=clamp(linear.x[j*mesh.nr+i],1,6000),updated=old+relaxation*(solved-old);
           T[j][i]=updated;maxStep=Math.max(maxStep,Math.abs(updated-old));
+        }
+        // A fixed 0.62/0.86 relaxation schedule can settle into a period-2 limit cycle on
+        // very stiff cases (extreme element L/D with strongly radiative boundaries): the
+        // step size stops shrinking but never falls below tolerance. Detect stagnation and
+        // damp harder — well-behaved cases never trigger this, since maxStep keeps shrinking.
+        if(outer>=4){
+          stallStreak=maxStep>stepBefore*0.9?stallStreak+1:0;
+          if(stallStreak>=2){relaxation=Math.max(0.08,relaxation*0.6);stallStreak=0;}
+          else if(outer===4)relaxation=0.86;
         }
       }
       const avgK=elementAverage();op=operating2DAt(avgK,x,g,cfg,material);
