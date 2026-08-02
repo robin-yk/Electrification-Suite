@@ -436,7 +436,8 @@
       height: auto;
       min-height: 220px;
       border-radius: 9px;
-      background: linear-gradient(180deg, #f8fafb 0%, #fff 100%);
+      border: 1px solid var(--line);
+      background: radial-gradient(120% 140% at 50% 12%, #fbfdfe 0%, #f4f7f9 62%, #eef2f5 100%);
     }
     .diagnostic-card { margin-bottom: 14px; }
     .diagnostic-intro { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
@@ -1036,7 +1037,7 @@
                 <strong>Calculated Cylinder Geometry</strong>
                 <span>Envelope expands at fixed solid volume as porosity increases.</span>
               </div>
-              <svg id="geometryVisual" viewBox="0 0 760 260" role="img" aria-label="Calculated porous cylinder geometry with length, diameter, and porosity"></svg>
+              <svg id="geometryVisual" viewBox="0 0 820 260" role="img" aria-label="Calculated porous cylinder geometry with length, diameter, and porosity"></svg>
             </div>
           </article>
 
@@ -2476,7 +2477,7 @@
     function renderGeometryVisual(r) {
       const svg = $("geometryVisual");
       svg.replaceChildren();
-      const W = 760, H = 260;
+      const W = 820, H = 260;
       const ratio = clamp(r.g.aspectRatio, 0.18, 8);
       let bodyW = 250 * Math.sqrt(ratio);
       let bodyH = 150 / Math.sqrt(ratio);
@@ -2488,30 +2489,50 @@
       const ellipseW = clamp(bodyH * 0.25, 14, 34);
       const x0 = (W - bodyW) / 2;
       const x1 = x0 + bodyW;
-      const cy = 118;
+      const cy = 122;
       const y0 = cy - bodyH / 2;
       const y1 = cy + bodyH / 2;
-      const fill = "#2c6e9b";
       const edge = "#102a43";
+      const poreFill = "#eef4f8", poreEdge = "#b9cddb";
 
-      svg.append(svgEl("rect", { x:x0, y:y0, width:bodyW, height:bodyH, fill, stroke:edge, "stroke-width":2 }));
-      svg.append(svgEl("ellipse", { cx:x0, cy, rx:ellipseW, ry:bodyH/2, fill:"#4b88b1", stroke:edge, "stroke-width":2 }));
-      svg.append(svgEl("ellipse", { cx:x1, cy, rx:ellipseW, ry:bodyH/2, fill, stroke:edge, "stroke-width":2 }));
-
-      /*
-        The pore field is an equal-area mosaic. The fraction of white cells is
-        set directly to φ, so the projected white area tracks the entered void
-        fraction. A deterministic hash disperses cells across the full cylinder
-        instead of placing them along a line.
-      */
+      // Depth cues (gradients + ground shadow) so the schematic reads as a solid, lit cylinder
+      // rather than a flat rectangle-plus-ellipses silhouette.
       const defs = svgEl("defs");
+      const bodyGrad = svgEl("linearGradient", { id:"cylBodyGrad", x1:"0", y1:"0", x2:"0", y2:"1" });
+      bodyGrad.append(svgEl("stop", { offset:"0%", "stop-color":"#5698c4" }));
+      bodyGrad.append(svgEl("stop", { offset:"52%", "stop-color":"#2c6e9b" }));
+      bodyGrad.append(svgEl("stop", { offset:"100%", "stop-color":"#1b4a6d" }));
+      const capFrontGrad = svgEl("radialGradient", { id:"capFrontGrad", cx:"36%", cy:"30%", r:"78%" });
+      capFrontGrad.append(svgEl("stop", { offset:"0%", "stop-color":"#8dc0e0" }));
+      capFrontGrad.append(svgEl("stop", { offset:"62%", "stop-color":"#4b88b1" }));
+      capFrontGrad.append(svgEl("stop", { offset:"100%", "stop-color":"#2c6e9b" }));
+      const capBackGrad = svgEl("radialGradient", { id:"capBackGrad", cx:"42%", cy:"36%", r:"78%" });
+      capBackGrad.append(svgEl("stop", { offset:"0%", "stop-color":"#3f82ae" }));
+      capBackGrad.append(svgEl("stop", { offset:"100%", "stop-color":"#1b4a6d" }));
+      const groundBlur = svgEl("filter", { id:"cylGroundBlur", x:"-60%", y:"-60%", width:"220%", height:"260%" });
+      groundBlur.append(svgEl("feGaussianBlur", { stdDeviation:5 }));
       const clip = svgEl("clipPath", { id:"cylinderPoreClip" });
       clip.append(svgEl("rect", { x:x0, y:y0, width:bodyW, height:bodyH }));
       clip.append(svgEl("ellipse", { cx:x0, cy, rx:ellipseW, ry:bodyH/2 }));
       clip.append(svgEl("ellipse", { cx:x1, cy, rx:ellipseW, ry:bodyH/2 }));
-      defs.append(clip);
+      defs.append(bodyGrad, capFrontGrad, capBackGrad, groundBlur, clip);
       svg.append(defs);
 
+      svg.append(svgEl("ellipse", {
+        cx:(x0+x1)/2, cy:y1+9, rx:bodyW*0.46, ry:8,
+        fill:"#0b1f33", opacity:0.18, filter:"url(#cylGroundBlur)"
+      }));
+
+      svg.append(svgEl("rect", { x:x0, y:y0, width:bodyW, height:bodyH, fill:"url(#cylBodyGrad)", stroke:edge, "stroke-width":1.75 }));
+      svg.append(svgEl("ellipse", { cx:x0, cy, rx:ellipseW, ry:bodyH/2, fill:"url(#capFrontGrad)", stroke:edge, "stroke-width":1.75 }));
+      svg.append(svgEl("ellipse", { cx:x1, cy, rx:ellipseW, ry:bodyH/2, fill:"url(#capBackGrad)", stroke:edge, "stroke-width":1.75 }));
+
+      /*
+        The pore field is an equal-area mosaic. The fraction of open cells is
+        set directly to φ, so the projected void area tracks the entered
+        porosity. A deterministic hash disperses cells across the full
+        cylinder instead of placing them along a line.
+      */
       const cols = 18, rows = 8;
       const cellW = (bodyW + 2*ellipseW) / cols;
       const cellH = bodyH / rows;
@@ -2525,41 +2546,56 @@
       cells.sort((a,b) => a.hash-b.hash);
       const voidCells = new Set(cells.slice(0, Math.round(r.g.porosity*cells.length)).map((d) => `${d.row}-${d.col}`));
       const poreLayer = svgEl("g", { "clip-path":"url(#cylinderPoreClip)" });
+      const poreRadius = Math.max(1, Math.min(cellW, cellH) * 0.34);
       for (let row = 0; row < rows; row++) {
         for (let col = 0; col < cols; col++) {
           if (!voidCells.has(`${row}-${col}`)) continue;
-          poreLayer.append(svgEl("rect", {
-            x:x0-ellipseW+col*cellW+0.7,
-            y:y0+row*cellH+0.7,
-            width:Math.max(1,cellW-1.4),
-            height:Math.max(1,cellH-1.4),
-            rx:Math.min(4,cellW*0.22),
-            fill:"#f8fafb",
-            stroke:"#d8dee5",
-            "stroke-width":0.7
+          poreLayer.append(svgEl("circle", {
+            cx:x0-ellipseW+col*cellW+cellW/2,
+            cy:y0+row*cellH+cellH/2,
+            r:poreRadius,
+            fill:poreFill,
+            stroke:poreEdge,
+            "stroke-width":0.8
           }));
         }
       }
       svg.append(poreLayer);
-      svg.append(svgEl("ellipse", { cx:x0, cy, rx:ellipseW, ry:bodyH/2, fill:"none", stroke:edge, "stroke-width":2 }));
-      svg.append(svgEl("ellipse", { cx:x1, cy, rx:ellipseW, ry:bodyH/2, fill:"none", stroke:edge, "stroke-width":2 }));
+      svg.append(svgEl("ellipse", { cx:x0, cy, rx:ellipseW, ry:bodyH/2, fill:"none", stroke:edge, "stroke-width":1.75 }));
+      svg.append(svgEl("ellipse", { cx:x1, cy, rx:ellipseW, ry:bodyH/2, fill:"none", stroke:edge, "stroke-width":1.75 }));
 
-      const dimY = y1 + 31;
-      svg.append(svgEl("line", { x1:x0, x2:x1, y1:dimY, y2:dimY, stroke:"#982929", "stroke-width":1.5 }));
-      svg.append(svgEl("line", { x1:x0, x2:x0, y1:dimY-6, y2:dimY+6, stroke:"#982929", "stroke-width":1.5 }));
-      svg.append(svgEl("line", { x1:x1, x2:x1, y1:dimY-6, y2:dimY+6, stroke:"#982929", "stroke-width":1.5 }));
-      svg.append(svgEl("text", { x:(x0+x1)/2, y:dimY+19, "text-anchor":"middle", fill:"#982929", "font-size":13, "font-weight":700, "font-family":"Arial" }, `L = ${format(r.g.L*1000, 3)} mm`));
+      // Dimension lines follow standard drafting convention: witness lines offset from the
+      // part, inward-pointing arrowheads touching them, value centered on the dimension line.
+      const dimColor = "#982929";
+      const arrow = (tipX, tipY, dx, dy, size=7, half=2.6) => {
+        const bx = tipX - dx*size, by = tipY - dy*size;
+        const px = -dy*half, py = dx*half;
+        return svgEl("polygon", { points:`${tipX},${tipY} ${bx+px},${by+py} ${bx-px},${by-py}`, fill:dimColor });
+      };
 
-      const dimX = x1 + ellipseW + 35;
-      svg.append(svgEl("line", { x1:dimX, x2:dimX, y1:y0, y2:y1, stroke:"#982929", "stroke-width":1.5 }));
-      svg.append(svgEl("line", { x1:dimX-6, x2:dimX+6, y1:y0, y2:y0, stroke:"#982929", "stroke-width":1.5 }));
-      svg.append(svgEl("line", { x1:dimX-6, x2:dimX+6, y1:y1, y2:y1, stroke:"#982929", "stroke-width":1.5 }));
-      svg.append(svgEl("text", { x:dimX+12, y:cy+4, fill:"#982929", "font-size":13, "font-weight":700, "font-family":"Arial" }, `D = ${format(r.g.D*1000, 3)} mm`));
+      const dimY = y1 + 32;
+      svg.append(svgEl("line", { x1:x0, x2:x0, y1:y1+4, y2:dimY+5, stroke:"#c9b3b3", "stroke-width":1 }));
+      svg.append(svgEl("line", { x1:x1, x2:x1, y1:y1+4, y2:dimY+5, stroke:"#c9b3b3", "stroke-width":1 }));
+      svg.append(svgEl("line", { x1:x0, x2:x1, y1:dimY, y2:dimY, stroke:dimColor, "stroke-width":1.5 }));
+      svg.append(arrow(x0, dimY, 1, 0));
+      svg.append(arrow(x1, dimY, -1, 0));
+      svg.append(svgEl("text", { x:(x0+x1)/2, y:dimY+20, "text-anchor":"middle", fill:dimColor, "font-size":13, "font-weight":700, "font-family":"Arial" }, `L = ${format(r.g.L*1000, 3)} mm`));
+
+      const dimX = x1 + ellipseW + 38;
+      svg.append(svgEl("line", { x1:x1+ellipseW+4, x2:dimX+5, y1:y0, y2:y0, stroke:"#c9b3b3", "stroke-width":1 }));
+      svg.append(svgEl("line", { x1:x1+ellipseW+4, x2:dimX+5, y1:y1, y2:y1, stroke:"#c9b3b3", "stroke-width":1 }));
+      svg.append(svgEl("line", { x1:dimX, x2:dimX, y1:y0, y2:y1, stroke:dimColor, "stroke-width":1.5 }));
+      svg.append(arrow(dimX, y0, 0, 1));
+      svg.append(arrow(dimX, y1, 0, -1));
+      svg.append(svgEl("text", { x:dimX+13, y:cy+4, fill:dimColor, "font-size":13, "font-weight":700, "font-family":"Arial" }, `D = ${format(r.g.D*1000, 3)} mm`));
 
       const phiText = `φ = ${format(r.g.porosity, 3)}  (${format(r.g.porosity*100, 1)}% void)`;
       svg.append(svgEl("text", { x:20, y:25, fill:"#102a43", "font-size":15, "font-weight":700, "font-family":"Arial" }, phiText));
       svg.append(svgEl("text", { x:20, y:47, fill:"#64717d", "font-size":12, "font-family":"Arial" }, `f_solid = ${format(r.g.solidFraction, 3)} · Vol = ${format(r.g.envelopeVolume*1e6, 3)} cm³`));
-      svg.append(svgEl("text", { x:W-20, y:25, "text-anchor":"end", fill:"#64717d", "font-size":12, "font-family":"Arial" }, "White area = schematic void fraction"));
+      const legendLabel = "White area = schematic void fraction";
+      const legendWidth = legendLabel.length * 6.1;
+      svg.append(svgEl("circle", { cx:W-24-legendWidth-11, cy:21, r:5.5, fill:poreFill, stroke:poreEdge, "stroke-width":1 }));
+      svg.append(svgEl("text", { x:W-20, y:25, "text-anchor":"end", fill:"#64717d", "font-size":12, "font-family":"Arial" }, legendLabel));
       svg.setAttribute("aria-label", `Calculated cylinder: length ${format(r.g.L*1000,3)} millimeters, diameter ${format(r.g.D*1000,3)} millimeters, porosity ${format(r.g.porosity*100,1)} percent.`);
     }
 
