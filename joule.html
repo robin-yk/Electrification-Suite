@@ -1,0 +1,2977 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Browser-based 0D Joule heating calculator for material, geometry, electrical, and thermal screening.">
+  <title>Joule Heating 2D Optimizer</title>
+  <style>
+    :root {
+      --ink: #14202b;
+      --muted: #64717d;
+      --navy: #102a43;
+      --navy-2: #163b5c;
+      --red: #c53a3a;
+      --red-dark: #982929;
+      --teal: #13795b;
+      --amber: #b46714;
+      --blue: #00539f;
+      --gold: #ffd200;
+      --cream: #f6f3ed;
+      --paper: #ffffff;
+      --line: #d8dee5;
+      --line-dark: #b9c4cf;
+      --soft: #eef2f5;
+      --success-bg: #e8f4ef;
+      --warn-bg: #fff3df;
+      --danger-bg: #fbeaea;
+      --shadow: 0 8px 26px rgba(16, 42, 67, 0.08);
+      --radius: 12px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--cream);
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 16px;
+      line-height: 1.45;
+    }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+
+    .topbar {
+      background: var(--navy);
+      color: #fff;
+      border-bottom: 4px solid var(--gold);
+    }
+    .topbar-inner {
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 21px 28px 17px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .eyebrow {
+      margin: 0 0 5px;
+      color: #b9cada;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(27px, 3vw, 42px);
+      line-height: 1;
+      letter-spacing: -0.03em;
+    }
+    .topbar-meta {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+    .topbar-right {
+      display: grid;
+      justify-items: end;
+      gap: 9px;
+    }
+    .author-line {
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      text-align: right;
+    }
+    .meta-pill {
+      border: 1px solid rgba(255,255,255,0.28);
+      border-radius: 999px;
+      padding: 5px 9px;
+      color: #e6eef4;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .tabs-shell {
+      background: #fff;
+      border-bottom: 1px solid var(--line);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+    .tabs {
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 0 28px;
+      display: flex;
+      overflow-x: auto;
+      scrollbar-width: thin;
+    }
+    .tab {
+      appearance: none;
+      border: 0;
+      border-bottom: 3px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      padding: 14px 18px 12px;
+      font-size: 16px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .tab:hover { color: var(--navy); }
+    .tab.active {
+      color: var(--navy);
+      border-bottom-color: var(--blue);
+    }
+
+    main {
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 24px 28px 40px;
+    }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .calculator-grid {
+      display: grid;
+      grid-template-columns: minmax(310px, 370px) minmax(0, 1fr);
+      gap: 22px;
+      align-items: start;
+    }
+    .input-column {
+      position: sticky;
+      top: 64px;
+      max-height: calc(100vh - 84px);
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .card {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .input-card { margin-bottom: 12px; box-shadow: none; }
+    .card-header {
+      padding: 13px 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid var(--line);
+    }
+    .card-header h2, .card-header h3 {
+      margin: 0;
+      color: var(--navy);
+      font-size: 17px;
+      letter-spacing: -0.01em;
+    }
+    .card-body { padding: 15px; }
+    .section-kicker {
+      margin: 0 0 5px;
+      color: var(--red-dark);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .section-title {
+      margin: 0;
+      color: var(--navy);
+      font-size: clamp(24px, 2.4vw, 34px);
+      line-height: 1.12;
+      letter-spacing: -0.025em;
+    }
+    .section-lede {
+      max-width: 820px;
+      margin: 8px 0 20px;
+      color: var(--muted);
+    }
+
+    .fields {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 11px;
+    }
+    .field.full { grid-column: 1 / -1; }
+    .fields > details.audit { grid-column: 1 / -1; box-shadow: none; }
+    .field label {
+      display: block;
+      margin-bottom: 4px;
+      color: #455462;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .control-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 6px;
+    }
+    input, select {
+      width: 100%;
+      min-height: 38px;
+      border: 1px solid var(--line-dark);
+      border-radius: 7px;
+      background: #fff;
+      color: var(--ink);
+      padding: 7px 9px;
+      outline: none;
+    }
+    input:focus, select:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(44, 110, 155, 0.12);
+    }
+    input:disabled {
+      background: #f3f5f7;
+      color: #7d8994;
+    }
+    .unit {
+      min-width: 70px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--line-dark);
+      border-radius: 7px;
+      background: var(--soft);
+      padding: 0 8px;
+      color: #53616e;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .inline-check {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 38px;
+    }
+    .inline-check input { width: 17px; min-height: auto; height: 17px; }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 13px;
+    }
+    .btn {
+      border: 1px solid var(--line-dark);
+      border-radius: 7px;
+      background: #fff;
+      color: var(--navy);
+      padding: 8px 11px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .btn:hover { border-color: var(--navy); }
+    .btn.primary {
+      border-color: var(--navy);
+      background: var(--navy);
+      color: #fff;
+    }
+    .btn.primary:hover { background: var(--navy-2); }
+    .btn.red {
+      border-color: var(--red);
+      background: var(--red);
+      color: #fff;
+    }
+
+    .validation {
+      display: none;
+      margin-bottom: 14px;
+      border-left: 4px solid var(--red);
+      background: var(--danger-bg);
+      padding: 11px 13px;
+      color: #7e2424;
+      font-size: 13px;
+    }
+    .validation.show { display: block; }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(135px, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .kpi {
+      min-height: 120px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-top: 3px solid var(--navy);
+      border-radius: 9px;
+      padding: 13px 13px 11px;
+    }
+    .kpi.good { border-top-color: var(--teal); }
+    .kpi.warn { border-top-color: var(--amber); }
+    .kpi.bad { border-top-color: var(--red); }
+    .kpi-label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .kpi-value {
+      margin-top: 11px;
+      color: var(--navy);
+      font-size: clamp(20px, 2vw, 28px);
+      font-weight: 700;
+      line-height: 1.05;
+      letter-spacing: -0.025em;
+      overflow-wrap: anywhere;
+    }
+    .kpi-sub {
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    .recommendation-card {
+      margin-bottom: 14px;
+      border-left: 5px solid var(--blue);
+      background: linear-gradient(90deg, #eef6fb 0%, #fff 72%);
+    }
+    .recommendation-body {
+      padding: 14px 16px;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 18px;
+    }
+    .recommendation-main {
+      color: var(--navy);
+      font-size: 17px;
+      font-weight: 700;
+    }
+    .recommendation-sub {
+      color: var(--muted);
+      font-size: 12px;
+      text-align: right;
+    }
+    .metric-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    .metric-table th, .metric-table td {
+      padding: 9px 10px;
+      border-bottom: 1px solid #e5e9ed;
+      text-align: left;
+      vertical-align: middle;
+    }
+    .metric-table th {
+      width: 45%;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .metric-table td {
+      text-align: right;
+      color: var(--ink);
+      font-variant-numeric: tabular-nums;
+    }
+    .metric-table tr:last-child th,
+    .metric-table tr:last-child td { border-bottom: 0; }
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .status.good { background: var(--success-bg); color: #0d6549; }
+    .status.warn { background: var(--warn-bg); color: #8a4e09; }
+    .status.bad { background: var(--danger-bg); color: #8e2e2e; }
+    .status::before { content: "●"; font-size: 12px; }
+
+    .chart-wrap { padding: 10px 12px 12px; }
+    svg.chart {
+      display: block;
+      width: 100%;
+      height: auto;
+      min-height: 290px;
+      background: #fff;
+    }
+    svg.chart text, #geometryVisual text { font-size: 15px; }
+    .chart-note {
+      margin: 7px 4px 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .geometry-visual {
+      margin: 10px 12px 14px;
+      border-top: 1px solid var(--line);
+      padding-top: 14px;
+    }
+    .geometry-visual-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      margin: 0 4px 8px;
+    }
+    .geometry-visual-head strong {
+      color: var(--navy);
+      font-size: 14px;
+    }
+    .geometry-visual-head span {
+      color: var(--muted);
+      font-size: 12px;
+      text-align: right;
+    }
+    #geometryVisual {
+      display: block;
+      width: 100%;
+      height: auto;
+      min-height: 220px;
+      border-radius: 9px;
+      background: linear-gradient(180deg, #f8fafb 0%, #fff 100%);
+    }
+    .diagnostic-card { margin-bottom: 14px; }
+    .diagnostic-intro { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
+    .diagnostic-wrap { overflow-x: auto; }
+    .diagnostic-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .diagnostic-table th, .diagnostic-table td { padding: 10px 11px; border-bottom: 1px solid #e3e8ec; text-align: left; vertical-align: top; }
+    .diagnostic-table th { background: var(--soft); color: var(--navy); font-weight: 700; }
+    .diagnostic-table td:nth-child(1) { width: 58px; }
+    .diagnostic-table td:nth-child(3) { white-space: nowrap; text-align: right; font-variant-numeric: tabular-nums; }
+    .diagnostic-table td:last-child { min-width: 300px; color: #455462; line-height: 1.45; }
+    .rank-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 30px; border-radius: 999px; padding: 4px 7px; background: #e8f2f8; color: var(--navy); font-size: 12px; font-weight: 700; }
+    .diag-reading { display: block; margin-bottom: 2px; color: var(--navy); font-weight: 700; }
+    .diagnostic-secondary { margin: 0; padding: 0; border: 0; border-radius: 0; box-shadow: none; border-top: 1px solid var(--line); }
+    .diagnostic-secondary summary { padding: 12px 15px; color: var(--navy); font-size: 14px; font-weight: 700; cursor: pointer; }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin: 5px 4px 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .legend i {
+      display: inline-block;
+      width: 14px;
+      height: 3px;
+      margin-right: 5px;
+      vertical-align: middle;
+    }
+
+    details.audit {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    details.audit summary {
+      padding: 14px 16px;
+      color: var(--navy);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .equations {
+      padding: 0 16px 15px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px 16px;
+    }
+    .equation {
+      border-left: 3px solid var(--line-dark);
+      padding: 7px 9px;
+      background: #f8fafb;
+      color: #354552;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 12px;
+      overflow-wrap: anywhere;
+    }
+
+    .toolbar {
+      margin-bottom: 14px;
+      padding: 13px 15px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .toolbar-fields {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: flex-end;
+    }
+    .toolbar .field { min-width: 135px; }
+    .context-note {
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .table-shell {
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      box-shadow: var(--shadow);
+    }
+    table.data {
+      width: 100%;
+      min-width: 1000px;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    table.data th, table.data td {
+      padding: 9px 10px;
+      border-bottom: 1px solid #e3e8ec;
+      text-align: right;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+    table.data th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: var(--navy);
+      color: #fff;
+      font-weight: 700;
+    }
+    table.data th:first-child,
+    table.data td:first-child { text-align: left; }
+    table.data tbody tr:hover { background: #f3f7f9; }
+    table.data tbody tr:last-child td { border-bottom: 0; }
+
+    .compare-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(340px, 0.72fr);
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    .bars { padding: 16px; }
+    .bar-row {
+      display: grid;
+      grid-template-columns: 100px minmax(80px, 1fr) 90px;
+      gap: 9px;
+      align-items: center;
+      margin: 8px 0;
+      font-size: 12px;
+    }
+    .bar-track {
+      height: 9px;
+      border-radius: 999px;
+      background: #e8edf1;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: var(--red);
+    }
+    .bar-value { text-align: right; font-variant-numeric: tabular-nums; }
+
+    .sweep-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .ratio-picker {
+      display: flex;
+      gap: 8px;
+      min-height: 38px;
+      align-items: center;
+    }
+    .ratio-picker label {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 7px 8px;
+      background: #fff;
+      font-size: 12px;
+    }
+    .ratio-picker input { width: 14px; height: 14px; min-height: auto; }
+
+    .calc-note {
+      border-left: 4px solid var(--teal);
+      background: #eef8f5;
+      padding: 12px 14px;
+      margin-bottom: 16px;
+      color: #24594d;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+    .calc-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    .formula-card { overflow: hidden; }
+    .formula-card .card-body { padding: 15px 17px 17px; }
+    .formula-list { display: grid; gap: 11px; }
+    .formula-item {
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 10px;
+    }
+    .formula-item:last-child { border-bottom: 0; padding-bottom: 0; }
+    .formula-name {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+    .formula {
+      color: var(--navy);
+      font-size: 14px;
+      line-height: 1.55;
+      overflow-wrap: anywhere;
+    }
+    .formula-note {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+      margin-top: 3px;
+    }
+    .symbol-table td:first-child {
+      color: var(--red);
+      font-weight: 700;
+      white-space: nowrap;
+      width: 18%;
+    }
+    .code-shell {
+      background: #101c29;
+      border: 1px solid #26394b;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 8px 24px rgba(20, 35, 49, .13);
+    }
+    .code-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 11px 14px;
+      background: #182838;
+      border-bottom: 1px solid #2d4255;
+      color: #d9e5ed;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .code-toolbar .btn {
+      min-height: 31px;
+      padding: 6px 11px;
+      border-color: #6f879a;
+      color: #fff;
+      background: transparent;
+    }
+    .code-toolbar .btn:hover { background: #263d51; }
+    pre {
+      margin: 0;
+      padding: 18px;
+      max-height: 620px;
+      overflow: auto;
+      color: #d9e7ef;
+      font: 11px/1.6 "Courier New", monospace;
+      tab-size: 2;
+      white-space: pre;
+    }
+    .t2d-layout { display:grid; grid-template-columns:340px minmax(0,1fr); gap:18px; align-items:start; }
+    .t2d-inputs { display:grid; gap:14px; }
+    .t2d-results { min-width:0; }
+    .t2d-kpis { display:grid; grid-template-columns:repeat(6,minmax(110px,1fr)); gap:10px; margin-bottom:14px; }
+    .t2d-kpi { min-height:104px; border:1px solid var(--line); border-top:3px solid var(--navy); border-radius:9px; background:#fff; padding:13px; }
+    .t2d-kpi .kpi-label { font-size:13px; }
+    .t2d-kpi .kpi-value { font-size:21px; margin-top:6px; }
+    .t2d-map-grid { display:grid; grid-template-columns:minmax(340px,1fr) 310px; gap:14px; align-items:start; }
+    .t2d-canvas-shell { padding:14px; }
+    #thermalMap { display:block; width:min(100%,620px); height:auto; margin:0 auto; border:1px solid #9aa8b3; background:#f3f6f8; image-rendering:pixelated; cursor:crosshair; }
+    .t2d-colorbar { width:min(100%,620px); margin:10px auto 0; }
+    .t2d-gradient { height:16px; border:1px solid #a9b4bc; border-radius:3px; background:linear-gradient(90deg,#102a43 0%,#2878a5 25%,#58b8b1 50%,#ebbe46 75%,#d33737 100%); }
+    .t2d-scale { display:flex; justify-content:space-between; color:var(--muted); font-size:15px; margin-top:5px; }
+    .t2d-hover { min-height:28px; margin-top:10px; color:var(--navy); font-size:15px; font-weight:700; text-align:center; }
+    .t2d-material-key { display:flex; gap:14px; flex-wrap:wrap; justify-content:center; color:var(--muted); font-size:14px; margin-top:10px; }
+    .t2d-material-key i { display:inline-block; width:13px; height:13px; border:2px solid currentColor; vertical-align:-2px; margin-right:4px; }
+    .t2d-progress { margin-top:9px; color:var(--muted); font-size:14px; min-height:20px; }
+    .t2d-stale { color:#8a4e09; font-weight:700; }
+    .t2d-batch-row { cursor:pointer; }
+    .t2d-batch-row:hover { background:#edf4f8; }
+    .t2d-batch-row.selected { background:#e4f0f6; box-shadow:inset 3px 0 #2c6e9b; }
+    .t2d-assumption { border-left:4px solid #b46714; background:#fff9ed; padding:11px 13px; color:#66420b; font-size:14px; margin-bottom:14px; }
+    .t2d-canvas-shell .card-header h3 { font-size:20px; }
+    .t2d-controls { display:flex; gap:8px; flex-wrap:wrap; }
+    .t2d-controls .btn { flex:1 1 130px; }
+    footer {
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 0 28px 30px;
+      color: var(--muted);
+      font-size: 12px;
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    @media (max-width: 1250px) {
+      .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+      .compare-layout { grid-template-columns: 1fr; }
+      .t2d-kpis { grid-template-columns:repeat(3,1fr); }
+    }
+    @media (max-width: 960px) {
+      .calculator-grid { grid-template-columns: 1fr; }
+      .input-column { position: static; max-height: none; overflow: visible; padding-right: 0; }
+      .result-grid, .sweep-grid, .calc-grid { grid-template-columns: 1fr; }
+      .topbar-inner { align-items: flex-start; flex-direction: column; }
+      .topbar-right { justify-items: start; }
+      .topbar-meta { justify-content: flex-start; }
+      .author-line { text-align: left; }
+      .t2d-layout, .t2d-map-grid { grid-template-columns:1fr; }
+      .t2d-inputs { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    }
+    @media (max-width: 640px) {
+      .topbar-inner, main, footer { padding-left: 15px; padding-right: 15px; }
+      .tabs { padding: 0 5px; }
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+      .t2d-kpis { grid-template-columns:repeat(2,1fr); }
+      .t2d-inputs { grid-template-columns:1fr; }
+      .fields, .equations { grid-template-columns: 1fr; }
+      .field.full { grid-column: auto; }
+      .kpi { min-height: 106px; }
+      .bar-row { grid-template-columns: 82px minmax(70px, 1fr) 72px; }
+      .recommendation-body { align-items: flex-start; flex-direction: column; gap: 6px; }
+      .recommendation-sub { text-align: left; }
+    }
+  </style>
+
+        <style id="electrification-suite-theme">
+          :root {
+            --navy: #102a43 !important;
+            --navy-2: #173b5c !important;
+            --ink: #172733 !important;
+            --muted: #63717c !important;
+            --line: #d5dde3 !important;
+            --soft: #f1f4f6 !important;
+            --cream: #f5f2ec !important;
+            --paper: #ffffff !important;
+          }
+          html, body { background: #f5f2ec !important; }
+          .site-header, .topbar { display: none !important; }
+          .tabs-shell { top: 0 !important; box-shadow: 0 3px 14px rgba(16,42,67,.06) !important; }
+          .card, .formula-card, .doc-card, .canvas-wrap, .profile-svg, .fit-metric {
+            border-color: #d5dde3 !important;
+          }
+          button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible {
+            outline: 3px solid rgba(52,122,161,.32) !important;
+            outline-offset: 2px !important;
+          }
+        </style></head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div>
+        <p class="eyebrow">0D screening + axisymmetric thermal field</p>
+        <h1>Joule Heating 2D Optimizer</h1>
+      </div>
+      <div class="topbar-right">
+        <div class="author-line">Yeonsu Kwak | Vlachos Lab, University of Delaware</div>
+        <div class="topbar-meta" aria-label="Model scope">
+          <span class="meta-pill">Cylinder geometry</span>
+          <span class="meta-pill">Electrical limits</span>
+          <span class="meta-pill">Gap + wall + air heat loss</span>
+          <span class="meta-pill">Enclosure-coupled 0D</span>
+          <span class="meta-pill">60 × 60 adaptive-domain mesh</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <nav class="tabs-shell" aria-label="Calculator sections">
+    <div class="tabs" role="tablist">
+      <button class="tab" data-tab="howto" role="tab" aria-selected="false">How to Use</button>
+      <button class="tab active" data-tab="calculator" role="tab" aria-selected="true">Single Design</button>
+      <button class="tab" data-tab="thermal2d" role="tab" aria-selected="false">2D Thermal Field</button>
+      <button class="tab" data-tab="compare" role="tab" aria-selected="false">Material Compare</button>
+      <button class="tab" data-tab="sweep" role="tab" aria-selected="false">Resistivity &amp; Geometry Sweep</button>
+      <button class="tab" data-tab="calculations" role="tab" aria-selected="false">Calculations</button>
+    </div>
+  </nav>
+
+  <main>
+    <section id="howto" class="panel" role="tabpanel">
+      <p class="section-kicker">Five-minute workflow</p>
+      <h2 class="section-title">How to use this optimizer</h2>
+      <p class="section-lede">Start with the transparent 0D screen, then solve the selected design on a fixed 60 × 60 axisymmetric display mesh. The physical cell size and surrounding-air domain scale automatically with the defined reactor geometry.</p>
+      <div class="calc-grid">
+        <article class="card formula-card"><div class="card-header"><h3>1 · Choose a material</h3></div><div class="card-body formula-list"><div class="formula-item"><div class="formula-name">Preset or custom</div><div class="formula-note">Presets load cited room-temperature data plus temperature interpolation where a source supplies it. You may overwrite every field.</div></div></div></article>
+        <article class="card formula-card"><div class="card-header"><h3>2 · Enter cylindrical geometry</h3></div><div class="card-body formula-list"><div class="formula-item"><div class="formula-name">Volume + L/D + solid fraction</div><div class="formula-note">Volume means solid material volume. Solid fraction f<sub>s</sub> = 1 is a dense rod; lower values enlarge the porous envelope while preserving the entered solid volume.</div></div></div></article>
+        <article class="card formula-card"><div class="card-header"><h3>3 · Define hardware limits</h3></div><div class="card-body formula-list"><div class="formula-item"><div class="formula-name">I, V, P and J ceilings</div><div class="formula-note">The page chooses the lowest allowed current at each temperature. Jmax is a screening/design limit, not a universal failure constant; assumed presets are marked in Calculations.</div></div></div></article>
+        <article class="card formula-card"><div class="card-header"><h3>4 · Set the thermal case</h3></div><div class="card-body formula-list"><div class="formula-item"><div class="formula-name">Ambient, target and enclosure</div><div class="formula-note">Single Design uses the same gas gap, wall, surrounding-air domain, end condition, gap radiation, and 50 sccm He inlet defined for the 2D field.</div></div></div></article>
+        <article class="card formula-card"><div class="card-header"><h3>5 · Read the flags</h3></div><div class="card-body formula-list"><div class="formula-item"><div class="formula-name">Feasibility and Biot screening</div><div class="formula-note">“Feasible” means the source can balance modeled heat loss at target. Bi ≤ the selected limit supports a lumped-temperature approximation; it does not prove local uniformity in a porous body.</div></div></div></article>
+        <article class="card formula-card"><div class="card-header"><h3>6 · Solve the 2D field</h3></div><div class="card-body formula-list"><div class="formula-item"><div class="formula-name">Current design → axisymmetric mesh</div><div class="formula-note">The 2D tab reuses the selected material, calculated L and D, porosity, temperature-dependent properties, and all four power-supply limits. Add only enclosure and end-boundary data.</div></div></div></article>
+        <article class="card formula-card"><div class="card-header"><h3>7 · Compare and audit</h3></div><div class="card-body formula-list"><div class="formula-item"><div class="formula-name">Compare → Sweep → Calculations</div><div class="formula-note">Material Compare provides a fast 0D screen, the sweep checks resistivity and geometry sensitivity, and Calculations contains the equations, assumptions, substituted values, and exact JavaScript.</div></div></div></article>
+      </div>
+    </section>
+
+    <section id="calculator" class="panel active" role="tabpanel">
+      <div class="calculator-grid">
+        <aside class="input-column" aria-label="Model inputs">
+          <div class="card input-card">
+            <div class="card-header"><h2>Material</h2><span class="status warn" id="materialMode">Custom</span></div>
+            <div class="card-body fields">
+              <div class="field full">
+                <label for="material">Material preset</label>
+                <select id="material"></select>
+              </div>
+              <details class="audit">
+                <summary>Advanced material properties</summary>
+                <div class="card-body fields">
+              <div class="field">
+                <label for="rhoValue">Electrical resistivity</label>
+                <div class="control-row">
+                  <input id="rhoValue" type="number" min="0" step="any" value="1">
+                  <select id="rhoUnit" aria-label="Resistivity unit">
+                    <option value="uohm-m">µΩ·m</option>
+                    <option value="ohm-cm">Ω·cm</option>
+                  </select>
+                </div>
+              </div>
+              <div class="field">
+                <label for="density">Density</label>
+                <div class="control-row"><input id="density" type="number" min="0" step="any" value="1000"><span class="unit">kg/m³</span></div>
+              </div>
+              <div class="field">
+                <label for="cp">Heat capacity, C<sub>p</sub></label>
+                <div class="control-row"><input id="cp" type="number" min="0" step="any" value="1000"><span class="unit">J/kg·K</span></div>
+              </div>
+              <div class="field">
+                <label for="thermalK">Thermal conductivity, k</label>
+                <div class="control-row"><input id="thermalK" type="number" min="0" step="any" value="120"><span class="unit">W/m·K</span></div>
+              </div>
+              <div class="field full">
+                <label for="jmax">Maximum current density</label>
+                <div class="control-row"><input id="jmax" type="number" min="0" step="any" value="10000000"><span class="unit">A/m²</span></div>
+              </div>
+                </div>
+              </details>
+            </div>
+          </div>
+
+          <div class="card input-card">
+            <div class="card-header"><h2>Geometry</h2><span class="status good">Cylinder</span></div>
+            <div class="card-body fields">
+              <div class="field">
+                <label for="volumeCm3">Solid volume</label>
+                <div class="control-row"><input id="volumeCm3" type="number" min="0" step="any" value="10"><span class="unit">cm³</span></div>
+              </div>
+              <div class="field">
+                <label for="aspectRatio">Aspect ratio, L/D</label>
+                <input id="aspectRatio" type="number" min="0" step="any" value="1">
+              </div>
+              <div class="field full">
+                <label for="solidFraction">Solid fraction, f<sub>s</sub> = 1−φ</label>
+                <div class="control-row"><input id="solidFraction" type="number" min="0.01" max="1" step="0.01" value="1"><span class="unit">1 = solid rod</span></div>
+              </div>
+              <div class="field full"><span class="context-note">Porosity is φ = 1−f<sub>s</sub>. Lower f<sub>s</sub> gives a larger L × D envelope at fixed solid volume.</span></div>
+            </div>
+          </div>
+
+          <div class="card input-card">
+            <div class="card-header"><h2>Power Supply</h2></div>
+            <div class="card-body fields">
+              <div class="field">
+                <label for="imax">I<sub>max</sub></label>
+                <div class="control-row"><input id="imax" type="number" min="0" step="any" value="20"><span class="unit">A</span></div>
+              </div>
+              <div class="field">
+                <label for="vmax">V<sub>max</sub></label>
+                <div class="control-row"><input id="vmax" type="number" min="0" step="any" value="100"><span class="unit">V</span></div>
+              </div>
+              <div class="field full">
+                <label for="pmax">P<sub>max</sub></label>
+                <div class="control-row"><input id="pmax" type="number" min="0" step="any" value="2000"><span class="unit">W</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card input-card">
+            <div class="card-header"><h2>Heat Loss &amp; Target</h2></div>
+            <div class="card-body fields">
+              <div class="field">
+                <label for="ambientC">Ambient temperature</label>
+                <div class="control-row"><input id="ambientC" type="number" step="any" value="20"><span class="unit">°C</span></div>
+              </div>
+              <div class="field">
+                <label for="targetC">Target temperature</label>
+                <div class="control-row"><input id="targetC" type="number" step="any" value="1000"><span class="unit">°C</span></div>
+              </div>
+              <details class="audit">
+                <summary>Advanced element and outside-air settings</summary>
+                <div class="card-body fields">
+              <div class="field">
+                <label for="emissivity">Element emissivity</label>
+                <input id="emissivity" type="number" min="0" max="1" step="0.01" value="0.8">
+              </div>
+              <div class="field">
+                <label for="convection">Wall–air film</label>
+                <div class="inline-check"><input id="convection" type="checkbox" checked><span>Include outside h resistance</span></div>
+              </div>
+              <div class="field">
+                <label for="hConv">Outside wall–air h</label>
+                <div class="control-row"><input id="hConv" type="number" min="0" step="any" value="20"><span class="unit">W/m²·K</span></div>
+              </div>
+              <div class="field">
+                <label for="gasC">He inlet temperature</label>
+                <div class="control-row"><input id="gasC" type="number" step="any" value="20"><span class="unit">°C</span></div>
+              </div>
+              <div class="field full">
+                <label for="biLimit">Biot screening limit</label>
+                <input id="biLimit" type="number" min="0" step="any" value="0.01">
+              </div>
+                </div>
+              </details>
+            </div>
+          </div>
+        </aside>
+
+        <div>
+          <div id="validation" class="validation" role="alert"></div>
+          <div class="kpi-grid" aria-label="Primary calculation results">
+            <article class="kpi" id="kpiConstraint"><div class="kpi-label">Active constraint</div><div class="kpi-value" id="constraintValue">—</div><div class="kpi-sub" id="constraintSub">Lowest allowed current</div></article>
+            <article class="kpi"><div class="kpi-label">Initial ramp rate</div><div class="kpi-value" id="rampValue">—</div><div class="kpi-sub">P(T<sub>a</sub>)/mC<sub>p</sub>(T<sub>a</sub>)</div></article>
+            <article class="kpi" id="kpiTss"><div class="kpi-label">Steady-state temperature</div><div class="kpi-value" id="tssValue">—</div><div class="kpi-sub">Gap + wall + air + He balance</div></article>
+            <article class="kpi" id="kpiTime"><div class="kpi-label">Ideal adiabatic time</div><div class="kpi-value" id="timeValue">—</div><div class="kpi-sub">Lower bound; excludes heat loss</div></article>
+            <article class="kpi" id="kpiFeasible"><div class="kpi-label">Target feasibility</div><div class="kpi-value" id="feasibleValue">—</div><div class="kpi-sub" id="feasibleSub">Available vs required power</div></article>
+            <article class="kpi" id="kpiBi"><div class="kpi-label">Biot number</div><div class="kpi-value" id="biValue">—</div><div class="kpi-sub" id="biSub">Lumped screening</div></article>
+          </div>
+
+          <article class="card recommendation-card" aria-label="Design recommendation">
+            <div class="recommendation-body">
+              <div>
+                <div class="section-kicker" style="margin-bottom:3px">Design Recommendation</div>
+                <div class="recommendation-main" id="recommendationMain">Calculating…</div>
+              </div>
+              <div class="recommendation-sub" id="recommendationSub">Initial-ramp objective with all electrical limits applied</div>
+            </div>
+          </article>
+
+          <div class="result-grid">
+            <article class="card">
+              <div class="card-header"><h3>Operating Point</h3><span id="targetBadge" class="status bad">Calculating</span></div>
+              <div class="card-body">
+                <table class="metric-table" aria-label="Operating point">
+                  <tbody>
+                    <tr><th>Resistance, R</th><td id="outR">—</td></tr>
+                    <tr><th>Current, I</th><td id="outI">—</td></tr>
+                    <tr><th>Voltage, V</th><td id="outV">—</td></tr>
+                    <tr><th>Power, P</th><td id="outP">—</td></tr>
+                    <tr><th>Current density, J</th><td id="outJ">—</td></tr>
+                    <tr><th>Power-supply utilization</th><td id="outPowerUse">—</td></tr>
+                    <tr><th>Specific power</th><td id="outSpecificPower">—</td></tr>
+                    <tr><th>Volumetric power</th><td id="outVolPower">—</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </article>
+
+            <article class="card">
+              <div class="card-header"><h3>Geometry &amp; Thermal Screening</h3><span id="uniformBadge" class="status warn">Calculating</span></div>
+              <div class="card-body">
+                <table class="metric-table" aria-label="Geometry and thermal screening">
+                  <tbody>
+                    <tr><th>Length × diameter</th><td id="outDimensions">—</td></tr>
+                    <tr><th>Solid / envelope volume</th><td id="outVolumes">—</td></tr>
+                    <tr><th>Porosity</th><td id="outPorosity">—</td></tr>
+                    <tr><th>Cross-sectional area</th><td id="outArea">—</td></tr>
+                    <tr><th>Surface area</th><td id="outSurface">—</td></tr>
+                    <tr><th>Volume / surface area</th><td id="outLc">—</td></tr>
+                    <tr><th>Mass</th><td id="outMass">—</td></tr>
+                    <tr><th>Required target power</th><td id="outPreq">—</td></tr>
+                    <tr><th>Required target V / I</th><td id="outReqVI">—</td></tr>
+                    <tr><th>Critical thermal conductivity</th><td id="outKcrit">—</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </article>
+          </div>
+
+          <article class="card diagnostic-card" aria-label="Joule-heating dimensionless and normalized diagnostics">
+            <div class="card-header">
+              <div><h3>Key Dimensionless &amp; Normalized Diagnostics</h3><p class="diagnostic-intro">Ranked by target feasibility, internal temperature uniformity, and electrical operating margin.</p></div>
+            </div>
+            <div class="diagnostic-wrap">
+              <table class="diagnostic-table">
+                <thead><tr><th>Priority</th><th>Metric</th><th>Value</th><th>Reading and physical meaning</th></tr></thead>
+                <tbody id="jhPrimaryDiagnostics"></tbody>
+              </table>
+            </div>
+            <details class="diagnostic-secondary">
+              <summary>Supporting heat-path fractions</summary>
+              <div class="diagnostic-wrap"><table class="diagnostic-table"><thead><tr><th>Priority</th><th>Metric</th><th>Value</th><th>Physical meaning</th></tr></thead><tbody id="jhSecondaryDiagnostics"></tbody></table></div>
+            </details>
+          </article>
+
+          <article class="card" style="margin-bottom:14px">
+            <div class="card-header"><h3>Steady-State Heat Balance</h3><span class="context-note">Intersection gives T<sub>ss</sub></span></div>
+            <div class="chart-wrap">
+              <svg id="heatChart" class="chart" viewBox="0 0 760 330" role="img" aria-label="Heat loss and electrical input power versus temperature"></svg>
+              <div class="legend">
+                <span><i style="background:#c53a3a"></i>Heat loss</span>
+                <span><i style="background:#102a43"></i>Electrical input</span>
+                <span><i style="background:#b46714"></i>Target temperature</span>
+              </div>
+              <p class="chart-note">Electrical power is recalculated across temperature using each preset’s ρ(T) model and all four source limits.</p>
+            </div>
+            <div class="geometry-visual">
+              <div class="geometry-visual-head">
+                <strong>Calculated Cylinder Geometry</strong>
+                <span>Envelope expands at fixed solid volume as porosity increases.</span>
+              </div>
+              <svg id="geometryVisual" viewBox="0 0 760 260" role="img" aria-label="Calculated porous cylinder geometry with length, diameter, and porosity"></svg>
+            </div>
+          </article>
+
+          <details class="audit">
+            <summary>Show substituted equations and secondary limits</summary>
+            <div class="equations" id="equations"></div>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section id="thermal2d" class="panel" role="tabpanel">
+      <p class="section-kicker">Temperature field from the current design</p>
+      <h2 class="section-title">Axisymmetric 2D thermal optimizer</h2>
+      <p class="section-lede">The solver maps the current Single Design cylinder, a full-height reactor wall, He process gas, and surrounding air onto a fixed 60 × 60 display. The mirrored half-domain always uses 30 radial × 60 axial control volumes; its physical width, height, and regional Δr values scale automatically with the imported geometry.</p>
+      <div class="t2d-controls">
+        <button class="btn primary" id="solve2D" type="button">Recalculate 2D field</button>
+        <button class="btn" id="export2D" type="button" disabled>Export field CSV</button>
+      </div>
+      <div id="t2dProgress" class="t2d-progress">The 2D field solves automatically when this tab opens.</div>
+      <div class="t2d-assumption"><strong>Resolved physics:</strong> temperature-dependent element resistivity and conductivity, radial/axial conduction, element-to-wall gap radiation, full-height wall conduction, surrounding-air conduction, wall/air convection and radiation, end heat transfer, electrical contact loss, and top-to-bottom He enthalpy transport at 50 sccm.</div>
+
+      <div class="t2d-layout">
+        <aside class="t2d-inputs" aria-label="2D model inputs">
+          <article class="card">
+            <div class="card-header"><h3>Imported Single Design</h3><span id="t2dSyncBadge" class="status warn">Not solved</span></div>
+            <div class="card-body">
+              <table class="metric-table">
+                <tbody>
+                  <tr><th>Element material</th><td id="t2dMaterial">—</td></tr>
+                  <tr><th>Length × diameter</th><td id="t2dDimensions">—</td></tr>
+                  <tr><th>Solid fraction / porosity</th><td id="t2dFraction">—</td></tr>
+                  <tr><th>Solid / envelope volume</th><td id="t2dVolumes">—</td></tr>
+                  <tr><th>ρ<sub>e</sub>(T<sub>a</sub>) / k(T<sub>a</sub>)</th><td id="t2dImportedProps">—</td></tr>
+                  <tr><th>0D steady state</th><td id="t2dZeroD">—</td></tr>
+                  <tr><th>Process gas</th><td>He · 50 sccm · top → bottom</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+
+          <article class="card input-card">
+            <div class="card-header"><h3>Enclosure</h3></div>
+            <div class="card-body fields">
+              <div class="field full"><label for="t2dWallMaterial">Wall material</label><select id="t2dWallMaterial"><option value="quartz">Quartz</option><option value="alumina">Alumina</option><option value="stainless">Stainless steel</option><option value="custom">Custom</option></select></div>
+              <div class="field"><label for="t2dWallK">Wall conductivity</label><div class="control-row"><input id="t2dWallK" type="number" min="0.001" step="any" value="1.4"><span class="unit">W/m·K</span></div></div>
+              <div class="field"><label for="t2dWallThickness">Wall thickness</label><div class="control-row"><input id="t2dWallThickness" type="number" min="0.01" step="any" value="1"><span class="unit">mm</span></div></div>
+              <div class="field"><label for="t2dWallEps">Outer-wall emissivity</label><input id="t2dWallEps" type="number" min="0" max="1" step="0.01" value="0.93"></div>
+              <div class="field"><label for="t2dGap">Element–wall gap</label><div class="control-row"><input id="t2dGap" type="number" min="0" step="any" value="0.5"><span class="unit">mm</span></div></div>
+              <div class="field"><label for="t2dGapK">Gap conductivity</label><div class="control-row"><input id="t2dGapK" type="number" min="0.001" step="any" value="0.03"><span class="unit">W/m·K</span></div></div>
+              <div class="field full"><span class="context-note">The gap is a static effective-conduction layer. Its k is also used for the He cells above and below the element. Enter a measured effective k if internal gas convection or radiation is folded into this value.</span></div>
+            </div>
+          </article>
+
+          <article class="card input-card">
+            <div class="card-header"><h3>Ends &amp; Electrical Contacts</h3></div>
+            <div class="card-body fields">
+              <div class="field full"><label for="t2dEndMode">Element-end boundary</label><select id="t2dEndMode"><option value="ambient">He-region conduction + radiation</option><option value="electrode">Effective electrode heat sink</option><option value="adiabatic">Adiabatic element ends</option></select></div>
+              <div class="field"><label for="t2dEndC">Electrode temperature</label><div class="control-row"><input id="t2dEndC" type="number" step="any" value="20"><span class="unit">°C</span></div></div>
+              <div class="field"><label for="t2dEndH">End heat-transfer coefficient</label><div class="control-row"><input id="t2dEndH" type="number" min="0" step="any" value="250"><span class="unit">W/m²·K</span></div></div>
+              <div class="field full"><label for="t2dContactRho">Electrical contact resistivity, ρ<sub>c</sub></label><div class="control-row"><input id="t2dContactRho" type="number" min="0" step="any" value="0"><span class="unit">Ω·m² per end</span></div></div>
+              <div class="field full"><span class="context-note">R<sub>c</sub> = ρ<sub>c</sub>/A<sub>eff</sub>. Contact power is reported separately and is excluded from the element heat source.</span></div>
+            </div>
+          </article>
+
+          <details class="audit">
+            <summary>Solver controls</summary>
+            <div class="card-body fields">
+              <div class="field full"><span class="context-note"><strong>Mesh:</strong> fixed 60 × 60 display. Element, gap, full-height wall, He, and surrounding-air cell widths are assigned automatically from the current geometry.</span></div>
+              <div class="field"><label for="t2dMaxIter">Maximum nonlinear iterations</label><input id="t2dMaxIter" type="number" min="10" max="500" step="10" value="100"></div>
+              <div class="field"><label for="t2dTolerance">Temperature tolerance</label><div class="control-row"><input id="t2dTolerance" type="number" min="0.000001" step="any" value="0.0001"><span class="unit">K</span></div></div>
+            </div>
+          </details>
+
+        </aside>
+
+        <div class="t2d-results">
+          <div class="t2d-kpis" aria-label="2D thermal results">
+            <article class="t2d-kpi"><div class="kpi-label">Volume-average element</div><div class="kpi-value" id="t2dAvg">—</div><div class="kpi-sub">T<sub>avg</sub></div></article>
+            <article class="t2d-kpi"><div class="kpi-label">Maximum element</div><div class="kpi-value" id="t2dMax">—</div><div class="kpi-sub">T<sub>max</sub></div></article>
+            <article class="t2d-kpi"><div class="kpi-label">Element spread</div><div class="kpi-value" id="t2dDelta">—</div><div class="kpi-sub">T<sub>max</sub> − T<sub>min</sub></div></article>
+            <article class="t2d-kpi"><div class="kpi-label">Bulk Joule power</div><div class="kpi-value" id="t2dPower">—</div><div class="kpi-sub">Deposited in element</div></article>
+            <article class="t2d-kpi"><div class="kpi-label">Active constraint</div><div class="kpi-value" id="t2dConstraint">—</div><div class="kpi-sub">Lowest allowed current</div></article>
+            <article class="t2d-kpi"><div class="kpi-label">Energy closure</div><div class="kpi-value" id="t2dClosure">—</div><div class="kpi-sub">|P − Q<sub>boundary</sub>|/P</div></article>
+          </div>
+
+          <div class="t2d-map-grid">
+            <article class="card t2d-canvas-shell">
+              <div class="card-header"><h3 id="t2dMapTitle">Temperature Field</h3><span id="t2dMeshLabel" class="context-note">Fixed 60 × 60 mesh · solve to update</span></div>
+              <canvas id="thermalMap" width="600" height="600" aria-label="Axisymmetric element, full-height reactor wall, helium, and surrounding-air temperature field"></canvas>
+              <div class="t2d-colorbar"><div class="t2d-gradient"></div><div class="t2d-scale"><span id="t2dScaleMin">—</span><span>Temperature (°C)</span><span id="t2dScaleMax">—</span></div></div>
+              <div id="t2dHover" class="t2d-hover">He flows from top to bottom at 50 sccm. Move over a cell to inspect x, z, material, and temperature.</div>
+              <div class="t2d-material-key"><span style="color:#102a43"><i></i>Element boundary</span><span style="color:#b46714"><i></i>Gap boundary</span><span style="color:#64717d"><i></i>Full-height wall</span><span style="color:#2878a5"><i></i>He process gas</span><span style="color:#8bb9cf"><i></i>Surrounding air</span></div>
+            </article>
+
+            <article class="card">
+              <div class="card-header"><h3>Calculated Checkpoints</h3><span id="t2dConverged" class="status warn">No solution</span></div>
+              <div class="card-body"><table class="metric-table"><tbody>
+                <tr><th>Element min / max</th><td id="t2dMinMax">—</td></tr>
+                <tr><th>Center / side</th><td id="t2dCenterSide">—</td></tr>
+                <tr><th>Bottom / top center</th><td id="t2dEnds">—</td></tr>
+                <tr><th>Wall inner / outer</th><td id="t2dWallTemps">—</td></tr>
+                <tr><th>2D avg − 0D T<sub>ss</sub></th><td id="t2dVsZeroD">—</td></tr>
+                <tr><th>Current / total voltage</th><td id="t2dIV">—</td></tr>
+                <tr><th>R<sub>bulk</sub> / 2R<sub>c</sub></th><td id="t2dResistance">—</td></tr>
+                <tr><th>Bulk / contact power</th><td id="t2dPowers">—</td></tr>
+                <tr><th>He outlet / heat removal</th><td id="t2dGasCooling">—</td></tr>
+                <tr><th>Boundary heat loss</th><td id="t2dBoundaryLoss">—</td></tr>
+                <tr><th>Nonlinear / linear iterations</th><td id="t2dResidual">—</td></tr>
+                <tr><th>Radial cells</th><td id="t2dRadialCells">—</td></tr>
+                <tr><th>Radial cell sizes</th><td id="t2dRadialCellSizes">—</td></tr>
+                <tr><th>Axial cell size</th><td id="t2dAxialCell">—</td></tr>
+              </tbody></table></div>
+            </article>
+          </div>
+
+          <details class="audit" style="margin-top:14px">
+            <summary>Show substituted 2D equations for this solution</summary>
+            <div class="equations" id="t2dEquations"><div class="equation">Solve a material to populate the substituted finite-volume and electrical balances.</div></div>
+          </details>
+
+        </div>
+      </div>
+    </section>
+
+    <section id="compare" class="panel" role="tabpanel">
+      <p class="section-kicker">Same hardware, different materials</p>
+      <h2 class="section-title">Material comparison</h2>
+      <p class="section-lede">Each material is recalculated with the current geometry, power-supply limits, and heat-loss conditions from Single Design.</p>
+      <div class="card toolbar">
+        <div class="toolbar-fields">
+          <div class="field">
+            <label for="compareSort">Sort by</label>
+            <select id="compareSort">
+              <option value="rate">Initial ramp rate</option>
+              <option value="tss">Steady-state temperature</option>
+              <option value="resistivity">Resistivity</option>
+              <option value="bi">Biot number</option>
+              <option value="power">Operating power</option>
+            </select>
+          </div>
+        </div>
+        <div class="actions" style="margin:0"><button class="btn primary" id="exportCompare" type="button">Export comparison CSV</button></div>
+      </div>
+      <div class="compare-layout">
+        <article class="card">
+          <div class="card-header"><h3>Initial Ramp Rate</h3><span class="context-note">log-scaled bar length</span></div>
+          <div class="bars" id="materialBars"></div>
+        </article>
+        <article class="card">
+          <div class="card-header"><h3>Model Reading</h3></div>
+          <div class="card-body">
+            <table class="metric-table">
+              <tbody>
+                <tr><th>Fastest initial ramp</th><td id="fastestMaterial">—</td></tr>
+                <tr><th>Highest T<sub>ss</sub></th><td id="hottestMaterial">—</td></tr>
+                <tr><th>Bi ≤ limit</th><td id="uniformCount">—</td></tr>
+                <tr><th>Target feasible</th><td id="feasibleCount">—</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </article>
+      </div>
+      <div class="table-shell">
+        <table class="data" aria-label="Material comparison">
+          <thead><tr><th>Material</th><th>ρ<sub>e</sub> @ target</th><th>Power</th><th>Initial ramp</th><th>T<sub>ss</sub></th><th>Target</th></tr></thead>
+          <tbody id="compareBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="sweep" class="panel" role="tabpanel">
+      <p class="section-kicker">Electrical design window</p>
+      <h2 class="section-title">Resistivity and geometry sweep</h2>
+      <p class="section-lede">At fixed solid volume and heat capacity, initial ramp rate follows electrical power. The peak occurs where the current-limited rising branch meets the voltage-limited falling branch.</p>
+      <div class="calc-note" id="sweepInsight">
+        <strong>Why the default peak is near R = 5 Ω:</strong>
+        below 5 Ω, I = 20 A and P = I²R, so increasing R raises power. Above 5 Ω, V = 100 V and P = V²/R, so increasing R lowers power. At R = Vmax/Imax = 5 Ω, P = IV = 2,000 W and P/Vsolid—and therefore the initial ramp rate—reaches its maximum.
+      </div>
+      <div class="calc-grid" style="margin-bottom:18px">
+        <article class="card formula-card"><div class="card-header"><h3>Low resistance</h3></div><div class="card-body"><div class="formula">P = I<sub>cap</sub>²R ↑</div><div class="formula-note">Current is already at its ceiling. More resistance converts the same current into more heat.</div></div></article>
+        <article class="card formula-card"><div class="card-header"><h3>Best-matched resistance</h3></div><div class="card-body"><div class="formula">R* = V<sub>max</sub>/I<sub>cap</sub></div><div class="formula-note">Current and voltage capability are used together. A lower Pmax can broaden this point into a constant-power plateau.</div></div></article>
+        <article class="card formula-card"><div class="card-header"><h3>High resistance</h3></div><div class="card-body"><div class="formula">P = V<sub>max</sub>²/R ↓</div><div class="formula-note">Voltage is already at its ceiling. More resistance reduces current faster than resistance increases.</div></div></article>
+      </div>
+      <div class="card toolbar">
+        <div class="toolbar-fields">
+          <div class="field">
+            <label for="sweepMin">Minimum resistivity</label>
+            <div class="control-row"><input id="sweepMin" type="number" min="0" step="any" value="0.0001"><span class="unit">Ω·cm</span></div>
+          </div>
+          <div class="field">
+            <label for="sweepMax">Maximum resistivity</label>
+            <div class="control-row"><input id="sweepMax" type="number" min="0" step="any" value="100"><span class="unit">Ω·cm</span></div>
+          </div>
+          <div class="field">
+            <label for="sweepPoints">Points</label>
+            <input id="sweepPoints" type="number" min="10" max="160" step="1" value="64">
+          </div>
+          <div class="field">
+            <label>Aspect ratios</label>
+            <div class="ratio-picker">
+              <label><input type="checkbox" name="ratio" value="100" checked>100</label>
+              <label><input type="checkbox" name="ratio" value="10" checked>10</label>
+              <label><input type="checkbox" name="ratio" value="1" checked>1</label>
+              <label><input type="checkbox" name="ratio" value="0.1" checked>0.1</label>
+            </div>
+          </div>
+        </div>
+        <div class="actions" style="margin:0"><button class="btn primary" id="exportSweep" type="button">Export sweep CSV</button></div>
+      </div>
+      <div class="sweep-grid">
+        <article class="card">
+          <div class="card-header"><h3>Initial Ramp Rate vs Resistivity</h3></div>
+          <div class="chart-wrap"><svg id="rateSweepChart" class="chart" viewBox="0 0 700 420" role="img" aria-label="Ramp rate versus electrical resistivity"></svg></div>
+        </article>
+        <article class="card">
+          <div class="card-header"><h3>Electrical Power vs Resistance</h3><span class="context-note">Peak power gives peak initial ramp</span></div>
+          <div class="chart-wrap"><svg id="powerSweepChart" class="chart" viewBox="0 0 700 420" role="img" aria-label="Electrical power versus resistance"></svg></div>
+        </article>
+      </div>
+    </section>
+
+    <section id="calculations" class="panel" role="tabpanel">
+      <p class="section-kicker">Transparent model documentation</p>
+      <h2 class="section-title">Calculations &amp; implementation</h2>
+      <p class="section-lede">Every equation used by the optimizer is listed below in execution order. All internal calculations use SI units and absolute temperature.</p>
+      <div class="calc-note"><strong>Model scope:</strong> zero-dimensional screening plus a steady axisymmetric finite-volume temperature field for a porous cylindrical envelope, optional gas gap, and enclosing wall. Preset ρ(T), Cp(T), and k(T) use piecewise-linear source data where available; marked fallback properties remain constant.</div>
+
+      <div class="calc-grid">
+        <article class="card formula-card">
+          <div class="card-header"><h3>1 · Unit conversion &amp; geometry</h3></div>
+          <div class="card-body formula-list">
+            <div class="formula-item"><div class="formula-name">Electrical resistivity</div><div class="formula">ρ<sub>e</sub> [Ω·m] = 0.01 · ρ<sub>e</sub> [Ω·cm]</div><div class="formula-note">For µΩ·m input: ρ<sub>e</sub> [Ω·cm] = 10<sup>−4</sup> · value.</div></div>
+            <div class="formula-item"><div class="formula-name">Solid fraction and porosity</div><div class="formula">f<sub>s</sub> = 1−φ, &nbsp; V<sub>env</sub> = V<sub>solid</sub>/f<sub>s</sub></div><div class="formula-note">f<sub>s</sub> = 1 is a solid rod. At fixed L/D, both L and D scale by f<sub>s</sub><sup>−1/3</sup>.</div></div>
+            <div class="formula-item"><div class="formula-name">Fixed solid volume + aspect ratio</div><div class="formula">D = ∛(4V<sub>env</sub> / π(L/D)), &nbsp; L = (L/D)D</div></div>
+            <div class="formula-item"><div class="formula-name">Electrical area</div><div class="formula">A<sub>eff</sub> = f<sub>s</sub>πD²/4</div><div class="formula-note">Uniform axial pores and tortuosity τ = 1. Random foams generally require Aeff/τ and a measured effective conductivity.</div></div>
+            <div class="formula-item"><div class="formula-name">Exposed surface &amp; thermal length</div><div class="formula">A<sub>s</sub> = πDL + πD²/2, &nbsp; L<sub>c</sub> = V<sub>env</sub>/A<sub>s</sub></div><div class="formula-note">Internal pore area is excluded because pore topology is not provided.</div></div>
+            <div class="formula-item"><div class="formula-name">Mass</div><div class="formula">m = ρ<sub>m</sub>V<sub>solid</sub></div></div>
+          </div>
+        </article>
+
+        <article class="card formula-card">
+          <div class="card-header"><h3>2 · Electrical operating point</h3></div>
+          <div class="card-body formula-list">
+            <div class="formula-item"><div class="formula-name">Temperature-dependent properties</div><div class="formula">y(T) = y<sub>i</sub> + (y<sub>i+1</sub>−y<sub>i</sub>)(T−T<sub>i</sub>)/(T<sub>i+1</sub>−T<sub>i</sub>)</div><div class="formula-note">Piecewise-linear interpolation with endpoint clamping. For pure-metal fallback: ρ(T)=ρ<sub>20</sub>[1+α(T−20°C)].</div></div>
+            <div class="formula-item"><div class="formula-name">Conductivity &amp; resistance</div><div class="formula">σ<sub>e</sub>(T) = 1/ρ<sub>e</sub>(T), &nbsp; R(T) = ρ<sub>e</sub>(T)L/A<sub>eff</sub></div></div>
+            <div class="formula-item"><div class="formula-name">Four current ceilings</div><div class="formula">I<sub>I</sub> = I<sub>max</sub><br>I<sub>V</sub> = V<sub>max</sub>/R<br>I<sub>J</sub> = J<sub>max</sub>A<br>I<sub>P</sub> = √(P<sub>max</sub>/R)</div></div>
+            <div class="formula-item"><div class="formula-name">Selected current</div><div class="formula">I = min(I<sub>I</sub>, I<sub>V</sub>, I<sub>J</sub>, I<sub>P</sub>)</div><div class="formula-note">Equal minima are reported as simultaneous active constraints.</div></div>
+            <div class="formula-item"><div class="formula-name">Voltage, power &amp; densities</div><div class="formula">V<sub>e</sub>(T) = I(T)R(T), &nbsp; P(T) = I(T)²R(T)<br>J = I/A<sub>eff</sub>, &nbsp; p‴ = P/V<sub>solid</sub>, &nbsp; P<sub>sp</sub> = P/m</div></div>
+            <div class="formula-item"><div class="formula-name">Design recommendation</div><div class="formula">R ∝ ρ<sub>e</sub>(L/D)<sup>4/3</sup>, &nbsp; A<sub>eff</sub> ∝ (L/D)<sup>−2/3</sup></div><div class="formula-note">L/D and ρe are searched over ±4 decades. Imax, Vmax, Pmax, and Jmax are applied at every candidate. The closest candidate delivering at least 99.5% of the maximum initial power is reported.</div></div>
+          </div>
+        </article>
+
+        <article class="card formula-card">
+          <div class="card-header"><h3>3 · Heating &amp; target feasibility</h3></div>
+          <div class="card-body formula-list">
+            <div class="formula-item"><div class="formula-name">Initial adiabatic ramp</div><div class="formula">(dT/dt)<sub>0</sub> = P(T<sub>a</sub>)/[mC<sub>p</sub>(T<sub>a</sub>)]</div></div>
+            <div class="formula-item"><div class="formula-name">Ideal adiabatic lower bound</div><div class="formula">t<sub>ideal</sub> = max(0, T<sub>t</sub> − T<sub>a</sub>)/(dT/dt)<sub>0</sub></div><div class="formula-note">Always shown. It ignores loss and property variation during the ramp, so it is not a predicted transient heating time.</div></div>
+            <div class="formula-item"><div class="formula-name">Power required at target</div><div class="formula">P<sub>req</sub> = max(0, P<sub>loss</sub>(T<sub>t</sub>))</div></div>
+            <div class="formula-item"><div class="formula-name">Required electrical point</div><div class="formula">V<sub>req</sub> = √(P<sub>req</sub>R), &nbsp; I<sub>req</sub> = √(P<sub>req</sub>/R)</div></div>
+            <div class="formula-item"><div class="formula-name">Feasibility</div><div class="formula">Target feasible ⇔ P(T<sub>t</sub>) ≥ P<sub>req</sub></div></div>
+          </div>
+        </article>
+
+        <article class="card formula-card">
+          <div class="card-header"><h3>4 · Heat loss &amp; steady state</h3></div>
+          <div class="card-body formula-list">
+            <div class="formula-item"><div class="formula-name">Element → wall</div><div class="formula">G<sub>e→w</sub> = (R<sub>gap</sub>+R<sub>wall</sub>)<sup>−1</sup> + (G<sub>rad,gap</sub><sup>−1</sup>+R<sub>wall</sub>)<sup>−1</sup></div><div class="formula-note">Gas conduction and gray-surface gap radiation act in parallel; quartz conduction follows each path.</div></div>
+            <div class="formula-item"><div class="formula-name">Wall → ambient</div><div class="formula">G<sub>w→a</sub> = (R<sub>air</sub>+R<sub>h</sub>)<sup>−1</sup> + G<sub>rad,wall</sub> + G<sub>wall,end</sub></div><div class="formula-note">Rair uses the same automatically scaled outside-air radius as the 60 × 60 map.</div></div>
+            <div class="formula-item"><div class="formula-name">Wall temperature</div><div class="formula">G<sub>e→w</sub>(T−T<sub>w</sub>) = G<sub>w→a</sub>(T<sub>w</sub>−T<sub>a</sub>)</div></div>
+            <div class="formula-item"><div class="formula-name">Total heat loss</div><div class="formula">P<sub>loss</sub> = P<sub>side</sub> + P<sub>end</sub> + Ċ<sub>He</sub>(T<sub>out</sub>−T<sub>in</sub>)</div></div>
+            <div class="formula-item"><div class="formula-name">Steady-state temperature</div><div class="formula">Find T<sub>ss</sub> such that P<sub>loss</sub>(T<sub>ss</sub>) = P(T<sub>ss</sub>)</div><div class="formula-note">Solved numerically by bracket expansion followed by 100 bisection iterations.</div></div>
+          </div>
+        </article>
+
+        <article class="card formula-card">
+          <div class="card-header"><h3>5 · Biot &amp; uniformity screening</h3></div>
+          <div class="card-body formula-list">
+            <div class="formula-item"><div class="formula-name">Enclosure-equivalent coefficient</div><div class="formula">h<sub>eff</sub> = P<sub>loss</sub>(T<sub>t</sub>)/[A<sub>s</sub>(T<sub>t</sub>−T<sub>a</sub>)]</div></div>
+            <div class="formula-item"><div class="formula-name">Biot number</div><div class="formula">Bi = h<sub>eff</sub>L<sub>c</sub>/k</div></div>
+            <div class="formula-item"><div class="formula-name">Critical conductivity</div><div class="formula">k<sub>crit</sub> = h<sub>eff</sub>L<sub>c</sub>/Bi<sub>limit</sub></div></div>
+            <div class="formula-item"><div class="formula-name">Uniformity flag</div><div class="formula">Uniform-temperature screening passes when Bi ≤ Bi<sub>limit</sub>.</div></div>
+          </div>
+        </article>
+
+        <article class="card formula-card">
+          <div class="card-header"><h3>6 · Material-limit diagnostics</h3></div>
+          <div class="card-body formula-list">
+            <div class="formula-item"><div class="formula-name">J-limit ramp ceiling</div><div class="formula">r<sub>J,max</sub> = J<sub>max</sub>²ρ<sub>e</sub>/(ρ<sub>m</sub>C<sub>p</sub>)</div></div>
+            <div class="formula-item"><div class="formula-name">Field at J-limit</div><div class="formula">E<sub>max</sub> = J<sub>max</sub>ρ<sub>e</sub></div></div>
+            <div class="formula-item"><div class="formula-name">Voltage across element at J-limit</div><div class="formula">V<sub>J,max</sub> = E<sub>max</sub>L</div></div>
+            <div class="formula-item"><div class="formula-name">Power-supply utilization</div><div class="formula">Power use = P/P<sub>max</sub></div></div>
+          </div>
+        </article>
+
+        <article class="card formula-card">
+          <div class="card-header"><h3>7 · Axisymmetric 2D finite-volume model</h3></div>
+          <div class="card-body formula-list">
+            <div class="formula-item"><div class="formula-name">Steady energy equation</div><div class="formula">(1/r)∂/∂r[kr∂T/∂r] + ∂/∂z[k∂T/∂z] + q‴ = 0</div><div class="formula-note">The display is fixed at 60 × 60 cells. The half-domain contains 30 radial × 60 axial annular volumes; element, gap, full-height wall, He, and surrounding-air widths are assigned automatically while region boundaries remain exact.</div></div>
+            <div class="formula-item"><div class="formula-name">Exact annular cell geometry</div><div class="formula">V<sub>P</sub> = π(r<sub>e</sub>²−r<sub>w</sub>²)Δz<br>A<sub>e,w</sub> = 2πr<sub>e,w</sub>Δz, &nbsp; A<sub>n,s</sub> = π(r<sub>e</sub>²−r<sub>w</sub>²)</div></div>
+            <div class="formula-item"><div class="formula-name">Interface conductance</div><div class="formula">G<sub>PN</sub> = A<sub>f</sub>/[δ<sub>P</sub>/k<sub>P</sub> + δ<sub>N</sub>/k<sub>N</sub>]</div><div class="formula-note">The series thermal resistance gives the distance-weighted harmonic conductivity across element–gap and gap–wall interfaces.</div></div>
+            <div class="formula-item"><div class="formula-name">Cell balance</div><div class="formula">a<sub>P</sub>T<sub>P</sub> = Σ<sub>N</sub>G<sub>PN</sub>T<sub>N</sub> + q‴V<sub>P</sub> + Σ<sub>b</sub>G<sub>b</sub>T<sub>b</sub><br>a<sub>P</sub> = Σ<sub>N</sub>G<sub>PN</sub> + Σ<sub>b</sub>G<sub>b</sub></div></div>
+            <div class="formula-item"><div class="formula-name">Axis boundary</div><div class="formula">∂T/∂r = 0 at r = 0</div><div class="formula-note">The west-face area is zero at the cylinder axis.</div></div>
+            <div class="formula-item"><div class="formula-name">Outer wall loss</div><div class="formula">−k∇T·n = h(T−T<sub>a</sub>) + εσ<sub>SB</sub>(T⁴−T<sub>a</sub>⁴)<br>h<sub>rad</sub> = εσ<sub>SB</sub>(T+T<sub>a</sub>)(T²+T<sub>a</sub>²)</div></div>
+            <div class="formula-item"><div class="formula-name">Electrical contact and bulk heat</div><div class="formula">R<sub>c</sub> = ρ<sub>c</sub>/A<sub>eff</sub>, &nbsp; R<sub>total</sub> = R<sub>bulk</sub> + 2R<sub>c</sub><br>P<sub>bulk</sub> = I²R<sub>bulk</sub>, &nbsp; P<sub>contact</sub> = I²(2R<sub>c</sub>)</div></div>
+            <div class="formula-item"><div class="formula-name">Uniform porous-envelope source</div><div class="formula">q‴ = P<sub>bulk</sub>/V<sub>env</sub></div><div class="formula-note">Using envelope volume guarantees Σq‴Vcell = Pbulk. The current 2D model does not resolve pore-scale current constriction.</div></div>
+            <div class="formula-item"><div class="formula-name">Electrothermal iteration</div><div class="formula">T̄<sub>element</sub> → ρ<sub>e</sub>(T̄) → R<sub>bulk</sub> → I → P<sub>bulk</sub> → q‴ → T(r,z)</div><div class="formula-note">The supply ceilings are recalculated during the temperature iteration. Local k(T) is evaluated cell by cell.</div></div>
+            <div class="formula-item"><div class="formula-name">Convergence and energy closure</div><div class="formula">max|T<sub>P</sub><sup>n+1</sup>−T<sub>P</sub><sup>n</sup>| ≤ tolerance<br>closure = |P<sub>bulk</sub>−Q<sub>boundary</sub>|/max(P<sub>bulk</sub>,10<sup>−12</sup>)</div></div>
+          </div>
+        </article>
+      </div>
+
+      <article class="card" style="margin-bottom:18px">
+        <div class="card-header"><h3>Material properties, temperature model &amp; provenance</h3><span class="context-note">Values at 20°C unless noted</span></div>
+        <div class="table-shell" style="border:0;border-radius:0">
+          <table class="data" aria-label="Material property provenance">
+            <thead><tr><th>Material</th><th>ρe (Ω·cm)</th><th>ρm</th><th>Cp</th><th>k</th><th>Jmax</th><th>Temperature model</th><th>Source</th></tr></thead>
+            <tbody id="propertyBody"></tbody>
+          </table>
+        </div>
+      </article>
+
+      <article class="card" style="margin-bottom:18px">
+        <div class="card-header"><h3>Assumptions, exclusions &amp; source hierarchy</h3></div>
+        <div class="card-body formula-list">
+          <div class="formula-item"><div class="formula-name">Included</div><div class="formula-note">Uniform porous cylinder, enclosure-coupled 0D heat loss, temperature-dependent source-limited electrical operation, 2D radial/axial conduction, gas-gap conduction and radiation, wall and outside-air conduction, 50 sccm top-to-bottom He enthalpy advection, optional electrical contact resistance, three element-end boundary modes, target feasibility, and energy closure.</div></div>
+          <div class="formula-item"><div class="formula-name">Excluded</div><div class="formula-note">Navier–Stokes velocity, pressure drop, gas-property variation with temperature, electrode temperature fields, lead loss, internal pore-scale convection/radiation, reaction heat, oxidation kinetics, thermal expansion, stress, phase change, sintering, anisotropy, pore-size distribution, pore-scale current hotspots, and cycling life.</div></div>
+          <div class="formula-item"><div class="formula-name">Jmax caution</div><div class="formula-note">Mittal et al. report Jmax only for selected materials. Manufacturer-safe current density also depends on element size, atmosphere, surface load, terminals, and life target. Unreported presets use a visible screening assumption and must be replaced for engineering release.</div></div>
+          <div class="formula-item"><div class="formula-name">Sources</div><div class="formula-note"><a href="https://doi.org/10.1016/j.cej.2025.166348" target="_blank" rel="noopener">Mittal et al., Chemical Engineering Journal 520 (2025) 166348</a> · <a href="https://srd.nist.gov/jpcrdreprint/1.555723.pdf" target="_blank" rel="noopener">NIST electrical resistivity compilation</a> · <a href="https://www.kanthal.com/globalassets/kanthal-global/downloads/super-handbook_b_eng.pdf" target="_blank" rel="noopener">Kanthal Super (MoSi₂)</a> · <a href="https://www.kanthal.com/globalassets/kanthal-global/downloads/a-resistance-materials-handbook_kanthal-alloys_eng.pdf" target="_blank" rel="noopener">Kanthal/Nikrothal alloys</a> · <a href="https://www.specialmetals.com/documents/technical-bulletins/inconel/inconel-alloy-601.pdf" target="_blank" rel="noopener">Inconel 601 bulletin</a>.</div></div>
+        </div>
+      </article>
+
+      <article class="card" style="margin-bottom:18px">
+        <div class="card-header"><h3>Symbols &amp; SI units</h3></div>
+        <div class="table-shell" style="border:0;border-radius:0">
+          <table class="data symbol-table" aria-label="Calculation symbols">
+            <tbody>
+              <tr><td>ρ<sub>e</sub>, σ<sub>e</sub>, R</td><td>Electrical resistivity (Ω·m), conductivity (S/m), resistance (Ω)</td></tr>
+              <tr><td>ρ<sub>m</sub>, C<sub>p</sub>, k</td><td>Density (kg/m³), heat capacity (J/kg·K), thermal conductivity (W/m·K)</td></tr>
+              <tr><td>L, D, A, A<sub>s</sub>, V</td><td>Length (m), diameter (m), cross-section (m²), exposed surface (m²), volume (m³)</td></tr>
+              <tr><td>I, V<sub>e</sub>, P, J</td><td>Current (A), electrical voltage (V), power (W), current density (A/m²)</td></tr>
+              <tr><td>T, T<sub>a</sub>, T<sub>g</sub>, T<sub>t</sub></td><td>Element, ambient, gas, and target absolute temperatures (K)</td></tr>
+              <tr><td>ε, σ<sub>SB</sub>, h</td><td>Emissivity, Stefan–Boltzmann constant (5.670374419×10<sup>−8</sup> W/m²·K⁴), convection coefficient (W/m²·K)</td></tr>
+              <tr><td>r, z, q‴, G</td><td>Radial and axial coordinates (m), volumetric Joule source (W/m³), cell-face thermal conductance (W/K)</td></tr>
+              <tr><td>ρ<sub>c</sub>, R<sub>c</sub></td><td>Electrical contact resistivity (Ω·m²) and resistance per contact (Ω)</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </article>
+
+      <div class="code-shell">
+        <div class="code-toolbar">
+          <span>Raw JavaScript · exact calculation engine used by this page</span>
+          <button class="btn" id="copyCode" type="button">Copy raw code</button>
+        </div>
+        <pre><code id="rawCode"></code></pre>
+      </div>
+    </section>
+  </main>
+
+  <script>
+  (() => {
+    "use strict";
+
+    const SIGMA_SB = 5.670374419e-8;
+    const HE_FLOW_SCCM = 50;
+    const HE_CP_MOLAR = 20.786;
+    const MOLAR_VOLUME_STP = 0.022414;
+    const HE_CAPACITY_RATE = HE_FLOW_SCCM * 1e-6 / 60 / MOLAR_VOLUME_STP * HE_CP_MOLAR;
+    const OUTSIDE_AIR_K = 0.026;
+    const COLORS = ["#8f1d1d", "#cf3131", "#d59a2f", "#8b6f5a", "#2c6e9b", "#13795b"];
+    const T2D_WALLS = {
+      quartz: { name:"Quartz", k:1.4, emissivity:0.93 },
+      alumina: { name:"Alumina", k:22, emissivity:0.75 },
+      stainless: { name:"Stainless steel", k:16, emissivity:0.70 },
+      custom: { name:"Custom wall", k:1.4, emissivity:0.80 }
+    };
+    let current2DResult = null;
+    let autoSolve2DTimer = null;
+    let solving2D = false;
+    let pendingAutoSolve2D = false;
+
+    const MATERIALS = [
+      { name:"CFP", rhoOhmCm:0.05, density:452, cp:990, k:400, jmax:1e7, source:"Mittal et al. (2025), Table 1", model:"constant; anisotropy not represented" },
+      { name:"SiC", rhoOhmCm:0.0555556, density:3210, cp:750, k:120, jmax:5e6, source:"Mittal et al. (2025), Table 1", model:"constant grade proxy" },
+      { name:"MoSi₂", rhoOhmCm:2.5e-5, density:6500, cp:420, k:30, jmax:3e6, emissivity:0.78, rhoTable:[[20,2.5e-5],[200,7e-5],[600,1.5e-4],[1000,2.3e-4],[1400,3.0e-4],[1800,3.5e-4]], kTable:[[20,30],[600,30],[1200,15],[1800,15]], source:"Kanthal Super handbook", model:"digitized handbook curve" },
+      { name:"Kanthal A-1 (FeCrAl)", rhoOhmCm:1.45e-4, density:7100, cp:460, k:11, jmax:1e7, emissivity:0.70, rhoFactor:[[20,1],[500,1.01],[800,1.03],[1000,1.04],[1400,1.05]], source:"Kanthal resistance materials handbook", model:"manufacturer Ct interpolation" },
+      { name:"Nikrothal 80 (NiCr)", rhoOhmCm:1.09e-4, density:8300, cp:450, k:15, jmax:1e7, emissivity:0.88, rhoFactor:[[20,1],[400,1.03],[800,1.05],[1200,1.07]], source:"Kanthal resistance materials handbook", model:"manufacturer Ct interpolation" },
+      { name:"Inconel 601", rhoOhmCm:1.18e-4, density:8110, cp:448, k:11.2, jmax:1e7, rhoTable:[[20,1.18e-4],[100,1.192e-4],[200,1.207e-4],[300,1.220e-4],[400,1.229e-4],[500,1.239e-4],[600,1.247e-4],[700,1.249e-4],[800,1.249e-4],[900,1.259e-4],[1000,1.262e-4]], cpTable:[[20,448],[100,469],[200,498],[300,523],[400,548],[500,578],[600,603],[700,632],[800,657],[900,686],[1000,712]], kTable:[[20,11.2],[100,12.7],[200,14.3],[300,16.0],[400,17.7],[500,19.5],[600,21.0],[700,22.8],[800,24.4],[900,26.1],[1000,27.8]], source:"Special Metals Inconel 601 bulletin, Table 3", model:"manufacturer table interpolation" },
+      { name:"304 stainless steel", rhoOhmCm:7.2e-5, density:8000, cp:500, k:16.2, jmax:5e6, rhoAlpha:0.00094, source:"Mittal Table 1; standardized RT correction", model:"linear ρ(T); Cp,k constant" },
+      { name:"Molybdenum", rhoOhmCm:5.34e-6, density:10220, cp:251, k:138, jmax:3e5, rhoAlpha:0.0046, source:"NIST resistivity compilation; Mittal Table 1", model:"linear ρ(T); Cp,k constant" },
+      { name:"Tungsten", rhoOhmCm:5.60e-6, density:19300, cp:134, k:164, jmax:3e7, rhoAlpha:0.0045, source:"NIST resistivity compilation; Mittal Table 1", model:"linear ρ(T); Cp,k constant" },
+      { name:"Copper", rhoOhmCm:1.68e-6, density:8960, cp:385, k:400, jmax:1e7, rhoAlpha:0.00393, source:"NIST recommended data", model:"linear ρ(T); Cp,k constant" },
+      { name:"Aluminum", rhoOhmCm:2.65e-6, density:2700, cp:897, k:237, jmax:5e9, rhoAlpha:0.00429, source:"NIST recommended data", model:"linear ρ(T); Cp,k constant" },
+      { name:"Titanium", rhoOhmCm:4.2e-5, density:4500, cp:523, k:17, jmax:4.5e6, rhoAlpha:0.0038, source:"Mittal Table 1; RT correction", model:"linear ρ(T); Cp,k constant" }
+    ];
+
+    const $ = (id) => document.getElementById(id);
+    const num = (id) => Number($(id).value);
+    const kelvin = (c) => c + 273.15;
+    const celsius = (k) => k - 273.15;
+    const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
+    const finite = (x) => Number.isFinite(x);
+
+    function interpolate(table, tempC) {
+      if (!table || !table.length) return NaN;
+      if (tempC <= table[0][0]) return table[0][1];
+      if (tempC >= table[table.length - 1][0]) return table[table.length - 1][1];
+      for (let i = 1; i < table.length; i++) {
+        if (tempC <= table[i][0]) {
+          const [t0,v0] = table[i-1], [t1,v1] = table[i];
+          return v0 + (v1-v0) * (tempC-t0) / (t1-t0);
+        }
+      }
+      return table[table.length - 1][1];
+    }
+
+    function propertiesAt(material, tempK) {
+      const tempC = celsius(tempK);
+      let rhoOhmCm = material.rhoOhmCm;
+      if (material.rhoTable) rhoOhmCm = interpolate(material.rhoTable, tempC);
+      else if (material.rhoFactor) rhoOhmCm *= interpolate(material.rhoFactor, tempC);
+      else if (material.rhoAlpha) rhoOhmCm *= Math.max(0.05, 1 + material.rhoAlpha * (tempC - 20));
+      return {
+        rhoOhmCm,
+        cp: material.cpTable ? interpolate(material.cpTable, tempC) : material.cp,
+        k: material.kTable ? interpolate(material.kTable, tempC) : material.k
+      };
+    }
+
+    function format(x, digits = 3) {
+      if (!finite(x)) return "—";
+      const ax = Math.abs(x);
+      if (ax !== 0 && (ax >= 1e5 || ax < 1e-3)) return x.toExponential(digits);
+      return x.toLocaleString("en-US", { maximumFractionDigits: digits, minimumFractionDigits: 0 });
+    }
+    function fmtTemp(k) {
+      if (!finite(k)) return "—";
+      return `${format(celsius(k), 1)} °C`;
+    }
+    function fmtTime(s) {
+      if (!finite(s)) return "Unreachable";
+      if (s < 60) return `${format(s, 2)} s`;
+      if (s < 3600) return `${format(s / 60, 2)} min`;
+      return `${format(s / 3600, 2)} h`;
+    }
+    function csvEscape(v) {
+      const s = String(v ?? "");
+      return /[",\n]/.test(s) ? `"${s.replaceAll('"', '""')}"` : s;
+    }
+    function download(name, text, type = "text/csv") {
+      const blob = new Blob([text], { type: `${type};charset=utf-8` });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 500);
+    }
+
+    function materialFromInputs() {
+      const preset = MATERIALS[$("material").selectedIndex] || MATERIALS[0];
+      const rhoValue = num("rhoValue");
+      const rhoOhmCm = $("rhoUnit").value === "ohm-cm" ? rhoValue : rhoValue * 1e-4;
+      const cp = num("cp"), k = num("thermalK");
+      return {
+        ...preset,
+        name: $("material").value,
+        rhoOhmCm,
+        density: num("density"),
+        cp, k,
+        jmax: num("jmax"),
+        rhoTable: preset.rhoTable?.map(([t,v]) => [t, v * rhoOhmCm / preset.rhoOhmCm]),
+        cpTable: preset.cpTable?.map(([t,v]) => [t, v * cp / preset.cp]),
+        kTable: preset.kTable?.map(([t,v]) => [t, v * k / preset.k])
+      };
+    }
+
+    function baseInputs() {
+      return {
+        material: materialFromInputs(),
+        solidFraction: num("solidFraction"),
+        porosity: 1 - num("solidFraction"),
+        volumeCm3: num("volumeCm3"),
+        aspectRatio: num("aspectRatio"),
+        imax: num("imax"),
+        vmax: num("vmax"),
+        pmax: num("pmax"),
+        ambientK: kelvin(num("ambientC")),
+        targetK: kelvin(num("targetC")),
+        emissivity: num("emissivity"),
+        convection: $("convection").checked,
+        h: num("hConv"),
+        gasK: kelvin(num("gasC")),
+        biLimit: num("biLimit"),
+        enclosure: get2DConfig()
+      };
+    }
+
+    function validateInput(x) {
+      const errors = [];
+      const positive = [
+        ["Electrical resistivity", x.material.rhoOhmCm],
+        ["Density", x.material.density],
+        ["Heat capacity", x.material.cp],
+        ["Thermal conductivity", x.material.k],
+        ["Maximum current density", x.material.jmax],
+        ["Maximum current", x.imax],
+        ["Maximum voltage", x.vmax],
+        ["Maximum power", x.pmax],
+        ["Biot limit", x.biLimit]
+      ];
+      positive.push(["Solid volume", x.volumeCm3], ["Aspect ratio", x.aspectRatio]);
+      positive.forEach(([label, value]) => {
+        if (!finite(value) || value <= 0) errors.push(`${label} must be greater than zero.`);
+      });
+      if (!finite(x.emissivity) || x.emissivity < 0 || x.emissivity > 1) errors.push("Emissivity must be between 0 and 1.");
+      if (!finite(x.solidFraction) || x.solidFraction <= 0 || x.solidFraction > 1) errors.push("Solid fraction must be greater than 0 and no greater than 1.");
+      if (x.convection && (!finite(x.h) || x.h < 0)) errors.push("Convection coefficient must be zero or greater.");
+      if (x.ambientK <= 0 || x.targetK <= 0 || x.gasK <= 0) errors.push("Temperatures must remain above absolute zero.");
+      if(x.enclosure)errors.push(...validate2DConfig(x.enclosure));
+      return errors;
+    }
+
+    function geometry(x) {
+      const solidVolume = x.volumeCm3 * 1e-6;
+      const envelopeVolume = solidVolume / x.solidFraction;
+      const D = Math.cbrt((4 * envelopeVolume) / (Math.PI * x.aspectRatio));
+      const L = x.aspectRatio * D;
+      const grossArea = Math.PI * D * D / 4;
+      const area = grossArea * x.solidFraction;
+      const surface = Math.PI * D * L + Math.PI * D * D / 2;
+      return { L, D, area, grossArea, surface, volume:solidVolume, solidVolume, envelopeVolume, lc:envelopeVolume / surface, aspectRatio:L / D, solidFraction:x.solidFraction, porosity:1-x.solidFraction };
+    }
+
+    function directSurfaceHeatLoss(T, x, g) {
+      const radiation=x.emissivity*SIGMA_SB*g.surface*(Math.pow(T,4)-Math.pow(x.ambientK,4));
+      const convection=x.convection?x.h*g.surface*(T-x.gasK):0;
+      return {total:radiation+convection,side:radiation+convection,end:0,wallK:x.ambientK,heAdvective:0,heOutletK:x.gasK,model:"direct surface"};
+    }
+
+    function enclosureHeatLoss(T, x, g, cfg=x.enclosure) {
+      if(!cfg)return directSurfaceHeatLoss(T,x,g);
+      const elementRadius=g.D/2,wallInnerRadius=elementRadius+cfg.gap,wallOuterRadius=wallInnerRadius+cfg.wallThickness;
+      const domainHeight=g.L*60/44,domainRadius=wallOuterRadius*30/22,axialMargin=Math.max((domainHeight-g.L)/2,1e-12);
+      const elementSideArea=2*Math.PI*elementRadius*g.L,elementEndArea=Math.PI*elementRadius*elementRadius,wallOutsideArea=2*Math.PI*wallOuterRadius*domainHeight;
+      const wallAnnulusArea=Math.PI*(wallOuterRadius*wallOuterRadius-wallInnerRadius*wallInnerRadius);
+      const wallRadialResistance=Math.log(wallOuterRadius/Math.max(wallInnerRadius,1e-30))/(2*Math.PI*Math.max(cfg.wallK,1e-30)*g.L);
+      const gapResistance=cfg.gap>1e-12?Math.log(wallInnerRadius/elementRadius)/(2*Math.PI*Math.max(cfg.gapK,1e-30)*g.L):0;
+      const airResistance=Math.log(domainRadius/wallOuterRadius)/(2*Math.PI*OUTSIDE_AIR_K*domainHeight);
+      const filmResistance=x.convection&&x.h>0?1/(x.h*wallOutsideArea):0;
+      const outsideConduction=1/Math.max(airResistance+filmResistance,1e-30);
+      const wallSpreadingLength=axialMargin+g.L/6;
+      const wallEndConductance=2*cfg.wallK*wallAnnulusArea/Math.max(wallSpreadingLength,1e-30);
+      const gapRadiationDenominator=1/Math.max(x.emissivity,1e-6)+(elementRadius/Math.max(wallInnerRadius,1e-30))*(1/Math.max(cfg.wallEmissivity,1e-6)-1);
+      const gapConductance=(wallK)=>{
+        if(cfg.gap<=1e-12)return 1/Math.max(wallRadialResistance,1e-30);
+        const radiation=SIGMA_SB*elementSideArea*(T+wallK)*(T*T+wallK*wallK)/Math.max(gapRadiationDenominator,1e-30);
+        const conduction=1/Math.max(gapResistance+wallRadialResistance,1e-30);
+        const radiationThroughWall=1/(1/Math.max(radiation,1e-30)+wallRadialResistance);
+        return conduction+radiationThroughWall;
+      };
+      const wallLossConductance=(wallK)=>outsideConduction+radiationCoefficient(wallK,x.ambientK,cfg.wallEmissivity)*wallOutsideArea+wallEndConductance;
+      let lo=Math.min(T,x.ambientK),hi=Math.max(T,x.ambientK);
+      for(let iteration=0;iteration<70;iteration++) {
+        const wallK=(lo+hi)/2,qFromElement=gapConductance(wallK)*(T-wallK),qFromWall=wallLossConductance(wallK)*(wallK-x.ambientK);
+        if(qFromElement-qFromWall>0)lo=wallK;else hi=wallK;
+      }
+      const wallK=(lo+hi)/2,side=gapConductance(wallK)*(T-wallK);
+      let end=0;
+      if(cfg.endMode==="ambient") {
+        const gasEndConductance=2*cfg.gapK*elementEndArea/axialMargin;
+        end=gasEndConductance*(T-x.ambientK)+2*x.emissivity*SIGMA_SB*elementEndArea*(Math.pow(T,4)-Math.pow(x.ambientK,4));
+      } else if(cfg.endMode==="electrode") end=2*cfg.endH*elementEndArea*(T-cfg.endK);
+      let heOutletK=x.gasK,heAdvective=0;
+      if(cfg.gap>1e-12&&HE_CAPACITY_RATE>0) {
+        const activeUa=1/Math.max(gapResistance,1e-30),activeEffectiveness=1-Math.exp(-activeUa/HE_CAPACITY_RATE);
+        const afterActive=x.gasK+activeEffectiveness*(T-x.gasK);
+        const downstreamUa=cfg.gapK*elementEndArea/axialMargin;
+        heOutletK=x.ambientK+(afterActive-x.ambientK)*Math.exp(-downstreamUa/HE_CAPACITY_RATE);
+        heAdvective=HE_CAPACITY_RATE*(heOutletK-x.gasK);
+      }
+      return {total:side+end+heAdvective,side,end,wallK,heAdvective,heOutletK,model:"enclosure network"};
+    }
+
+    function heatLoss(T, x, g) {
+      return enclosureHeatLoss(T,x,g).total;
+    }
+
+    function operatingAt(tempK, x, g) {
+      const props = propertiesAt(x.material, tempK);
+      const rhoE = props.rhoOhmCm * 0.01;
+      const resistance = rhoE * g.L / g.area;
+      const candidates = {
+        Current: x.imax,
+        Voltage: x.vmax / resistance,
+        "Current density": x.material.jmax * g.area,
+        Power: Math.sqrt(x.pmax / resistance)
+      };
+      const current = Math.min(...Object.values(candidates));
+      const tolerance = Math.max(1e-10, current * 1e-8);
+      const constraint = Object.entries(candidates).filter(([,v]) => Math.abs(v-current) <= tolerance).map(([n]) => n).join(" + ");
+      return { props, rhoE, resistance, candidates, constraint, current, voltage:current*resistance, power:current*current*resistance };
+    }
+
+    function solveSteadyTemperature(x, g) {
+      let lo = 1;
+      let hi = Math.max(x.targetK, x.ambientK, x.gasK, 500);
+      let guard = 0;
+      while (heatLoss(hi, x, g) < operatingAt(hi, x, g).power && hi < 12000 && guard < 40) {
+        hi *= 1.35;
+        guard += 1;
+      }
+      if (heatLoss(hi, x, g) < operatingAt(hi, x, g).power) return Infinity;
+      for (let i = 0; i < 100; i++) {
+        const mid = (lo + hi) / 2;
+        if (heatLoss(mid, x, g) < operatingAt(mid, x, g).power) lo = mid;
+        else hi = mid;
+      }
+      return (lo + hi) / 2;
+    }
+
+    function calculate(x) {
+      const errors = validateInput(x);
+      if (errors.length) return { errors };
+
+      const g = geometry(x);
+      const m = x.material;
+      const initial = operatingAt(x.ambientK, x, g);
+      const target = operatingAt(x.targetK, x, g);
+      const rhoE = target.rhoE;
+      const sigma = 1 / rhoE;
+      const mass = m.density * g.volume;
+      const resistance = target.resistance;
+      const candidates = target.candidates;
+      const operatingCurrent = target.current;
+      const constraint = target.constraint;
+      const voltage = target.voltage;
+      const power = target.power;
+      const specificPower = power / mass;
+      const currentDensity = operatingCurrent / g.area;
+      const volumetricPowerMW = power / g.volume * 1e-6;
+      const rampRate = initial.power / (mass * initial.props.cp);
+      const tss = solveSteadyTemperature(x, g);
+      const targetLoss=enclosureHeatLoss(x.targetK,x,g),steadyLoss=finite(tss)?enclosureHeatLoss(tss,x,g):null;
+      const requiredPower = Math.max(0,targetLoss.total);
+      const requiredVoltage = Math.sqrt(requiredPower * resistance);
+      const requiredCurrent = requiredPower > 0 ? Math.sqrt(requiredPower / resistance) : 0;
+      const feasible = power + Math.max(1e-9, requiredPower * 1e-9) >= requiredPower;
+      const deltaT = Math.max(0, x.targetK - x.ambientK);
+      const adiabaticTime = deltaT / rampRate;
+      const hEffective = deltaT>0?requiredPower/Math.max(g.surface*deltaT,1e-30):0;
+      const bi = hEffective * g.lc / target.props.k;
+      const kcrit = hEffective * g.lc / x.biLimit;
+      const uniform = bi <= x.biLimit;
+      const maxMaterialRamp = m.jmax * m.jmax * rhoE / (m.density * target.props.cp);
+      const maxField = m.jmax * rhoE;
+      const voltageAtJmax = maxField * g.L;
+
+      return {
+        errors: [], g, rhoE, sigma, mass, resistance, candidates, constraint,
+        operatingCurrent, voltage, power, specificPower, currentDensity,
+        volumetricPowerMW, rampRate, tss, requiredPower, requiredVoltage,
+        requiredCurrent, feasible, adiabaticTime, hEffective, bi, kcrit,
+        uniform, maxMaterialRamp, maxField, voltageAtJmax,targetLoss,steadyLoss,
+        powerUse: power / x.pmax, material: m, input: x, initial, target
+      };
+    }
+
+    function get2DConfig() {
+      return {
+        wallMaterial: $("t2dWallMaterial").value,
+        wallK: num("t2dWallK"),
+        wallThickness: num("t2dWallThickness") * 1e-3,
+        wallEmissivity: num("t2dWallEps"),
+        gap: num("t2dGap") * 1e-3,
+        gapK: num("t2dGapK"),
+        endMode: $("t2dEndMode").value,
+        endK: kelvin(num("t2dEndC")),
+        endH: num("t2dEndH"),
+        contactRho: num("t2dContactRho"),
+        maxIter: clamp(Math.round(num("t2dMaxIter")), 10, 500),
+        tolerance: num("t2dTolerance")
+      };
+    }
+
+    function validate2DConfig(cfg) {
+      const errors = [];
+      [["Wall conductivity",cfg.wallK],["Wall thickness",cfg.wallThickness],["Gap conductivity",cfg.gapK],["Maximum iterations",cfg.maxIter],["Temperature tolerance",cfg.tolerance]].forEach(([label,value]) => {
+        if (!finite(value) || value <= 0) errors.push(`${label} must be greater than zero.`);
+      });
+      if (!finite(cfg.gap) || cfg.gap < 0) errors.push("Element–wall gap must be zero or greater.");
+      if (!finite(cfg.wallEmissivity) || cfg.wallEmissivity < 0 || cfg.wallEmissivity > 1) errors.push("Outer-wall emissivity must be between zero and one.");
+      if (!finite(cfg.contactRho) || cfg.contactRho < 0) errors.push("Electrical contact resistivity must be zero or greater.");
+      if (!finite(cfg.endK) || cfg.endK <= 0) errors.push("Electrode temperature must remain above absolute zero.");
+      if (!finite(cfg.endH) || cfg.endH < 0) errors.push("End heat-transfer coefficient must be zero or greater.");
+      return errors;
+    }
+
+    function allocateSegmentCells(segments, total) {
+      const counts=segments.map(segment=>segment.min),minimum=counts.reduce((sum,value)=>sum+value,0);
+      let remaining=total-minimum;
+      if(remaining<0) throw new Error("Fixed mesh cannot satisfy the minimum region resolution.");
+      const lengthSum=segments.reduce((sum,segment)=>sum+segment.length,0);
+      const raw=segments.map(segment=>remaining*segment.length/Math.max(lengthSum,1e-30));
+      raw.forEach((value,index)=>{const add=Math.floor(value);counts[index]+=add;remaining-=add;});
+      const order=raw.map((value,index)=>({index,fraction:value-Math.floor(value)})).sort((a,b)=>b.fraction-a.fraction);
+      for(let n=0;n<remaining;n++) counts[order[n%order.length].index]++;
+      return counts;
+    }
+
+    function build2DMesh(g, cfg) {
+      const nr=30,nz=60,radius=g.D/2,hasGap=cfg.gap>1e-12,outerRadius=radius+cfg.gap+cfg.wallThickness;
+      const nAir=8,activeRadialCells=nr-nAir;
+      const segments=[{key:"element",length:radius,min:8}];
+      if(hasGap) segments.push({key:"gap",length:cfg.gap,min:1});
+      segments.push({key:"wall",length:cfg.wallThickness,min:2});
+      const counts=allocateSegmentCells(segments,activeRadialCells),byKey=Object.fromEntries(segments.map((segment,index)=>[segment.key,counts[index]]));
+      const nElement=byKey.element,nGap=byKey.gap||0,nWall=byKey.wall,nAirZ=8,nActiveZ=nz-2*nAirZ;
+      const domainRadius=outerRadius*nr/activeRadialCells,domainHeight=g.L*nz/nActiveZ,dz=domainHeight/nz;
+      const edges=[0];
+      const addSegment=(start,end,count)=>{for(let i=1;i<=count;i++)edges.push(start+(end-start)*i/count);};
+      addSegment(0,radius,nElement);
+      if(hasGap) addSegment(radius,radius+cfg.gap,nGap);
+      addSegment(radius+cfg.gap,outerRadius,nWall);
+      addSegment(outerRadius,domainRadius,nAir);
+      const centers=Array.from({length:nr},(_,i)=>(edges[i]+edges[i+1])/2);
+      const zEdges=Array.from({length:nz+1},(_,j)=>-domainHeight/2+j*dz),zCenters=Array.from({length:nz},(_,j)=>(zEdges[j]+zEdges[j+1])/2);
+      const activeStart=nAirZ,activeEnd=nAirZ+nActiveZ;
+      const materialAt=(i,j)=>{
+        const wallStart=nElement+nGap,wallEnd=wallStart+nWall;
+        if(i>=wallEnd)return 3;
+        if(i>=wallStart)return 2;
+        if(j<activeStart||j>=activeEnd)return 4;
+        if(i<nElement)return 0;
+        return 1;
+      };
+      const cellVolume=(i,j)=>Math.PI*(edges[i+1]*edges[i+1]-edges[i]*edges[i])*(zEdges[j+1]-zEdges[j]);
+      let elementVolume=0;
+      for(let j=activeStart;j<activeEnd;j++)for(let i=0;i<nElement;i++)elementVolume+=cellVolume(i,j);
+      return{radius,outerRadius,domainRadius,domainHeight,edges,centers,zEdges,zCenters,dz,nr,nz,nElement,nGap,nWall,nAir,nAirZ,nActiveZ,activeStart,activeEnd,materialAt,cellVolume,elementVolume};
+    }
+
+    function material2DName(code, result) {
+      if (code === 0) return result.material.name;
+      if (code === 1) return "Gas gap";
+      if (code === 2) return T2D_WALLS[result.cfg.wallMaterial]?.name || "Wall";
+      if (code === 4) return "He process gas · 50 sccm";
+      return "Surrounding air";
+    }
+
+    function cellK2D(code, tempK, material, cfg, x) {
+      if (code === 0) return Math.max(1e-6, propertiesAt(material,tempK).k);
+      if (code === 1 || code === 4) return Math.max(1e-6, cfg.gapK);
+      if (code === 2) return Math.max(1e-6, cfg.wallK);
+      return OUTSIDE_AIR_K;
+    }
+
+    function operating2DAt(tempK, x, g, cfg, material) {
+      const props = propertiesAt(material,tempK);
+      const rhoE = props.rhoOhmCm * 0.01;
+      const rBulk = rhoE * g.L / g.area;
+      const rContact = cfg.contactRho / g.area;
+      const rTotal = rBulk + 2*rContact;
+      const candidates = {
+        Current: x.imax,
+        Voltage: x.vmax / rTotal,
+        "Current density": material.jmax * g.area,
+        Power: Math.sqrt(x.pmax / rTotal)
+      };
+      const current = Math.max(0, Math.min(...Object.values(candidates)));
+      const tolerance = Math.max(1e-10,current*1e-8);
+      const constraint = Object.entries(candidates).filter(([,v]) => Math.abs(v-current)<=tolerance).map(([name])=>name).join(" + ");
+      return {
+        props, rhoE, rBulk, rContact, rTotal, candidates, current, constraint,
+        voltage:current*rTotal,
+        pBulk:current*current*rBulk,
+        pContact:current*current*2*rContact,
+        pTotal:current*current*rTotal
+      };
+    }
+
+    function radiationCoefficient(tempK, sinkK, emissivity) {
+      return emissivity*SIGMA_SB*(tempK+sinkK)*(tempK*tempK+sinkK*sinkK);
+    }
+
+    function gapRadiationCoefficient(elementK, wallK, elementEmissivity, wallEmissivity, elementRadius, wallRadius) {
+      const areaRatio=elementRadius/Math.max(wallRadius,1e-30);
+      const denominator=1/Math.max(elementEmissivity,1e-6)+areaRatio*(1/Math.max(wallEmissivity,1e-6)-1);
+      return SIGMA_SB*(elementK+wallK)*(elementK*elementK+wallK*wallK)/Math.max(denominator,1e-30);
+    }
+
+    function gasFlowCells2D(mesh, j) {
+      const cells=[];
+      for(let i=0;i<mesh.nr;i++) {
+        const code=mesh.materialAt(i,j);
+        if(code===1||code===4)cells.push(i);
+      }
+      return cells;
+    }
+
+    function gasBulkRowTemperature2D(T, mesh, j) {
+      const cells=gasFlowCells2D(mesh,j);
+      if(!cells.length)return NaN;
+      let weighted=0,areaTotal=0;
+      for(const i of cells){
+        const area=Math.PI*(mesh.edges[i+1]*mesh.edges[i+1]-mesh.edges[i]*mesh.edges[i]);
+        weighted+=area*T[j][i];areaTotal+=area;
+      }
+      return weighted/Math.max(areaTotal,1e-30);
+    }
+
+    function assemble2DSystem(T, x, g, cfg, material, mesh, op) {
+      const count=mesh.nr*mesh.nz,diag=new Float64Array(count),rhs=new Float64Array(count),edges=[],directed=[],boundaryTerms=[];
+      const idx=(i,j)=>j*mesh.nr+i;
+      const axialArea=(i)=>Math.PI*(mesh.edges[i+1]*mesh.edges[i+1]-mesh.edges[i]*mesh.edges[i]);
+      const qVol=op.pBulk/g.envelopeVolume;
+      const addFace=(p,q,G)=>{diag[p]+=G;diag[q]+=G;edges.push([p,q,G]);};
+      const addBoundary=(p,G,Tb)=>{if(G<=0)return;diag[p]+=G;rhs[p]+=G*Tb;boundaryTerms.push([p,G,Tb]);};
+      const pairConductance=(area,d1,k1,d2,k2,code1,code2)=>{
+        let resistance=d1/k1+d2/k2;
+        const solidAir=(code1===3&&code2===2)||(code1===2&&code2===3);
+        if(solidAir&&x.convection&&x.h>0)resistance+=1/x.h;
+        return area/Math.max(resistance,1e-30);
+      };
+      const addInterfaceRadiation=(p,code,tempK,area)=>{
+        if(code!==0&&code!==2)return;
+        const emissivity=code===0?x.emissivity:cfg.wallEmissivity;
+        addBoundary(p,radiationCoefficient(tempK,x.ambientK,emissivity)*area,x.ambientK);
+      };
+      for(let j=0;j<mesh.nz;j++) for(let i=0;i<mesh.nr;i++) {
+        const p=idx(i,j),code=mesh.materialAt(i,j),kp=cellK2D(code,T[j][i],material,cfg,x);
+        if(code===0) rhs[p]+=qVol*mesh.cellVolume(i,j);
+        if(i<mesh.nr-1) {
+          const q=idx(i+1,j),face=mesh.edges[i+1],area=2*Math.PI*face*(mesh.zEdges[j+1]-mesh.zEdges[j]),nextCode=mesh.materialAt(i+1,j),kn=cellK2D(nextCode,T[j][i+1],material,cfg,x);
+          const G=pairConductance(area,face-mesh.centers[i],kp,mesh.centers[i+1]-face,kn,code,nextCode);
+          addFace(p,q,G);
+          if(code===3&&nextCode===2)addInterfaceRadiation(q,nextCode,T[j][i+1],area);
+          if(code===2&&nextCode===3)addInterfaceRadiation(p,code,T[j][i],area);
+        } else {
+          const area=2*Math.PI*mesh.edges[mesh.nr]*(mesh.zEdges[j+1]-mesh.zEdges[j]);
+          addBoundary(p,kp*area/Math.max(mesh.edges[mesh.nr]-mesh.centers[i],1e-30),x.ambientK);
+        }
+        if(j<mesh.nz-1) {
+          const q=idx(i,j+1),area=axialArea(i),face=mesh.zEdges[j+1],nextCode=mesh.materialAt(i,j+1),kn=cellK2D(nextCode,T[j+1][i],material,cfg,x),elementGas=(code===0&&nextCode===4)||(code===4&&nextCode===0);
+          if(elementGas&&cfg.endMode==="electrode") {
+            const elementP=code===0?p:q;
+            addBoundary(elementP,cfg.endH*area,cfg.endK);
+          } else if(!(elementGas&&cfg.endMode==="adiabatic")) {
+            const G=pairConductance(area,face-mesh.zCenters[j],kp,mesh.zCenters[j+1]-face,kn,code,nextCode);
+            addFace(p,q,G);
+            if(elementGas&&cfg.endMode==="ambient") {
+              const elementP=code===0?p:q,elementTemp=code===0?T[j][i]:T[j+1][i];
+              addInterfaceRadiation(elementP,0,elementTemp,area);
+            }
+            if(code===3&&(nextCode===0||nextCode===2))addInterfaceRadiation(q,nextCode,T[j+1][i],area);
+            if((code===0||code===2)&&nextCode===3)addInterfaceRadiation(p,code,T[j][i],area);
+          }
+        }
+        if(j===0) addBoundary(p,kp*axialArea(i)/Math.max(mesh.zCenters[j]-mesh.zEdges[j],1e-30),x.ambientK);
+        if(j===mesh.nz-1) addBoundary(p,kp*axialArea(i)/Math.max(mesh.zEdges[j+1]-mesh.zCenters[j],1e-30),x.ambientK);
+      }
+
+      if(mesh.nGap>0) {
+        const iElement=mesh.nElement-1,iWall=mesh.nElement+mesh.nGap,elementRadius=mesh.radius,wallRadius=mesh.edges[iWall],areaPerRow=2*Math.PI*elementRadius*mesh.dz;
+        for(let j=mesh.activeStart;j<mesh.activeEnd;j++) {
+          const p=idx(iElement,j),q=idx(iWall,j),hGapRad=gapRadiationCoefficient(T[j][iElement],T[j][iWall],x.emissivity,cfg.wallEmissivity,elementRadius,wallRadius);
+          addFace(p,q,hGapRad*areaPerRow);
+        }
+      }
+
+      const flowRows=Array.from({length:mesh.nz},(_,j)=>gasFlowCells2D(mesh,j));
+      const flowConnected=flowRows.every(cells=>cells.length>0);
+      if(flowConnected&&HE_CAPACITY_RATE>0) {
+        for(let j=mesh.nz-1;j>=0;j--) {
+          const cells=flowRows[j],areas=cells.map(axialArea),areaTotal=areas.reduce((sum,value)=>sum+value,0);
+          const weights=areas.map(value=>value/Math.max(areaTotal,1e-30));
+          for(let n=0;n<cells.length;n++) {
+            const p=idx(cells[n],j),capacity=HE_CAPACITY_RATE*weights[n];
+            diag[p]+=capacity;
+            if(j===mesh.nz-1) rhs[p]+=capacity*x.gasK;
+            else {
+              const upstream=flowRows[j+1],upstreamAreas=upstream.map(axialArea),upstreamTotal=upstreamAreas.reduce((sum,value)=>sum+value,0);
+              for(let m=0;m<upstream.length;m++)directed.push([p,idx(upstream[m],j+1),capacity*upstreamAreas[m]/Math.max(upstreamTotal,1e-30)]);
+            }
+          }
+        }
+      }
+      return {diag,rhs,edges,directed,boundaryTerms,qVol,gasFlow:{connected:flowConnected,capacityRate:flowConnected?HE_CAPACITY_RATE:0}};
+    }
+
+    function multiply2DSystem(system, input, output) {
+      for(let i=0;i<system.diag.length;i++)output[i]=system.diag[i]*input[i];
+      for(const [a,b,G] of system.edges){output[a]-=G*input[b];output[b]-=G*input[a];}
+      for(const [row,column,G] of system.directed||[])output[row]-=G*input[column];
+    }
+
+    function pcg2D(system, initial, maxIterations=1200, tolerance=1e-11) {
+      const n=system.diag.length,x=Float64Array.from(initial),r=new Float64Array(n),z=new Float64Array(n),p=new Float64Array(n),ap=new Float64Array(n);
+      multiply2DSystem(system,x,ap);
+      let bNorm2=0,rz=0;
+      for(let i=0;i<n;i++) {r[i]=system.rhs[i]-ap[i];z[i]=r[i]/Math.max(system.diag[i],1e-18);p[i]=z[i];rz+=r[i]*z[i];bNorm2+=system.rhs[i]*system.rhs[i];}
+      const bNorm=Math.sqrt(Math.max(bNorm2,1e-30));
+      let relative=Math.sqrt(r.reduce((s,v)=>s+v*v,0))/bNorm,iteration=0;
+      for(iteration=0;iteration<maxIterations&&relative>tolerance;iteration++) {
+        multiply2DSystem(system,p,ap);
+        let pAp=0;for(let i=0;i<n;i++)pAp+=p[i]*ap[i];
+        if(Math.abs(pAp)<1e-30)break;
+        const alpha=rz/pAp;
+        let rNorm2=0;for(let i=0;i<n;i++){x[i]+=alpha*p[i];r[i]-=alpha*ap[i];rNorm2+=r[i]*r[i];}
+        relative=Math.sqrt(rNorm2)/bNorm;
+        if(relative<=tolerance)break;
+        let rzNew=0;for(let i=0;i<n;i++){z[i]=r[i]/Math.max(system.diag[i],1e-18);rzNew+=r[i]*z[i];}
+        const beta=rzNew/Math.max(rz,1e-30);for(let i=0;i<n;i++)p[i]=z[i]+beta*p[i];rz=rzNew;
+      }
+      return {x,iterations:iteration+1,relativeResidual:relative};
+    }
+
+    function bicgstab2D(system, initial, maxIterations=1800, tolerance=1e-11) {
+      if(!(system.directed||[]).length)return pcg2D(system,initial,maxIterations,tolerance);
+      const n=system.diag.length,x=Float64Array.from(initial),r=new Float64Array(n),rHat=new Float64Array(n),p=new Float64Array(n),v=new Float64Array(n),s=new Float64Array(n),t=new Float64Array(n),pHat=new Float64Array(n),sHat=new Float64Array(n),ax=new Float64Array(n);
+      const dot=(a,b)=>{let sum=0;for(let i=0;i<n;i++)sum+=a[i]*b[i];return sum;};
+      multiply2DSystem(system,x,ax);
+      let bNorm2=0,rNorm2=0;
+      for(let i=0;i<n;i++){r[i]=system.rhs[i]-ax[i];rHat[i]=r[i];bNorm2+=system.rhs[i]*system.rhs[i];rNorm2+=r[i]*r[i];}
+      const bNorm=Math.sqrt(Math.max(bNorm2,1e-30));
+      let relative=Math.sqrt(rNorm2)/bNorm,rhoOld=1,alpha=1,omega=1,iteration=0;
+      for(iteration=0;iteration<maxIterations&&relative>tolerance;iteration++) {
+        const rho=dot(rHat,r);
+        if(Math.abs(rho)<1e-30)break;
+        const beta=(rho/rhoOld)*(alpha/Math.max(Math.abs(omega),1e-30)*Math.sign(omega||1));
+        for(let i=0;i<n;i++)p[i]=r[i]+beta*(p[i]-omega*v[i]);
+        for(let i=0;i<n;i++)pHat[i]=p[i]/Math.max(system.diag[i],1e-18);
+        multiply2DSystem(system,pHat,v);
+        const denominator=dot(rHat,v);
+        if(Math.abs(denominator)<1e-30)break;
+        alpha=rho/denominator;
+        let sNorm2=0;
+        for(let i=0;i<n;i++){s[i]=r[i]-alpha*v[i];sNorm2+=s[i]*s[i];}
+        if(Math.sqrt(sNorm2)/bNorm<=tolerance){for(let i=0;i<n;i++)x[i]+=alpha*pHat[i];relative=Math.sqrt(sNorm2)/bNorm;iteration++;break;}
+        for(let i=0;i<n;i++)sHat[i]=s[i]/Math.max(system.diag[i],1e-18);
+        multiply2DSystem(system,sHat,t);
+        const tt=dot(t,t);
+        if(Math.abs(tt)<1e-30)break;
+        omega=dot(t,s)/tt;
+        let nextNorm2=0;
+        for(let i=0;i<n;i++){x[i]+=alpha*pHat[i]+omega*sHat[i];r[i]=s[i]-omega*t[i];nextNorm2+=r[i]*r[i];}
+        relative=Math.sqrt(nextNorm2)/bNorm;
+        if(Math.abs(omega)<1e-30)break;
+        rhoOld=rho;
+      }
+      return {x,iterations:Math.max(1,iteration),relativeResidual:relative};
+    }
+
+    function boundaryLoss2D(T,x,g,cfg,material,mesh,op) {
+      const system=assemble2DSystem(T,x,g,cfg,material,mesh,op),flat=T.flat();
+      const staticLoss=system.boundaryTerms.reduce((loss,[p,G,Tb])=>loss+G*(flat[p]-Tb),0);
+      const gasOutletK=system.gasFlow.connected?gasBulkRowTemperature2D(T,mesh,0):x.gasK;
+      const gasAdvective=system.gasFlow.capacityRate*(gasOutletK-x.gasK);
+      return {total:staticLoss+gasAdvective,staticLoss,gasAdvective,gasOutletK,flowConnected:system.gasFlow.connected};
+    }
+
+    function solveThermal2D(x, zeroD, cfg, material) {
+      const configErrors=validate2DConfig(cfg);if(configErrors.length)return{errors:configErrors};
+      const g=geometry(x),mesh=build2DMesh(g,cfg),ambientK=x.ambientK;
+      const seedK=finite(zeroD.tss)?clamp(zeroD.tss,ambientK,3500):clamp(x.targetK,ambientK,2500);
+      const T=Array.from({length:mesh.nz},(_,j)=>Array.from({length:mesh.nr},(_,i)=>{const code=mesh.materialAt(i,j);return ambientK+(code===0?0.65:code===1?0.25:code===2?0.10:code===4?0.08:0)*(seedK-ambientK);}));
+      const elementAverage=()=>{let sum=0,vol=0;for(let j=0;j<mesh.nz;j++)for(let i=0;i<mesh.nr;i++)if(mesh.materialAt(i,j)===0){const v=mesh.cellVolume(i,j);sum+=T[j][i]*v;vol+=v;}return sum/vol;};
+      let maxStep=Infinity,outer=0,totalLinear=0,linearResidual=Infinity,op=operating2DAt(ambientK,x,g,cfg,material);
+      for(outer=0;outer<cfg.maxIter&&maxStep>cfg.tolerance;outer++){
+        op=operating2DAt(elementAverage(),x,g,cfg,material);
+        const system=assemble2DSystem(T,x,g,cfg,material,mesh,op),initial=Float64Array.from(T.flat()),linear=bicgstab2D(system,initial);
+        totalLinear+=linear.iterations;linearResidual=linear.relativeResidual;maxStep=0;
+        const relaxation=outer<4?0.62:0.86;
+        for(let j=0;j<mesh.nz;j++)for(let i=0;i<mesh.nr;i++){
+          const old=T[j][i],solved=clamp(linear.x[j*mesh.nr+i],1,6000),updated=old+relaxation*(solved-old);
+          T[j][i]=updated;maxStep=Math.max(maxStep,Math.abs(updated-old));
+        }
+      }
+      const avgK=elementAverage();op=operating2DAt(avgK,x,g,cfg,material);
+      const element=[];for(let j=0;j<mesh.nz;j++)for(let i=0;i<mesh.nr;i++)if(mesh.materialAt(i,j)===0)element.push(T[j][i]);
+      const tMin=Math.min(...element),tMax=Math.max(...element),mid=mesh.activeStart+Math.floor(mesh.nActiveZ/2),bottomRow=mesh.activeStart,topRow=mesh.activeEnd-1,loss=boundaryLoss2D(T,x,g,cfg,material,mesh,op),boundaryLoss=loss.total;
+      const closure=Math.abs(op.pBulk-boundaryLoss)/Math.max(op.pBulk,1e-12),representedVolumeError=Math.abs(mesh.elementVolume-g.envelopeVolume)/g.envelopeVolume;
+      const heCoolingUpper=Math.max(0,HE_CAPACITY_RATE*(avgK-x.gasK));
+      return{errors:[],x,zeroD,cfg,material,g,mesh,T,op,avgK,tMin,tMax,deltaT:tMax-tMin,center:T[mid][0],side:T[mid][mesh.nElement-1],bottom:T[bottomRow][0],top:T[topRow][0],wallInner:T[mid][mesh.nElement+mesh.nGap],wallOuter:T[mid][mesh.nElement+mesh.nGap+mesh.nWall-1],boundaryLoss,staticBoundaryLoss:loss.staticLoss,closure,representedVolumeError,heCapacityRate:HE_CAPACITY_RATE,heCooling:loss.gasAdvective,heCoolingUpper,heOutletK:loss.gasOutletK,heFlowConnected:loss.flowConnected,iterations:outer,linearIterations:totalLinear,linearResidual,residual:maxStep,converged:maxStep<=cfg.tolerance,targetReached:avgK>=x.targetK,qVol:op.pBulk/g.envelopeVolume};
+    }
+
+    function signature2D(x, material=x.material) {
+      const cfg=get2DConfig();
+      return JSON.stringify({
+        material:material.name,rho:material.rhoOhmCm,k:material.k,cp:material.cp,density:material.density,jmax:material.jmax,
+        volume:x.volumeCm3,ratio:x.aspectRatio,solidFraction:x.solidFraction,
+        imax:x.imax,vmax:x.vmax,pmax:x.pmax,ambient:x.ambientK,target:x.targetK,
+        emissivity:x.emissivity,convection:x.convection,h:x.h,gas:x.gasK,cfg
+      });
+    }
+
+    function sync2DImported(result=currentResult()) {
+      if (!result || result.errors?.length) return;
+      $("t2dMaterial").textContent=result.material.name;
+      $("t2dDimensions").textContent=`${format(result.g.L*1000,4)} × ${format(result.g.D*1000,4)} mm`;
+      $("t2dFraction").textContent=`${format(result.g.solidFraction,3)} / ${format(result.g.porosity*100,1)}%`;
+      $("t2dVolumes").textContent=`${format(result.g.solidVolume*1e6,4)} / ${format(result.g.envelopeVolume*1e6,4)} cm³`;
+      $("t2dImportedProps").textContent=`${format(result.initial.props.rhoOhmCm,6)} Ω·cm / ${format(result.initial.props.k,3)} W/m·K`;
+      $("t2dZeroD").textContent=fmtTemp(result.tss);
+      if (!current2DResult) return;
+      const fresh=current2DResult.material.name===result.material.name && current2DResult.signature===signature2D(result.input,result.material);
+      $("t2dSyncBadge").textContent=fresh?"Current":"Inputs changed";
+      setClass($("t2dSyncBadge"),fresh?"good":"warn");
+      if(!fresh) $("t2dProgress").innerHTML='<span class="t2d-stale">Inputs changed. The 2D field will recalculate automatically.</span>';
+    }
+
+    function thermalColor(u) {
+      const stops=[[16,42,67],[40,120,165],[88,184,177],[235,190,70],[211,55,55]];
+      const x=clamp(u,0,1)*(stops.length-1),i=Math.min(stops.length-2,Math.floor(x)),f=x-i;
+      const c=stops[i].map((v,k)=>Math.round(v+(stops[i+1][k]-v)*f));
+      return `rgb(${c[0]},${c[1]},${c[2]})`;
+    }
+
+    function draw2D(result) {
+      const canvas=$("thermalMap"),nr=result.mesh.nr,nz=result.mesh.nz,physicalWidth=2*result.mesh.domainRadius,physicalHeight=result.mesh.domainHeight;
+      canvas.width=600;
+      const scale=canvas.width/physicalWidth,plotHeight=physicalHeight*scale;
+      canvas.height=Math.max(1,Math.round(plotHeight));
+      const ctx=canvas.getContext("2d"),cx=canvas.width/2,oy=(canvas.height-plotHeight)/2,ch=result.mesh.dz*scale;
+      canvas._physicalMap={scale,cx,oy,plotHeight};
+      const all=result.T.flat(),lo=Math.min(...all),hi=Math.max(...all),span=Math.max(1e-9,hi-lo);
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      for(let j=0;j<nz;j++) for(let i=0;i<nr;i++) {
+        const fill=thermalColor((result.T[j][i]-lo)/span),inner=result.mesh.edges[i]*scale,outer=result.mesh.edges[i+1]*scale,y=oy+(nz-1-j)*ch;
+        ctx.fillStyle=fill;
+        ctx.fillRect(cx-outer,y,outer-inner+0.3,ch+0.3);
+        ctx.fillRect(cx+inner,y,outer-inner+0.3,ch+0.3);
+      }
+      const boundary=(radius,zBottom,zTop,color,width=2) => {
+        const x=cx-radius*scale,y=oy+(physicalHeight/2-zTop)*scale;
+        ctx.strokeStyle=color;ctx.lineWidth=width;ctx.strokeRect(x,y,2*radius*scale,(zTop-zBottom)*scale);
+      };
+      const wallInner=result.mesh.edges[result.mesh.nElement+result.mesh.nGap],wallOuter=result.mesh.edges[result.mesh.nElement+result.mesh.nGap+result.mesh.nWall];
+      boundary(wallInner,-physicalHeight/2,physicalHeight/2,"#64717d",2.4);
+      boundary(wallOuter,-physicalHeight/2,physicalHeight/2,"#64717d",2.4);
+      boundary(result.mesh.radius,-result.g.L/2,result.g.L/2,"#102a43",3);
+      if(result.mesh.nGap) boundary(wallInner,-result.g.L/2,result.g.L/2,"#b46714",2.4);
+      boundary(result.mesh.domainRadius,-physicalHeight/2,physicalHeight/2,"#8bb9cf",2);
+      ctx.strokeStyle="rgba(255,255,255,.78)";ctx.lineWidth=1.4;ctx.setLineDash([7,6]);ctx.beginPath();ctx.moveTo(cx,oy);ctx.lineTo(cx,oy+plotHeight);ctx.stroke();ctx.setLineDash([]);
+      const elementTopY=oy+(physicalHeight/2-result.g.L/2)*scale,flowX=cx,flowTop=oy+1.2*ch,flowBottom=Math.max(flowTop+28,elementTopY-1.2*ch);
+      ctx.save();ctx.lineCap="round";ctx.strokeStyle="rgba(255,255,255,.92)";ctx.lineWidth=8;ctx.beginPath();ctx.moveTo(flowX,flowTop);ctx.lineTo(flowX,flowBottom);ctx.stroke();ctx.strokeStyle="#102a43";ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(flowX,flowTop);ctx.lineTo(flowX,flowBottom);ctx.stroke();ctx.fillStyle="#102a43";ctx.beginPath();ctx.moveTo(flowX,flowBottom+12);ctx.lineTo(flowX-9,flowBottom-3);ctx.lineTo(flowX+9,flowBottom-3);ctx.closePath();ctx.fill();ctx.font="700 17px Arial";ctx.textAlign="left";ctx.fillText("He 50 sccm",flowX+15,flowTop+21);ctx.font="15px Arial";ctx.fillText("top → bottom",flowX+15,flowTop+42);ctx.restore();
+      $("t2dScaleMin").textContent=`${format(celsius(lo),1)} °C`;
+      $("t2dScaleMax").textContent=`${format(celsius(hi),1)} °C`;
+      canvas.setAttribute("aria-label",`${result.material.name} axisymmetric temperature field with a full-height reactor wall and helium flowing from top to bottom, from ${format(celsius(lo),1)} to ${format(celsius(hi),1)} degrees Celsius.`);
+    }
+
+    function render2DEquations(result) {
+      const mid=result.mesh.activeStart+Math.floor(result.mesh.nActiveZ/2),i=0,rw=result.mesh.edges[i],re=result.mesh.edges[i+1];
+      const vCell=result.mesh.cellVolume(i,mid),aAxial=Math.PI*(re*re-rw*rw),kCell=cellK2D(0,result.T[mid][i],result.material,result.cfg,result.x);
+      const hRad=radiationCoefficient(result.wallOuter,result.x.ambientK,result.cfg.wallEmissivity);
+      const iElement=result.mesh.nElement-1,iWall=result.mesh.nElement+result.mesh.nGap,hGapRad=result.mesh.nGap?gapRadiationCoefficient(result.T[mid][iElement],result.T[mid][iWall],result.x.emissivity,result.cfg.wallEmissivity,result.mesh.radius,result.mesh.edges[iWall]):0;
+      const q=(label,equation,note="")=>`<div class="equation"><strong>${label}</strong><br>${equation}${note?`<br><span class="formula-note">${note}</span>`:""}</div>`;
+      $("t2dEquations").innerHTML=[
+        q("Imported geometry",`R = D/2 = ${format(result.g.D/2,8)} m; L = ${format(result.g.L,8)} m; V<sub>env</sub> = ${format(result.g.envelopeVolume,10)} m³`),
+        q("Fixed display mesh",`60 × 60 cells = mirrored ${result.mesh.nr} × ${result.mesh.nz} annular solve; radial allocation ${result.mesh.nElement} element + ${result.mesh.nGap} gap + ${result.mesh.nWall} wall + ${result.mesh.nAir} outside-air cells`,`Physical Δr values adapt by region; axial Δz = ${format(result.mesh.dz*1000,5)} mm. The map draws every cell from its physical edge coordinate with one shared x–z scale, so geometric aspect ratios are preserved.`),
+        q("Adaptive physical domain",`W = 2R<sub>domain</sub> = ${format(2*result.mesh.domainRadius*1000,4)} mm; H<sub>domain</sub> = ${format(result.mesh.domainHeight*1000,4)} mm`,`The domain scales with the imported reactor diameter and length while reserving eight outside-air cells radially and eight He-region cells above and below the element.`),
+        q("Element–wall gap radiation",result.mesh.nGap?`h<sub>rad,gap</sub> = σ(T<sub>e</sub>+T<sub>w</sub>)(T<sub>e</sub>²+T<sub>w</sub>²)/[1/ε<sub>e</sub>+(R<sub>e</sub>/R<sub>w</sub>)(1/ε<sub>w</sub>−1)] = ${format(hGapRad,6)} W/m²·K`:`No gas gap: element and wall exchange heat by direct conduction.`),
+        q("Example axis cell",`V<sub>P</sub> = π[(${format(re,8)})²−(${format(rw,8)})²](${format(result.mesh.dz,8)}) = ${format(vCell,10)} m³<br>A<sub>z</sub> = π(r<sub>e</sub>²−r<sub>w</sub>²) = ${format(aAxial,10)} m²; k<sub>P</sub> = ${format(kCell,5)} W/m·K`),
+        q("Bulk resistance at 2D mean temperature",`ρ<sub>e</sub>(${format(celsius(result.avgK),2)}°C) = ${format(result.op.rhoE,9)} Ω·m<br>R<sub>bulk</sub> = ρ<sub>e</sub>L/A<sub>eff</sub> = ${format(result.op.rBulk,9)} Ω`),
+        q("Electrical contacts",`R<sub>c</sub> = ρ<sub>c</sub>/A<sub>eff</sub> = ${format(result.op.rContact,9)} Ω per end; R<sub>total</sub> = ${format(result.op.rTotal,9)} Ω`),
+        q("Allowed current",`min[${Object.entries(result.op.candidates).map(([name,value])=>`${name}: ${format(value,5)} A`).join("; ")}] = ${format(result.op.current,5)} A`),
+        q("Separated electrical power",`P<sub>bulk</sub> = I²R<sub>bulk</sub> = ${format(result.op.pBulk,7)} W; P<sub>contact</sub> = I²(2R<sub>c</sub>) = ${format(result.op.pContact,7)} W`),
+        q("Porous-envelope Joule source",`q‴ = P<sub>bulk</sub>/V<sub>env</sub> = ${format(result.op.pBulk,7)}/${format(result.g.envelopeVolume,10)} = ${format(result.qVol,5)} W/m³<br>q‴V<sub>axis cell</sub> = ${format(result.qVol*vCell,8)} W`),
+        q("Fixed He flow",`F<sub>He</sub> = 50 sccm, top → bottom; Ċ<sub>He</sub> = ${format(result.heCapacityRate,8)} W/K<br>T<sub>out</sub> = ${format(celsius(result.heOutletK),4)} °C; Q<sub>He</sub> = Ċ<sub>He</sub>(T<sub>out</sub>−T<sub>in</sub>) = ${format(result.heCooling,7)} W`,`Each axial gas row uses an upwind enthalpy balance. Radial cells are area-weighted into a mixed bulk temperature before the stream enters the next row.`),
+        q("Outer-wall boundary",`h<sub>rad</sub>(${format(celsius(result.wallOuter),2)}°C) = ${format(hRad,5)} W/m²·K; h<sub>conv</sub> = ${format(result.x.convection?result.x.h:0,5)} W/m²·K`),
+        q("Energy closure",`|P<sub>bulk</sub>−Q<sub>static boundary</sub>−Q<sub>He</sub>|/P<sub>bulk</sub> = |${format(result.op.pBulk,7)}−${format(result.staticBoundaryLoss,7)}−${format(result.heCooling,7)}|/${format(result.op.pBulk,7)} = ${format(result.closure*100,8)}%`),
+        q("Solver convergence",`${result.iterations} nonlinear property/radiation iterations; ${result.linearIterations} BiCGSTAB/PCG linear iterations; max ΔT = ${format(result.residual,8)} K; linear relative residual = ${format(result.linearResidual,8)}`)
+      ].join("");
+    }
+
+    function render2D(result) {
+      current2DResult=result;
+      const good=result.converged && result.closure<0.02;
+      $("t2dAvg").textContent=fmtTemp(result.avgK);
+      $("t2dMax").textContent=fmtTemp(result.tMax);
+      $("t2dDelta").textContent=`${format(result.deltaT,2)} °C`;
+      $("t2dPower").textContent=`${format(result.op.pBulk,3)} W`;
+      $("t2dConstraint").textContent=result.op.constraint;
+      $("t2dClosure").textContent=`${format(result.closure*100,3)}%`;
+      $("t2dMapTitle").textContent=`${result.material.name} Temperature Field`;
+      $("t2dMeshLabel").textContent=`${2*result.mesh.nr} × ${result.mesh.nz} mesh · ${format(2*result.mesh.domainRadius*1000,2)} × ${format(result.mesh.domainHeight*1000,2)} mm domain · equal x–z scale · element L/D ${format(result.g.L/result.g.D,3)}`;
+      $("t2dConverged").textContent=good?"Converged":result.converged?"Closure warning":"Iteration limit";
+      setClass($("t2dConverged"),good?"good":"warn");
+      $("t2dMinMax").textContent=`${fmtTemp(result.tMin)} / ${fmtTemp(result.tMax)}`;
+      $("t2dCenterSide").textContent=`${fmtTemp(result.center)} / ${fmtTemp(result.side)}`;
+      $("t2dEnds").textContent=`${fmtTemp(result.bottom)} / ${fmtTemp(result.top)}`;
+      $("t2dWallTemps").textContent=`${fmtTemp(result.wallInner)} / ${fmtTemp(result.wallOuter)}`;
+      $("t2dVsZeroD").textContent=finite(result.zeroD.tss)?`${format(result.avgK-result.zeroD.tss,2)} K`:"0D unbounded";
+      $("t2dIV").textContent=`${format(result.op.current,4)} A / ${format(result.op.voltage,4)} V`;
+      $("t2dResistance").textContent=`${format(result.op.rBulk,7)} / ${format(2*result.op.rContact,7)} Ω`;
+      $("t2dPowers").textContent=`${format(result.op.pBulk,4)} / ${format(result.op.pContact,4)} W`;
+      $("t2dGasCooling").textContent=result.heFlowConnected?`${format(celsius(result.heOutletK),3)} °C / ${format(result.heCooling,5)} W · 50 sccm top → bottom`:`No continuous gas path · set a positive element–wall gap`;
+      $("t2dBoundaryLoss").textContent=`${format(result.boundaryLoss,4)} W`;
+      $("t2dResidual").textContent=`${result.iterations.toLocaleString()} / ${result.linearIterations.toLocaleString()} · ${format(result.residual,6)} K`;
+      $("t2dRadialCells").textContent=`${result.mesh.nElement} element + ${result.mesh.nGap} gap + ${result.mesh.nWall} wall + ${result.mesh.nAir} outside air · wall spans all 60 axial cells`;
+      const radialSize=(start,count)=>count?(result.mesh.edges[start+count]-result.mesh.edges[start])*1000/count:0;
+      const radialSizes=[
+        `element ${format(radialSize(0,result.mesh.nElement),4)} mm`,
+        result.mesh.nGap?`gap ${format(radialSize(result.mesh.nElement,result.mesh.nGap),4)} mm`:null,
+        `wall ${format(radialSize(result.mesh.nElement+result.mesh.nGap,result.mesh.nWall),4)} mm`,
+        `outside air ${format(radialSize(result.mesh.nElement+result.mesh.nGap+result.mesh.nWall,result.mesh.nAir),4)} mm`
+      ].filter(Boolean);
+      $("t2dRadialCellSizes").textContent=radialSizes.join(" · ");
+      $("t2dAxialCell").textContent=`${format(result.mesh.dz*1000,4)} mm`;
+      $("export2D").disabled=false;
+      draw2D(result);
+      render2DEquations(result);
+      const selected=currentResult();
+      const fresh=!selected.errors.length && result.material.name===selected.material.name && result.signature===signature2D(selected.input,selected.material);
+      $("t2dSyncBadge").textContent=fresh?"Current":"Inputs changed";
+      setClass($("t2dSyncBadge"),fresh?"good":"warn");
+    }
+
+    function needs2DSolve(result=currentResult()) {
+      return !result.errors.length && (!current2DResult || current2DResult.material.name!==result.material.name || current2DResult.signature!==signature2D(result.input,result.material));
+    }
+
+    function scheduleAutoSolve2D(delay=450) {
+      clearTimeout(autoSolve2DTimer);
+      const panel=$("thermal2d");
+      if(!panel || !panel.classList.contains("active"))return;
+      autoSolve2DTimer=setTimeout(()=>{
+        autoSolve2DTimer=null;
+        if(needs2DSolve())solveSelected2D(true);
+      },Math.max(0,delay));
+    }
+
+    async function solveSelected2D(automatic=false) {
+      const zeroD=currentResult(),cfg=get2DConfig();
+      if(zeroD.errors.length) { $("t2dProgress").textContent=zeroD.errors.join(" "); return; }
+      const configErrors=validate2DConfig(cfg);
+      if(configErrors.length) { $("t2dProgress").textContent=configErrors.join(" "); return; }
+      if(solving2D){pendingAutoSolve2D=true;return;}
+      solving2D=true;pendingAutoSolve2D=false;
+      const button=$("solve2D");
+      $("t2dProgress").textContent=`${automatic?"Automatically solving":"Solving"} ${zeroD.material.name}…`;
+      button.disabled=true;button.textContent="Solving…";
+      try{
+        await new Promise(resolve=>requestAnimationFrame(()=>setTimeout(resolve,0)));
+        const result=solveThermal2D(zeroD.input,zeroD,cfg,zeroD.material);
+        result.signature=signature2D(zeroD.input,zeroD.material);
+        render2D(result);
+        $("t2dProgress").textContent=`Solved ${result.material.name}: ${result.iterations.toLocaleString()} nonlinear + ${result.linearIterations.toLocaleString()} linear iterations, ${format(result.residual,6)} K residual, ${format(result.closure*100,3)}% energy closure.`;
+      }catch(error){
+        $("t2dProgress").textContent=`2D solve failed: ${error.message}`;
+      }finally{
+        solving2D=false;button.disabled=false;button.textContent="Recalculate 2D field";
+        if(pendingAutoSolve2D){pendingAutoSolve2D=false;scheduleAutoSolve2D(50);}
+      }
+    }
+
+    function exportCurrent2D() {
+      if(!current2DResult) return;
+      const r=current2DResult,rows=[["display_col","axial_row","x_m","z_m","radius_m","material","temperature_K","temperature_C","q_W_m3"]];
+      for(let j=0;j<r.mesh.nz;j++) for(let col=0;col<2*r.mesh.nr;col++) {
+        const right=col>=r.mesh.nr,i=right?col-r.mesh.nr:r.mesh.nr-1-col;
+        const signedR=(right?1:-1)*r.mesh.centers[i],z=r.mesh.zCenters[j],code=r.mesh.materialAt(i,j);
+        rows.push([col,j,signedR,z,r.mesh.centers[i],material2DName(code,r),r.T[j][i],celsius(r.T[j][i]),code===0?r.qVol:0]);
+      }
+      const safe=r.material.name.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+      download(`joule-heating-2d-${safe}.csv`,rows.map(row=>row.map(csvEscape).join(",")).join("\n"));
+    }
+
+    function inspect2DCell(event) {
+      if(!current2DResult) return;
+      const canvas=$("thermalMap"),rect=canvas.getBoundingClientRect(),r=current2DResult,map=canvas._physicalMap;
+      if(!map)return;
+      const px=(event.clientX-rect.left)*canvas.width/rect.width,py=(event.clientY-rect.top)*canvas.height/rect.height;
+      const pointerX=(px-map.cx)/map.scale,pointerZ=r.mesh.domainHeight/2-(py-map.oy)/map.scale,radial=Math.abs(pointerX);
+      if(radial>r.mesh.domainRadius || Math.abs(pointerZ)>r.mesh.domainHeight/2)return;
+      let i=r.mesh.nr-1;
+      for(let index=0;index<r.mesh.nr;index++)if(radial<r.mesh.edges[index+1] || index===r.mesh.nr-1){i=index;break;}
+      const j=clamp(Math.floor((pointerZ+r.mesh.domainHeight/2)/r.mesh.dz),0,r.mesh.nz-1);
+      const x=(pointerX<0?-1:1)*r.mesh.centers[i],z=r.mesh.zCenters[j],code=r.mesh.materialAt(i,j);
+      $("t2dHover").textContent=`x = ${format(x*1000,3)} mm · z = ${format(z*1000,3)} mm · ${material2DName(code,r)} · ${fmtTemp(r.T[j][i])}`;
+    }
+
+    function drawEmpty2D() {
+      const canvas=$("thermalMap"),ctx=canvas.getContext("2d");
+      ctx.fillStyle="#eef2f5";ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.fillStyle="#52616d";ctx.textAlign="center";ctx.font="700 22px Arial";ctx.fillText("Solve a material to generate the 2D field",canvas.width/2,canvas.height/2-8);
+      ctx.font="16px Arial";ctx.fillText("Current Single Design inputs will be imported automatically",canvas.width/2,canvas.height/2+22);
+      ctx.textAlign="start";
+    }
+
+    function setClass(el, cls) {
+      el.classList.remove("good", "warn", "bad");
+      el.classList.add(cls);
+    }
+
+    function optimizeInitialPower(evaluate) {
+      const coarse = Array.from({length:161}, (_,i) => -4 + 8*i/160);
+      const sampled = coarse.map((logScale) => ({ logScale, result:evaluate(logScale) }));
+      let bestIndex = 0;
+      sampled.forEach((d,i) => { if (d.result.power > sampled[bestIndex].result.power) bestIndex = i; });
+      let left = coarse[Math.max(0,bestIndex-1)];
+      let right = coarse[Math.min(coarse.length-1,bestIndex+1)];
+      const gr = (Math.sqrt(5)-1)/2;
+      let c = right-gr*(right-left);
+      let d = left+gr*(right-left);
+      let rc = evaluate(c), rd = evaluate(d);
+      for (let i=0;i<45;i++) {
+        if (rc.power < rd.power) {
+          left=c; c=d; rc=rd; d=left+gr*(right-left); rd=evaluate(d);
+        } else {
+          right=d; d=c; rd=rc; c=right-gr*(right-left); rc=evaluate(c);
+        }
+      }
+      const optimumLog = (left+right)/2;
+      const optimum = evaluate(optimumLog);
+      const current = evaluate(0);
+      const threshold = 0.995*optimum.power;
+      if (current.power >= threshold) return { recommended:current, optimum, maxPower:optimum.power };
+
+      let lo=0, hi=1;
+      for (let i=0;i<50;i++) {
+        const mid=(lo+hi)/2;
+        if (evaluate(optimumLog*mid).power >= threshold) hi=mid;
+        else lo=mid;
+      }
+      return { recommended:evaluate(optimumLog*hi), optimum, maxPower:optimum.power };
+    }
+
+    function designRecommendation(r) {
+      const base = r.input;
+      const baseGeometry = r.g;
+      const baseRho = propertiesAt(base.material,base.ambientK).rhoOhmCm;
+      const geometrySearch = optimizeInitialPower((logScale) => {
+        const aspectRatio = base.aspectRatio*Math.pow(10,logScale);
+        const g = geometry({...base,aspectRatio});
+        const op = operatingAt(base.ambientK,base,g);
+        return { value:aspectRatio, power:op.power, j:op.current/g.area };
+      });
+      const rhoSearch = optimizeInitialPower((logScale) => {
+        const scale = Math.pow(10,logScale);
+        const material = {
+          ...base.material,
+          rhoOhmCm:base.material.rhoOhmCm*scale,
+          rhoTable:base.material.rhoTable?.map(([t,v]) => [t,v*scale])
+        };
+        const op = operatingAt(base.ambientK,{...base,material},baseGeometry);
+        return { value:baseRho*scale, power:op.power, j:op.current/baseGeometry.area };
+      });
+      const globalMax = Math.max(geometrySearch.maxPower,rhoSearch.maxPower);
+      const currentPower = r.initial.power;
+      if (currentPower >= 0.995*globalMax) {
+        return {
+          main:"Keep the current L/D and resistivity",
+          sub:`Already within 0.5% of the maximum initial power · J/Jmax = ${format(r.initial.current/r.g.area/r.material.jmax*100,1)}%`
+        };
+      }
+
+      const options=[];
+      if (geometrySearch.maxPower >= 0.995*globalMax) {
+        const direction = geometrySearch.recommended.value > base.aspectRatio ? "Increase" : "Decrease";
+        options.push(`${direction} L/D toward ${format(geometrySearch.recommended.value,3)}`);
+      }
+      if (rhoSearch.maxPower >= 0.995*globalMax) {
+        const direction = rhoSearch.recommended.value > baseRho ? "increase" : "decrease";
+        options.push(`${direction} ρ(Ta) toward ${format(rhoSearch.recommended.value,4)} Ω·cm`);
+      }
+      const recommendedJ = geometrySearch.recommended.j/r.material.jmax*100;
+      return {
+        main:options.join(" · or "),
+        sub:`Initial ramp up to ×${format(globalMax/currentPower,2)} · recommended geometry uses ${format(recommendedJ,1)}% of Jmax`
+      };
+    }
+
+    function renderRecommendation(r) {
+      const rec = designRecommendation(r);
+      $("recommendationMain").textContent = rec.main;
+      $("recommendationSub").textContent = rec.sub;
+    }
+
+    function renderJouleDiagnostics(r) {
+      const ratio = (a,b) => b > 0 ? a / b : (a > 0 ? Infinity : 0);
+      const displayRatio = (value, percent = false) => {
+        if (value === Infinity) return "∞";
+        if (!finite(value)) return "—";
+        return percent ? `${format(value * 100, 2)}%` : format(value, 5);
+      };
+      const utilizationReading = (value, limitName) => value >= .995
+        ? `Active ${limitName} limit`
+        : value >= .8
+          ? `Near ${limitName} limit`
+          : `${limitName} headroom available`;
+      const powerMargin = ratio(r.power,r.requiredPower);
+      const iUse = ratio(r.operatingCurrent,r.input.imax);
+      const vUse = ratio(r.voltage,r.input.vmax);
+      const pUse = ratio(r.power,r.input.pmax);
+      const jUse = ratio(r.currentDensity,r.material.jmax);
+      const primary = [
+        ["Target power margin, Pavail/Preq",displayRatio(powerMargin),powerMargin >= 1 ? "Target thermally feasible" : "Available electrical power is insufficient",`Ratio of limit-constrained Joule power to the enclosure heat loss at the target temperature; ≥ 1 can maintain the target.`],
+        ["Biot number, Bi",displayRatio(r.bi),r.uniform ? "Lumped-temperature screen passes" : "Internal temperature gradients expected",`Bi = heff(V/As)/k compares internal conduction with total external heat removal; screening limit = ${format(r.input.biLimit,4)}.`],
+        ["Current utilization, I/Imax",displayRatio(iUse,true),utilizationReading(iUse,"current"),"Fraction of the source current ceiling used at the target-temperature resistance."],
+        ["Voltage utilization, V/Vmax",displayRatio(vUse,true),utilizationReading(vUse,"voltage"),"Fraction of the source voltage ceiling; high values identify a resistance/length-driven voltage bottleneck."],
+        ["Power utilization, P/Pmax",displayRatio(pUse,true),utilizationReading(pUse,"power"),"Fraction of rated source power delivered after the current, voltage, power, and current-density limits are applied together."],
+        ["Current-density utilization, J/Jmax",displayRatio(jUse,true),utilizationReading(jUse,"current-density"),"Material electrical-loading margin; values near one mean the material Jmax sets or nearly sets the allowable current."],
+        ["Cylinder aspect ratio, L/D",displayRatio(r.g.aspectRatio),r.g.aspectRatio > 3 ? "Slender cylinder" : r.g.aspectRatio < .33 ? "Disk-like cylinder" : "Compact cylinder","Dimensionless geometry controlling resistance, exposed area, conduction length, and the 60 × 60 field proportions."],
+        ["Envelope porosity, φ",displayRatio(r.g.porosity),r.g.porosity > .7 ? "Highly porous envelope" : r.g.porosity > .2 ? "Porous envelope" : "Low-porosity envelope","Void fraction expands the envelope at fixed solid volume; it changes D, L, surface area, resistance geometry, and the imported 2D domain."]
+      ];
+      const total = Math.max(r.targetLoss.total,1e-30);
+      const secondary = [
+        ["Side path / total",displayRatio(r.targetLoss.side/total,true),"Gap radiation/conduction, full-height wall, and outside-air losses divided by total target heat removal."],
+        ["End path / total",displayRatio(r.targetLoss.end/total,true),"Heat removed through the two axial end boundaries divided by total target heat removal."],
+        ["He 50 sccm / total",displayRatio(r.targetLoss.heAdvective/total,true),"Top-to-bottom helium sensible-heat pickup divided by total target heat removal; this shows its actual cooling importance." ]
+      ];
+      const row = (item,index,withReading) => `<tr><td><span class="rank-badge">${String(index+1).padStart(2,"0")}</span></td><td>${item[0]}</td><td>${item[1]}</td><td>${withReading?`<span class="diag-reading">${item[2]}</span>${item[3]}`:item[2]}</td></tr>`;
+      $("jhPrimaryDiagnostics").innerHTML = primary.map((item,index) => row(item,index,true)).join("");
+      $("jhSecondaryDiagnostics").innerHTML = secondary.map((item,index) => row(item,index,false)).join("");
+    }
+
+    function renderCalculator(result) {
+      const validation = $("validation");
+      if (result.errors.length) {
+        validation.textContent = result.errors.join(" ");
+        validation.classList.add("show");
+        document.querySelectorAll(".kpi-value").forEach((el) => el.textContent = "—");
+        $("recommendationMain").textContent = "Check the highlighted inputs";
+        $("recommendationSub").textContent = "A recommendation requires valid positive inputs.";
+        $("jhPrimaryDiagnostics").innerHTML = "";
+        $("jhSecondaryDiagnostics").innerHTML = "";
+        return;
+      }
+      validation.classList.remove("show");
+      const r = result;
+      $("constraintValue").textContent = r.constraint;
+      $("constraintSub").textContent = `${format(r.operatingCurrent, 4)} A allowed`;
+      $("rampValue").textContent = `${format(r.rampRate, 3)} K/s`;
+      $("tssValue").textContent = fmtTemp(r.tss);
+      $("timeValue").textContent = fmtTime(r.adiabaticTime);
+      $("feasibleValue").textContent = r.feasible ? "Feasible" : "Unreachable";
+      $("feasibleSub").textContent = `${format(r.power, 2)} / ${format(r.requiredPower, 2)} W`;
+      $("biValue").textContent = r.bi < 0.001 ? r.bi.toFixed(6) : format(r.bi, 5);
+      $("biSub").textContent = r.uniform ? "Bi ≤ screening limit" : "Temperature-gradient risk";
+
+      setClass($("kpiConstraint"), r.constraint.includes("+") ? "warn" : "good");
+      setClass($("kpiTss"), r.feasible ? "good" : "bad");
+      setClass($("kpiTime"), "good");
+      setClass($("kpiFeasible"), r.feasible ? "good" : "bad");
+      setClass($("kpiBi"), r.uniform ? "good" : "warn");
+      renderRecommendation(r);
+      renderJouleDiagnostics(r);
+
+      $("outR").textContent = `${format(r.resistance, 7)} Ω`;
+      $("outI").textContent = `${format(r.operatingCurrent, 5)} A`;
+      $("outV").textContent = `${format(r.voltage, 5)} V`;
+      $("outP").textContent = `${format(r.power, 4)} W`;
+      $("outJ").textContent = `${format(r.currentDensity, 3)} A/m²`;
+      $("outPowerUse").textContent = `${format(r.powerUse * 100, 2)}%`;
+      $("outSpecificPower").textContent = `${format(r.specificPower, 2)} W/kg`;
+      $("outVolPower").textContent = `${format(r.volumetricPowerMW, 3)} MW/m³`;
+      $("outDimensions").textContent = `${format(r.g.L * 1000, 4)} × ${format(r.g.D * 1000, 4)} mm`;
+      $("outVolumes").textContent = `${format(r.g.solidVolume * 1e6, 5)} / ${format(r.g.envelopeVolume * 1e6, 5)} cm³`;
+      $("outPorosity").textContent = `${format(r.g.porosity * 100, 2)}%`;
+      $("outArea").textContent = `${format(r.g.area, 6)} m²`;
+      $("outSurface").textContent = `${format(r.g.surface, 6)} m²`;
+      $("outLc").textContent = `${format(r.g.lc * 1000, 4)} mm`;
+      $("outMass").textContent = `${format(r.mass * 1000, 5)} g`;
+      $("outPreq").textContent = `${format(r.requiredPower, 4)} W`;
+      $("outReqVI").textContent = `${format(r.requiredVoltage, 4)} V / ${format(r.requiredCurrent, 4)} A`;
+      $("outKcrit").textContent = `${format(r.kcrit, 4)} W/m·K`;
+
+      const targetBadge = $("targetBadge");
+      targetBadge.textContent = r.feasible ? "Can maintain target" : "Cannot maintain target";
+      setClass(targetBadge, r.feasible ? "good" : "bad");
+      const uniformBadge = $("uniformBadge");
+      uniformBadge.textContent = r.uniform ? "Lumped screening passes" : "Temperature-gradient risk";
+      setClass(uniformBadge, r.uniform ? "good" : "warn");
+
+      renderHeatChart(r);
+      renderGeometryVisual(r);
+      renderEquations(r);
+    }
+
+    function svgEl(tag, attrs = {}, text = "") {
+      const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+      Object.entries(attrs).forEach(([key, value]) => el.setAttribute(key, value));
+      if (text) el.textContent = text;
+      return el;
+    }
+
+    function renderHeatChart(r) {
+      const svg = $("heatChart");
+      svg.replaceChildren();
+      const W = 760, H = 330, m = { l: 66, r: 20, t: 18, b: 48 };
+      const innerW = W - m.l - m.r, innerH = H - m.t - m.b;
+      const startK = Math.max(1, Math.min(r.input.ambientK, r.input.gasK));
+      const endK = Math.min(6000, Math.max(r.input.targetK * 1.18, finite(r.tss) ? r.tss * 1.12 : r.input.targetK * 1.6, startK + 300));
+      const samples = Array.from({ length: 90 }, (_, i) => {
+        const T = startK + (endK - startK) * i / 89;
+        return { T, loss: Math.max(0, heatLoss(T, r.input, r.g)), available:operatingAt(T, r.input, r.g).power };
+      });
+      const powerMax = Math.max(r.power, r.requiredPower, ...samples.flatMap((d) => [d.loss,d.available]), 1) * 1.08;
+      const x = (p) => m.l + p / powerMax * innerW;
+      const y = (T) => m.t + innerH - (T - startK) / (endK - startK) * innerH;
+
+      svg.append(svgEl("rect", { x: m.l, y: m.t, width: innerW, height: innerH, fill: "#fff" }));
+      for (let i = 0; i <= 5; i++) {
+        const py = m.t + innerH * i / 5;
+        const tempC = celsius(endK - (endK - startK) * i / 5);
+        svg.append(svgEl("line", { x1: m.l, x2: W - m.r, y1: py, y2: py, stroke: "#e3e8ec", "stroke-width": 1 }));
+        svg.append(svgEl("text", { x: m.l - 8, y: py + 4, "text-anchor": "end", fill: "#687783", "font-size": 12, "font-family": "Arial" }, format(tempC, 0)));
+      }
+      for (let i = 0; i <= 5; i++) {
+        const px = m.l + innerW * i / 5;
+        const power = powerMax * i / 5;
+        svg.append(svgEl("line", { x1: px, x2: px, y1: m.t, y2: H - m.b, stroke: "#edf0f2", "stroke-width": 1 }));
+        svg.append(svgEl("text", { x: px, y: H - m.b + 18, "text-anchor": "middle", fill: "#687783", "font-size": 12, "font-family": "Arial" }, format(power, 1)));
+      }
+      svg.append(svgEl("line", { x1: m.l, x2: W - m.r, y1: H - m.b, y2: H - m.b, stroke: "#50606d", "stroke-width": 1.2 }));
+      svg.append(svgEl("line", { x1: m.l, x2: m.l, y1: m.t, y2: H - m.b, stroke: "#50606d", "stroke-width": 1.2 }));
+
+      const path = samples.map((d, i) => `${i ? "L" : "M"}${x(d.loss).toFixed(2)},${y(d.T).toFixed(2)}`).join(" ");
+      svg.append(svgEl("path", { d: path, fill: "none", stroke: "#c53a3a", "stroke-width": 3 }));
+      const availablePath = samples.map((d, i) => `${i ? "L" : "M"}${x(d.available).toFixed(2)},${y(d.T).toFixed(2)}`).join(" ");
+      svg.append(svgEl("path", { d:availablePath, fill:"none", stroke:"#102a43", "stroke-width":2.5, "stroke-dasharray":"7 5" }));
+      const targetY = clamp(y(r.input.targetK), m.t, H - m.b);
+      svg.append(svgEl("line", { x1:m.l, x2:W-m.r, y1:targetY, y2:targetY, stroke:"#b46714", "stroke-width":2, "stroke-dasharray":"4 4" }));
+      if (finite(r.tss) && r.tss >= startK && r.tss <= endK) {
+        const ssPower = operatingAt(r.tss,r.input,r.g).power;
+        svg.append(svgEl("circle", { cx:x(ssPower), cy:y(r.tss), r:5.5, fill:"#102a43", stroke:"#fff", "stroke-width":2 }));
+        svg.append(svgEl("text", { x:x(ssPower)+8, y:y(r.tss)-9, fill:"#102a43", "font-size":12, "font-weight":700, "font-family":"Arial" }, `Tss ${format(celsius(r.tss), 1)} °C`));
+      }
+      svg.append(svgEl("text", { x: m.l + innerW / 2, y: H - 9, "text-anchor": "middle", fill: "#334451", "font-size": 12, "font-weight": 700, "font-family": "Arial" }, "Power (W)"));
+      const yLabel = svgEl("text", { x: 15, y: m.t + innerH / 2, transform: `rotate(-90 15 ${m.t + innerH / 2})`, "text-anchor": "middle", fill: "#334451", "font-size": 12, "font-weight": 700, "font-family": "Arial" }, "Temperature (°C)");
+      svg.append(yLabel);
+    }
+
+    function renderGeometryVisual(r) {
+      const svg = $("geometryVisual");
+      svg.replaceChildren();
+      const W = 760, H = 260;
+      const ratio = clamp(r.g.aspectRatio, 0.18, 8);
+      let bodyW = 250 * Math.sqrt(ratio);
+      let bodyH = 150 / Math.sqrt(ratio);
+      const fit = Math.min(470 / bodyW, 150 / bodyH, 1);
+      bodyW *= fit;
+      bodyH *= fit;
+      bodyW = clamp(bodyW, 76, 470);
+      bodyH = clamp(bodyH, 48, 150);
+      const ellipseW = clamp(bodyH * 0.25, 14, 34);
+      const x0 = (W - bodyW) / 2;
+      const x1 = x0 + bodyW;
+      const cy = 118;
+      const y0 = cy - bodyH / 2;
+      const y1 = cy + bodyH / 2;
+      const fill = "#2c6e9b";
+      const edge = "#102a43";
+
+      svg.append(svgEl("rect", { x:x0, y:y0, width:bodyW, height:bodyH, fill, stroke:edge, "stroke-width":2 }));
+      svg.append(svgEl("ellipse", { cx:x0, cy, rx:ellipseW, ry:bodyH/2, fill:"#4b88b1", stroke:edge, "stroke-width":2 }));
+      svg.append(svgEl("ellipse", { cx:x1, cy, rx:ellipseW, ry:bodyH/2, fill, stroke:edge, "stroke-width":2 }));
+
+      /*
+        The pore field is an equal-area mosaic. The fraction of white cells is
+        set directly to φ, so the projected white area tracks the entered void
+        fraction. A deterministic hash disperses cells across the full cylinder
+        instead of placing them along a line.
+      */
+      const defs = svgEl("defs");
+      const clip = svgEl("clipPath", { id:"cylinderPoreClip" });
+      clip.append(svgEl("rect", { x:x0, y:y0, width:bodyW, height:bodyH }));
+      clip.append(svgEl("ellipse", { cx:x0, cy, rx:ellipseW, ry:bodyH/2 }));
+      clip.append(svgEl("ellipse", { cx:x1, cy, rx:ellipseW, ry:bodyH/2 }));
+      defs.append(clip);
+      svg.append(defs);
+
+      const cols = 18, rows = 8;
+      const cellW = (bodyW + 2*ellipseW) / cols;
+      const cellH = bodyH / rows;
+      const cells = [];
+      for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+          const hash = ((col*83 + row*157 + col*row*43 + col*col*17 + row*row*29) % 997) / 997;
+          cells.push({ row, col, hash });
+        }
+      }
+      cells.sort((a,b) => a.hash-b.hash);
+      const voidCells = new Set(cells.slice(0, Math.round(r.g.porosity*cells.length)).map((d) => `${d.row}-${d.col}`));
+      const poreLayer = svgEl("g", { "clip-path":"url(#cylinderPoreClip)" });
+      for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+          if (!voidCells.has(`${row}-${col}`)) continue;
+          poreLayer.append(svgEl("rect", {
+            x:x0-ellipseW+col*cellW+0.7,
+            y:y0+row*cellH+0.7,
+            width:Math.max(1,cellW-1.4),
+            height:Math.max(1,cellH-1.4),
+            rx:Math.min(4,cellW*0.22),
+            fill:"#f8fafb",
+            stroke:"#d8dee5",
+            "stroke-width":0.7
+          }));
+        }
+      }
+      svg.append(poreLayer);
+      svg.append(svgEl("ellipse", { cx:x0, cy, rx:ellipseW, ry:bodyH/2, fill:"none", stroke:edge, "stroke-width":2 }));
+      svg.append(svgEl("ellipse", { cx:x1, cy, rx:ellipseW, ry:bodyH/2, fill:"none", stroke:edge, "stroke-width":2 }));
+
+      const dimY = y1 + 31;
+      svg.append(svgEl("line", { x1:x0, x2:x1, y1:dimY, y2:dimY, stroke:"#982929", "stroke-width":1.5 }));
+      svg.append(svgEl("line", { x1:x0, x2:x0, y1:dimY-6, y2:dimY+6, stroke:"#982929", "stroke-width":1.5 }));
+      svg.append(svgEl("line", { x1:x1, x2:x1, y1:dimY-6, y2:dimY+6, stroke:"#982929", "stroke-width":1.5 }));
+      svg.append(svgEl("text", { x:(x0+x1)/2, y:dimY+19, "text-anchor":"middle", fill:"#982929", "font-size":13, "font-weight":700, "font-family":"Arial" }, `L = ${format(r.g.L*1000, 3)} mm`));
+
+      const dimX = x1 + ellipseW + 35;
+      svg.append(svgEl("line", { x1:dimX, x2:dimX, y1:y0, y2:y1, stroke:"#982929", "stroke-width":1.5 }));
+      svg.append(svgEl("line", { x1:dimX-6, x2:dimX+6, y1:y0, y2:y0, stroke:"#982929", "stroke-width":1.5 }));
+      svg.append(svgEl("line", { x1:dimX-6, x2:dimX+6, y1:y1, y2:y1, stroke:"#982929", "stroke-width":1.5 }));
+      svg.append(svgEl("text", { x:dimX+12, y:cy+4, fill:"#982929", "font-size":13, "font-weight":700, "font-family":"Arial" }, `D = ${format(r.g.D*1000, 3)} mm`));
+
+      const phiText = `φ = ${format(r.g.porosity, 3)}  (${format(r.g.porosity*100, 1)}% void)`;
+      svg.append(svgEl("text", { x:20, y:25, fill:"#102a43", "font-size":15, "font-weight":700, "font-family":"Arial" }, phiText));
+      svg.append(svgEl("text", { x:20, y:47, fill:"#64717d", "font-size":12, "font-family":"Arial" }, `f_solid = ${format(r.g.solidFraction, 3)} · Vol = ${format(r.g.envelopeVolume*1e6, 3)} cm³`));
+      svg.append(svgEl("text", { x:W-20, y:25, "text-anchor":"end", fill:"#64717d", "font-size":12, "font-family":"Arial" }, "White area = schematic void fraction"));
+      svg.setAttribute("aria-label", `Calculated cylinder: length ${format(r.g.L*1000,3)} millimeters, diameter ${format(r.g.D*1000,3)} millimeters, porosity ${format(r.g.porosity*100,1)} percent.`);
+    }
+
+    function renderEquations(r) {
+      const q = (label, equation) => `<div class="equation"><strong>${label}</strong><br>${equation}</div>`;
+      const equations = [
+        q("Resistivity conversion", `ρe = ${format(r.material.rhoOhmCm, 7)} Ω·cm × 0.01 = ${format(r.rhoE, 7)} Ω·m`),
+        q("Porous geometry", `fs = 1−φ = ${format(r.g.solidFraction, 4)}; Venv = Vsolid/fs = ${format(r.g.envelopeVolume, 8)} m³; Aeff = fsπD²/4 = ${format(r.g.area, 7)} m²; L/D = ${format(r.g.aspectRatio, 4)}`),
+        q("Resistance", `R = ρeL/A = (${format(r.rhoE, 7)})(${format(r.g.L, 7)})/${format(r.g.area, 7)} = ${format(r.resistance, 7)} Ω`),
+        q("Allowed current", `min[${Object.entries(r.candidates).map(([k,v]) => `${k}: ${format(v, 4)} A`).join("; ")}] = ${format(r.operatingCurrent, 4)} A`),
+        q("Power", `P = I²R = (${format(r.operatingCurrent, 4)})²(${format(r.resistance, 7)}) = ${format(r.power, 4)} W`),
+        q("Initial ramp", `dT/dt = P(Ta)/(mCp(Ta)) = ${format(r.initial.power, 4)}/[${format(r.mass, 7)}×${format(r.initial.props.cp, 2)}] = ${format(r.rampRate, 4)} K/s`),
+        q("Target enclosure heat loss", `Preq = Pside + Pend + PHe = ${format(r.targetLoss.side,4)} + ${format(r.targetLoss.end,4)} + ${format(r.targetLoss.heAdvective,4)} = ${format(r.requiredPower,4)} W; Tw = ${format(celsius(r.targetLoss.wallK),2)} °C`),
+        q("Biot screening", `Bi = heff(Venv/As)/k(Tt) = ${format(r.hEffective, 4)}×${format(r.g.lc, 7)}/${format(r.target.props.k, 3)} = ${format(r.bi, 6)}`),
+        q("Critical k", `kcrit = heff(V/As)/Bilimit = ${format(r.kcrit, 4)} W/m·K`),
+        q("Material J-limit ramp", `rJ,max = Jmax²ρe/(ρmCp) = ${format(r.maxMaterialRamp, 4)} K/s`),
+        q("Field at Jmax", `Emax = Jmaxρe = ${format(r.maxField, 4)} V/m; V over L = ${format(r.voltageAtJmax, 4)} V`),
+        q("Ideal adiabatic lower bound", `ΔT/(initial dT/dt) = ${format(r.input.targetK-r.input.ambientK, 2)}/${format(r.rampRate, 4)} = ${format(r.adiabaticTime, 4)} s; shown independently of steady-target feasibility.`)
+      ];
+      $("equations").innerHTML = equations.join("");
+    }
+
+    function currentResult() {
+      return calculate(baseInputs());
+    }
+
+    function updateAll() {
+      const result = currentResult();
+      renderCalculator(result);
+      sync2DImported(result);
+      if (!result.errors.length) {
+        renderComparison();
+        renderSweep();
+      }
+      scheduleAutoSolve2D();
+    }
+
+    function loadMaterial(index) {
+      const m = MATERIALS[index];
+      $("materialMode").textContent = m.custom ? "Custom" : "Preset";
+      setClass($("materialMode"), m.custom ? "warn" : "good");
+      $("rhoUnit").value = "uohm-m";
+      $("rhoValue").value = Number((m.rhoOhmCm * 1e4).toPrecision(9));
+      $("density").value = m.density;
+      $("cp").value = m.cp;
+      $("thermalK").value = m.k;
+      $("jmax").value = m.jmax;
+      if (m.emissivity != null) $("emissivity").value = m.emissivity;
+    }
+
+    function materialResults() {
+      const base = baseInputs();
+      return MATERIALS.filter((m) => !m.custom).map((material) => calculate({ ...base, material }));
+    }
+
+    function renderComparison() {
+      let rows = materialResults();
+      const key = $("compareSort").value;
+      const accessor = {
+        rate: (r) => r.rampRate,
+        tss: (r) => r.tss,
+        resistivity: (r) => r.material.rhoOhmCm,
+        bi: (r) => r.bi,
+        power: (r) => r.power
+      }[key];
+      rows.sort((a, b) => accessor(b) - accessor(a));
+      $("compareBody").innerHTML = rows.map((r) => `
+        <tr>
+          <td>${r.material.name}</td>
+          <td>${format(r.target.props.rhoOhmCm, 7)} Ω·cm</td>
+          <td>${format(r.power, 3)} W</td>
+          <td>${format(r.rampRate, 4)}</td>
+          <td>${format(celsius(r.tss), 1)} °C</td>
+          <td><span class="status ${r.feasible ? "good" : "bad"}">${r.feasible ? "Feasible" : "No"}</span></td>
+        </tr>`).join("");
+
+      const positiveRates = rows.map((r) => r.rampRate).filter((x) => x > 0);
+      const minLog = Math.log10(Math.min(...positiveRates));
+      const maxLog = Math.log10(Math.max(...positiveRates));
+      $("materialBars").innerHTML = rows.map((r) => {
+        const width = 10 + 90 * (Math.log10(r.rampRate) - minLog) / Math.max(1e-12, maxLog - minLog);
+        return `<div class="bar-row"><span>${r.material.name}</span><div class="bar-track"><div class="bar-fill" style="width:${width}%"></div></div><span class="bar-value">${format(r.rampRate, 3)} K/s</span></div>`;
+      }).join("");
+      const fastest = [...rows].sort((a,b) => b.rampRate-a.rampRate)[0];
+      const hottest = [...rows].sort((a,b) => b.tss-a.tss)[0];
+      $("fastestMaterial").textContent = `${fastest.material.name} (${format(fastest.rampRate, 3)} K/s)`;
+      $("hottestMaterial").textContent = `${hottest.material.name} (${format(celsius(hottest.tss), 1)} °C)`;
+      $("uniformCount").textContent = `${rows.filter((r) => r.uniform).length} / ${rows.length}`;
+      $("feasibleCount").textContent = `${rows.filter((r) => r.feasible).length} / ${rows.length}`;
+    }
+
+    function logspace(min, max, count) {
+      const a = Math.log10(min), b = Math.log10(max);
+      return Array.from({ length: count }, (_, i) => Math.pow(10, a + (b-a) * i / (count-1)));
+    }
+
+    function sweepData() {
+      const min = num("sweepMin");
+      const max = num("sweepMax");
+      const count = clamp(Math.round(num("sweepPoints")), 10, 160);
+      const ratios = [...document.querySelectorAll('input[name="ratio"]:checked')].map((el) => Number(el.value));
+      if (!(min > 0 && max > min && ratios.length)) return [];
+      const base = baseInputs();
+      const rhoValues = logspace(min, max, count);
+      return ratios.map((ratio) => ({
+        name: `L/D ${ratio}`,
+        ratio,
+        points: rhoValues.map((rhoOhmCm) => {
+          const scale = rhoOhmCm / base.material.rhoOhmCm;
+          const material = {
+            ...base.material,
+            rhoOhmCm,
+            rhoTable: base.material.rhoTable?.map(([t,v]) => [t,v*scale])
+          };
+          const result = calculate({ ...base, aspectRatio: ratio, material });
+          return {
+            x:rhoOhmCm,
+            rate:result.rampRate,
+            resistance:result.initial.resistance,
+            power:result.initial.power,
+            constraint:result.initial.constraint
+          };
+        })
+      }));
+    }
+
+    function renderLogChart(svg, series, yKey, yLabel, xKey = "x", xLabel = "Electrical resistivity (Ω·cm)", referenceX = null, selectedMarker = null) {
+      svg.replaceChildren();
+      if (!series.length) return;
+      const W = 700, H = 420, margin = { l: 82, r: 28, t: 28, b: 66 };
+      const innerW = W-margin.l-margin.r, innerH = H-margin.t-margin.b;
+      const all = series.flatMap((s) => s.points).filter((p) => p[xKey] > 0 && p[yKey] > 0);
+      if (!all.length) return;
+      const xMin = Math.min(...all.map((p) => p[xKey])), xMax = Math.max(...all.map((p) => p[xKey]));
+      const yMin = Math.min(...all.map((p) => p[yKey])), yMax = Math.max(...all.map((p) => p[yKey]));
+      const lx0 = Math.log10(xMin), lx1 = Math.log10(xMax);
+      const ly0 = Math.floor(Math.log10(yMin)), ly1 = Math.ceil(Math.log10(yMax));
+      const x = (v) => margin.l + (Math.log10(v)-lx0)/(lx1-lx0)*innerW;
+      const y = (v) => margin.t + innerH - (Math.log10(v)-ly0)/Math.max(1,ly1-ly0)*innerH;
+
+      if (referenceX && referenceX >= xMin && referenceX <= xMax) {
+        const px = x(referenceX);
+        svg.append(svgEl("line", { x1:px, x2:px, y1:margin.t, y2:H-margin.b, stroke:"#102a43", "stroke-width":2, "stroke-dasharray":"6 5" }));
+        svg.append(svgEl("text", { x:px+7, y:margin.t+15, fill:"#102a43", "font-size":12, "font-weight":700, "font-family":"Arial" }, `R* = ${format(referenceX,3)} Ω`));
+      }
+
+      for (let e = Math.ceil(lx0); e <= Math.floor(lx1); e++) {
+        const px = x(Math.pow(10,e));
+        svg.append(svgEl("line", { x1:px, x2:px, y1:margin.t, y2:H-margin.b, stroke:"#e3e8ec" }));
+        svg.append(svgEl("text", { x:px, y:H-margin.b+23, "text-anchor":"middle", fill:"#687783", "font-size":13, "font-family":"Arial" }, `10${superscript(e)}`));
+      }
+      for (let e = ly0; e <= ly1; e++) {
+        const py = y(Math.pow(10,e));
+        svg.append(svgEl("line", { x1:margin.l, x2:W-margin.r, y1:py, y2:py, stroke:"#e3e8ec" }));
+        svg.append(svgEl("text", { x:margin.l-11, y:py+5, "text-anchor":"end", fill:"#687783", "font-size":13, "font-family":"Arial" }, `10${superscript(e)}`));
+      }
+      svg.append(svgEl("line", { x1:margin.l, x2:W-margin.r, y1:H-margin.b, y2:H-margin.b, stroke:"#50606d", "stroke-width":1.2 }));
+      svg.append(svgEl("line", { x1:margin.l, x2:margin.l, y1:margin.t, y2:H-margin.b, stroke:"#50606d", "stroke-width":1.2 }));
+      series.forEach((s, i) => {
+        const d = s.points.map((p, j) => `${j ? "L":"M"}${x(p[xKey]).toFixed(2)},${y(p[yKey]).toFixed(2)}`).join(" ");
+        svg.append(svgEl("path", { d, fill:"none", stroke:COLORS[i%COLORS.length], "stroke-width":2.6 }));
+        const peak = s.points.reduce((best,p) => p[yKey] > best[yKey] ? p : best, s.points[0]);
+        svg.append(svgEl("circle", { cx:x(peak[xKey]), cy:y(peak[yKey]), r:5, fill:COLORS[i%COLORS.length], stroke:"#fff", "stroke-width":2 }));
+        const ly = margin.t + i*21;
+        svg.append(svgEl("line", { x1:W-148, x2:W-124, y1:ly+3, y2:ly+3, stroke:COLORS[i%COLORS.length], "stroke-width":3.5 }));
+        svg.append(svgEl("text", { x:W-117, y:ly+7, fill:"#52616d", "font-size":13, "font-weight":700, "font-family":"Arial" }, s.name));
+      });
+      if (selectedMarker && selectedMarker.x > 0) {
+        const markerValue = clamp(selectedMarker.x, xMin, xMax);
+        const px = x(markerValue);
+        const below = selectedMarker.x < xMin;
+        const above = selectedMarker.x > xMax;
+        const rangePrefix = below ? "← " : above ? "→ " : "";
+        svg.append(svgEl("line", {
+          x1:px, x2:px, y1:margin.t, y2:H-margin.b,
+          stroke:"#c53a3a", "stroke-width":2.2, "stroke-dasharray":"7 5"
+        }));
+        const anchor = px > W-215 ? "end" : "start";
+        const labelX = anchor === "end" ? px-7 : px+7;
+        svg.append(svgEl("text", {
+          x:labelX, y:H-margin.b-10, "text-anchor":anchor,
+          fill:"#982929", "font-size":12, "font-weight":700, "font-family":"Arial"
+        }, `${rangePrefix}${selectedMarker.label}`));
+        if (!below && !above && selectedMarker.y > 0 && selectedMarker.y >= Math.pow(10,ly0) && selectedMarker.y <= Math.pow(10,ly1)) {
+          svg.append(svgEl("circle", {
+            cx:px, cy:y(selectedMarker.y), r:6,
+            fill:"#c53a3a", stroke:"#fff", "stroke-width":2.2
+          }));
+        }
+      }
+      svg.append(svgEl("text", { x:margin.l+innerW/2, y:H-11, "text-anchor":"middle", fill:"#334451", "font-size":14, "font-weight":700, "font-family":"Arial" }, xLabel));
+      svg.append(svgEl("text", { x:18, y:margin.t+innerH/2, transform:`rotate(-90 18 ${margin.t+innerH/2})`, "text-anchor":"middle", fill:"#334451", "font-size":14, "font-weight":700, "font-family":"Arial" }, yLabel));
+    }
+
+    function superscript(n) {
+      const map = {"-":"⁻","0":"⁰","1":"¹","2":"²","3":"³","4":"⁴","5":"⁵","6":"⁶","7":"⁷","8":"⁸","9":"⁹"};
+      return String(n).split("").map((c) => map[c] || c).join("");
+    }
+
+    function renderSweep() {
+      const data = sweepData();
+      const base = baseInputs();
+      const g = geometry(base);
+      const currentCap = Math.min(base.imax, base.material.jmax * g.area);
+      const rStar = base.vmax / currentCap;
+      const pAtMatch = Math.min(base.pmax, base.vmax * currentCap);
+      const selectedRho = propertiesAt(base.material, base.ambientK).rhoOhmCm;
+      const selectedResult = calculate(base);
+      renderLogChart(
+        $("rateSweepChart"), data, "rate", "Initial ramp rate (K/s)",
+        "x", "Electrical resistivity (Ω·cm)", null,
+        { x:selectedRho, label:`${base.material.name} ρ(Ta) = ${format(selectedRho,4)} Ω·cm` }
+      );
+      renderLogChart(
+        $("powerSweepChart"), data, "power", "Electrical power (W)",
+        "resistance", "Element resistance (Ω)", rStar,
+        { x:selectedResult.initial.resistance, y:selectedResult.initial.power, label:"Current design" }
+      );
+      $("sweepInsight").innerHTML = `<strong>Why the peak is near R = ${format(rStar,3)} Ω:</strong>
+        below this resistance, I = ${format(currentCap,3)} A and P = I²R, so increasing R raises power.
+        Above it, V = ${format(base.vmax,3)} V and P = V²/R, so increasing R lowers power.
+        Their intersection gives ${format(base.vmax*currentCap,2)} W; the ${format(base.pmax,2)} W supply ceiling limits usable power to ${format(pAtMatch,2)} W.
+        Because solid volume, mass, and Cp are fixed within each sweep curve, maximum power also gives maximum power density and initial ramp rate.`;
+    }
+
+    function exportComparison() {
+      const rows = [["Material","Resistivity (ohm-cm)","Resistance (ohm)","Constraint","Current (A)","Voltage (V)","Power (W)","Ramp rate (K/s)","Tss (K)","Biot","Target feasible"]];
+      materialResults().forEach((r) => rows.push([r.material.name,r.material.rhoOhmCm,r.resistance,r.constraint,r.operatingCurrent,r.voltage,r.power,r.rampRate,r.tss,r.bi,r.feasible]));
+      download("joule-heating-material-comparison.csv", rows.map((row) => row.map(csvEscape).join(",")).join("\n"));
+    }
+
+    function exportSweep() {
+      const rows = [["L/D","Resistivity (ohm-cm)","Ramp rate (K/s)","Resistance (ohm)","Constraint"]];
+      sweepData().forEach((s) => s.points.forEach((p) => rows.push([s.ratio,p.x,p.rate,p.resistance,p.constraint])));
+      download("joule-heating-resistivity-sweep.csv", rows.map((row) => row.map(csvEscape).join(",")).join("\n"));
+    }
+
+    function runSelfTests() {
+      const base = {...baseInputs(),enclosure:null};
+      const cases = [
+        { rho:0.0001, ratio:100, R:0.04010204125, I:20, V:0.802040825, P:16.0408165, rate:6.38124605, tss:460.15 },
+        { rho:0.0125, ratio:100, R:5.012755156, I:19.9491092, V:100, P:1994.91092, rate:793.601587, tss:1903.15 },
+        { rho:0.27, ratio:10, R:5.025704394, I:19.8977083, V:100, P:1989.77083, rate:791.556957, tss:2291.15 },
+        { rho:6, ratio:1, R:5.183834088, I:19.2907409, V:100, P:1929.07409, rate:767.410995, tss:2524.15 },
+        { rho:100, ratio:0.1, R:4.010204403, I:20, V:80.2040881, P:1604.08176, rate:638.124782, tss:2055.15 }
+      ];
+      let passed = 0;
+      cases.forEach((tc) => {
+        const material = { name:"test", rhoOhmCm:tc.rho, density:1000, cp:1000, k:120, jmax:1e7 };
+        const r = calculate({ ...base, volumeCm3:2.5137436116, aspectRatio:tc.ratio, material });
+        const rel = (a,b) => Math.abs(a-b)/Math.max(1,Math.abs(b));
+        const ok = rel(r.resistance,tc.R)<2e-6 && rel(r.operatingCurrent,tc.I)<2e-6
+          && rel(r.voltage,tc.V)<2e-6 && rel(r.power,tc.P)<2e-6
+          && rel(r.rampRate,tc.rate)<2e-6 && Math.abs(r.tss-tc.tss)<1.1;
+        if (ok) passed += 1;
+      });
+      return { passed, total:cases.length };
+    }
+
+    function activateTab(name) {
+      document.querySelectorAll(".tab").forEach((tab) => {
+        const active = tab.dataset.tab === name;
+        tab.classList.toggle("active", active);
+        tab.setAttribute("aria-selected", String(active));
+      });
+      document.querySelectorAll(".panel").forEach((panel) => panel.classList.toggle("active", panel.id === name));
+      if (name === "compare") renderComparison();
+      if (name === "sweep") renderSweep();
+      if (name === "thermal2d") {
+        sync2DImported();
+        scheduleAutoSolve2D(0);
+      }
+    }
+
+    function renderRawCode() {
+      const source = [
+        `const SIGMA_SB = ${SIGMA_SB};`,
+        `const HE_FLOW_SCCM = ${HE_FLOW_SCCM};`,
+        `const HE_CP_MOLAR = ${HE_CP_MOLAR};`,
+        `const MOLAR_VOLUME_STP = ${MOLAR_VOLUME_STP};`,
+        `const HE_CAPACITY_RATE = ${HE_CAPACITY_RATE};`,
+        `const OUTSIDE_AIR_K = ${OUTSIDE_AIR_K};`,
+        `// The 2D display is fixed at 60 × 60 cells; physical domain and regional cell widths scale with reactor geometry.`,
+        `// Gap radiation and 50 sccm top-to-bottom He enthalpy advection are included in the thermal balance.`,
+        `const MATERIALS = ${JSON.stringify(MATERIALS, null, 2)};`,
+        "",
+        interpolate.toString(),
+        "",
+        propertiesAt.toString(),
+        "",
+        validateInput.toString(),
+        "",
+        geometry.toString(),
+        "",
+        directSurfaceHeatLoss.toString(),
+        "",
+        enclosureHeatLoss.toString(),
+        "",
+        heatLoss.toString(),
+        "",
+        operatingAt.toString(),
+        "",
+        solveSteadyTemperature.toString(),
+        "",
+        calculate.toString(),
+        "",
+        validate2DConfig.toString(),
+        "",
+        allocateSegmentCells.toString(),
+        "",
+        build2DMesh.toString(),
+        "",
+        cellK2D.toString(),
+        "",
+        operating2DAt.toString(),
+        "",
+        radiationCoefficient.toString(),
+        "",
+        gapRadiationCoefficient.toString(),
+        "",
+        gasFlowCells2D.toString(),
+        "",
+        gasBulkRowTemperature2D.toString(),
+        "",
+        assemble2DSystem.toString(),
+        "",
+        multiply2DSystem.toString(),
+        "",
+        pcg2D.toString(),
+        "",
+        bicgstab2D.toString(),
+        "",
+        boundaryLoss2D.toString(),
+        "",
+        solveThermal2D.toString()
+      ].join("\n");
+      $("rawCode").textContent = source;
+    }
+
+    function renderPropertyTable() {
+      $("propertyBody").innerHTML = MATERIALS.map((m) => `<tr>
+        <td>${m.name}</td><td>${format(m.rhoOhmCm,7)}</td><td>${format(m.density,0)} kg/m³</td>
+        <td>${format(m.cp,0)} J/kg·K</td><td>${format(m.k,1)} W/m·K</td><td>${format(m.jmax,2)} A/m²</td>
+        <td>${m.model || "constant"}</td><td>${m.source || "user input"}</td></tr>`).join("");
+    }
+
+    async function copyRawCode() {
+      const text = $("rawCode").textContent;
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch (_) {
+        const area = document.createElement("textarea");
+        area.value = text;
+        area.style.position = "fixed";
+        area.style.opacity = "0";
+        document.body.appendChild(area);
+        area.select();
+        document.execCommand("copy");
+        area.remove();
+      }
+      const button = $("copyCode");
+      button.textContent = "Copied";
+      setTimeout(() => { button.textContent = "Copy raw code"; }, 1400);
+    }
+
+    function init() {
+      MATERIALS.forEach((m, i) => {
+        const option = document.createElement("option");
+        option.value = m.name;
+        option.textContent = m.name;
+        option.dataset.index = i;
+        $("material").append(option);
+      });
+      $("material").addEventListener("change", () => {
+        loadMaterial($("material").selectedIndex);
+        updateAll();
+      });
+      ["rhoValue","rhoUnit","density","cp","thermalK","jmax","volumeCm3","aspectRatio","solidFraction","imax","vmax","pmax","ambientC","targetC","emissivity","convection","hConv","gasC","biLimit"]
+        .forEach((id) => $(id).addEventListener("input", updateAll));
+      $("compareSort").addEventListener("change", renderComparison);
+      ["sweepMin","sweepMax","sweepPoints"].forEach((id) => $(id).addEventListener("input", renderSweep));
+      document.querySelectorAll('input[name="ratio"]').forEach((el) => el.addEventListener("change", renderSweep));
+      document.querySelectorAll(".tab").forEach((tab) => tab.addEventListener("click", () => activateTab(tab.dataset.tab)));
+      $("exportCompare").addEventListener("click", exportComparison);
+      $("exportSweep").addEventListener("click", exportSweep);
+      $("copyCode").addEventListener("click", copyRawCode);
+      $("t2dWallMaterial").addEventListener("change", () => {
+        const wall=T2D_WALLS[$("t2dWallMaterial").value];
+        if (wall && $("t2dWallMaterial").value!=="custom") {
+          $("t2dWallK").value=wall.k;
+          $("t2dWallEps").value=wall.emissivity;
+        }
+        updateAll();
+      });
+      ["t2dWallK","t2dWallThickness","t2dWallEps","t2dGap","t2dGapK","t2dEndMode","t2dEndC","t2dEndH","t2dContactRho","t2dMaxIter","t2dTolerance"]
+        .forEach((id)=>$(id).addEventListener("input",updateAll));
+      $("solve2D").addEventListener("click",()=>solveSelected2D(false));
+      $("export2D").addEventListener("click",exportCurrent2D);
+      $("thermalMap").addEventListener("mousemove",inspect2DCell);
+      $("material").selectedIndex = 1;
+      loadMaterial(1);
+      updateAll();
+      renderPropertyTable();
+      renderRawCode();
+      sync2DImported();
+      drawEmpty2D();
+      const tests = runSelfTests();
+      window.JouleHeatingOptimizer = { calculate, solveThermal2D, MATERIALS, tests };
+    }
+
+    init();
+  })();
+  </script>
+</body>
+</html>

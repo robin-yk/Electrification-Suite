@@ -2,7 +2,7 @@
 
 Interactive, browser-based models of chemical process electrification, by Yeonsu Kwak (Vlachos Lab, University of Delaware).
 
-The site is a single self-contained `index.html` — all styling and logic are inline, and calculations run entirely client-side (no backend, no build step required to view it).
+The site is static and self-contained, split into `index.html` (landing page + router) and one file per project (`microwave.html`, `joule.html`), each loaded into an iframe on demand. All styling and logic are inline within each file, and calculations run entirely client-side (no backend, no build step required to view it).
 
 Please check https://robin-yk.github.io/Electrification/
 
@@ -22,4 +22,4 @@ npm run build    # production build to dist/
 npm run preview  # preview the production build
 ```
 
-Vite is used only as a static dev server / bundler for `index.html` — there is no framework or external runtime dependency.
+Vite is used only as a static dev server for these files — there is no framework, build step, or external runtime dependency.
