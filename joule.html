@@ -2478,14 +2478,19 @@
       const svg = $("geometryVisual");
       svg.replaceChildren();
       const W = 820, H = 260;
+      // True-to-scale: body width/height keep the real L/D ratio (a 1:1 rod draws as an
+      // actual square profile, not a fixed 5:3 box). Only the true extremes of the allowed
+      // range are floored/capped so a very short-and-fat or long-and-thin rod stays legible.
+      const maxBodyW = 470, maxBodyH = 150, minBodyW = 76, minBodyH = 48;
       const ratio = clamp(r.g.aspectRatio, 0.18, 8);
-      let bodyW = 250 * Math.sqrt(ratio);
-      let bodyH = 150 / Math.sqrt(ratio);
-      const fit = Math.min(470 / bodyW, 150 / bodyH, 1);
+      let bodyW = ratio, bodyH = 1;
+      const fit = Math.min(maxBodyW / bodyW, maxBodyH / bodyH);
       bodyW *= fit;
       bodyH *= fit;
-      bodyW = clamp(bodyW, 76, 470);
-      bodyH = clamp(bodyH, 48, 150);
+      if (bodyW < minBodyW) { const s = minBodyW / bodyW; bodyW *= s; bodyH *= s; }
+      if (bodyH < minBodyH) { const s = minBodyH / bodyH; bodyW *= s; bodyH *= s; }
+      bodyW = clamp(bodyW, minBodyW, maxBodyW);
+      bodyH = clamp(bodyH, minBodyH, maxBodyH);
       const ellipseW = clamp(bodyH * 0.25, 14, 34);
       const x0 = (W - bodyW) / 2;
       const x1 = x0 + bodyW;
