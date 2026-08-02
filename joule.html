@@ -696,7 +696,7 @@
     .t2d-kpi .kpi-value { font-size:21px; margin-top:6px; }
     .t2d-map-grid { display:grid; grid-template-columns:minmax(340px,1fr) 310px; gap:14px; align-items:start; }
     .t2d-canvas-shell { padding:14px; }
-    #thermalMap { display:block; width:min(100%,620px); height:auto; margin:0 auto; border:1px solid #9aa8b3; background:#f3f6f8; image-rendering:pixelated; cursor:crosshair; }
+    #thermalMap { display:block; max-width:min(100%,620px); max-height:70vh; margin:0 auto; border:1px solid #9aa8b3; background:#f3f6f8; image-rendering:pixelated; cursor:crosshair; }
     .t2d-colorbar { width:min(100%,620px); margin:10px auto 0; }
     .t2d-gradient { height:16px; border:1px solid #a9b4bc; border-radius:3px; background:linear-gradient(90deg,#102a43 0%,#2878a5 25%,#58b8b1 50%,#ebbe46 75%,#d33737 100%); }
     .t2d-scale { display:flex; justify-content:space-between; color:var(--muted); font-size:15px; margin-top:5px; }
@@ -2060,9 +2060,22 @@
 
     function draw2D(result) {
       const canvas=$("thermalMap"),nr=result.mesh.nr,nz=result.mesh.nz,physicalWidth=2*result.mesh.domainRadius,physicalHeight=result.mesh.domainHeight;
-      canvas.width=600;
-      const scale=canvas.width/physicalWidth,plotHeight=physicalHeight*scale;
+      // Equal x-z scale keeps the geometry undistorted, but a long, thin element (high L/D)
+      // must not be allowed to stretch the canvas to thousands of pixels tall: fit both the
+      // width and the height inside a bounded box at one shared scale, so the far more
+      // common near-square domains still render at the original 600px width unchanged.
+      const maxCanvasWidth=600, maxCanvasHeight=900;
+      const scale=Math.min(maxCanvasWidth/physicalWidth, maxCanvasHeight/physicalHeight);
+      const plotHeight=physicalHeight*scale;
+      canvas.width=Math.max(1,Math.round(physicalWidth*scale));
       canvas.height=Math.max(1,Math.round(plotHeight));
+      // Size the on-screen box to exactly match the native pixel aspect ratio (no CSS
+      // stretching, no letterbox gap) — fit inside the available column width and a
+      // sane on-screen height cap, whichever is more restrictive.
+      const displayMaxW=Math.min(canvas.parentElement.clientWidth||620,620),displayMaxH=Math.min(window.innerHeight*0.7||760,760);
+      const displayScale=Math.min(displayMaxW/canvas.width,displayMaxH/canvas.height);
+      canvas.style.width=`${Math.round(canvas.width*displayScale)}px`;
+      canvas.style.height=`${Math.round(canvas.height*displayScale)}px`;
       const ctx=canvas.getContext("2d"),cx=canvas.width/2,oy=(canvas.height-plotHeight)/2,ch=result.mesh.dz*scale;
       canvas._physicalMap={scale,cx,oy,plotHeight};
       const all=result.T.flat(),lo=Math.min(...all),hi=Math.max(...all),span=Math.max(1e-9,hi-lo);
