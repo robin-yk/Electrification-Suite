@@ -930,13 +930,21 @@ function step(now) {
     if (cyc !== prevCycle) state.cycles = cyc;
 
     const TC = waveform((state.t % state.period) / state.period);
-    state.accK += kOf(TC) * dt;
-    state.accH += hOf(TC) * dt;
-    state.accU += uOf(TC) * dt;
-    state.accKH += kOf(TC) / hOf(TC) * dt;
-    state.accKU += kOf(TC) / uOf(TC) * dt;
-    state.accT += TC * dt;
-    state.accTime += dt;
+    // Leaky (exponentially-windowed) integration instead of a since-start cumulative
+    // average: a plain running average of a periodic, exponentially-sensitive (Arrhenius)
+    // signal only converges as O(1/t), so the KPI tiles kept drifting for tens of cycles
+    // before ever settling. Decaying with the same TRACE_WINDOW used by the trace chart
+    // makes every accumulator relax onto the true periodic-average value within a few
+    // cycles and then hold steady there, instead of slowly creeping for as long as the
+    // page stays open.
+    const decay = Math.exp(-dt / TRACE_WINDOW);
+    state.accK = state.accK * decay + kOf(TC) * dt;
+    state.accH = state.accH * decay + hOf(TC) * dt;
+    state.accU = state.accU * decay + uOf(TC) * dt;
+    state.accKH = state.accKH * decay + kOf(TC) / hOf(TC) * dt;
+    state.accKU = state.accKU * decay + kOf(TC) / uOf(TC) * dt;
+    state.accT = state.accT * decay + TC * dt;
+    state.accTime = state.accTime * decay + dt;
 
     state.trace.push([state.t, TC]);
     while (state.trace.length && state.trace[0][0] < state.t - TRACE_WINDOW) state.trace.shift();
@@ -994,7 +1002,7 @@ function updateLive(TC) {
     `Same average temperature, ${rDa.toFixed(2)}× the relative kinetic exposure.`;
   document.getElementById("verdictSub").innerHTML =
     `&lang;k/u&rang;<sub>RPH</sub> = ${exposureRPH.toExponential(2)} &nbsp;vs&nbsp; [k/u]<sub>CJH</sub> = ${exposureCJH.toExponential(2)} ` +
-    `&nbsp;|&nbsp; integrated over ${state.accTime.toFixed(1)} s`;
+    `&nbsp;|&nbsp; trailing ~${Math.min(state.t, TRACE_WINDOW).toFixed(1)} s window`;
 }
 
 function drawTrace() {
