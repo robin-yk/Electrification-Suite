@@ -1363,6 +1363,8 @@ document.querySelectorAll(".tab").forEach(tab => {
 renderExperiments();
 resetIntegration();
 redrawAll();
+state.running = true; state.lastFrame = 0;
+runState.textContent = "Running"; runState.className = "status good";
 requestAnimationFrame(step);
 </script>
 </body>
