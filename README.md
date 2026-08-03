@@ -1,6 +1,6 @@
 # Electrified Reactor Models
 
-Interactive, browser-based models of chemical process electrification, by Yeonsu Kwak (Vlachos Lab, University of Delaware).
+Interactive, browser-based models of chemical process electrification, by Yeonsu Kwak (Vlachos Lab, University of Delaware). Email: ask.yeonsu@gmail.com
 
 The site is static and self-contained, split into `index.html` (landing page + router) and one file per project (`microwave.html`, `joule.html`, `rphcjh.html`), each loaded into an iframe on demand. All styling and logic are inline within each file, and calculations run entirely client-side (no backend, no build step required to view it).
 
