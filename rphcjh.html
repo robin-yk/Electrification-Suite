@@ -1,0 +1,1369 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Interactive visualizer for the RPH vs CJH dimensionless analysis: Jensen's inequality on k(T), h(T), u(T), and the resulting Lambda and Damkohler ratios for ethane cracking.">
+<title>RPH vs CJH Dimensionless Visualizer</title>
+<style>
+  :root {
+    --ink: #14202b;
+    --muted: #64717d;
+    --navy: #102a43;
+    --navy-2: #163b5c;
+    --red: #c53a3a;
+    --red-dark: #982929;
+    --teal: #13795b;
+    --amber: #b46714;
+    --blue: #2c6e9b;
+    --cream: #f6f3ed;
+    --paper: #ffffff;
+    --line: #d8dee5;
+    --line-dark: #b9c4cf;
+    --soft: #eef2f5;
+    --success-bg: #e8f4ef;
+    --warn-bg: #fff3df;
+    --danger-bg: #fbeaea;
+    --shadow: 0 8px 26px rgba(16, 42, 67, 0.08);
+    --radius: 12px;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    color: var(--ink);
+    background: var(--cream);
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 15px;
+    line-height: 1.45;
+  }
+  button, input, select { font: inherit; }
+  button { cursor: pointer; }
+
+  .topbar { background: var(--navy); color: #fff; border-bottom: 4px solid var(--red); }
+  .topbar-inner {
+    max-width: 1500px; margin: 0 auto; padding: 21px 28px 17px;
+    display: flex; align-items: flex-end; justify-content: space-between; gap: 24px;
+  }
+  .eyebrow {
+    margin: 0 0 5px; color: #b9cada; font-size: 12px; font-weight: 700;
+    letter-spacing: 0.16em; text-transform: uppercase;
+  }
+  h1 { margin: 0; font-size: clamp(27px, 3vw, 42px); line-height: 1; letter-spacing: -0.03em; }
+  .topbar-meta { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+  .topbar-right { display: grid; justify-items: end; gap: 9px; }
+  .author-line { color: #fff; font-size: 13px; font-weight: 700; text-align: right; }
+  .email-link { color: #c9e6f5; font-size: 13px; text-decoration: underline; text-underline-offset: 3px; }
+  .email-link:hover { color: #fff; }
+  .meta-pill {
+    border: 1px solid rgba(255,255,255,0.28); border-radius: 999px; padding: 5px 9px;
+    color: #e6eef4; font-size: 12px; white-space: nowrap;
+  }
+
+  .tabs-shell { background: #fff; border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 20; }
+  .tabs { max-width: 1500px; margin: 0 auto; padding: 0 28px; display: flex; overflow-x: auto; scrollbar-width: thin; }
+  .tab {
+    appearance: none; border: 0; border-bottom: 3px solid transparent; background: transparent;
+    color: var(--muted); padding: 14px 18px 12px; font-size: 13px; font-weight: 700; white-space: nowrap;
+  }
+  .tab:hover { color: var(--navy); }
+  .tab.active { color: var(--navy); border-bottom-color: var(--red); }
+  .tab:focus-visible { outline: 2px solid var(--blue); outline-offset: -3px; }
+
+  main { max-width: 1500px; margin: 0 auto; padding: 24px 28px 40px; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .section-kicker {
+    margin: 0 0 5px; color: var(--red-dark); font-size: 12px; font-weight: 700;
+    letter-spacing: 0.12em; text-transform: uppercase;
+  }
+  .section-title { margin: 0; color: var(--navy); font-size: clamp(24px, 2.4vw, 34px); line-height: 1.12; letter-spacing: -0.025em; }
+  .section-lede { max-width: 820px; margin: 8px 0 20px; color: var(--muted); }
+
+  .card { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+  .card-header {
+    padding: 13px 15px; display: flex; justify-content: space-between; align-items: center;
+    gap: 12px; border-bottom: 1px solid var(--line);
+  }
+  .card-header h2, .card-header h3 { margin: 0; color: var(--navy); font-size: 14px; letter-spacing: -0.01em; }
+  .card-body { padding: 15px; }
+
+  .field label { display: block; margin-bottom: 4px; color: #455462; font-size: 12px; font-weight: 700; }
+  .control-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; align-items: center; }
+  input[type="number"], select {
+    width: 100%; min-height: 38px; border: 1px solid var(--line-dark); border-radius: 7px;
+    background: #fff; color: var(--ink); padding: 7px 9px; outline: none;
+  }
+  input[type="range"] { width: 100%; accent-color: var(--red); }
+  input:focus-visible, select:focus-visible, button:focus-visible {
+    border-color: var(--blue); box-shadow: 0 0 0 3px rgba(44, 110, 155, 0.12);
+  }
+  .unit {
+    min-width: 66px; display: inline-flex; align-items: center; justify-content: center;
+    border: 1px solid var(--line-dark); border-radius: 7px; background: var(--soft);
+    padding: 0 8px; color: #53616e; font-size: 12px; white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .btn {
+    border: 1px solid var(--line-dark); border-radius: 7px; background: #fff;
+    color: var(--navy); padding: 8px 11px; font-size: 12px; font-weight: 700;
+  }
+  .btn:hover { border-color: var(--navy); }
+  .btn.primary { border-color: var(--navy); background: var(--navy); color: #fff; }
+  .btn.primary:hover { background: var(--navy-2); }
+  .btn.red { border-color: var(--red); background: var(--red); color: #fff; }
+  .btn.red:hover { background: var(--red-dark); }
+
+  .kpi-grid { display: grid; grid-template-columns: repeat(5, minmax(135px, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .kpi {
+    min-height: 112px; background: #fff; border: 1px solid var(--line);
+    border-top: 3px solid var(--navy); border-radius: 9px; padding: 13px 13px 11px;
+  }
+  .kpi.good { border-top-color: var(--teal); }
+  .kpi.warn { border-top-color: var(--amber); }
+  .kpi.bad { border-top-color: var(--red); }
+  .kpi-label { color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+  .kpi-value {
+    margin-top: 11px; color: var(--navy); font-size: clamp(20px, 2vw, 28px); font-weight: 700;
+    line-height: 1.05; letter-spacing: -0.025em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere;
+  }
+  .kpi-sub { margin-top: 7px; color: var(--muted); font-size: 12px; }
+
+  .status { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; padding: 4px 8px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+  .status.good { background: var(--success-bg); color: #0d6549; }
+  .status.warn { background: var(--warn-bg); color: #8a4e09; }
+  .status.bad { background: var(--danger-bg); color: #8e2e2e; }
+  .status::before { content: "\25CF"; font-size: 12px; }
+
+  svg.chart { display: block; width: 100%; height: auto; background: #fff; }
+  .chart-note { margin: 7px 4px 0; color: var(--muted); font-size: 12px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; margin: 8px 4px 0; color: var(--muted); font-size: 12px; }
+  .legend i { display: inline-block; width: 14px; height: 3px; margin-right: 5px; vertical-align: middle; }
+  .legend i.dash { background: repeating-linear-gradient(90deg, currentColor 0 5px, transparent 5px 9px); }
+
+  .metric-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .metric-table th, .metric-table td { padding: 9px 10px; border-bottom: 1px solid #e5e9ed; text-align: left; vertical-align: middle; }
+  .metric-table th { width: 52%; color: var(--muted); font-weight: 600; }
+  .metric-table td { text-align: right; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .metric-table tr:last-child th, .metric-table tr:last-child td { border-bottom: 0; }
+
+  .table-shell { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: #fff; box-shadow: var(--shadow); }
+  table.data { width: 100%; min-width: 860px; border-collapse: collapse; font-size: 12px; }
+  table.data th, table.data td {
+    padding: 9px 10px; border-bottom: 1px solid #e3e8ec; text-align: right;
+    white-space: nowrap; font-variant-numeric: tabular-nums;
+  }
+  table.data th { position: sticky; top: 0; z-index: 2; background: var(--navy); color: #fff; font-weight: 700; }
+  table.data th:first-child, table.data td:first-child { text-align: left; }
+  table.data tbody tr:hover { background: #f3f7f9; }
+  table.data tbody tr.flag { background: #eef8f5; }
+  table.data tbody tr.flag:hover { background: #e2f2ec; }
+  table.data tbody tr:last-child td { border-bottom: 0; }
+
+  .calc-note { border-left: 4px solid var(--teal); background: #eef8f5; padding: 12px 14px; margin-bottom: 16px; color: #24594d; font-size: 12px; line-height: 1.55; }
+  .assumption { border-left: 4px solid var(--amber); background: #fff9ed; padding: 11px 13px; color: #66420b; font-size: 13px; margin-bottom: 14px; line-height: 1.5; }
+  .assumption strong { color: #7c4f09; }
+
+  .calc-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-bottom: 18px; }
+  .formula-card .card-body { padding: 15px 17px 17px; }
+  .formula-list { display: grid; gap: 11px; }
+  .formula-item { border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+  .formula-item:last-child { border-bottom: 0; padding-bottom: 0; }
+  .formula-name { color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 5px; }
+  .formula { color: var(--navy); font-size: 14px; line-height: 1.55; overflow-wrap: anywhere; }
+  .formula-note { color: var(--muted); font-size: 12px; line-height: 1.45; margin-top: 3px; }
+  .symbol-table td:first-child { color: var(--red); font-weight: 700; white-space: nowrap; width: 20%; }
+
+  /* ---- animation tab ---- */
+  .anim-layout { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 18px; align-items: start; }
+  .anim-inputs { display: grid; gap: 14px; position: sticky; top: 64px; }
+  .slider-row { display: grid; gap: 5px; margin-bottom: 13px; }
+  .slider-row:last-child { margin-bottom: 0; }
+  .slider-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .slider-head label { margin: 0; }
+  .slider-head output { color: var(--navy); font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .transport-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+  .transport-controls .btn { flex: 1 1 88px; }
+
+  #reactorCanvas {
+    display: block; width: 100%; height: auto; border-radius: 9px;
+    background: #0d1620; border: 1px solid #26394b;
+  }
+  .reactor-shell { padding: 14px; }
+  .reactor-caption { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 9px 2px 0; color: var(--muted); font-size: 12px; }
+
+  .race-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 14px; }
+  .verdict { margin-top: 14px; border-left: 5px solid var(--blue); background: linear-gradient(90deg, #eef6fb 0%, #fff 72%); }
+  .verdict-body { padding: 14px 16px; display: flex; align-items: baseline; justify-content: space-between; gap: 18px; flex-wrap: wrap; }
+  .verdict-main { color: var(--navy); font-size: 17px; font-weight: 700; }
+  .verdict-sub { color: var(--muted); font-size: 12px; text-align: right; }
+
+  footer {
+    max-width: 1500px; margin: 0 auto; padding: 0 28px 30px; color: var(--muted); font-size: 12px;
+    display: flex; justify-content: space-between; gap: 14px; flex-wrap: wrap;
+  }
+
+  @media (max-width: 1250px) {
+    .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (max-width: 960px) {
+    .anim-layout { grid-template-columns: 1fr; }
+    .anim-inputs { position: static; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .calc-grid, .race-grid { grid-template-columns: 1fr; }
+    .topbar-inner { align-items: flex-start; flex-direction: column; }
+    .topbar-right { justify-items: start; }
+    .topbar-meta { justify-content: flex-start; }
+    .author-line { text-align: left; }
+  }
+  @media (max-width: 640px) {
+    .topbar-inner, main, footer { padding-left: 15px; padding-right: 15px; }
+    .tabs { padding: 0 5px; }
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .anim-inputs { grid-template-columns: 1fr; }
+    .verdict-sub { text-align: left; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+  }
+</style>
+
+        <style id="electrification-suite-theme">
+          :root {
+            --navy: #102a43 !important;
+            --navy-2: #173b5c !important;
+            --ink: #172733 !important;
+            --muted: #63717c !important;
+            --line: #d5dde3 !important;
+            --soft: #f1f4f6 !important;
+            --cream: #f5f2ec !important;
+            --paper: #ffffff !important;
+          }
+          html, body { background: #f5f2ec !important; }
+          .site-header, .topbar { display: none !important; }
+          .tabs-shell { top: 0 !important; box-shadow: 0 3px 14px rgba(16,42,67,.06) !important; }
+          .card, .formula-card, .doc-card, .canvas-wrap, .profile-svg, .fit-metric {
+            border-color: #d5dde3 !important;
+          }
+          button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible {
+            outline: 3px solid rgba(52,122,161,.32) !important;
+            outline-offset: 2px !important;
+          }
+        </style></head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div>
+      <p class="eyebrow">Pulsed vs continuous Joule heating</p>
+      <h1>RPH vs CJH Dimensionless Visualizer</h1>
+    </div>
+    <div class="topbar-right">
+      <div class="author-line">Yeonsu Kwak | Vlachos Lab, University of Delaware</div>
+      <a class="email-link" href="mailto:ask.yeonsu@gmail.com">Email: ask.yeonsu@gmail.com</a>
+      <div class="topbar-meta" aria-label="Model scope">
+        <span class="meta-pill">Jensen's inequality</span>
+        <span class="meta-pill">&Lambda; = k/h</span>
+        <span class="meta-pill">relative k/u exposure</span>
+        <span class="meta-pill">Live time-averaging</span>
+        <span class="meta-pill">CFP ethane cracking data</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs-shell" aria-label="Sections">
+  <div class="tabs" role="tablist">
+    <button class="tab active" data-tab="animation" role="tab" aria-selected="true">Heating Animation</button>
+    <button class="tab" data-tab="jensen" role="tab" aria-selected="false">When Pulsing Helps</button>
+    <button class="tab" data-tab="ratios" role="tab" aria-selected="false">&Lambda; and Da Ratios</button>
+    <button class="tab" data-tab="experiments" role="tab" aria-selected="false">CFP Experiments</button>
+    <button class="tab" data-tab="calculations" role="tab" aria-selected="false">Calculations</button>
+  </div>
+</nav>
+
+<main>
+
+<!-- ============ ANIMATION ============ -->
+<section id="animation" class="panel active" role="tabpanel">
+  <p class="section-kicker">Watch the averages separate</p>
+  <h2 class="section-title">Pulse the element and let the two averages race</h2>
+  <p class="section-lede">
+    Press <strong>Run</strong>. The element swings between T<sub>min</sub> and T<sub>peak</sub> while the page integrates
+    &lang;k&rang;, &lang;h&rang; and &lang;u&rang; over real time. A continuous heater held at the <em>same time-average temperature</em>
+    runs alongside it. This is an analytical instantaneous-gas limit: pulse period affects the animation, but not the ratios until a gas thermal-response model is added.
+  </p>
+
+  <div class="anim-layout">
+    <aside class="anim-inputs" aria-label="Pulse controls">
+      <div class="card">
+        <div class="card-header"><h2>Pulse shape</h2><span class="status warn" id="runState">Idle</span></div>
+        <div class="card-body">
+          <div class="slider-row">
+            <div class="slider-head"><label for="tPeak">T<sub>peak</sub></label><output id="tPeakOut">1250 &deg;C</output></div>
+            <input id="tPeak" type="range" min="900" max="1400" step="10" value="1250">
+          </div>
+          <div class="slider-row">
+            <div class="slider-head"><label for="tMin">T<sub>min</sub></label><output id="tMinOut">750 &deg;C</output></div>
+            <input id="tMin" type="range" min="400" max="1200" step="10" value="750">
+          </div>
+          <div class="slider-row">
+            <div class="slider-head"><label for="duty">Duty cycle d</label><output id="dutyOut">0.35</output></div>
+            <input id="duty" type="range" min="0.05" max="0.95" step="0.01" value="0.35">
+          </div>
+          <div class="slider-row">
+            <div class="slider-head"><label for="period">Pulse period</label><output id="periodOut">1.2 s</output></div>
+            <input id="period" type="range" min="0.3" max="4" step="0.1" value="1.2">
+          </div>
+          <div class="slider-row">
+            <div class="slider-head"><label for="ramp">Ramp fraction</label><output id="rampOut">0.10</output></div>
+            <input id="ramp" type="range" min="0" max="0.45" step="0.01" value="0.10">
+          </div>
+          <p class="chart-note" style="margin-top:10px">
+            Ramp 0 is the ideal square wave. Each ramp is constrained so the stated duty cycle remains the actual high-temperature fraction; the CJH reference stays matched at the exact waveform-average temperature.
+          </p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2>Relative chemistry &amp; flow</h2></div>
+        <div class="card-body">
+          <div class="slider-row">
+            <div class="slider-head"><label for="ea">Activation energy E<sub>a</sub></label><output id="eaOut">273 kJ/mol</output></div>
+            <input id="ea" type="range" min="80" max="400" step="1" value="273">
+          </div>
+          <div class="slider-row">
+            <div class="slider-head"><label for="beta">Mass-transfer exponent &beta;</label><output id="betaOut">0.50</output></div>
+            <input id="beta" type="range" min="0.05" max="1.75" step="0.05" value="0.50">
+          </div>
+          <div class="transport-controls" style="margin-top:12px">
+            <button class="btn red" id="btnRun" type="button">Run</button>
+            <button class="btn" id="btnPause" type="button">Pause</button>
+            <button class="btn" id="btnReset" type="button">Reset</button>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <div>
+      <div class="kpi-grid">
+        <div class="kpi" id="kpiT">
+          <div class="kpi-label">Element T now</div>
+          <div class="kpi-value" id="valTnow">&mdash;</div>
+          <div class="kpi-sub" id="subTnow">not running</div>
+        </div>
+        <div class="kpi" id="kpiTavg">
+          <div class="kpi-label">Time-avg T</div>
+          <div class="kpi-value" id="valTavg">&mdash;</div>
+          <div class="kpi-sub">CJH is held here</div>
+        </div>
+        <div class="kpi" id="kpiK">
+          <div class="kpi-label">&lang;k&rang; / k(T<sub>avg</sub>)</div>
+          <div class="kpi-value" id="valKratio">&mdash;</div>
+          <div class="kpi-sub">Jensen gain on rate</div>
+        </div>
+        <div class="kpi" id="kpiLam">
+          <div class="kpi-label">R<sub>&Lambda;</sub></div>
+          <div class="kpi-value" id="valRlam">&mdash;</div>
+          <div class="kpi-sub" id="subRlam">&Lambda;<sub>RPH</sub> / &Lambda;<sub>CJH</sub></div>
+        </div>
+        <div class="kpi" id="kpiDa">
+          <div class="kpi-label">R<sub>exposure</sub></div>
+          <div class="kpi-value" id="valRda">&mdash;</div>
+          <div class="kpi-sub" id="subRda">relative exposure ratio, &lang;k/u&rang;</div>
+        </div>
+      </div>
+
+      <div class="card reactor-shell">
+        <canvas id="reactorCanvas" width="1120" height="300" aria-label="Animated Joule-heated element with gas flowing through it"></canvas>
+        <div class="reactor-caption">
+          <span>Gas enters cold at left, crosses the heated zone, and quenches downstream. Particle colour tracks the local gas temperature.</span>
+          <span id="cycleCount">cycle 0</span>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:14px">
+        <div class="card-header"><h3>Temperature trace</h3><span class="chart-note" style="margin:0">last 6 s</span></div>
+        <div class="card-body" style="padding:10px 12px 12px">
+          <svg class="chart" id="traceChart" viewBox="0 0 760 260" role="img" aria-label="Temperature versus time for pulsed and continuous heating"></svg>
+          <div class="legend">
+            <span><i style="background:var(--red)"></i>RPH element T(t)</span>
+            <span><i class="dash" style="color:var(--blue)"></i>CJH held at time-average T</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="race-grid">
+        <div class="card">
+          <div class="card-header"><h3>Running &lang;k&rang; vs k(T<sub>avg</sub>)</h3><span class="status good" id="kVerdict">&mdash;</span></div>
+          <div class="card-body" style="padding:10px 12px 12px">
+            <svg class="chart" id="kRaceChart" viewBox="0 0 500 230" role="img" aria-label="Running time-average of the rate constant compared with the rate constant at the average temperature"></svg>
+            <p class="chart-note">k is convex, so the running average climbs <em>above</em> the flat CJH line and stays there.</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>Running &lang;h&rang; vs h(T<sub>avg</sub>)</h3><span class="status warn" id="hVerdict">&mdash;</span></div>
+          <div class="card-body" style="padding:10px 12px 12px">
+            <svg class="chart" id="hRaceChart" viewBox="0 0 500 230" role="img" aria-label="Running time-average of the mass transfer coefficient compared with its value at the average temperature"></svg>
+            <p class="chart-note">For &beta; &lt; 1 the teaching transfer response is concave, so its average sinks <em>below</em> the CJH line. Push &beta; past 1 and this flips.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card verdict">
+        <div class="verdict-body">
+          <div class="verdict-main" id="verdictMain">Press Run to start integrating.</div>
+          <div class="verdict-sub" id="verdictSub">Both systems sit at the same time-average temperature by construction.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ JENSEN ============ -->
+<section id="jensen" class="panel" role="tabpanel">
+  <p class="section-kicker">The whole argument in three pictures</p>
+  <h2 class="section-title">Curvature decides whether pulsing can help</h2>
+  <p class="section-lede">
+    A two-state pulse spends fraction d at T<sub>peak</sub> and (1&minus;d) at T<sub>min</sub>. Its time-average of any
+    property f sits on the <strong>chord</strong> between the two endpoints; the continuous heater sits on the <strong>curve</strong>
+    at T<sub>avg</sub>. Whether the chord is above or below the curve is decided entirely by the sign of f&Prime;.
+  </p>
+
+  <div class="assumption">
+    <strong>Read the &beta; slider as a live caveat.</strong> The note proves h is concave for 0 &lt; &beta; &lt; 1.
+    Gas-phase diffusivity alone scales roughly as T<sup>1.75</sup>, so a transport coefficient dominated by diffusion can
+    land above &beta; = 1, which makes h convex and cancels part of the &Lambda; gain. The &Lambda; result is only as safe
+    as the exponent you can defend for this reactor.
+  </div>
+
+  <div class="calc-grid" style="grid-template-columns:repeat(3,minmax(0,1fr))">
+    <article class="card">
+      <div class="card-header"><h3>k(T) &mdash; convex</h3><span class="status good">chord above</span></div>
+      <div class="card-body" style="padding:10px 12px 12px">
+        <svg class="chart" id="jensenK" viewBox="0 0 460 300" role="img" aria-label="Rate constant versus temperature with the pulse chord above the curve"></svg>
+        <p class="chart-note">&lang;k&rang; &gt; k(T<sub>avg</sub>) whenever E<sub>a</sub> &gt; 2RT. The gap is the pulsing bonus.</p>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-header"><h3>Transfer response h(T) &mdash; concave</h3><span class="status warn" id="hConcaveTag">chord below</span></div>
+      <div class="card-body" style="padding:10px 12px 12px">
+        <svg class="chart" id="jensenH" viewBox="0 0 460 300" role="img" aria-label="Mass transfer coefficient versus temperature with the pulse chord below the curve"></svg>
+        <p class="chart-note">&lang;h&rang; &lt; h(T<sub>avg</sub>) for &beta; &lt; 1, which shrinks the denominator of &Lambda;.</p>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-header"><h3>u(T) &mdash; linear</h3><span class="status" style="background:var(--soft);color:var(--muted)">chord on curve</span></div>
+      <div class="card-body" style="padding:10px 12px 12px">
+        <svg class="chart" id="jensenU" viewBox="0 0 460 300" role="img" aria-label="Flow velocity versus temperature with the pulse chord lying on the curve"></svg>
+        <p class="chart-note">&lang;u&rang; = u(T<sub>avg</sub>) exactly. Pulsing buys nothing on the convective timescale.</p>
+      </div>
+    </article>
+  </div>
+
+  <div class="calc-grid">
+    <article class="card">
+      <div class="card-header"><h3>What each curvature buys</h3></div>
+      <div class="card-body">
+        <table class="metric-table">
+          <tbody>
+            <tr><th>k convex &rarr; numerator of &Lambda; and Da</th><td class="tag" id="jkGain">&mdash;</td></tr>
+            <tr><th>h concave &rarr; denominator of &Lambda;</th><td id="jhGain">&mdash;</td></tr>
+            <tr><th>u linear, but correlated with k</th><td id="juGain">&mdash;</td></tr>
+            <tr><th>Net on &Lambda; (both effects compound)</th><td id="jLamNet">&mdash;</td></tr>
+            <tr><th>Net on Da (rate effect only)</th><td id="jDaNet">&mdash;</td></tr>
+          </tbody>
+        </table>
+        <p class="chart-note" style="margin-top:10px">
+          A linear velocity does not remove flow coupling: the relevant exposure average is &lang;k/u&rang;, not &lang;k&rang;/&lang;u&rang;.
+        </p>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-header"><h3>Where the gain comes from</h3></div>
+      <div class="card-body" style="padding:10px 12px 12px">
+        <svg class="chart" id="gainBars" viewBox="0 0 500 250" role="img" aria-label="Sensitivity of the pulsing gain to activation energy, temperature swing and duty cycle"></svg>
+        <p class="chart-note">
+          Sweep of R<sub>exposure</sub> against the swing &Delta;T = T<sub>peak</sub> &minus; T<sub>min</sub> at the current
+          E<sub>a</sub> and d. The curve is flat near &Delta;T = 0 and steepens fast, which is why a hard, deep pulse matters more than a fast one.
+        </p>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- ============ RATIOS ============ -->
+<section id="ratios" class="panel" role="tabpanel">
+  <p class="section-kicker">The design map</p>
+  <h2 class="section-title">Where pulsing actually pays</h2>
+  <p class="section-lede">
+    Both reported quantities are ratios of dimensionless groups, so their prefactors cancel: A drops out of R<sub>exposure</sub> and R<sub>&Lambda;</sub>, and
+    h<sub>0</sub>/T<sub>0</sub><sup>&beta;</sup> drops out of R<sub>&Lambda;</sub>. Only E<sub>a</sub>, &beta;, and the three
+    temperatures survive, which is what makes the note's conclusion general rather than a property of one catalyst.
+  </p>
+
+  <div class="kpi-grid" style="grid-template-columns:repeat(4,minmax(150px,1fr))">
+    <div class="kpi" id="rkpi1"><div class="kpi-label">R<sub>&Lambda;</sub> ideal square wave</div><div class="kpi-value" id="rIdealLam">&mdash;</div><div class="kpi-sub">two-state limit</div></div>
+    <div class="kpi" id="rkpi2"><div class="kpi-label">R<sub>exposure</sub> ideal square wave</div><div class="kpi-value" id="rIdealDa">&mdash;</div><div class="kpi-sub">two-state limit</div></div>
+    <div class="kpi" id="rkpi3"><div class="kpi-label">Break-even T<sub>peak</sub></div><div class="kpi-value" id="rBreakeven">&mdash;</div><div class="kpi-sub">relative exposure ratio = 1</div></div>
+    <div class="kpi" id="rkpi4"><div class="kpi-label">E<sub>a</sub> vs 2RT<sub>avg</sub></div><div class="kpi-value" id="rConvex">&mdash;</div><div class="kpi-sub">convexity test on k</div></div>
+  </div>
+
+  <div class="calc-grid">
+    <article class="card">
+      <div class="card-header"><h3>R<sub>exposure</sub> across the T<sub>peak</sub> sweep</h3></div>
+      <div class="card-body" style="padding:10px 12px 12px">
+        <svg class="chart" id="sweepPeak" viewBox="0 0 560 300" role="img" aria-label="Damkohler ratio versus peak temperature"></svg>
+        <div class="legend">
+          <span><i style="background:var(--red)"></i>R<sub>exposure</sub></span>
+          <span><i style="background:var(--blue)"></i>R<sub>&Lambda;</sub></span>
+          <span><i class="dash" style="color:var(--muted)"></i>break-even</span>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-header"><h3>Duty-cycle dependence</h3></div>
+      <div class="card-body" style="padding:10px 12px 12px">
+        <svg class="chart" id="sweepDuty" viewBox="0 0 560 300" role="img" aria-label="Damkohler ratio versus duty cycle"></svg>
+        <p class="chart-note">
+          Low duty means most of the cycle sits at T<sub>min</sub>, so T<sub>avg</sub> collapses and the ratio against
+          <em>that</em> reference grows. The absolute throughput falls at the same time, which the ratio does not show.
+        </p>
+      </div>
+    </article>
+  </div>
+
+  <div class="assumption">
+    <strong>The ratio is not the whole answer.</strong> The relative exposure ratio compares RPH against a CJH heater held at the RPH
+    time-average temperature. It says pulsing beats a <em>cooler</em> continuous heater. It does not say pulsing beats a
+    continuous heater run at T<sub>peak</sub>, which is the comparison an operator with enough power actually faces.
+    The case for pulsing there rests on selectivity and element lifetime, not on &Lambda; or Da.
+  </div>
+</section>
+
+<!-- ============ EXPERIMENTS ============ -->
+<section id="experiments" class="panel" role="tabpanel">
+  <p class="section-kicker">Carbon fiber paper reactor, 1 bar</p>
+  <h2 class="section-title">What the CJH runs already show</h2>
+  <p class="section-lede">
+    Measured ethane cracking on the Joule-heated CFP element. Every row is continuous heating, so this table is the
+    baseline the pulsed case has to beat, not evidence for it. The pattern that matters is in the last column.
+  </p>
+
+  <div class="table-shell">
+    <table class="data">
+      <thead>
+        <tr>
+          <th>Condition</th><th>T (&deg;C)</th><th>Q (sccm)</th><th>C<sub>2</sub>H<sub>6</sub> (mol%)</th>
+          <th>&tau; (ms)</th><th>X (%)</th><th>C<sub>2</sub>H<sub>4</sub> yield (wt%)</th><th>C<sub>2</sub>H<sub>4</sub> sel. (wt%)</th>
+        </tr>
+      </thead>
+      <tbody id="expBody"></tbody>
+    </table>
+  </div>
+
+  <div class="calc-grid" style="margin-top:16px">
+    <article class="card">
+      <div class="card-header"><h3>Selectivity pays for conversion</h3></div>
+      <div class="card-body" style="padding:10px 12px 12px">
+        <svg class="chart" id="selChart" viewBox="0 0 520 300" role="img" aria-label="Ethylene selectivity falling as ethane conversion rises"></svg>
+        <p class="chart-note">
+          Every point is CJH. Selectivity falls from 86% to 61% as conversion climbs, because the ethylene that forms
+          keeps sitting in the hot zone and reacts on.
+        </p>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-header"><h3>The opening this leaves for RPH</h3></div>
+      <div class="card-body">
+        <div class="formula-list">
+          <div class="formula-item">
+            <div class="formula-name">The measured tradeoff</div>
+            <div class="formula">Raising T from 1000 to 1200 &deg;C at fixed &tau; triples conversion and costs 24 points of selectivity.</div>
+            <div class="formula-note">1000 &deg;C / 100 sccm: X = 11.3%, S = 85.3%. 1200 &deg;C / 100 sccm: X = 39.2%, S = 61.6%.</div>
+          </div>
+          <div class="formula-item">
+            <div class="formula-name">Why the two clocks differ</div>
+            <div class="formula">Ethane consumption and ethylene destruction do not share an activation energy.</div>
+            <div class="formula-note">A short excursion to high T advances the higher-E<sub>a</sub> step far more than the lower one. That, not &Lambda;, is the selectivity argument.</div>
+          </div>
+          <div class="formula-item">
+            <div class="formula-name">What is not yet measured</div>
+            <div class="formula">No pulsed run in this dataset.</div>
+            <div class="formula-note">The dimensionless argument predicts a gain; the table cannot confirm it. A duty-cycle series at matched time-average T is the missing experiment.</div>
+          </div>
+        </div>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- ============ CALCULATIONS ============ -->
+<section id="calculations" class="panel" role="tabpanel">
+  <p class="section-kicker">Everything the page evaluates</p>
+  <h2 class="section-title">Equations, assumptions, and what cancels</h2>
+
+  <div class="calc-note">
+    All temperatures are converted to kelvin before entering any Arrhenius or power-law expression. The page reports
+    <em>ratios</em>, so the pre-exponential A and the reference group h<sub>0</sub>/T<sub>0</sub><sup>&beta;</sup> cancel
+    identically and are never needed as inputs.
+  </div>
+  <div class="calc-note" style="margin-top:10px">
+    <strong>Experimental reference:</strong> Mittal, A.<sup>†</sup>, Kwak, Y.<sup>†</sup>, Zheng, W., Ierapetritou, M., &amp; Vlachos, D. G. (2025). <em>Short contact time, high temperature, internally-heated ethane crackers.</em> <em>Chemical Engineering Journal</em>, 168251. The CFP ethane-cracking table is presented as continuous-heating baseline data; it does not validate a pulsed case.
+  </div>
+
+  <div class="calc-grid">
+    <article class="card formula-card">
+      <div class="card-header"><h3>Constitutive forms</h3></div>
+      <div class="card-body formula-list">
+        <div class="formula-item">
+          <div class="formula-name">Rate constant</div>
+          <div class="formula">k(T) = A exp(&minus;E<sub>a</sub> / RT)</div>
+          <div class="formula-note">k&Prime;(T) = k(T) &middot; E<sub>a</sub>(E<sub>a</sub> &minus; 2RT) / (R<sup>2</sup>T<sup>4</sup>), so k is convex whenever E<sub>a</sub> &gt; 2RT. Default E<sub>a</sub> = 273 kJ/mol, the lumped first-order ethane value.</div>
+        </div>
+        <div class="formula-item">
+          <div class="formula-name">Mass-transfer coefficient</div>
+          <div class="formula">h(T) = h<sub>0</sub> (T / T<sub>0</sub>)<sup>&beta;</sup></div>
+          <div class="formula-note">h&Prime;(T) &lt; 0 for 0 &lt; &beta; &lt; 1. The slider spans past 1 so the concavity assumption can be stress-tested rather than assumed.</div>
+        </div>
+        <div class="formula-item">
+          <div class="formula-name">Velocity</div>
+          <div class="formula">u(T) = u<sub>0</sub> (T / T<sub>0</sub>)</div>
+          <div class="formula-note">Ideal gas at fixed pressure and fixed molar flow. u&Prime; = 0, so its time-average is exactly its average-temperature value.</div>
+        </div>
+        <div class="formula-item">
+          <div class="formula-name">Relative exposure</div>
+          <div class="formula">R<sub>exposure</sub> = &lang;k(T)/u(T)&rang; / [k(T<sub>avg</sub>)/u(T<sub>avg</sub>)]</div>
+          <div class="formula-note">Residence time matters for conversion, but the page deliberately does not report absolute Da without a kinetic prefactor and a reactor model. Measured residence times remain in the experiment table.</div>
+        </div>
+      </div>
+    </article>
+
+    <article class="card formula-card">
+      <div class="card-header"><h3>Time-averaging</h3></div>
+      <div class="card-body formula-list">
+        <div class="formula-item">
+          <div class="formula-name">Continuous integration (animation tab)</div>
+          <div class="formula">&lang;f&rang; = (1/t) &int; f(T(t')) dt'</div>
+          <div class="formula-note">Accumulated numerically each animation frame over the real trapezoidal waveform, including the ramps. This is what the running-average charts plot.</div>
+        </div>
+        <div class="formula-item">
+          <div class="formula-name">Ideal two-state limit (ratios tab)</div>
+          <div class="formula">&lang;f&rang; = d f(T<sub>peak</sub>) + (1 &minus; d) f(T<sub>min</sub>)</div>
+          <div class="formula-note">Recovered when the ramp fraction goes to zero. This is the form the note proves against.</div>
+        </div>
+        <div class="formula-item">
+          <div class="formula-name">Reference temperature</div>
+          <div class="formula">T<sub>avg</sub> = d T<sub>peak</sub> + (1 &minus; d) T<sub>min</sub></div>
+          <div class="formula-note">The CJH comparison is pinned here, so the two systems always share a time-average temperature.</div>
+        </div>
+        <div class="formula-item">
+          <div class="formula-name">The two ratios</div>
+          <div class="formula">R<sub>&Lambda;</sub> = &lang;kL/h&rang; / [k(T<sub>avg</sub>)L/h(T<sub>avg</sub>)]<br>R<sub>exposure</sub> = &lang;k/u&rang; / [k(T<sub>avg</sub>)/u(T<sub>avg</sub>)]</div>
+          <div class="formula-note">The ratios are dimensionless because the common characteristic length L cancels. The instantaneous k/u ratio is averaged directly; &lang;k/u&rang; cannot in general be replaced by &lang;k&rang;/&lang;u&rang;.</div>
+        </div>
+      </div>
+    </article>
+  </div>
+
+  <div class="calc-grid">
+    <article class="card formula-card">
+      <div class="card-header"><h3>Assumptions carried, and their cost</h3></div>
+      <div class="card-body formula-list">
+        <div class="formula-item">
+          <div class="formula-name">Single lumped rate</div>
+          <div class="formula">One E<sub>a</sub> stands in for the whole radical network.</div>
+          <div class="formula-note">This is why the page never converts Da into a predicted conversion. Ethane cracking is chain-initiated with an induction period, and a lumped k overpredicts hard at millisecond contact times.</div>
+        </div>
+        <div class="formula-item">
+          <div class="formula-name">Gas follows the element instantly</div>
+          <div class="formula">T<sub>gas</sub> = T<sub>element</sub> with no lag.</div>
+          <div class="formula-note">A real pulse shorter than the gas thermal time constant is filtered, and the gas sees a smaller swing than the element. Short periods on the slider are therefore optimistic.</div>
+        </div>
+        <div class="formula-item">
+          <div class="formula-name">&beta; treated as constant</div>
+          <div class="formula">One exponent across 400 to 1400 &deg;C.</div>
+          <div class="formula-note">Flagged rather than defended. See the &Lambda; caveat on the Jensen tab.</div>
+        </div>
+        <div class="formula-item">
+          <div class="formula-name">No coke, no element ageing</div>
+          <div class="formula">Properties are time-invariant.</div>
+          <div class="formula-note">Deposition and element degradation are the actual limits on a pulsed CFP heater and sit entirely outside this model.</div>
+        </div>
+      </div>
+    </article>
+
+    <article class="card formula-card">
+      <div class="card-header"><h3>Symbols</h3></div>
+      <div class="card-body">
+        <table class="metric-table symbol-table">
+          <tbody>
+            <tr><td>T<sub>peak</sub></td><td style="text-align:left;color:var(--muted)">Element temperature during the on-phase</td></tr>
+            <tr><td>T<sub>min</sub></td><td style="text-align:left;color:var(--muted)">Element temperature during the off-phase</td></tr>
+            <tr><td>d</td><td style="text-align:left;color:var(--muted)">Duty cycle, fraction of the period spent at T<sub>peak</sub></td></tr>
+            <tr><td>T<sub>avg</sub></td><td style="text-align:left;color:var(--muted)">Time-average temperature, and the CJH set point</td></tr>
+            <tr><td>&Lambda;</td><td style="text-align:left;color:var(--muted)">k/h, kinetics against transport</td></tr>
+            <tr><td>Da</td><td style="text-align:left;color:var(--muted)">k&tau;, reaction against convection</td></tr>
+            <tr><td>&beta;</td><td style="text-align:left;color:var(--muted)">Power-law exponent on the transport coefficient</td></tr>
+            <tr><td>X, S</td><td style="text-align:left;color:var(--muted)">Ethane conversion and ethylene selectivity, measured</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <span>RPH vs CJH dimensionless visualizer &mdash; companion to the July 2025 note.</span>
+  <span>Ratios are model output. The experiment table is measured CJH data.</span>
+</footer>
+
+<script>
+"use strict";
+
+/* ------------------------------------------------------------------ */
+/* constants and state                                                 */
+/* ------------------------------------------------------------------ */
+const R_GAS = 8.314;            // J/mol/K
+const T_REF = 1373.15;          // 1100 C, the normalization anchor
+const K2C = 273.15;
+
+const state = {
+  tPeak: 1250, tMin: 750, duty: 0.35, period: 1.2, ramp: 0.10,
+  ea: 273, beta: 0.50,
+  running: false, t: 0, lastFrame: 0, cycles: 0,
+  accK: 0, accH: 0, accU: 0, accKH: 0, accKU: 0, accT: 0, accTime: 0,
+  trace: [], kHist: [], hHist: []
+};
+
+const TRACE_WINDOW = 6;   // seconds shown in the trace chart
+
+/* normalised property functions: prefactors cancel in every ratio */
+const kOf  = TC => Math.exp(-(state.ea * 1000 / R_GAS) * (1 / (TC + K2C) - 1 / T_REF));
+const hOf  = TC => Math.pow((TC + K2C) / T_REF, state.beta);
+const uOf  = TC => (TC + K2C) / T_REF;
+
+const tAvgOf = () => state.duty * state.tPeak + (1 - state.duty) * state.tMin;
+
+/* trapezoidal element waveform, phase in [0,1) */
+function waveform(phase) {
+  const hi = state.duty, lo = 1 - state.duty;
+  const r = Math.min(state.ramp, hi * 0.98, lo * 0.98);
+  if (r <= 1e-6) return phase < hi ? state.tPeak : state.tMin;
+  const rUp = Math.min(r, hi * 0.98), rDn = Math.min(r, lo * 0.98);
+  const span = state.tPeak - state.tMin;
+  if (phase < rUp)      return state.tMin + span * (phase / rUp);
+  if (phase < hi)       return state.tPeak;
+  if (phase < hi + rDn) return state.tPeak - span * ((phase - hi) / rDn);
+  return state.tMin;
+}
+
+/* ideal two-state averages, the form the note proves */
+function idealAverages() {
+  const d = state.duty;
+  return {
+    k: d * kOf(state.tPeak) + (1 - d) * kOf(state.tMin),
+    h: d * hOf(state.tPeak) + (1 - d) * hOf(state.tMin),
+    u: d * uOf(state.tPeak) + (1 - d) * uOf(state.tMin),
+    kh: d * kOf(state.tPeak) / hOf(state.tPeak) + (1 - d) * kOf(state.tMin) / hOf(state.tMin),
+    ku: d * kOf(state.tPeak) / uOf(state.tPeak) + (1 - d) * kOf(state.tMin) / uOf(state.tMin)
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* tiny svg chart helpers                                              */
+/* ------------------------------------------------------------------ */
+const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+
+function frame(w, h, pad) {
+  return {
+    w, h, pad,
+    x: (v, lo, hi) => pad.l + (w - pad.l - pad.r) * (hi === lo ? 0.5 : (v - lo) / (hi - lo)),
+    y: (v, lo, hi) => h - pad.b - (h - pad.t - pad.b) * (hi === lo ? 0.5 : (v - lo) / (hi - lo))
+  };
+}
+
+function axes(f, opts) {
+  const { w, h, pad } = f;
+  let s = `<rect x="${pad.l}" y="${pad.t}" width="${w - pad.l - pad.r}" height="${h - pad.t - pad.b}" fill="#fbfcfd" stroke="#e6ebef"/>`;
+  (opts.yTicks || []).forEach(t => {
+    const y = f.y(t.v, opts.yLo, opts.yHi);
+    s += `<line x1="${pad.l}" y1="${y}" x2="${w - pad.r}" y2="${y}" stroke="#e6ebef"/>`;
+    s += `<text x="${pad.l - 7}" y="${y + 4}" text-anchor="end" font-size="10" fill="#64717d">${esc(t.label)}</text>`;
+  });
+  (opts.xTicks || []).forEach(t => {
+    const x = f.x(t.v, opts.xLo, opts.xHi);
+    s += `<line x1="${x}" y1="${pad.t}" x2="${x}" y2="${h - pad.b}" stroke="#f0f3f6"/>`;
+    s += `<text x="${x}" y="${h - pad.b + 15}" text-anchor="middle" font-size="10" fill="#64717d">${esc(t.label)}</text>`;
+  });
+  if (opts.xLabel) s += `<text x="${(pad.l + w - pad.r) / 2}" y="${h - 4}" text-anchor="middle" font-size="11" fill="#64717d">${esc(opts.xLabel)}</text>`;
+  if (opts.yLabel) s += `<text x="12" y="${(pad.t + h - pad.b) / 2}" text-anchor="middle" font-size="11" fill="#64717d" transform="rotate(-90 12 ${(pad.t + h - pad.b) / 2})">${esc(opts.yLabel)}</text>`;
+  return s;
+}
+
+function path(pts, f, xLo, xHi, yLo, yHi, stroke, width, dash) {
+  if (!pts.length) return "";
+  const d = pts.map((p, i) => `${i ? "L" : "M"}${f.x(p[0], xLo, xHi).toFixed(1)} ${f.y(p[1], yLo, yHi).toFixed(1)}`).join(" ");
+  return `<path d="${d}" fill="none" stroke="${stroke}" stroke-width="${width}"${dash ? ` stroke-dasharray="${dash}"` : ""} stroke-linejoin="round"/>`;
+}
+
+function ticks(lo, hi, n, fmt) {
+  const out = [];
+  for (let i = 0; i <= n; i++) {
+    const v = lo + (hi - lo) * i / n;
+    out.push({ v, label: fmt(v) });
+  }
+  return out;
+}
+
+/* blackbody-ish colour ramp for the element */
+const RAMP = [
+  [300, [42, 52, 62]], [600, [92, 30, 16]], [800, [166, 52, 16]],
+  [1000, [224, 108, 22]], [1150, [244, 168, 44]], [1300, [252, 226, 130]], [1450, [255, 250, 232]]
+];
+function tempColor(TC, alpha) {
+  let a = RAMP[0], b = RAMP[RAMP.length - 1];
+  for (let i = 0; i < RAMP.length - 1; i++) {
+    if (TC >= RAMP[i][0] && TC <= RAMP[i + 1][0]) { a = RAMP[i]; b = RAMP[i + 1]; break; }
+  }
+  if (TC <= RAMP[0][0]) { a = b = RAMP[0]; }
+  if (TC >= RAMP[RAMP.length - 1][0]) { a = b = RAMP[RAMP.length - 1]; }
+  const f = b[0] === a[0] ? 0 : (TC - a[0]) / (b[0] - a[0]);
+  const c = [0, 1, 2].map(i => Math.round(a[1][i] + (b[1][i] - a[1][i]) * f));
+  return `rgba(${c[0]},${c[1]},${c[2]},${alpha === undefined ? 1 : alpha})`;
+}
+
+/* ------------------------------------------------------------------ */
+/* reactor canvas                                                      */
+/* ------------------------------------------------------------------ */
+const canvas = document.getElementById("reactorCanvas");
+const ctx = canvas.getContext("2d");
+const CW = canvas.width, CH = canvas.height;
+const ZONE_X0 = CW * 0.34, ZONE_X1 = CW * 0.62;
+
+const particles = [];
+for (let i = 0; i < 90; i++) {
+  particles.push({ x: Math.random() * CW, y: 108 + Math.random() * 84, v: 1.4 + Math.random() * 1.6, T: 25 });
+}
+
+function drawReactor(TC) {
+  ctx.clearRect(0, 0, CW, CH);
+  ctx.fillStyle = "#0d1620";
+  ctx.fillRect(0, 0, CW, CH);
+
+  // tube walls
+  ctx.strokeStyle = "#2a3d4f";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(24, 92, CW - 48, 116);
+
+  // glow halo around the heated zone
+  const glow = ctx.createRadialGradient((ZONE_X0 + ZONE_X1) / 2, 150, 8, (ZONE_X0 + ZONE_X1) / 2, 150, 240);
+  const heat = Math.max(0, Math.min(1, (TC - 500) / 900));
+  glow.addColorStop(0, tempColor(TC, 0.42 * heat));
+  glow.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, CW, CH);
+
+  // the CFP element
+  ctx.save();
+  ctx.shadowColor = tempColor(TC, 0.9);
+  ctx.shadowBlur = 34 * heat;
+  ctx.fillStyle = tempColor(TC);
+  ctx.fillRect(ZONE_X0, 128, ZONE_X1 - ZONE_X0, 44);
+  ctx.restore();
+  ctx.strokeStyle = "rgba(255,255,255,0.18)";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(ZONE_X0, 128, ZONE_X1 - ZONE_X0, 44);
+
+  // electrodes
+  ctx.fillStyle = "#7f8b95";
+  ctx.fillRect(ZONE_X0 - 16, 118, 16, 64);
+  ctx.fillRect(ZONE_X1, 118, 16, 64);
+
+  // particles
+  particles.forEach(p => {
+    p.x += p.v * (state.running ? 1 : 0.12);
+    if (p.x > CW - 26) { p.x = 26; p.T = 25; }
+    const inZone = p.x > ZONE_X0 && p.x < ZONE_X1;
+    const target = inZone ? TC : 25;
+    p.T += (target - p.T) * (inZone ? 0.30 : 0.045);
+    ctx.fillStyle = tempColor(Math.max(60, p.T), 0.92);
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 2.4, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // labels
+  ctx.font = "12px Arial, Helvetica, sans-serif";
+  ctx.fillStyle = "#8fa3b4";
+  ctx.textAlign = "left";
+  ctx.fillText("C₂H₆ in", 30, 84);
+  ctx.textAlign = "center";
+  ctx.fillText("Joule-heated CFP element", (ZONE_X0 + ZONE_X1) / 2, 116);
+  ctx.fillText("quench zone", (ZONE_X1 + CW - 24) / 2, 226);
+  ctx.textAlign = "right";
+  ctx.fillText("C₂H₄ out", CW - 30, 84);
+
+  ctx.textAlign = "center";
+  ctx.font = "bold 22px Arial, Helvetica, sans-serif";
+  ctx.fillStyle = tempColor(Math.max(700, TC));
+  ctx.fillText(TC.toFixed(0) + " °C", (ZONE_X0 + ZONE_X1) / 2, 264);
+}
+
+/* ------------------------------------------------------------------ */
+/* animation loop                                                      */
+/* ------------------------------------------------------------------ */
+function step(now) {
+  if (!state.lastFrame) state.lastFrame = now;
+  let dt = (now - state.lastFrame) / 1000;
+  state.lastFrame = now;
+  dt = Math.min(dt, 0.05);
+
+  if (state.running) {
+    const prevCycle = Math.floor(state.t / state.period);
+    state.t += dt;
+    const cyc = Math.floor(state.t / state.period);
+    if (cyc !== prevCycle) state.cycles = cyc;
+
+    const TC = waveform((state.t % state.period) / state.period);
+    state.accK += kOf(TC) * dt;
+    state.accH += hOf(TC) * dt;
+    state.accU += uOf(TC) * dt;
+    state.accKH += kOf(TC) / hOf(TC) * dt;
+    state.accKU += kOf(TC) / uOf(TC) * dt;
+    state.accT += TC * dt;
+    state.accTime += dt;
+
+    state.trace.push([state.t, TC]);
+    while (state.trace.length && state.trace[0][0] < state.t - TRACE_WINDOW) state.trace.shift();
+
+    const tAvgRun = state.accT / state.accTime;
+    state.kHist.push([state.t, state.accK / state.accTime / kOf(tAvgRun)]);
+    state.hHist.push([state.t, state.accH / state.accTime / hOf(tAvgRun)]);
+    while (state.kHist.length && state.kHist[0][0] < state.t - TRACE_WINDOW) state.kHist.shift();
+    while (state.hHist.length && state.hHist[0][0] < state.t - TRACE_WINDOW) state.hHist.shift();
+
+    updateLive(TC);
+    drawReactor(TC);
+    drawTrace();
+    drawRaces();
+  }
+  requestAnimationFrame(step);
+}
+
+function updateLive(TC) {
+  const tAvgRun = state.accTime ? state.accT / state.accTime : tAvgOf();
+  const kAvg = state.accK / state.accTime;
+  const hAvg = state.accH / state.accTime;
+  const uAvg = state.accU / state.accTime;
+  const khAvg = state.accKH / state.accTime;
+  const kuAvg = state.accKU / state.accTime;
+
+  const kRef = kOf(tAvgRun), hRef = hOf(tAvgRun), uRef = uOf(tAvgRun);
+  const rK = kAvg / kRef;
+  const rLam = khAvg / (kRef / hRef);
+  const rDa = kuAvg / (kRef / uRef);
+
+  document.getElementById("valTnow").textContent = TC.toFixed(0) + " °C";
+  document.getElementById("subTnow").textContent = TC > tAvgRun ? "above the CJH set point" : "below the CJH set point";
+  document.getElementById("valTavg").textContent = tAvgRun.toFixed(0) + " °C";
+  document.getElementById("valKratio").textContent = rK.toFixed(rK >= 100 ? 0 : 2) + "×";
+  document.getElementById("valRlam").textContent = rLam.toFixed(rLam >= 100 ? 0 : 2) + "×";
+  document.getElementById("valRda").textContent = rDa.toFixed(rDa >= 100 ? 0 : 2) + "×";
+  document.getElementById("cycleCount").textContent = "cycle " + state.cycles;
+
+  document.getElementById("kpiLam").className = "kpi " + (rLam > 1.02 ? "good" : rLam < 0.98 ? "bad" : "warn");
+  document.getElementById("kpiDa").className = "kpi " + (rDa > 1.02 ? "good" : rDa < 0.98 ? "bad" : "warn");
+  document.getElementById("kpiK").className = "kpi " + (rK > 1.02 ? "good" : "warn");
+
+  const kv = document.getElementById("kVerdict");
+  kv.textContent = rK > 1.001 ? "above by " + ((rK - 1) * 100).toFixed(0) + "%" : "at parity";
+  kv.className = "status " + (rK > 1.001 ? "good" : "warn");
+  const hv = document.getElementById("hVerdict");
+  const rH = hAvg / hRef;
+  hv.textContent = rH < 0.999 ? "below by " + ((1 - rH) * 100).toFixed(1) + "%" : rH > 1.001 ? "above by " + ((rH - 1) * 100).toFixed(1) + "%" : "at parity";
+  hv.className = "status " + (rH < 0.999 ? "good" : rH > 1.001 ? "bad" : "warn");
+
+  const exposureRPH = kuAvg;
+  const exposureCJH = kRef / uRef;
+  document.getElementById("verdictMain").textContent =
+    `Same average temperature, ${rDa.toFixed(2)}× the relative kinetic exposure.`;
+  document.getElementById("verdictSub").innerHTML =
+    `&lang;k/u&rang;<sub>RPH</sub> = ${exposureRPH.toExponential(2)} &nbsp;vs&nbsp; [k/u]<sub>CJH</sub> = ${exposureCJH.toExponential(2)} ` +
+    `&nbsp;|&nbsp; integrated over ${state.accTime.toFixed(1)} s`;
+}
+
+function drawTrace() {
+  const f = frame(760, 260, { l: 52, r: 14, t: 14, b: 34 });
+  const tAvgRun = state.accTime ? state.accT / state.accTime : tAvgOf();
+  const lo = Math.min(state.tMin, 300) - 40, hi = state.tPeak + 60;
+  const x0 = Math.max(0, state.t - TRACE_WINDOW), x1 = Math.max(TRACE_WINDOW, state.t);
+
+  let s = axes(f, {
+    xLo: x0, xHi: x1, yLo: lo, yHi: hi,
+    yTicks: ticks(lo, hi, 4, v => v.toFixed(0)),
+    xTicks: ticks(x0, x1, 4, v => v.toFixed(1) + "s"),
+    xLabel: "time (s)", yLabel: "T (°C)"
+  });
+  s += path([[x0, tAvgRun], [x1, tAvgRun]], f, x0, x1, lo, hi, "#2c6e9b", 2, "6 5");
+  s += path(state.trace, f, x0, x1, lo, hi, "#c53a3a", 2.2);
+  if (state.trace.length) {
+    const last = state.trace[state.trace.length - 1];
+    s += `<circle cx="${f.x(last[0], x0, x1).toFixed(1)}" cy="${f.y(last[1], lo, hi).toFixed(1)}" r="4" fill="#c53a3a"/>`;
+  }
+  document.getElementById("traceChart").innerHTML = s;
+}
+
+function drawRaces() {
+  const x0 = Math.max(0, state.t - TRACE_WINDOW), x1 = Math.max(TRACE_WINDOW, state.t);
+
+  const kMax = Math.max(1.35, ...state.kHist.map(p => p[1])) * 1.08;
+  const fk = frame(500, 230, { l: 48, r: 12, t: 12, b: 32 });
+  let sk = axes(fk, {
+    xLo: x0, xHi: x1, yLo: 0.9, yHi: kMax,
+    yTicks: ticks(0.9, kMax, 4, v => v.toFixed(1) + "×"),
+    xTicks: ticks(x0, x1, 3, v => v.toFixed(1) + "s"),
+    xLabel: "time (s)"
+  });
+  sk += path([[x0, 1], [x1, 1]], fk, x0, x1, 0.9, kMax, "#2c6e9b", 2, "6 5");
+  sk += path(state.kHist, fk, x0, x1, 0.9, kMax, "#c53a3a", 2.4);
+  document.getElementById("kRaceChart").innerHTML = sk;
+
+  const hVals = state.hHist.map(p => p[1]);
+  const hLo = Math.min(0.985, ...hVals) - 0.006, hHi = Math.max(1.015, ...hVals) + 0.006;
+  const fh = frame(500, 230, { l: 52, r: 12, t: 12, b: 32 });
+  let sh = axes(fh, {
+    xLo: x0, xHi: x1, yLo: hLo, yHi: hHi,
+    yTicks: ticks(hLo, hHi, 4, v => v.toFixed(3)),
+    xTicks: ticks(x0, x1, 3, v => v.toFixed(1) + "s"),
+    xLabel: "time (s)"
+  });
+  sh += path([[x0, 1], [x1, 1]], fh, x0, x1, hLo, hHi, "#2c6e9b", 2, "6 5");
+  sh += path(state.hHist, fh, x0, x1, hLo, hHi, "#13795b", 2.4);
+  document.getElementById("hRaceChart").innerHTML = sh;
+}
+
+/* ------------------------------------------------------------------ */
+/* jensen tab                                                          */
+/* ------------------------------------------------------------------ */
+function jensenChart(id, fn, color, label) {
+  const f = frame(460, 300, { l: 54, r: 16, t: 16, b: 40 });
+  const lo = Math.max(200, state.tMin - 120), hi = state.tPeak + 120;
+  const pts = [];
+  for (let T = lo; T <= hi; T += (hi - lo) / 160) pts.push([T, fn(T)]);
+
+  const tA = tAvgOf();
+  const fPeak = fn(state.tPeak), fMin = fn(state.tMin);
+  const chordAtAvg = state.duty * fPeak + (1 - state.duty) * fMin;
+  const curveAtAvg = fn(tA);
+
+  const vals = pts.map(p => p[1]).concat([chordAtAvg, curveAtAvg]);
+  let yLo = Math.min(...vals), yHi = Math.max(...vals);
+  const padY = (yHi - yLo) * 0.12 || 1;
+  yLo -= padY; yHi += padY;
+
+  let s = axes(f, {
+    xLo: lo, xHi: hi, yLo, yHi,
+    yTicks: [], xTicks: ticks(lo, hi, 4, v => v.toFixed(0)),
+    xLabel: "T (°C)", yLabel: label
+  });
+
+  // shade the Jensen gap
+  const xA = f.x(tA, lo, hi);
+  const yChord = f.y(chordAtAvg, yLo, yHi), yCurve = f.y(curveAtAvg, yLo, yHi);
+  s += `<rect x="${xA - 5}" y="${Math.min(yChord, yCurve)}" width="10" height="${Math.max(2, Math.abs(yChord - yCurve))}" fill="#c53a3a" opacity="0.22"/>`;
+
+  s += path(pts, f, lo, hi, yLo, yHi, color, 2.4);
+  s += path([[state.tMin, fMin], [state.tPeak, fPeak]], f, lo, hi, yLo, yHi, "#102a43", 1.8, "5 4");
+
+  [[state.tMin, fMin], [state.tPeak, fPeak]].forEach(p => {
+    s += `<circle cx="${f.x(p[0], lo, hi).toFixed(1)}" cy="${f.y(p[1], yLo, yHi).toFixed(1)}" r="4.5" fill="#102a43"/>`;
+  });
+  s += `<circle cx="${xA.toFixed(1)}" cy="${yChord.toFixed(1)}" r="5" fill="#c53a3a"/>`;
+  s += `<circle cx="${xA.toFixed(1)}" cy="${yCurve.toFixed(1)}" r="5" fill="#fff" stroke="#2c6e9b" stroke-width="2.4"/>`;
+  s += `<line x1="${xA}" y1="${f.pad.t}" x2="${xA}" y2="${f.h - f.pad.b}" stroke="#b9c4cf" stroke-dasharray="3 4"/>`;
+  s += `<text x="${xA}" y="${f.pad.t + 12}" text-anchor="middle" font-size="10" fill="#64717d">T_avg</text>`;
+
+  const ratio = curveAtAvg === 0 ? 1 : chordAtAvg / curveAtAvg;
+  s += `<text x="${f.w - f.pad.r - 4}" y="${f.pad.t + 14}" text-anchor="end" font-size="12" font-weight="bold" fill="${ratio > 1.0005 ? "#0d6549" : ratio < 0.9995 ? "#8e2e2e" : "#64717d"}">chord / curve = ${ratio.toFixed(3)}×</text>`;
+
+  document.getElementById(id).innerHTML = s;
+  return ratio;
+}
+
+function drawGainSweep() {
+  const f = frame(500, 250, { l: 54, r: 14, t: 16, b: 40 });
+  const pts = [];
+  const base = state.tMin;
+  for (let dT = 0; dT <= 700; dT += 10) {
+    const peak = base + dT;
+    const tA = state.duty * peak + (1 - state.duty) * base;
+    const kAvg = state.duty * kOf(peak) + (1 - state.duty) * kOf(base);
+    pts.push([dT, kAvg / kOf(tA)]);
+  }
+  const yHi = Math.max(1.2, ...pts.map(p => p[1])) * 1.05;
+  let s = axes(f, {
+    xLo: 0, xHi: 700, yLo: 0.95, yHi,
+    yTicks: ticks(0.95, yHi, 4, v => v.toFixed(1) + "×"),
+    xTicks: ticks(0, 700, 4, v => v.toFixed(0)),
+    xLabel: "ΔT = T_peak − T_min (°C)", yLabel: "R_exposure"
+  });
+  s += path([[0, 1], [700, 1]], f, 0, 700, 0.95, yHi, "#b9c4cf", 1.6, "5 4");
+  s += path(pts, f, 0, 700, 0.95, yHi, "#c53a3a", 2.4);
+  const cur = state.tPeak - state.tMin;
+  if (cur >= 0 && cur <= 700) {
+    const tA = tAvgOf();
+    const kAvg = state.duty * kOf(state.tPeak) + (1 - state.duty) * kOf(state.tMin);
+    const y = kAvg / kOf(tA);
+    s += `<circle cx="${f.x(cur, 0, 700).toFixed(1)}" cy="${f.y(Math.min(y, yHi), 0.95, yHi).toFixed(1)}" r="5" fill="#102a43"/>`;
+    s += `<text x="${f.x(cur, 0, 700).toFixed(1)}" y="${f.y(Math.min(y, yHi), 0.95, yHi) - 11}" text-anchor="middle" font-size="11" font-weight="bold" fill="#102a43">now</text>`;
+  }
+  document.getElementById("gainBars").innerHTML = s;
+}
+
+function renderJensen() {
+  const rk = jensenChart("jensenK", kOf, "#c53a3a", "k / k(T_ref)");
+  const rh = jensenChart("jensenH", hOf, "#13795b", "h / h(T_ref)");
+  const ru = jensenChart("jensenU", uOf, "#2c6e9b", "u / u(T_ref)");
+
+  const pct = r => (r >= 1 ? "+" : "−") + (Math.abs(r - 1) * 100).toFixed(r > 5 ? 0 : 1) + "%";
+  document.getElementById("jkGain").textContent = pct(rk) + "  (" + rk.toFixed(2) + "×)";
+  document.getElementById("jhGain").textContent = pct(rh) + "  (" + rh.toFixed(3) + "×)";
+  document.getElementById("juGain").textContent = pct(ru) + "  (" + ru.toFixed(3) + "×)";
+  document.getElementById("jLamNet").textContent = (rk / rh).toFixed(2) + "×";
+  document.getElementById("jDaNet").textContent = (rk / ru).toFixed(2) + "×";
+
+  const tag = document.getElementById("hConcaveTag");
+  if (state.beta < 1) { tag.textContent = "chord below"; tag.className = "status warn"; }
+  else if (state.beta > 1) { tag.textContent = "convex, chord above"; tag.className = "status bad"; }
+  else { tag.textContent = "linear"; tag.className = "status"; }
+
+  drawGainSweep();
+}
+
+/* ------------------------------------------------------------------ */
+/* ratios tab                                                          */
+/* ------------------------------------------------------------------ */
+function renderRatios() {
+  const av = idealAverages();
+  const tA = tAvgOf();
+  const rLam = av.kh / (kOf(tA) / hOf(tA));
+  const rDa = av.ku / (kOf(tA) / uOf(tA));
+
+  document.getElementById("rIdealLam").textContent = rLam.toFixed(rLam >= 100 ? 0 : 2) + "×";
+  document.getElementById("rIdealDa").textContent = rDa.toFixed(rDa >= 100 ? 0 : 2) + "×";
+  document.getElementById("rkpi1").className = "kpi " + (rLam > 1.02 ? "good" : rLam < 0.98 ? "bad" : "warn");
+  document.getElementById("rkpi2").className = "kpi " + (rDa > 1.02 ? "good" : rDa < 0.98 ? "bad" : "warn");
+
+  // break-even peak temperature, scanning upward from T_min
+  let be = null;
+  for (let p = state.tMin; p <= 2200; p += 2) {
+    const ta = state.duty * p + (1 - state.duty) * state.tMin;
+    const ku = state.duty * kOf(p) / uOf(p) + (1 - state.duty) * kOf(state.tMin) / uOf(state.tMin);
+    if (ku / (kOf(ta) / uOf(ta)) > 1.0005) { be = p; break; }
+  }
+  document.getElementById("rBreakeven").textContent = be === null ? "none" : (be <= state.tMin + 2 ? "any swing" : be.toFixed(0) + " °C");
+  document.getElementById("rkpi3").className = "kpi " + (be !== null && be <= state.tPeak ? "good" : "warn");
+
+  const twoRT = 2 * R_GAS * (tA + K2C) / 1000;
+  document.getElementById("rConvex").textContent = state.ea.toFixed(0) + " vs " + twoRT.toFixed(1);
+  document.getElementById("rkpi4").className = "kpi " + (state.ea > twoRT ? "good" : "bad");
+
+  // sweep over T_peak
+  const fp = frame(560, 300, { l: 54, r: 16, t: 16, b: 42 });
+  const lo = state.tMin, hi = Math.max(state.tMin + 50, 1500);
+  const ptsDa = [], ptsLam = [];
+  for (let p = lo; p <= hi; p += (hi - lo) / 140) {
+    const ta = state.duty * p + (1 - state.duty) * state.tMin;
+    const ka = state.duty * kOf(p) + (1 - state.duty) * kOf(state.tMin);
+    const ha = state.duty * hOf(p) + (1 - state.duty) * hOf(state.tMin);
+    const ua = state.duty * uOf(p) + (1 - state.duty) * uOf(state.tMin);
+    const ku = state.duty * kOf(p) / uOf(p) + (1 - state.duty) * kOf(state.tMin) / uOf(state.tMin);
+    ptsDa.push([p, ku / (kOf(ta) / uOf(ta))]);
+    const kh = state.duty * kOf(p) / hOf(p) + (1 - state.duty) * kOf(state.tMin) / hOf(state.tMin);
+    ptsLam.push([p, kh / (kOf(ta) / hOf(ta))]);
+  }
+  const yHi = Math.max(1.5, ...ptsLam.map(p => p[1]), ...ptsDa.map(p => p[1])) * 1.05;
+  let s = axes(fp, {
+    xLo: lo, xHi: hi, yLo: 0.9, yHi,
+    yTicks: ticks(0.9, yHi, 5, v => v.toFixed(1) + "×"),
+    xTicks: ticks(lo, hi, 5, v => v.toFixed(0)),
+    xLabel: "T_peak (°C)", yLabel: "ratio vs CJH at T_avg"
+  });
+  s += path([[lo, 1], [hi, 1]], fp, lo, hi, 0.9, yHi, "#b9c4cf", 1.6, "5 4");
+  s += path(ptsDa, fp, lo, hi, 0.9, yHi, "#c53a3a", 2.4);
+  s += path(ptsLam, fp, lo, hi, 0.9, yHi, "#2c6e9b", 2.4);
+  const xNow = fp.x(state.tPeak, lo, hi);
+  s += `<line x1="${xNow}" y1="${fp.pad.t}" x2="${xNow}" y2="${fp.h - fp.pad.b}" stroke="#102a43" stroke-dasharray="3 4"/>`;
+  s += `<text x="${xNow}" y="${fp.pad.t + 12}" text-anchor="middle" font-size="10" fill="#102a43">current</text>`;
+  document.getElementById("sweepPeak").innerHTML = s;
+
+  // sweep over duty
+  const fd = frame(560, 300, { l: 54, r: 16, t: 16, b: 42 });
+  const ptsD = [], ptsL = [];
+  for (let d = 0.02; d <= 0.98; d += 0.01) {
+    const ta = d * state.tPeak + (1 - d) * state.tMin;
+    const ka = d * kOf(state.tPeak) + (1 - d) * kOf(state.tMin);
+    const ha = d * hOf(state.tPeak) + (1 - d) * hOf(state.tMin);
+    const ua = d * uOf(state.tPeak) + (1 - d) * uOf(state.tMin);
+    ptsD.push([d, (ka / ua) / (kOf(ta) / uOf(ta))]);
+    ptsL.push([d, (ka / ha) / (kOf(ta) / hOf(ta))]);
+  }
+  const yHi2 = Math.max(1.5, ...ptsD.map(p => p[1]), ...ptsL.map(p => p[1])) * 1.05;
+  let s2 = axes(fd, {
+    xLo: 0, xHi: 1, yLo: 0.9, yHi: yHi2,
+    yTicks: ticks(0.9, yHi2, 5, v => v.toFixed(1) + "×"),
+    xTicks: ticks(0, 1, 5, v => v.toFixed(1)),
+    xLabel: "duty cycle d", yLabel: "ratio vs CJH at T_avg"
+  });
+  s2 += path([[0, 1], [1, 1]], fd, 0, 1, 0.9, yHi2, "#b9c4cf", 1.6, "5 4");
+  s2 += path(ptsD, fd, 0, 1, 0.9, yHi2, "#c53a3a", 2.4);
+  s2 += path(ptsL, fd, 0, 1, 0.9, yHi2, "#2c6e9b", 2.4);
+  const xd = fd.x(state.duty, 0, 1);
+  s2 += `<line x1="${xd}" y1="${fd.pad.t}" x2="${xd}" y2="${fd.h - fd.pad.b}" stroke="#102a43" stroke-dasharray="3 4"/>`;
+  s2 += `<text x="${xd}" y="${fd.pad.t + 12}" text-anchor="middle" font-size="10" fill="#102a43">current</text>`;
+  document.getElementById("sweepDuty").innerHTML = s2;
+}
+
+/* ------------------------------------------------------------------ */
+/* experiments tab                                                     */
+/* ------------------------------------------------------------------ */
+const EXP = [
+  { note: "70% C₂H₆ in He", T: 1000, Q: 300, c: 70, tau: 3.36, X: 4.24, Y: 3.66, S: 86.15 },
+  { note: "70% C₂H₆ in He", T: 1100, Q: 300, c: 70, tau: 3.36, X: 11.74, Y: 8.95, S: 76.28 },
+  { note: "70% C₂H₆ in He", T: 1200, Q: 300, c: 70, tau: 3.36, X: 19.16, Y: 12.19, S: 63.63 },
+  { note: "70% C₂H₆ in He", T: 1000, Q: 200, c: 70, tau: 5.04, X: 6.11, Y: 5.26, S: 86.14 },
+  { note: "70% C₂H₆ in He", T: 1100, Q: 200, c: 70, tau: 5.04, X: 16.14, Y: 12.27, S: 76.05 },
+  { note: "70% C₂H₆ in He", T: 1200, Q: 200, c: 70, tau: 5.04, X: 26.71, Y: 16.41, S: 61.43 },
+  { note: "70% C₂H₆ in He", T: 1000, Q: 100, c: 70, tau: 10.08, X: 11.34, Y: 9.67, S: 85.28 },
+  { note: "70% C₂H₆ in He", T: 1100, Q: 100, c: 70, tau: 10.08, X: 25.17, Y: 19.05, S: 75.66 },
+  { note: "70% C₂H₆ in He", T: 1200, Q: 100, c: 70, tau: 10.08, X: 39.23, Y: 24.17, S: 61.61 },
+  { note: "5% C₂H₆ + steam", T: 1100, Q: 50, c: 5, tau: 76.61, X: 81.93, Y: 51.12, S: 62.40, flag: true },
+  { note: "5% C₂H₆ + steam", T: 1150, Q: 50, c: 5, tau: 76.61, X: 89.36, Y: 44.31, S: 49.58, flag: true }
+];
+
+function renderExperiments() {
+  document.getElementById("expBody").innerHTML = EXP.map(r =>
+    `<tr class="${r.flag ? "flag" : ""}"><td>${r.note}</td><td>${r.T}</td><td>${r.Q}</td><td>${r.c}</td>` +
+    `<td>${r.tau.toFixed(2)}</td><td>${r.X.toFixed(2)}</td><td>${r.Y.toFixed(2)}</td><td>${r.S.toFixed(1)}</td></tr>`
+  ).join("");
+
+  const f = frame(520, 300, { l: 54, r: 16, t: 16, b: 42 });
+  let s = axes(f, {
+    xLo: 0, xHi: 100, yLo: 40, yHi: 95,
+    yTicks: ticks(40, 95, 5, v => v.toFixed(0) + "%"),
+    xTicks: ticks(0, 100, 5, v => v.toFixed(0) + "%"),
+    xLabel: "ethane conversion X", yLabel: "C₂H₄ selectivity S"
+  });
+  const dilute = EXP.filter(r => r.flag), neat = EXP.filter(r => !r.flag);
+  s += path(neat.slice().sort((a, b) => a.X - b.X).map(r => [r.X, r.S]), f, 0, 100, 40, 95, "#b9c4cf", 1.6);
+  neat.forEach(r => {
+    s += `<circle cx="${f.x(r.X, 0, 100).toFixed(1)}" cy="${f.y(r.S, 40, 95).toFixed(1)}" r="5" fill="${r.T >= 1200 ? "#c53a3a" : r.T >= 1100 ? "#b46714" : "#2c6e9b"}"/>`;
+  });
+  dilute.forEach(r => {
+    s += `<rect x="${(f.x(r.X, 0, 100) - 4.5).toFixed(1)}" y="${(f.y(r.S, 40, 95) - 4.5).toFixed(1)}" width="9" height="9" fill="#13795b"/>`;
+  });
+  s += `<text x="${f.w - f.pad.r - 4}" y="${f.pad.t + 14}" text-anchor="end" font-size="11" fill="#2c6e9b">● 1000 °C</text>`;
+  s += `<text x="${f.w - f.pad.r - 4}" y="${f.pad.t + 30}" text-anchor="end" font-size="11" fill="#b46714">● 1100 °C</text>`;
+  s += `<text x="${f.w - f.pad.r - 4}" y="${f.pad.t + 46}" text-anchor="end" font-size="11" fill="#c53a3a">● 1200 °C</text>`;
+  s += `<text x="${f.w - f.pad.r - 4}" y="${f.pad.t + 62}" text-anchor="end" font-size="11" fill="#13795b">■ dilute + steam</text>`;
+  document.getElementById("selChart").innerHTML = s;
+}
+
+/* ------------------------------------------------------------------ */
+/* wiring                                                              */
+/* ------------------------------------------------------------------ */
+function syncOutputs() {
+  document.getElementById("tPeakOut").innerHTML = state.tPeak + " &deg;C";
+  document.getElementById("tMinOut").innerHTML = state.tMin + " &deg;C";
+  document.getElementById("dutyOut").textContent = state.duty.toFixed(2);
+  document.getElementById("periodOut").textContent = state.period.toFixed(1) + " s";
+  document.getElementById("rampOut").textContent = state.ramp.toFixed(2);
+  document.getElementById("eaOut").textContent = state.ea.toFixed(0) + " kJ/mol";
+  document.getElementById("betaOut").textContent = state.beta.toFixed(2);
+}
+
+function resetIntegration() {
+  state.t = 0; state.cycles = 0; state.lastFrame = 0;
+  state.accK = state.accH = state.accU = state.accKH = state.accKU = state.accT = state.accTime = 0;
+  state.trace = []; state.kHist = []; state.hHist = [];
+  drawReactor(state.tMin);
+  drawTrace(); drawRaces();
+  document.getElementById("valTnow").textContent = "—";
+  document.getElementById("valTavg").textContent = tAvgOf().toFixed(0) + " °C";
+  ["valKratio", "valRlam", "valRda"].forEach(id => { document.getElementById(id).textContent = "—"; });
+  document.getElementById("cycleCount").textContent = "cycle 0";
+  document.getElementById("verdictMain").textContent = "Press Run to start integrating.";
+  document.getElementById("verdictSub").textContent = "Both systems sit at the same time-average temperature by construction.";
+}
+
+function redrawAll() {
+  syncOutputs();
+  renderJensen();
+  renderRatios();
+  if (!state.running) {
+    document.getElementById("valTavg").textContent = tAvgOf().toFixed(0) + " °C";
+    drawReactor(state.accTime ? waveform((state.t % state.period) / state.period) : state.tMin);
+  }
+}
+
+const bind = (id, key, transform) => {
+  const el = document.getElementById(id);
+  el.addEventListener("input", () => {
+    state[key] = transform(el.value);
+    if (key === "tMin" && state.tMin > state.tPeak - 20) {
+      state.tPeak = Math.min(1400, state.tMin + 20);
+      document.getElementById("tPeak").value = state.tPeak;
+    }
+    if (key === "tPeak" && state.tPeak < state.tMin + 20) {
+      state.tMin = Math.max(400, state.tPeak - 20);
+      document.getElementById("tMin").value = state.tMin;
+    }
+    redrawAll();
+  });
+};
+bind("tPeak", "tPeak", Number);
+bind("tMin", "tMin", Number);
+bind("duty", "duty", Number);
+bind("period", "period", Number);
+bind("ramp", "ramp", Number);
+bind("ea", "ea", Number);
+bind("beta", "beta", Number);
+
+const runState = document.getElementById("runState");
+document.getElementById("btnRun").addEventListener("click", () => {
+  state.running = true; state.lastFrame = 0;
+  runState.textContent = "Running"; runState.className = "status good";
+});
+document.getElementById("btnPause").addEventListener("click", () => {
+  state.running = false;
+  runState.textContent = "Paused"; runState.className = "status warn";
+});
+document.getElementById("btnReset").addEventListener("click", () => {
+  state.running = false;
+  runState.textContent = "Idle"; runState.className = "status warn";
+  resetIntegration();
+});
+
+document.querySelectorAll(".tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach(t => { t.classList.remove("active"); t.setAttribute("aria-selected", "false"); });
+    document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+    tab.classList.add("active");
+    tab.setAttribute("aria-selected", "true");
+    document.getElementById(tab.dataset.tab).classList.add("active");
+    redrawAll();
+  });
+});
+
+renderExperiments();
+resetIntegration();
+redrawAll();
+requestAnimationFrame(step);
+</script>
+</body>
+</html>

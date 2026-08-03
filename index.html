@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Interactive microwave and Joule heating models for chemical process electrification by Yeonsu Kwak.">
+  <meta name="description" content="Interactive microwave heating, Joule heating, and RPH vs CJH dimensionless models for chemical process electrification by Yeonsu Kwak.">
   <title>Electrified Reactor Models | Yeonsu Kwak</title>
   <style>
     :root {
@@ -175,11 +175,13 @@
 
     .project-grid {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 20px;
     }
     .project-card {
       position: relative;
+      display: flex;
+      flex-direction: column;
       min-height: 330px;
       overflow: hidden;
       border: 1px solid var(--line);
@@ -210,6 +212,7 @@
     .project-card.microwave { --project-accent: var(--blue); }
     .project-card.joule { --project-accent: var(--gold); }
     .project-card.joule .project-number { display: inline-block; color: var(--navy); background: var(--gold); border-radius: 999px; padding: 5px 8px; }
+    .project-card.rphcjh { --project-accent: var(--red); }
     .project-number {
       display: block;
       margin-bottom: 34px;
@@ -235,10 +238,8 @@
       line-height: 1.5;
     }
     .project-meta {
-      position: absolute;
-      right: 27px;
-      bottom: 25px;
-      left: 27px;
+      margin-top: auto;
+      padding-top: 22px;
       display: flex;
       align-items: flex-end;
       justify-content: space-between;
@@ -298,6 +299,9 @@
     }
     [hidden] { display: none !important; }
 
+    @media (max-width: 980px) {
+      .project-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
     @media (max-width: 760px) {
       .suite-header-inner {
         align-items: flex-start;
@@ -312,7 +316,6 @@
       .home { padding: 47px 15px 38px; }
       .project-grid { grid-template-columns: 1fr; }
       .project-card { min-height: 310px; padding: 23px; }
-      .project-meta { right: 23px; bottom: 22px; left: 23px; }
       .home-footer { display: grid; }
     }
     @media (max-width: 460px) {
@@ -339,6 +342,7 @@
           <button class="nav-button active" type="button" data-route="home">Home</button>
           <button class="nav-button" type="button" data-route="microwave"><span class="nav-button-label">Microwave</span><span class="nav-button-short" aria-hidden="true">MW</span></button>
           <button class="nav-button" type="button" data-route="joule"><span class="nav-button-label">Joule</span><span class="nav-button-short" aria-hidden="true">JH</span></button>
+          <button class="nav-button" type="button" data-route="rphcjh"><span class="nav-button-label">RPH vs CJH</span><span class="nav-button-short" aria-hidden="true">RC</span></button>
         </nav>
       </div>
     </header>
@@ -347,7 +351,7 @@
       <div class="home-inner">
         <p class="home-eyebrow">Interactive modeling portfolio</p>
         <h1>Electrified Reactor Models</h1>
-        <p class="home-lede">Two browser-based engineering tools connect material properties, reactor geometry, power delivery, heat loss, and spatial temperature fields.</p>
+        <p class="home-lede">Three browser-based engineering tools connect material properties, reactor geometry, power delivery, heat loss, and spatial temperature fields.</p>
 
         <div class="project-grid" aria-label="Select a project">
           <button class="project-card microwave" type="button" data-route="microwave">
@@ -377,6 +381,20 @@
               <span class="open-label">Open optimizer <span aria-hidden="true">→</span></span>
             </span>
           </button>
+
+          <button class="project-card rphcjh" type="button" data-route="rphcjh">
+            <span class="project-number">Project 03 · RPH vs CJH</span>
+            <h2>RPH vs CJH Dimensionless Visualizer</h2>
+            <p class="project-summary">Jensen's-inequality effects of ramped vs. continuous heating on temperature-dependent kinetics and transport, and the resulting exposure and Damköhler ratios for ethane cracking.</p>
+            <span class="project-meta">
+              <span class="project-tags" aria-label="RPH vs CJH model topics">
+                <span class="project-tag">Jensen's inequality</span>
+                <span class="project-tag">Λ / Damköhler ratios</span>
+                <span class="project-tag">Ethane cracking</span>
+              </span>
+              <span class="open-label">Open visualizer <span aria-hidden="true">→</span></span>
+            </span>
+          </button>
         </div>
 
         <footer class="home-footer">
@@ -397,7 +415,8 @@
 
       const routeTitles = {
         microwave: "Microwave Heating 2D Model",
-        joule: "Joule Heating 2D Optimizer"
+        joule: "Joule Heating 2D Optimizer",
+        rphcjh: "RPH vs CJH Dimensionless Visualizer"
       };
 
       const home = document.getElementById("home");
