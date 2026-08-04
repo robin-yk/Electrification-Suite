@@ -288,12 +288,12 @@
 
 <!-- ============ ANIMATION ============ -->
 <section id="animation" class="panel active" role="tabpanel">
-  <p class="section-kicker">Watch the averages separate</p>
-  <h2 class="section-title">Pulse the element and let the two averages race</h2>
+  <p class="section-kicker">Pulsed versus continuous heating, compared in real time</p>
+  <h2 class="section-title">Time-averaged kinetics under pulsed and continuous heating</h2>
   <p class="section-lede">
-    Press <strong>Run</strong>. The element swings between T<sub>min</sub> and T<sub>peak</sub> while the page integrates
-    &lang;k&rang;, &lang;h&rang; and &lang;u&rang; over real time. A continuous heater held at the <em>same time-average temperature</em>
-    runs alongside it. This is an analytical instantaneous-gas limit: pulse period affects the animation, but not the ratios until a gas thermal-response model is added.
+    Selecting <strong>Run</strong> cycles the element between T<sub>min</sub> and T<sub>peak</sub> while the page integrates
+    &lang;k&rang;, &lang;h&rang;, and &lang;u&rang; in real time. A continuously heated reference, held at the <em>identical time-average temperature</em>,
+    is evaluated in parallel. The comparison reflects an analytical instantaneous-gas limit: pulse period affects the displayed waveform but not the resulting ratios, unless a gas thermal-response model is introduced.
   </p>
 
   <div class="anim-layout">
@@ -414,7 +414,7 @@
 
       <div class="card verdict">
         <div class="verdict-body">
-          <div class="verdict-main" id="verdictMain">Press Run to start integrating.</div>
+          <div class="verdict-main" id="verdictMain">Select Run to begin the comparison.</div>
           <div class="verdict-sub" id="verdictSub">Both systems sit at the same time-average temperature by construction.</div>
         </div>
       </div>
@@ -1305,7 +1305,7 @@ function resetIntegration() {
   document.getElementById("valTavg").textContent = tAvgOf().toFixed(0) + " °C";
   ["valKratio", "valRlam", "valRda"].forEach(id => { document.getElementById(id).textContent = "—"; });
   document.getElementById("cycleCount").textContent = "cycle 0";
-  document.getElementById("verdictMain").textContent = "Press Run to start integrating.";
+  document.getElementById("verdictMain").textContent = "Select Run to begin the comparison.";
   document.getElementById("verdictSub").textContent = "Both systems sit at the same time-average temperature by construction.";
 }
 
