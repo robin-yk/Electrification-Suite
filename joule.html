@@ -449,6 +449,30 @@
       border: 1px solid var(--line);
       background: radial-gradient(120% 140% at 50% 12%, #fbfdfe 0%, #f4f7f9 62%, #eef2f5 100%);
     }
+    .geometry-visual-body { display: flex; align-items: stretch; gap: 10px; }
+    .geometry-visual-body #geometryVisual { flex: 1; min-width: 0; }
+    .geometry-colorbar { display: flex; flex-direction: column; align-items: center; flex: none; width: 40px; }
+    .geometry-colorbar-track {
+      position: relative;
+      flex: 1;
+      width: 14px;
+      margin: 4px 0;
+      border-radius: 7px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, #d33737 0%, #ebbe46 25%, #58b8b1 50%, #2878a5 75%, #102a43 100%);
+    }
+    .geometry-colorbar-marker {
+      position: absolute;
+      left: -5px;
+      right: -5px;
+      height: 3px;
+      margin-top: -1.5px;
+      border-radius: 2px;
+      background: #fff;
+      border: 1.5px solid #102a43;
+      box-shadow: 0 0 0 1px rgba(16, 42, 67, 0.25);
+    }
+    .geometry-colorbar-label { font-size: 10px; color: var(--muted); text-align: center; white-space: nowrap; }
     .diagnostic-card { margin-bottom: 14px; }
     .diagnostic-intro { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
     .diagnostic-wrap { overflow-x: auto; }
@@ -960,9 +984,16 @@
             <article class="card top-visual-card">
               <div class="geometry-visual-head">
                 <strong>Calculated Cylinder Geometry</strong>
-                <span>Envelope expands at fixed solid volume as porosity increases.</span>
+                <span>Fill color tracks the computed element temperature.</span>
               </div>
-              <svg id="geometryVisual" viewBox="0 0 820 260" role="img" aria-label="Calculated porous cylinder geometry with length, diameter, and porosity"></svg>
+              <div class="geometry-visual-body">
+                <svg id="geometryVisual" viewBox="0 0 820 260" role="img" aria-label="Calculated porous cylinder geometry with length, diameter, and porosity, colored by the computed steady-state temperature"></svg>
+                <div class="geometry-colorbar" aria-hidden="true">
+                  <span class="geometry-colorbar-label" id="geomColorMax">—</span>
+                  <div class="geometry-colorbar-track"><div class="geometry-colorbar-marker" id="geomColorMarker"></div></div>
+                  <span class="geometry-colorbar-label" id="geomColorMin">—</span>
+                </div>
+              </div>
             </article>
             <article class="card top-visual-card">
               <div class="geometry-visual-head">
@@ -2081,11 +2112,14 @@
       if(!fresh) $("t2dProgress").innerHTML='<span class="t2d-stale">Inputs changed. The 2D field will recalculate automatically.</span>';
     }
 
+    const THERMAL_STOPS = [[16,42,67],[40,120,165],[88,184,177],[235,190,70],[211,55,55]];
+    function thermalColorRGB(u) {
+      const x=clamp(u,0,1)*(THERMAL_STOPS.length-1),i=Math.min(THERMAL_STOPS.length-2,Math.floor(x)),f=x-i;
+      return THERMAL_STOPS[i].map((v,k)=>Math.round(v+(THERMAL_STOPS[i+1][k]-v)*f));
+    }
     function thermalColor(u) {
-      const stops=[[16,42,67],[40,120,165],[88,184,177],[235,190,70],[211,55,55]];
-      const x=clamp(u,0,1)*(stops.length-1),i=Math.min(stops.length-2,Math.floor(x)),f=x-i;
-      const c=stops[i].map((v,k)=>Math.round(v+(stops[i+1][k]-v)*f));
-      return `rgb(${c[0]},${c[1]},${c[2]})`;
+      const [r,g,b]=thermalColorRGB(u);
+      return `rgb(${r},${g},${b})`;
     }
 
     function draw2D(result) {
@@ -2580,6 +2614,16 @@
       svg.append(yLabel);
     }
 
+    function updateGeometryColorbar(heatU, ambientK, colorMax, refK, tssFinite) {
+      const marker = $("geomColorMarker");
+      if (marker) marker.style.top = `${(1 - heatU) * 100}%`;
+      const maxLabel = $("geomColorMax");
+      if (maxLabel) maxLabel.textContent = `${format(celsius(colorMax), 0)} °C`;
+      const minLabel = $("geomColorMin");
+      if (minLabel) minLabel.textContent = `${format(celsius(ambientK), 0)} °C`;
+      if (marker) marker.setAttribute("title", `${tssFinite ? "Tss" : "Target"} ${format(celsius(refK), 0)} °C`);
+    }
+
     function renderGeometryVisual(r) {
       const svg = $("geometryVisual");
       svg.replaceChildren();
@@ -2606,20 +2650,37 @@
       const edge = "#102a43";
       const poreFill = "#eef4f8", poreEdge = "#b9cddb";
 
+      // Color the element by its computed steady-state temperature (same thermal scale as
+      // the 2D field), with a colorbar beside it. The scale ceiling floats a bit above the
+      // hottest reference value on hand so Tss doesn't pin to the very top of the bar.
+      const ambientK = r.input.ambientK;
+      const refK = finite(r.tss) ? r.tss : (finite(r.input.targetK) ? r.input.targetK : ambientK + 2000);
+      const colorMax = Math.max(ambientK + 500, refK * 1.15);
+      const heatU = clamp((refK - ambientK) / Math.max(1e-6, colorMax - ambientK), 0, 1);
+      const mix = (c, target, amt) => c.map((v, i) => Math.round(v + (target[i] - v) * amt));
+      const toRgb = (c) => `rgb(${c[0]},${c[1]},${c[2]})`;
+      const base = thermalColorRGB(heatU);
+      const light = toRgb(mix(base, [255,255,255], 0.34));
+      const lighter = toRgb(mix(base, [255,255,255], 0.55));
+      const mid = toRgb(base);
+      const dark = toRgb(mix(base, [0,0,0], 0.32));
+
+      updateGeometryColorbar(heatU, ambientK, colorMax, refK, finite(r.tss));
+
       // Depth cues (gradients + ground shadow) so the schematic reads as a solid, lit cylinder
       // rather than a flat rectangle-plus-ellipses silhouette.
       const defs = svgEl("defs");
       const bodyGrad = svgEl("linearGradient", { id:"cylBodyGrad", x1:"0", y1:"0", x2:"0", y2:"1" });
-      bodyGrad.append(svgEl("stop", { offset:"0%", "stop-color":"#5698c4" }));
-      bodyGrad.append(svgEl("stop", { offset:"52%", "stop-color":"#2c6e9b" }));
-      bodyGrad.append(svgEl("stop", { offset:"100%", "stop-color":"#1b4a6d" }));
+      bodyGrad.append(svgEl("stop", { offset:"0%", "stop-color":light }));
+      bodyGrad.append(svgEl("stop", { offset:"52%", "stop-color":mid }));
+      bodyGrad.append(svgEl("stop", { offset:"100%", "stop-color":dark }));
       const capFrontGrad = svgEl("radialGradient", { id:"capFrontGrad", cx:"36%", cy:"30%", r:"78%" });
-      capFrontGrad.append(svgEl("stop", { offset:"0%", "stop-color":"#8dc0e0" }));
-      capFrontGrad.append(svgEl("stop", { offset:"62%", "stop-color":"#4b88b1" }));
-      capFrontGrad.append(svgEl("stop", { offset:"100%", "stop-color":"#2c6e9b" }));
+      capFrontGrad.append(svgEl("stop", { offset:"0%", "stop-color":lighter }));
+      capFrontGrad.append(svgEl("stop", { offset:"62%", "stop-color":light }));
+      capFrontGrad.append(svgEl("stop", { offset:"100%", "stop-color":mid }));
       const capBackGrad = svgEl("radialGradient", { id:"capBackGrad", cx:"42%", cy:"36%", r:"78%" });
-      capBackGrad.append(svgEl("stop", { offset:"0%", "stop-color":"#3f82ae" }));
-      capBackGrad.append(svgEl("stop", { offset:"100%", "stop-color":"#1b4a6d" }));
+      capBackGrad.append(svgEl("stop", { offset:"0%", "stop-color":mid }));
+      capBackGrad.append(svgEl("stop", { offset:"100%", "stop-color":dark }));
       const groundBlur = svgEl("filter", { id:"cylGroundBlur", x:"-60%", y:"-60%", width:"220%", height:"260%" });
       groundBlur.append(svgEl("feGaussianBlur", { stdDeviation:5 }));
       const clip = svgEl("clipPath", { id:"cylinderPoreClip" });
