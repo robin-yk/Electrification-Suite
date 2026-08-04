@@ -192,6 +192,14 @@
       margin: 8px 0 20px;
       color: var(--muted);
     }
+    .section-head-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
 
     .fields {
       display: grid;
@@ -433,11 +441,11 @@
     }
     .geometry-visual-head strong {
       color: var(--navy);
-      font-size: 14px;
+      font-size: 17px;
     }
     .geometry-visual-head span {
       color: var(--muted);
-      font-size: 12px;
+      font-size: 14px;
       text-align: right;
     }
     #geometryVisual, #rampChart {
@@ -472,7 +480,7 @@
       border: 1.5px solid #102a43;
       box-shadow: 0 0 0 1px rgba(16, 42, 67, 0.25);
     }
-    .geometry-colorbar-label { font-size: 10px; color: var(--muted); text-align: center; white-space: nowrap; }
+    .geometry-colorbar-label { font-size: 13px; color: var(--muted); text-align: center; white-space: nowrap; }
     .diagnostic-card { margin-bottom: 14px; }
     .diagnostic-intro { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
     .diagnostic-wrap { overflow-x: auto; }
@@ -650,6 +658,7 @@
       gap: 14px;
       margin-bottom: 18px;
     }
+    .calc-grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .formula-card { overflow: hidden; }
     .formula-card .card-body { padding: 15px 17px 17px; }
     .formula-list { display: grid; gap: 11px; }
@@ -765,7 +774,7 @@
     @media (max-width: 960px) {
       .calculator-grid { grid-template-columns: 1fr; }
       .input-column { position: static; max-height: none; overflow: visible; padding-right: 0; }
-      .result-grid, .sweep-grid, .calc-grid { grid-template-columns: 1fr; }
+      .result-grid, .sweep-grid, .calc-grid, .calc-grid-3 { grid-template-columns: 1fr; }
       .topbar-inner { align-items: flex-start; flex-direction: column; }
       .topbar-right { justify-items: start; }
       .topbar-meta { justify-content: flex-start; }
@@ -1100,9 +1109,13 @@
     </section>
 
     <section id="thermal2d" class="panel" role="tabpanel">
-      <p class="section-kicker">Temperature field from the current design</p>
-      <h2 class="section-title">Axisymmetric 2D thermal optimizer</h2>
-      <p class="section-lede">The solver maps the current Single Design cylinder, a full-height reactor wall, He process gas, and surrounding air onto a fixed 60 × 60 display. The mirrored half-domain always uses 30 radial × 60 axial control volumes; its physical width, height, and regional Δr values scale automatically with the imported geometry.</p>
+      <div class="section-head-row">
+        <div>
+          <p class="section-kicker">Temperature field from the current design</p>
+          <h2 class="section-title">Axisymmetric 2D thermal optimizer</h2>
+        </div>
+        <span class="context-note" id="t2dSummary">—</span>
+      </div>
       <div class="t2d-controls">
         <button class="btn primary" id="solve2D" type="button">Recalculate 2D field</button>
         <button class="btn" id="export2D" type="button" disabled>Export field CSV</button>
@@ -1267,7 +1280,7 @@
         <strong>Why the default peak is near R = 5 Ω:</strong>
         below 5 Ω, I = 20 A and P = I²R, so increasing R raises power. Above 5 Ω, V = 100 V and P = V²/R, so increasing R lowers power. At R = Vmax/Imax = 5 Ω, P = IV = 2,000 W and P/Vsolid—and therefore the initial ramp rate—reaches its maximum.
       </div>
-      <div class="calc-grid" style="margin-bottom:18px">
+      <div class="calc-grid calc-grid-3" style="margin-bottom:18px">
         <article class="card formula-card"><div class="card-header"><h3>Low resistance</h3></div><div class="card-body"><div class="formula">P = I<sub>cap</sub>²R ↑</div><div class="formula-note">Current is already at its ceiling. More resistance converts the same current into more heat.</div></div></article>
         <article class="card formula-card"><div class="card-header"><h3>Best-matched resistance</h3></div><div class="card-body"><div class="formula">R* = V<sub>max</sub>/I<sub>cap</sub></div><div class="formula-note">Current and voltage capability are used together. A lower Pmax can broaden this point into a constant-power plateau.</div></div></article>
         <article class="card formula-card"><div class="card-header"><h3>High resistance</h3></div><div class="card-body"><div class="formula">P = V<sub>max</sub>²/R ↓</div><div class="formula-note">Voltage is already at its ceiling. More resistance reduces current faster than resistance increases.</div></div></article>
@@ -1523,6 +1536,13 @@
       const ax = Math.abs(x);
       if (ax !== 0 && (ax >= 1e5 || ax < 1e-3)) return x.toExponential(digits);
       return x.toLocaleString("en-US", { maximumFractionDigits: digits, minimumFractionDigits: 0 });
+    }
+    function sig3(x) {
+      if (!finite(x)) return "—";
+      if (x === 0) return "0";
+      const ax = Math.abs(x);
+      if (ax >= 1e5 || ax < 1e-3) return x.toExponential(2);
+      return x.toPrecision(3);
     }
     function fmtTemp(k) {
       if (!finite(k)) return "—";
@@ -2251,13 +2271,14 @@
 
     async function solveSelected2D(automatic=false) {
       const zeroD=currentResult(),cfg=get2DConfig();
-      if(zeroD.errors.length) { $("t2dProgress").textContent=zeroD.errors.join(" "); return; }
+      if(zeroD.errors.length) { $("t2dProgress").textContent=zeroD.errors.join(" "); $("t2dSummary").textContent="Invalid inputs"; return; }
       const configErrors=validate2DConfig(cfg);
-      if(configErrors.length) { $("t2dProgress").textContent=configErrors.join(" "); return; }
+      if(configErrors.length) { $("t2dProgress").textContent=configErrors.join(" "); $("t2dSummary").textContent="Invalid solver settings"; return; }
       if(solving2D){pendingAutoSolve2D=true;return;}
       solving2D=true;pendingAutoSolve2D=false;
       const button=$("solve2D");
       $("t2dProgress").textContent=`${automatic?"Automatically solving":"Solving"} ${zeroD.material.name}…`;
+      $("t2dSummary").textContent=`Solving ${zeroD.material.name}…`;
       button.disabled=true;button.textContent="Solving…";
       try{
         await new Promise(resolve=>requestAnimationFrame(()=>setTimeout(resolve,0)));
@@ -2265,8 +2286,10 @@
         result.signature=signature2D(zeroD.input,zeroD.material);
         render2D(result);
         $("t2dProgress").textContent=`Solved ${result.material.name}: ${result.iterations.toLocaleString()} nonlinear + ${result.linearIterations.toLocaleString()} linear iterations, ${format(result.residual,6)} K residual, ${format(result.closure*100,3)}% energy closure.`;
+        $("t2dSummary").textContent=`${result.material.name} · ${result.converged?"Converged":"Iteration limit"} · ${format(result.closure*100,3)}% closure`;
       }catch(error){
         $("t2dProgress").textContent=`2D solve failed: ${error.message}`;
+        $("t2dSummary").textContent="Solve failed";
       }finally{
         solving2D=false;button.disabled=false;button.textContent="Recalculate 2D field";
         if(pendingAutoSolve2D){pendingAutoSolve2D=false;scheduleAutoSolve2D(50);}
@@ -2377,16 +2400,16 @@
       const options=[];
       if (geometrySearch.maxPower >= 0.995*globalMax) {
         const direction = geometrySearch.recommended.value > base.aspectRatio ? "Increase" : "Decrease";
-        options.push(`${direction} L/D toward ${format(geometrySearch.recommended.value,3)}`);
+        options.push(`${direction} L/D to ${sig3(geometrySearch.recommended.value)}`);
       }
       if (rhoSearch.maxPower >= 0.995*globalMax) {
         const direction = rhoSearch.recommended.value > baseRho ? "increase" : "decrease";
-        options.push(`${direction} ρ(Ta) toward ${format(rhoSearch.recommended.value,4)} Ω·cm`);
+        options.push(`${direction} ρ(Ta) to ${sig3(rhoSearch.recommended.value)} Ω·cm`);
       }
       const recommendedJ = geometrySearch.recommended.j/r.material.jmax*100;
       return {
         main:options.join(" · or "),
-        sub:`Initial ramp up to ×${format(globalMax/currentPower,2)} · recommended geometry uses ${format(recommendedJ,1)}% of Jmax`
+        sub:`Initial ramp up to ×${sig3(globalMax/currentPower)} · desired geometry uses ${recommendedJ.toFixed(1)}% of Jmax`
       };
     }
 
@@ -2585,13 +2608,13 @@
         const py = m.t + innerH * i / 5;
         const tempC = celsius(TssK - (TssK - TaK) * i / 5);
         svg.append(svgEl("line", { x1: m.l, x2: W - m.r, y1: py, y2: py, stroke: "#e3e8ec", "stroke-width": 1 }));
-        svg.append(svgEl("text", { x: m.l - 8, y: py + 4, "text-anchor": "end", fill: "#687783", "font-size": 12, "font-family": "Arial" }, format(tempC, 0)));
+        svg.append(svgEl("text", { x: m.l - 8, y: py + 4, "text-anchor": "end", fill: "#687783", "font-size": 14, "font-family": "Arial" }, format(tempC, 0)));
       }
       for (let i = 0; i <= 5; i++) {
         const px = m.l + innerW * i / 5;
         const tMin = xMaxMin * i / 5;
         svg.append(svgEl("line", { x1: px, x2: px, y1: m.t, y2: H - m.b, stroke: "#edf0f2", "stroke-width": 1 }));
-        svg.append(svgEl("text", { x: px, y: H - m.b + 18, "text-anchor": "middle", fill: "#687783", "font-size": 12, "font-family": "Arial" }, format(tMin, 1)));
+        svg.append(svgEl("text", { x: px, y: H - m.b + 18, "text-anchor": "middle", fill: "#687783", "font-size": 14, "font-family": "Arial" }, format(tMin, 1)));
       }
       svg.append(svgEl("line", { x1: m.l, x2: W - m.r, y1: H - m.b, y2: H - m.b, stroke: "#50606d", "stroke-width": 1.2 }));
       svg.append(svgEl("line", { x1: m.l, x2: m.l, y1: m.t, y2: H - m.b, stroke: "#50606d", "stroke-width": 1.2 }));
@@ -2605,12 +2628,12 @@
       if (t95 <= tMax) {
         const T95 = TssK - (TssK - TaK) * 0.05;
         svg.append(svgEl("circle", { cx: x(t95), cy: y(T95), r: 5.5, fill: "#102a43", stroke: "#fff", "stroke-width": 2 }));
-        svg.append(svgEl("text", { x: x(t95) + 8, y: y(T95) - 9, fill: "#102a43", "font-size": 12, "font-weight": 700, "font-family": "Arial" }, `95% at ${fmtTime(t95)}`));
+        svg.append(svgEl("text", { x: x(t95) + 8, y: y(T95) - 9, fill: "#102a43", "font-size": 14, "font-weight": 700, "font-family": "Arial" }, `95% at ${fmtTime(t95)}`));
       }
-      svg.append(svgEl("text", { x: W - m.r, y: ssY - 8, "text-anchor": "end", fill: "#b46714", "font-size": 12, "font-weight": 700, "font-family": "Arial" }, `Tss ${format(celsius(TssK), 1)} °C`));
+      svg.append(svgEl("text", { x: W - m.r, y: ssY - 8, "text-anchor": "end", fill: "#b46714", "font-size": 14, "font-weight": 700, "font-family": "Arial" }, `Tss ${format(celsius(TssK), 1)} °C`));
 
-      svg.append(svgEl("text", { x: m.l + innerW / 2, y: H - 9, "text-anchor": "middle", fill: "#334451", "font-size": 12, "font-weight": 700, "font-family": "Arial" }, "Time (min)"));
-      const yLabel = svgEl("text", { x: 15, y: m.t + innerH / 2, transform: `rotate(-90 15 ${m.t + innerH / 2})`, "text-anchor": "middle", fill: "#334451", "font-size": 12, "font-weight": 700, "font-family": "Arial" }, "Temperature (°C)");
+      svg.append(svgEl("text", { x: m.l + innerW / 2, y: H - 9, "text-anchor": "middle", fill: "#334451", "font-size": 14, "font-weight": 700, "font-family": "Arial" }, "Time (min)"));
+      const yLabel = svgEl("text", { x: 15, y: m.t + innerH / 2, transform: `rotate(-90 15 ${m.t + innerH / 2})`, "text-anchor": "middle", fill: "#334451", "font-size": 14, "font-weight": 700, "font-family": "Arial" }, "Temperature (°C)");
       svg.append(yLabel);
     }
 
@@ -2751,7 +2774,7 @@
       svg.append(svgEl("line", { x1:x0, x2:x1, y1:dimY, y2:dimY, stroke:dimColor, "stroke-width":1.5 }));
       svg.append(arrow(x0, dimY, 1, 0));
       svg.append(arrow(x1, dimY, -1, 0));
-      svg.append(svgEl("text", { x:(x0+x1)/2, y:dimY+20, "text-anchor":"middle", fill:dimColor, "font-size":13, "font-weight":700, "font-family":"Arial" }, `L = ${format(r.g.L*1000, 3)} mm`));
+      svg.append(svgEl("text", { x:(x0+x1)/2, y:dimY+20, "text-anchor":"middle", fill:dimColor, "font-size":15, "font-weight":700, "font-family":"Arial" }, `L = ${format(r.g.L*1000, 3)} mm`));
 
       const dimX = x1 + ellipseW + 38;
       svg.append(svgEl("line", { x1:x1+ellipseW+4, x2:dimX+5, y1:y0, y2:y0, stroke:"#c9b3b3", "stroke-width":1 }));
@@ -2759,15 +2782,15 @@
       svg.append(svgEl("line", { x1:dimX, x2:dimX, y1:y0, y2:y1, stroke:dimColor, "stroke-width":1.5 }));
       svg.append(arrow(dimX, y0, 0, 1));
       svg.append(arrow(dimX, y1, 0, -1));
-      svg.append(svgEl("text", { x:dimX+13, y:cy+4, fill:dimColor, "font-size":13, "font-weight":700, "font-family":"Arial" }, `D = ${format(r.g.D*1000, 3)} mm`));
+      svg.append(svgEl("text", { x:dimX+13, y:cy+4, fill:dimColor, "font-size":15, "font-weight":700, "font-family":"Arial" }, `D = ${format(r.g.D*1000, 3)} mm`));
 
       const phiText = `φ = ${format(r.g.porosity, 3)}  (${format(r.g.porosity*100, 1)}% void)`;
-      svg.append(svgEl("text", { x:20, y:25, fill:"#102a43", "font-size":15, "font-weight":700, "font-family":"Arial" }, phiText));
-      svg.append(svgEl("text", { x:20, y:47, fill:"#64717d", "font-size":12, "font-family":"Arial" }, `f_solid = ${format(r.g.solidFraction, 3)} · Vol = ${format(r.g.envelopeVolume*1e6, 3)} cm³`));
+      svg.append(svgEl("text", { x:20, y:27, fill:"#102a43", "font-size":18, "font-weight":700, "font-family":"Arial" }, phiText));
+      svg.append(svgEl("text", { x:20, y:51, fill:"#64717d", "font-size":14, "font-family":"Arial" }, `f_solid = ${format(r.g.solidFraction, 3)} · Vol = ${format(r.g.envelopeVolume*1e6, 3)} cm³`));
       const legendLabel = "White area = schematic void fraction";
-      const legendWidth = legendLabel.length * 6.1;
-      svg.append(svgEl("circle", { cx:W-24-legendWidth-11, cy:21, r:5.5, fill:poreFill, stroke:poreEdge, "stroke-width":1 }));
-      svg.append(svgEl("text", { x:W-20, y:25, "text-anchor":"end", fill:"#64717d", "font-size":12, "font-family":"Arial" }, legendLabel));
+      const legendWidth = legendLabel.length * 7.2;
+      svg.append(svgEl("circle", { cx:W-24-legendWidth-11, cy:21, r:6, fill:poreFill, stroke:poreEdge, "stroke-width":1 }));
+      svg.append(svgEl("text", { x:W-20, y:27, "text-anchor":"end", fill:"#64717d", "font-size":14, "font-family":"Arial" }, legendLabel));
       svg.setAttribute("aria-label", `Calculated cylinder: length ${format(r.g.L*1000,3)} millimeters, diameter ${format(r.g.D*1000,3)} millimeters, porosity ${format(r.g.porosity*100,1)} percent.`);
     }
 
