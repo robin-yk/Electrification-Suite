@@ -400,14 +400,14 @@
           <div class="card-header"><h3>Running &lang;k&rang; vs k(T<sub>avg</sub>)</h3><span class="status good" id="kVerdict">&mdash;</span></div>
           <div class="card-body" style="padding:10px 12px 12px">
             <svg class="chart" id="kRaceChart" viewBox="0 0 500 230" role="img" aria-label="Running time-average of the rate constant compared with the rate constant at the average temperature"></svg>
-            <p class="chart-note">k is convex, so the running average climbs <em>above</em> the flat CJH line and stays there.</p>
+            <p class="chart-note">Because k is convex, the running average rises <em>above</em> the flat CJH line and remains elevated.</p>
           </div>
         </div>
         <div class="card">
           <div class="card-header"><h3>Running &lang;h&rang; vs h(T<sub>avg</sub>)</h3><span class="status warn" id="hVerdict">&mdash;</span></div>
           <div class="card-body" style="padding:10px 12px 12px">
             <svg class="chart" id="hRaceChart" viewBox="0 0 500 230" role="img" aria-label="Running time-average of the mass transfer coefficient compared with its value at the average temperature"></svg>
-            <p class="chart-note">For &beta; &lt; 1 the teaching transfer response is concave, so its average sinks <em>below</em> the CJH line. Push &beta; past 1 and this flips.</p>
+            <p class="chart-note">For &beta; &lt; 1 the transfer response is concave, so its running average falls <em>below</em> the CJH line; for &beta; &gt; 1 this behavior reverses.</p>
           </div>
         </div>
       </div>
@@ -424,19 +424,19 @@
 
 <!-- ============ JENSEN ============ -->
 <section id="jensen" class="panel" role="tabpanel">
-  <p class="section-kicker">The whole argument in three pictures</p>
-  <h2 class="section-title">Curvature decides whether pulsing can help</h2>
+  <p class="section-kicker">Rate, transport, and velocity curvature, compared</p>
+  <h2 class="section-title">Curvature determines whether pulsing provides a benefit</h2>
   <p class="section-lede">
     A two-state pulse spends fraction d at T<sub>peak</sub> and (1&minus;d) at T<sub>min</sub>. Its time-average of any
     property f sits on the <strong>chord</strong> between the two endpoints; the continuous heater sits on the <strong>curve</strong>
-    at T<sub>avg</sub>. Whether the chord is above or below the curve is decided entirely by the sign of f&Prime;.
+    at T<sub>avg</sub>. Whether the chord lies above or below the curve is determined entirely by the sign of f&Prime;.
   </p>
 
   <div class="assumption">
-    <strong>Read the &beta; slider as a live caveat.</strong> The note proves h is concave for 0 &lt; &beta; &lt; 1.
-    Gas-phase diffusivity alone scales roughly as T<sup>1.75</sup>, so a transport coefficient dominated by diffusion can
-    land above &beta; = 1, which makes h convex and cancels part of the &Lambda; gain. The &Lambda; result is only as safe
-    as the exponent you can defend for this reactor.
+    <strong>The &beta; slider functions as a sensitivity check.</strong> The underlying analysis proves h is concave for 0 &lt; &beta; &lt; 1.
+    Gas-phase diffusivity alone scales approximately as T<sup>1.75</sup>, so a transport coefficient dominated by diffusion may
+    exceed &beta; = 1, rendering h convex and offsetting part of the &Lambda; gain. The validity of the &Lambda; result therefore
+    depends on the exponent applicable to a given reactor.
   </div>
 
   <div class="calc-grid" style="grid-template-columns:repeat(3,minmax(0,1fr))">
@@ -444,21 +444,21 @@
       <div class="card-header"><h3>k(T) &mdash; convex</h3><span class="status good">chord above</span></div>
       <div class="card-body" style="padding:10px 12px 12px">
         <svg class="chart" id="jensenK" viewBox="0 0 460 300" role="img" aria-label="Rate constant versus temperature with the pulse chord above the curve"></svg>
-        <p class="chart-note">&lang;k&rang; &gt; k(T<sub>avg</sub>) whenever E<sub>a</sub> &gt; 2RT. The gap is the pulsing bonus.</p>
+        <p class="chart-note">&lang;k&rang; exceeds k(T<sub>avg</sub>) whenever E<sub>a</sub> &gt; 2RT; the resulting gap represents the pulsing gain.</p>
       </div>
     </article>
     <article class="card">
       <div class="card-header"><h3>Transfer response h(T) &mdash; concave</h3><span class="status warn" id="hConcaveTag">chord below</span></div>
       <div class="card-body" style="padding:10px 12px 12px">
         <svg class="chart" id="jensenH" viewBox="0 0 460 300" role="img" aria-label="Mass transfer coefficient versus temperature with the pulse chord below the curve"></svg>
-        <p class="chart-note">&lang;h&rang; &lt; h(T<sub>avg</sub>) for &beta; &lt; 1, which shrinks the denominator of &Lambda;.</p>
+        <p class="chart-note">&lang;h&rang; falls below h(T<sub>avg</sub>) for &beta; &lt; 1, reducing the denominator of &Lambda;.</p>
       </div>
     </article>
     <article class="card">
       <div class="card-header"><h3>u(T) &mdash; linear</h3><span class="status" style="background:var(--soft);color:var(--muted)">chord on curve</span></div>
       <div class="card-body" style="padding:10px 12px 12px">
         <svg class="chart" id="jensenU" viewBox="0 0 460 300" role="img" aria-label="Flow velocity versus temperature with the pulse chord lying on the curve"></svg>
-        <p class="chart-note">&lang;u&rang; = u(T<sub>avg</sub>) exactly. Pulsing buys nothing on the convective timescale.</p>
+        <p class="chart-note">&lang;u&rang; equals u(T<sub>avg</sub>) exactly; pulsing provides no benefit on the convective timescale.</p>
       </div>
     </article>
   </div>
@@ -477,7 +477,7 @@
           </tbody>
         </table>
         <p class="chart-note" style="margin-top:10px">
-          A linear velocity does not remove flow coupling: the relevant exposure average is &lang;k/u&rang;, not &lang;k&rang;/&lang;u&rang;.
+          Linearity in velocity does not eliminate flow coupling: the relevant exposure average is &lang;k/u&rang;, not &lang;k&rang;/&lang;u&rang;.
         </p>
       </div>
     </article>
@@ -486,8 +486,8 @@
       <div class="card-body" style="padding:10px 12px 12px">
         <svg class="chart" id="gainBars" viewBox="0 0 500 250" role="img" aria-label="Sensitivity of the pulsing gain to activation energy, temperature swing and duty cycle"></svg>
         <p class="chart-note">
-          Sweep of R<sub>exposure</sub> against the swing &Delta;T = T<sub>peak</sub> &minus; T<sub>min</sub> at the current
-          E<sub>a</sub> and d. The curve is flat near &Delta;T = 0 and steepens fast, which is why a hard, deep pulse matters more than a fast one.
+          Sweep of R<sub>exposure</sub> against the temperature swing &Delta;T = T<sub>peak</sub> &minus; T<sub>min</sub> at the current
+          E<sub>a</sub> and d. The curve is flat near &Delta;T = 0 and steepens rapidly, indicating that pulse depth has greater influence than pulse frequency.
         </p>
       </div>
     </article>
@@ -496,8 +496,8 @@
 
 <!-- ============ RATIOS ============ -->
 <section id="ratios" class="panel" role="tabpanel">
-  <p class="section-kicker">The design map</p>
-  <h2 class="section-title">Where pulsing actually pays</h2>
+  <p class="section-kicker">Dimensionless design space</p>
+  <h2 class="section-title">Conditions under which pulsing provides a benefit</h2>
   <p class="section-lede">
     Both reported quantities are ratios of dimensionless groups, so their prefactors cancel: A drops out of R<sub>exposure</sub> and R<sub>&Lambda;</sub>, and
     h<sub>0</sub>/T<sub>0</sub><sup>&beta;</sup> drops out of R<sub>&Lambda;</sub>. Only E<sub>a</sub>, &beta;, and the three
@@ -528,28 +528,29 @@
       <div class="card-body" style="padding:10px 12px 12px">
         <svg class="chart" id="sweepDuty" viewBox="0 0 560 300" role="img" aria-label="Damkohler ratio versus duty cycle"></svg>
         <p class="chart-note">
-          Low duty means most of the cycle sits at T<sub>min</sub>, so T<sub>avg</sub> collapses and the ratio against
-          <em>that</em> reference grows. The absolute throughput falls at the same time, which the ratio does not show.
+          At low duty cycle, most of the period is spent at T<sub>min</sub>, so T<sub>avg</sub> decreases and the ratio against
+          <em>that</em> reference increases. Absolute throughput declines concurrently, which the ratio does not capture.
         </p>
       </div>
     </article>
   </div>
 
   <div class="assumption">
-    <strong>The ratio is not the whole answer.</strong> The relative exposure ratio compares RPH against a CJH heater held at the RPH
-    time-average temperature. It says pulsing beats a <em>cooler</em> continuous heater. It does not say pulsing beats a
-    continuous heater run at T<sub>peak</sub>, which is the comparison an operator with enough power actually faces.
-    The case for pulsing there rests on selectivity and element lifetime, not on &Lambda; or Da.
+    <strong>The ratio alone does not determine practical benefit.</strong> The relative exposure ratio compares RPH against a CJH heater held at the RPH
+    time-average temperature — that is, it demonstrates that pulsing outperforms a <em>cooler</em> continuous heater. It does not
+    demonstrate that pulsing outperforms a continuous heater operated at T<sub>peak</sub>, which is the comparison relevant to
+    an operator with sufficient power capacity. In that case, the argument for pulsing rests on selectivity and element lifetime, not on &Lambda; or Da.
   </div>
 </section>
 
 <!-- ============ EXPERIMENTS ============ -->
 <section id="experiments" class="panel" role="tabpanel">
   <p class="section-kicker">Carbon fiber paper reactor, 1 bar</p>
-  <h2 class="section-title">What the CJH runs already show</h2>
+  <h2 class="section-title">Findings from existing CJH runs</h2>
   <p class="section-lede">
-    Measured ethane cracking on the Joule-heated CFP element. Every row is continuous heating, so this table is the
-    baseline the pulsed case has to beat, not evidence for it. The pattern that matters is in the last column.
+    Measured ethane-cracking performance on the Joule-heated CFP element. Every row reflects continuous heating; the
+    table therefore establishes the baseline the pulsed case must exceed, rather than providing evidence for it.
+    The relevant trend appears in the final column.
   </p>
 
   <div class="table-shell">
@@ -570,8 +571,8 @@
       <div class="card-body" style="padding:10px 12px 12px">
         <svg class="chart" id="selChart" viewBox="0 0 520 300" role="img" aria-label="Ethylene selectivity falling as ethane conversion rises"></svg>
         <p class="chart-note">
-          Every point is CJH. Selectivity falls from 86% to 61% as conversion climbs, because the ethylene that forms
-          keeps sitting in the hot zone and reacts on.
+          Every point reflects CJH operation. Selectivity declines from 86% to 61% as conversion increases, because
+          ethylene formed early in the reactor remains in the hot zone and continues to react.
         </p>
       </div>
     </article>
@@ -581,18 +582,18 @@
         <div class="formula-list">
           <div class="formula-item">
             <div class="formula-name">The measured tradeoff</div>
-            <div class="formula">Raising T from 1000 to 1200 &deg;C at fixed &tau; triples conversion and costs 24 points of selectivity.</div>
+            <div class="formula">Raising T from 1000 to 1200 &deg;C at fixed &tau; triples conversion at a cost of 24 percentage points of selectivity.</div>
             <div class="formula-note">1000 &deg;C / 100 sccm: X = 11.3%, S = 85.3%. 1200 &deg;C / 100 sccm: X = 39.2%, S = 61.6%.</div>
           </div>
           <div class="formula-item">
             <div class="formula-name">Why the two clocks differ</div>
             <div class="formula">Ethane consumption and ethylene destruction do not share an activation energy.</div>
-            <div class="formula-note">A short excursion to high T advances the higher-E<sub>a</sub> step far more than the lower one. That, not &Lambda;, is the selectivity argument.</div>
+            <div class="formula-note">A brief excursion to high temperature advances the higher-E<sub>a</sub> step disproportionately relative to the lower one; this effect, rather than &Lambda;, underlies the selectivity argument.</div>
           </div>
           <div class="formula-item">
             <div class="formula-name">What is not yet measured</div>
             <div class="formula">No pulsed run in this dataset.</div>
-            <div class="formula-note">The dimensionless argument predicts a gain; the table cannot confirm it. A duty-cycle series at matched time-average T is the missing experiment.</div>
+            <div class="formula-note">The dimensionless argument predicts a gain, but the table cannot confirm it; a duty-cycle series at matched time-average temperature remains the missing experiment.</div>
           </div>
         </div>
       </div>
@@ -602,8 +603,8 @@
 
 <!-- ============ CALCULATIONS ============ -->
 <section id="calculations" class="panel" role="tabpanel">
-  <p class="section-kicker">Everything the page evaluates</p>
-  <h2 class="section-title">Equations, assumptions, and what cancels</h2>
+  <p class="section-kicker">Complete calculation record</p>
+  <h2 class="section-title">Equations, assumptions, and dimensional cancellation</h2>
 
   <div class="calc-note">
     All temperatures are converted to kelvin before entering any Arrhenius or power-law expression. The page reports
@@ -675,7 +676,7 @@
         <div class="formula-item">
           <div class="formula-name">Single lumped rate</div>
           <div class="formula">One E<sub>a</sub> stands in for the whole radical network.</div>
-          <div class="formula-note">This is why the page never converts Da into a predicted conversion. Ethane cracking is chain-initiated with an induction period, and a lumped k overpredicts hard at millisecond contact times.</div>
+          <div class="formula-note">This is why the page never converts Da into a predicted conversion. Ethane cracking is chain-initiated with an induction period, and a lumped k significantly overpredicts conversion at millisecond contact times.</div>
         </div>
         <div class="formula-item">
           <div class="formula-name">Gas follows the element instantly</div>
