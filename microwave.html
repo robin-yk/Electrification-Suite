@@ -51,7 +51,7 @@
     <button class="tab active" data-tab="model2d" role="tab" aria-selected="true">2D Temperature Map</button>
     <button class="tab" data-tab="s39" role="tab" aria-selected="false">Reduced Model</button>
     <button class="tab" data-tab="howto" role="tab" aria-selected="false">How to Use</button>
-    <button class="tab" data-tab="calculations" role="tab" aria-selected="false">Equations &amp; Source Code</button>
+    <button class="tab" data-tab="calculations" role="tab" aria-selected="false">Calculations</button>
   </div></nav>
   <main>
     <section id="model2d" class="panel active" role="tabpanel">
@@ -185,7 +185,7 @@
     </section>
 
     <section id="calculations" class="panel" role="tabpanel">
-      <p class="page-kicker">Full calculation record</p><h2 class="page-title">Equations, parameter values, assumptions, and source code</h2>
+      <p class="page-kicker">Full calculation record</p><h2 class="page-title">Equations, parameter values, and assumptions</h2>
       <p class="page-lede">The sections below follow the calculation in execution order. Every power term is in watts, every internal length is in metres, and every temperature-dependent material property is evaluated from the current cell temperature. Temperatures are displayed in °C; absolute temperature is used for radiation, ideal-gas density, viscosity, conductivity ratios, and dimensionless transport groups.</p>
       <div class="formula-card full"><h3>Calculation sequence</h3><div class="formula">Material profile, measured P<sub>abs</sub>, and geometry → material-region map → temperature-dependent ε′, ε″, and k → normalized microwave heat source → sample/quartz/gas/air cell balances → nonlinear steady solution → transport groups, sensor temperatures, and energy balance → 2D-derived Eq. S39 reduction → material-specific experiment comparison</div><div class="formula-note">The Eq. S39 tab receives the converged 2D average temperature and sample-boundary heat fluxes. It summarizes the spatial solution and does not feed temperatures back into the 2D solver.</div></div>
 
