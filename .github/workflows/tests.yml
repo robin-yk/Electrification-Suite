@@ -12,8 +12,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Run joule-solver.js regression tests
-        run: node --test tests/joule-solver.test.js
+      - name: Run solver regression tests
+        run: node --test tests/joule-solver.test.js tests/microwave-solver.test.js
       - name: Build (verifies projectPages copy list is complete)
         run: |
           npm install
