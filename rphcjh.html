@@ -726,16 +726,15 @@
   <span>Ratios are model output. The experiment table is measured CJH data.</span>
 </footer>
 
-<script>
-"use strict";
+<script type="module">
+import {
+  R_GAS, K2C, arrheniusRate, transportCoefficient, velocity,
+  timeAverageTemperature, pulseWaveform, idealTwoStateAverages
+} from "./rphcjh-solver.js";
 
 /* ------------------------------------------------------------------ */
 /* constants and state                                                 */
 /* ------------------------------------------------------------------ */
-const R_GAS = 8.314;            // J/mol/K
-const T_REF = 1373.15;          // 1100 C, the normalization anchor
-const K2C = 273.15;
-
 const state = {
   tPeak: 1250, tMin: 750, duty: 0.35, period: 1.2, ramp: 0.10,
   ea: 273, beta: 0.50,
@@ -746,36 +745,20 @@ const state = {
 
 const TRACE_WINDOW = 6;   // seconds shown in the trace chart
 
-/* normalised property functions: prefactors cancel in every ratio */
-const kOf  = TC => Math.exp(-(state.ea * 1000 / R_GAS) * (1 / (TC + K2C) - 1 / T_REF));
-const hOf  = TC => Math.pow((TC + K2C) / T_REF, state.beta);
-const uOf  = TC => (TC + K2C) / T_REF;
+/* thin state-aware wrappers around the pure functions in rphcjh-solver.js,
+   kept so every call site below can go on writing kOf(TC) / waveform(phase) */
+const kOf  = TC => arrheniusRate(TC, state.ea);
+const hOf  = TC => transportCoefficient(TC, state.beta);
+const uOf  = TC => velocity(TC);
 
-const tAvgOf = () => state.duty * state.tPeak + (1 - state.duty) * state.tMin;
+const tAvgOf = () => timeAverageTemperature(state.duty, state.tPeak, state.tMin);
 
-/* trapezoidal element waveform, phase in [0,1) */
 function waveform(phase) {
-  const hi = state.duty, lo = 1 - state.duty;
-  const r = Math.min(state.ramp, hi * 0.98, lo * 0.98);
-  if (r <= 1e-6) return phase < hi ? state.tPeak : state.tMin;
-  const rUp = Math.min(r, hi * 0.98), rDn = Math.min(r, lo * 0.98);
-  const span = state.tPeak - state.tMin;
-  if (phase < rUp)      return state.tMin + span * (phase / rUp);
-  if (phase < hi)       return state.tPeak;
-  if (phase < hi + rDn) return state.tPeak - span * ((phase - hi) / rDn);
-  return state.tMin;
+  return pulseWaveform(phase, state);
 }
 
-/* ideal two-state averages, the form the note proves */
 function idealAverages() {
-  const d = state.duty;
-  return {
-    k: d * kOf(state.tPeak) + (1 - d) * kOf(state.tMin),
-    h: d * hOf(state.tPeak) + (1 - d) * hOf(state.tMin),
-    u: d * uOf(state.tPeak) + (1 - d) * uOf(state.tMin),
-    kh: d * kOf(state.tPeak) / hOf(state.tPeak) + (1 - d) * kOf(state.tMin) / hOf(state.tMin),
-    ku: d * kOf(state.tPeak) / uOf(state.tPeak) + (1 - d) * kOf(state.tMin) / uOf(state.tMin)
-  };
+  return idealTwoStateAverages(state);
 }
 
 /* ------------------------------------------------------------------ */

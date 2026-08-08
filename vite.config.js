@@ -9,7 +9,7 @@ import { resolve } from "node:path";
 // are only reached through their page's own <script type="module" src>, and since
 // that page is copied raw (never parsed as an HTML entry), Vite never sees that
 // reference either — it needs the same explicit copy.
-const projectPages = ["microwave.html", "microwave-solver.js", "joule.html", "joule-solver.js", "rphcjh.html", "Yeonsu-Kwak-CV.pdf"];
+const projectPages = ["microwave.html", "microwave-solver.js", "joule.html", "joule-solver.js", "rphcjh.html", "rphcjh-solver.js", "Yeonsu-Kwak-CV.pdf"];
 
 export default defineConfig({
   plugins: [
