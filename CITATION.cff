@@ -1,0 +1,30 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "Electrification Suite: Interactive Models of Chemical Process Electrification"
+authors:
+  - family-names: Kwak
+    given-names: Yeonsu
+    affiliation: "Vlachos Lab, University of Delaware"
+    email: ask.yeonsu@gmail.com
+repository-code: "https://github.com/robin-yk/Electrification"
+url: "https://robin-yk.github.io/Electrification/"
+abstract: >-
+  Browser-based interactive models of chemical process electrification:
+  a 2D microwave-heating powder-bed temperature model with dielectric
+  response and experimental calibration, a 2D Joule-heating design
+  optimizer with nonlinear thermal solving, and a dimensionless
+  visualizer of ramped-vs-continuous (RPH vs CJH) Joule heating and its
+  Jensen's-inequality effects on temperature-dependent kinetics and
+  transport. All calculations run client-side with no backend.
+keywords:
+  - chemical engineering
+  - process electrification
+  - catalysis
+  - microwave heating
+  - joule heating
+  - reactor engineering
+  - dimensionless analysis
+license: MIT
+version: 0.1.0
+date-released: "2026-08-08"

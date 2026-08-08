@@ -24,3 +24,27 @@ npm run preview  # preview the production build
 ```
 
 Vite is used only as a static dev server for these files — there is no framework, build step, or external runtime dependency.
+
+## Citation
+
+If this tool is useful in your own work, please cite it:
+
+```bibtex
+@software{kwak_electrification_2026,
+  author  = {Kwak, Yeonsu},
+  title   = {{Electrification Suite: Interactive Models of Chemical Process Electrification}},
+  year    = {2026},
+  url     = {https://github.com/robin-yk/Electrification},
+  version = {0.1.0}
+}
+```
+
+A machine-readable citation is also available in [`CITATION.cff`](CITATION.cff).
+
+The RPH vs CJH visualizer accompanies the experimental study:
+
+> Mittal, A., Kwak, Y., Zheng, W., Ierapetritou, M., & Vlachos, D. G. (2025). Short contact time, high temperature, internally-heated ethane crackers. *Chemical Engineering Journal*, 168251.
+
+## License
+
+[MIT](LICENSE) © Yeonsu Kwak
