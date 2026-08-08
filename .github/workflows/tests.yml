@@ -12,9 +12,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: Install dependencies
+        run: npm install
       - name: Run solver regression tests
-        run: node --test tests/joule-solver.test.js tests/microwave-solver.test.js tests/rphcjh-solver.test.js
+        run: npm test
       - name: Build (verifies projectPages copy list is complete)
-        run: |
-          npm install
-          npm run build
+        run: npm run build
