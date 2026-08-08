@@ -112,3 +112,34 @@ test("solveThermal2D() converges with low energy closure across an L/D x materia
 
   assert.deepEqual(failures, [], `${failures.length}/${aspectRatios.length * materialNames.length} cases failed:\n${failures.join("\n")}`);
 });
+
+test("calculate() rejects non-finite and out-of-range input instead of producing NaN results", () => {
+  const badCases = [
+    { label: "zero volume", overrides: { volumeCm3: 0 } },
+    { label: "negative aspect ratio", overrides: { aspectRatio: -6 } },
+    { label: "NaN aspect ratio", overrides: { aspectRatio: NaN } },
+    { label: "zero ambient temperature", overrides: { ambientK: 0 } },
+    { label: "negative target temperature", overrides: { targetK: -1 } },
+    { label: "zero max current", overrides: { imax: 0 } },
+    { label: "solid fraction above 1", overrides: { solidFraction: 1.5 } },
+    { label: "emissivity above 1", overrides: { emissivity: 1.2 } }
+  ];
+  for (const { label, overrides } of badCases) {
+    const x = makeInput("SiC", 6, overrides);
+    const result = calculate(x);
+    assert.ok(result.errors.length > 0, `expected "${label}" to be rejected with a validation error`);
+    assert.equal(result.tss, undefined, `"${label}" should not produce a partial numeric result`);
+  }
+});
+
+test("solveThermal2D() stays finite (no NaN/Infinity) at the extreme ends of the L/D range", () => {
+  for (const aspectRatio of [0.2, 50]) {
+    const x = makeInput("SiC", aspectRatio);
+    const zeroD = calculate(x);
+    assert.deepEqual(zeroD.errors, [], `L/D=${aspectRatio} unexpectedly failed validation`);
+    const result = solveThermal2D(x, zeroD, x.enclosure, x.material);
+    assert.deepEqual(result.errors, []);
+    assert.ok(Number.isFinite(result.avgK), `L/D=${aspectRatio}: avgK=${result.avgK}`);
+    assert.ok(Number.isFinite(result.closure), `L/D=${aspectRatio}: closure=${result.closure}`);
+  }
+});

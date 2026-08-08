@@ -98,3 +98,25 @@ test("idealTwoStateAverages().k exceeds k at the average temperature (the pulsin
   const tAvg = timeAverageTemperature(params.duty, params.tPeak, params.tMin);
   assert.ok(av.k > arrheniusRate(tAvg, params.ea), "Jensen gain on <k> should be positive for this convex, Ea-large case");
 });
+
+test("all property/waveform functions stay finite across the full UI slider ranges (extreme boundary sweep)", () => {
+  // matches rphcjh.html's own <input type="range"> min/max for each control
+  const tPeaks = [900, 1400], tMins = [400, 1200], duties = [0.05, 0.95], ramps = [0, 0.45], eas = [80, 400], betas = [0.05, 1.75];
+  const failures = [];
+  for (const tPeak of tPeaks) for (const tMin of tMins) for (const duty of duties) for (const ramp of ramps) for (const ea of eas) for (const beta of betas) {
+    const params = { duty, ramp, tPeak, tMin, ea, beta };
+    const checks = {
+      kPeak: arrheniusRate(tPeak, ea), kMin: arrheniusRate(tMin, ea),
+      hPeak: transportCoefficient(tPeak, beta), hMin: transportCoefficient(tMin, beta),
+      uPeak: velocity(tPeak), uMin: velocity(tMin),
+      tAvg: timeAverageTemperature(duty, tPeak, tMin),
+      wave0: pulseWaveform(0, params), waveHalf: pulseWaveform(0.5, params),
+    };
+    const av = idealTwoStateAverages(params);
+    Object.assign(checks, av);
+    for (const [key, value] of Object.entries(checks)) {
+      if (!Number.isFinite(value)) failures.push(`tPeak=${tPeak} tMin=${tMin} duty=${duty} ramp=${ramp} ea=${ea} beta=${beta}: ${key}=${value}`);
+    }
+  }
+  assert.deepEqual(failures, []);
+});

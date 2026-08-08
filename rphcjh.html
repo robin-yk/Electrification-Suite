@@ -936,11 +936,13 @@ function step(now) {
     state.trace.push([state.t, TC]);
     while (state.trace.length && state.trace[0][0] < state.t - TRACE_WINDOW) state.trace.shift();
 
-    const tAvgRun = state.accT / state.accTime;
-    state.kHist.push([state.t, state.accK / state.accTime / kOf(tAvgRun)]);
-    state.hHist.push([state.t, state.accH / state.accTime / hOf(tAvgRun)]);
-    while (state.kHist.length && state.kHist[0][0] < state.t - TRACE_WINDOW) state.kHist.shift();
-    while (state.hHist.length && state.hHist[0][0] < state.t - TRACE_WINDOW) state.hHist.shift();
+    if (state.accTime > 0) {
+      const tAvgRun = state.accT / state.accTime;
+      state.kHist.push([state.t, state.accK / state.accTime / kOf(tAvgRun)]);
+      state.hHist.push([state.t, state.accH / state.accTime / hOf(tAvgRun)]);
+      while (state.kHist.length && state.kHist[0][0] < state.t - TRACE_WINDOW) state.kHist.shift();
+      while (state.hHist.length && state.hHist[0][0] < state.t - TRACE_WINDOW) state.hHist.shift();
+    }
 
     updateLive(TC);
     drawReactor(TC);
@@ -952,13 +954,16 @@ function step(now) {
 
 function updateLive(TC) {
   const tAvgRun = state.accTime ? state.accT / state.accTime : tAvgOf();
-  const kAvg = state.accK / state.accTime;
-  const hAvg = state.accH / state.accTime;
-  const uAvg = state.accU / state.accTime;
-  const khAvg = state.accKH / state.accTime;
-  const kuAvg = state.accKU / state.accTime;
-
   const kRef = kOf(tAvgRun), hRef = hOf(tAvgRun), uRef = uOf(tAvgRun);
+  // Before the leaky integrators accumulate any weight (the very first animation
+  // frame, accTime === 0), fall back to the instantaneous reference values instead
+  // of dividing 0/0 — otherwise the KPI tiles flash "NaN" for a frame.
+  const haveHistory = state.accTime > 0;
+  const kAvg = haveHistory ? state.accK / state.accTime : kRef;
+  const hAvg = haveHistory ? state.accH / state.accTime : hRef;
+  const uAvg = haveHistory ? state.accU / state.accTime : uRef;
+  const khAvg = haveHistory ? state.accKH / state.accTime : kRef / hRef;
+  const kuAvg = haveHistory ? state.accKU / state.accTime : kRef / uRef;
   const rK = kAvg / kRef;
   const rLam = khAvg / (kRef / hRef);
   const rDa = kuAvg / (kRef / uRef);

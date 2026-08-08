@@ -177,7 +177,7 @@ export function solve2D(p) {
       if (j < p.Nz - 1) { const G = interfaceG(i, j, i, j + 1, Az, dz, "z"); sum += G; rhs += G * T[j + 1][i]; } else { const G = hBoundaryEff * Az; sum += G; rhs += G * p.Ta; }
       if (m === 2) { let sliceV = 0; for (let ii = 0; ii < p.Nr; ii++) if (material[j][ii] === 2) sliceV += vols[ii]; const G = gasG[j] * vols[i] / sliceV; sum += G; rhs += G * gasIn[j]; }
       if (m === 3 && i < p.Nr - 1 && material[j][i + 1] === 0) { const Tk = T[j][i] + 273.15, Tak = p.Ta + 273.15, hrad = p.epsTube * p.radArea * sigma * (Tk + Tak) * (Tk * Tk + Tak * Tak), G = hrad * Ae; sum += G; rhs += G * p.Ta; }
-      const next = clamp(rhs / Math.max(sum, 1e-30), p.Ta, 2500), updated = T[j][i] + p.omega * (next - T[j][i]); maxDelta = Math.max(maxDelta, Math.abs(updated - T[j][i])); T[j][i] = updated;
+      const next = clamp(rhs / Math.max(sum, 1e-30), p.Ta, 2500), updated = clamp(T[j][i] + p.omega * (next - T[j][i]), p.Ta, 2500); maxDelta = Math.max(maxDelta, Math.abs(updated - T[j][i])); T[j][i] = updated;
     }
     if (maxDelta < p.tol) { converged = true; break; }
   }
