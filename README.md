@@ -74,7 +74,15 @@ See `tests/*.test.js` for further worked examples of each module's inputs and ou
 npm test
 ```
 
-Runs the Node-native regression suite (`node --test`) against all three solver modules — representative cases, parameter sweeps, energy-balance closure, and convergence checks — with no browser required. The same suite runs in CI on every push (see [`.github/workflows/tests.yml`](.github/workflows/tests.yml)), together with a production build that verifies every page's required files are packaged.
+Runs the Node-native regression suite (`node --test`) against all three solver modules — representative cases, parameter sweeps, energy-balance closure, convergence checks, and extreme/boundary inputs — with no browser required.
+
+```bash
+npm run test:e2e
+```
+
+Runs a Playwright smoke test that loads each page in a real headless browser, drives it through its default calculation, and checks for console/page errors and NaN in the reported result. Needs Chromium (`npx playwright install chromium` if you don't already have one).
+
+Both suites run in CI on every push (see [`.github/workflows/tests.yml`](.github/workflows/tests.yml)), together with a production build that verifies every page's required files are packaged.
 
 ## Contributing
 

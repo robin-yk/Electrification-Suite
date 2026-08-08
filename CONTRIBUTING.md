@@ -13,8 +13,9 @@ Please include:
 
 ```bash
 npm install
-npm run dev    # local dev server at the printed URL
-npm test       # regression tests for all three solvers
+npm run dev      # local dev server at the printed URL
+npm test         # regression tests for all three solvers
+npm run test:e2e # browser smoke test (needs Chromium; npx playwright install chromium)
 ```
 
 Each page's numeric core lives in a standalone, DOM-free ES module (`joule-solver.js`, `microwave-solver.js`, `rphcjh-solver.js`) with its own test file under `tests/`. If you change solver behavior, add or update a test in the matching file. `npm run build` also verifies that `vite.config.js`'s `projectPages` list stays in sync with the files each page needs — if you add a new page or module, add it there too.
