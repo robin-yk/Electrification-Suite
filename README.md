@@ -41,7 +41,11 @@ If this tool is useful in your own work, please cite it:
 
 A machine-readable citation is also available in [`CITATION.cff`](CITATION.cff).
 
-The RPH vs CJH visualizer accompanies the experimental study:
+The RPH vs CJH visualizer is a companion to:
+
+> Kwak, Y., Railkar, R., Zheng, W., & Vlachos, D. G. (2025). Tandem Nonoxidative Coupling of Methane and Carbon Dioxide Reduction via Pulsed Joule Thermochemistry. *ACS Energy Letters*, 10(12), 6188–6196. https://doi.org/10.1021/acsenergylett.5c02853
+
+Its "CFP Experiments" tab uses continuous-heating (CJH) ethane-cracking data from:
 
 > Mittal, A., Kwak, Y., Zheng, W., Ierapetritou, M., & Vlachos, D. G. (2025). Short contact time, high temperature, internally-heated ethane crackers. *Chemical Engineering Journal*, 168251.
 

@@ -28,3 +28,39 @@ keywords:
 license: MIT
 version: 0.1.0
 date-released: "2026-08-08"
+references:
+  - type: article
+    title: "Tandem Nonoxidative Coupling of Methane and Carbon Dioxide Reduction via Pulsed Joule Thermochemistry"
+    authors:
+      - family-names: Kwak
+        given-names: Yeonsu
+      - family-names: Railkar
+        given-names: Rucha
+      - family-names: Zheng
+        given-names: Weiqing
+      - family-names: Vlachos
+        given-names: "Dionisios G."
+    journal: "ACS Energy Letters"
+    volume: 10
+    issue: 12
+    start: 6188
+    end: 6196
+    year: 2025
+    doi: "10.1021/acsenergylett.5c02853"
+    notes: "Companion paper for the RPH vs CJH dimensionless visualizer (rphcjh.html)."
+  - type: article
+    title: "Short contact time, high temperature, internally-heated ethane crackers"
+    authors:
+      - family-names: Mittal
+        given-names: A.
+      - family-names: Kwak
+        given-names: Yeonsu
+      - family-names: Zheng
+        given-names: Weiqing
+      - family-names: Ierapetritou
+        given-names: M.
+      - family-names: Vlachos
+        given-names: "Dionisios G."
+    journal: "Chemical Engineering Journal"
+    year: 2025
+    notes: "Source of the continuous-heating (CJH) ethane-cracking dataset shown in the RPH vs CJH visualizer's CFP Experiments tab."
