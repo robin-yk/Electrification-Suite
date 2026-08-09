@@ -148,7 +148,10 @@ export function solve2D(p) {
     return 1 / resistance;
   };
   const heat = Array.from({ length: p.Nz }, () => Array(p.Nr).fill(0)), gasIn = Array(p.Nz).fill(p.Ta), gasG = Array(p.Nz).fill(0), Cg = gasCapacityRate(p), sampleRows = [];
-  for (let j = 0; j < p.Nz; j++) if (material[j][0] === 2) sampleRows.push(j);
+  // Tube gas enters at the top (highest z, matching the "Gas flow" arrow drawn into the
+  // bed from above) and exits at the bottom, so this must walk j from high to low: the
+  // loops below start Tin at ambient and carry it row-to-row in sampleRows order.
+  for (let j = p.Nz - 1; j >= 0; j--) if (material[j][0] === 2) sampleRows.push(j);
   let converged = false, maxDelta = Infinity, it = 0, lastTransport = packedBedTransport(p.Ta, p), gasEffectivenessUsed = p.gasTransferMode === "manual" ? p.gasEff : lastTransport.gasEffectiveness, hBoundaryEff = p.boundaryMode === "manual" ? p.hBoundary : naturalConvection(p.Ta, p).h;
   for (it = 0; it < p.maxIter; it++) {
     let bedTemp = 0, bedTempV = 0; for (let j = 0; j < p.Nz; j++) for (let i = 0; i < p.Nr; i++) if (material[j][i] === 2) { bedTemp += T[j][i] * vols[i]; bedTempV += vols[i]; } bedTemp /= Math.max(bedTempV, 1e-30);
