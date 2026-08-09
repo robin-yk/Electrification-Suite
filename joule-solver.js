@@ -270,13 +270,13 @@ export function allocateSegmentCells(segments, total) {
 }
 
 export function build2DMesh(g, cfg) {
-  const nr=30,nz=60,radius=g.D/2,hasGap=cfg.gap>1e-12,outerRadius=radius+cfg.gap+cfg.wallThickness;
-  const nAir=8,activeRadialCells=nr-nAir;
+  const nr=cfg.nr||30,nz=cfg.nz||60,radius=g.D/2,hasGap=cfg.gap>1e-12,outerRadius=radius+cfg.gap+cfg.wallThickness;
+  const nAir=cfg.nAir||8,activeRadialCells=nr-nAir;
   const segments=[{key:"element",length:radius,min:8}];
   if(hasGap) segments.push({key:"gap",length:cfg.gap,min:1});
   segments.push({key:"wall",length:cfg.wallThickness,min:2});
   const counts=allocateSegmentCells(segments,activeRadialCells),byKey=Object.fromEntries(segments.map((segment,index)=>[segment.key,counts[index]]));
-  const nElement=byKey.element,nGap=byKey.gap||0,nWall=byKey.wall,nAirZ=8,nActiveZ=nz-2*nAirZ;
+  const nElement=byKey.element,nGap=byKey.gap||0,nWall=byKey.wall,nAirZ=cfg.nAirZ||8,nActiveZ=nz-2*nAirZ;
   const domainRadius=outerRadius*nr/activeRadialCells,domainHeight=g.L*nz/nActiveZ,dz=domainHeight/nz;
   const edges=[0];
   const addSegment=(start,end,count)=>{for(let i=1;i<=count;i++)edges.push(start+(end-start)*i/count);};
