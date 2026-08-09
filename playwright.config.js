@@ -1,13 +1,21 @@
 import { defineConfig, devices } from "@playwright/test";
 import { existsSync } from "node:fs";
 
-// Sandboxed dev containers in this project pre-install Chromium outside
-// node_modules (see CLAUDE.md / environment notes) and skip Playwright's own
-// browser download. When that path exists, point launches at it directly;
-// otherwise (e.g. CI) fall back to Playwright's normal managed browser,
-// which `playwright install --with-deps chromium` fetches beforehand.
-const localChromium = "/opt/pw-browsers/chromium";
-const executablePath = existsSync(localChromium) ? localChromium : undefined;
+// Some sandboxed dev containers pre-install Chromium outside node_modules and
+// skip (or block) Playwright's own browser download. Check the common
+// locations for that before falling back to Playwright's normal managed
+// browser, which `npx playwright install --with-deps chromium` fetches. If
+// neither is present and there's no network to fetch one (see AGENTS.md),
+// `npm run test:e2e` will fail to launch - that's expected in that case; run
+// `npm test` (no browser needed) instead and skip the e2e suite.
+const candidateChromiumPaths = [
+  "/opt/pw-browsers/chromium",
+  "/usr/bin/chromium",
+  "/usr/bin/chromium-browser",
+  "/usr/bin/google-chrome",
+  "/usr/bin/google-chrome-stable",
+];
+const executablePath = candidateChromiumPaths.find((path) => existsSync(path));
 
 const PORT = 4319;
 
