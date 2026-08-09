@@ -143,3 +143,39 @@ test("solveThermal2D() stays finite (no NaN/Infinity) at the extreme ends of the
     assert.ok(Number.isFinite(result.closure), `L/D=${aspectRatio}: closure=${result.closure}`);
   }
 });
+
+// Physical-limit validation: the Biot number (Bi = h*Lc/k) is the ratio of internal
+// conduction resistance to external (surface) resistance. As Bi -> 0 the element's own
+// interior should become nearly isothermal, since internal conduction is no longer the
+// bottleneck; as Bi grows, the interior temperature spread should grow with it. This is
+// the actual physical content of the "lumped-element" limit the 0D Biot check (`bi`)
+// exists to warn about, verified here against the independent 2D field solver's own
+// resolved temperature spread rather than merely asserting the 0D and 2D models agree
+// (they use two independently-implemented enclosure heat-loss formulations - a closed-form
+// lumped resistance network vs. an explicit FVM mesh - that are not expected to match
+// exactly even when the element itself is near-isothermal).
+test("solveThermal2D()'s internal temperature spread grows monotonically with the 0D Biot number (Bi->0 lumped-element limit)", () => {
+  const conductivities = [400, 120, 40, 12, 4, 1.5]; // W/m/K, high -> low
+  const points = conductivities.map((k) => {
+    const material = { name: "synthetic", rhoOhmCm: 0.02, density: 5000, cp: 600, k, jmax: 1e7, emissivity: 0.8 };
+    const x = makeInput("SiC", 10, { material, emissivity: 0.8 });
+    const zeroD = calculate(x);
+    assert.deepEqual(zeroD.errors, [], `k=${k} unexpectedly failed validation`);
+    const result = solveThermal2D(x, zeroD, x.enclosure, x.material);
+    assert.deepEqual(result.errors, []);
+    const rise = result.avgK - x.ambientK;
+    return { k, bi: zeroD.bi, ratio: result.deltaT / rise };
+  });
+
+  // higher k -> lower Bi -> smaller internal spread; strictly increasing as k decreases
+  for (let i = 1; i < points.length; i++) {
+    assert.ok(
+      points[i].ratio > points[i - 1].ratio,
+      `deltaT/rise should grow as k drops (Bi rises): k=${points[i - 1].k} (Bi=${points[i - 1].bi.toExponential(2)}, ratio=${points[i - 1].ratio.toFixed(4)}) -> k=${points[i].k} (Bi=${points[i].bi.toExponential(2)}, ratio=${points[i].ratio.toFixed(4)})`
+    );
+  }
+  // the highest-conductivity (lowest-Bi, Bi ~ 5e-4) case should be nearly isothermal
+  assert.ok(points[0].ratio < 0.01, `lowest-Bi case should be nearly isothermal, got ratio=${points[0].ratio}`);
+  // the lowest-conductivity (highest-Bi, Bi ~ 0.15) case should show a clear internal gradient
+  assert.ok(points[points.length - 1].ratio > 0.2, `highest-Bi case should show a clear internal gradient, got ratio=${points[points.length - 1].ratio}`);
+});
