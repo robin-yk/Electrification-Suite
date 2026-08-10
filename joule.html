@@ -411,7 +411,7 @@
       min-height: 290px;
       background: #fff;
     }
-    svg.chart text, #geometryVisual text { font-size: 15px; }
+    svg.chart text { font-size: 15px; }
     .chart-note {
       margin: 7px 4px 0;
       color: var(--muted);
@@ -2048,7 +2048,7 @@
     function renderRampChart(r) {
       const svg = $("rampChart");
       svg.replaceChildren();
-      const W = 820, H = 260, m = { l: 58, r: 22, t: 20, b: 44 };
+      const W = 820, H = 260, m = { l: 64, r: 22, t: 20, b: 46 };
       const innerW = W - m.l - m.r, innerH = H - m.t - m.b;
       const TaK = r.input.ambientK, TssK = r.tss;
 
@@ -2078,13 +2078,13 @@
         const py = m.t + innerH * i / 5;
         const tempC = celsius(TssK - (TssK - TaK) * i / 5);
         svg.append(svgEl("line", { x1: m.l, x2: W - m.r, y1: py, y2: py, stroke: "#e3e8ec", "stroke-width": 1 }));
-        svg.append(svgEl("text", { x: m.l - 8, y: py + 4, "text-anchor": "end", fill: "#687783", "font-size": 14, "font-family": "Arial" }, format(tempC, 0)));
+        svg.append(svgEl("text", { x: m.l - 8, y: py + 4, "text-anchor": "end", fill: "#687783", "font-size": 17, "font-family": "Arial" }, format(tempC, 0)));
       }
       for (let i = 0; i <= 5; i++) {
         const px = m.l + innerW * i / 5;
         const tMin = xMaxMin * i / 5;
         svg.append(svgEl("line", { x1: px, x2: px, y1: m.t, y2: H - m.b, stroke: "#edf0f2", "stroke-width": 1 }));
-        svg.append(svgEl("text", { x: px, y: H - m.b + 18, "text-anchor": "middle", fill: "#687783", "font-size": 14, "font-family": "Arial" }, format(tMin, 1)));
+        svg.append(svgEl("text", { x: px, y: H - m.b + 20, "text-anchor": "middle", fill: "#687783", "font-size": 17, "font-family": "Arial" }, format(tMin, 1)));
       }
       svg.append(svgEl("line", { x1: m.l, x2: W - m.r, y1: H - m.b, y2: H - m.b, stroke: "#50606d", "stroke-width": 1.2 }));
       svg.append(svgEl("line", { x1: m.l, x2: m.l, y1: m.t, y2: H - m.b, stroke: "#50606d", "stroke-width": 1.2 }));
@@ -2098,12 +2098,12 @@
       if (t95 <= tMax) {
         const T95 = TssK - (TssK - TaK) * 0.05;
         svg.append(svgEl("circle", { cx: x(t95), cy: y(T95), r: 5.5, fill: "#102a43", stroke: "#fff", "stroke-width": 2 }));
-        svg.append(svgEl("text", { x: x(t95) + 8, y: y(T95) - 9, fill: "#102a43", "font-size": 14, "font-weight": 700, "font-family": "Arial" }, `95% at ${fmtTime(t95)}`));
+        svg.append(svgEl("text", { x: x(t95) + 8, y: y(T95) - 9, fill: "#102a43", "font-size": 16, "font-weight": 700, "font-family": "Arial" }, `95% at ${fmtTime(t95)}`));
       }
-      svg.append(svgEl("text", { x: W - m.r, y: ssY - 8, "text-anchor": "end", fill: "#b46714", "font-size": 14, "font-weight": 700, "font-family": "Arial" }, `Tss ${format(celsius(TssK), 1)} °C`));
+      svg.append(svgEl("text", { x: W - m.r, y: ssY - 8, "text-anchor": "end", fill: "#b46714", "font-size": 16, "font-weight": 700, "font-family": "Arial" }, `Tss ${format(celsius(TssK), 1)} °C`));
 
-      svg.append(svgEl("text", { x: m.l + innerW / 2, y: H - 9, "text-anchor": "middle", fill: "#334451", "font-size": 14, "font-weight": 700, "font-family": "Arial" }, "Time (min)"));
-      const yLabel = svgEl("text", { x: 15, y: m.t + innerH / 2, transform: `rotate(-90 15 ${m.t + innerH / 2})`, "text-anchor": "middle", fill: "#334451", "font-size": 14, "font-weight": 700, "font-family": "Arial" }, "Temperature (°C)");
+      svg.append(svgEl("text", { x: m.l + innerW / 2, y: H - 8, "text-anchor": "middle", fill: "#334451", "font-size": 16, "font-weight": 700, "font-family": "Arial" }, "Time (min)"));
+      const yLabel = svgEl("text", { x: 16, y: m.t + innerH / 2, transform: `rotate(-90 16 ${m.t + innerH / 2})`, "text-anchor": "middle", fill: "#334451", "font-size": 16, "font-weight": 700, "font-family": "Arial" }, "Temperature (°C)");
       svg.append(yLabel);
     }
 
@@ -2244,7 +2244,7 @@
       svg.append(svgEl("line", { x1:x0, x2:x1, y1:dimY, y2:dimY, stroke:dimColor, "stroke-width":1.5 }));
       svg.append(arrow(x0, dimY, 1, 0));
       svg.append(arrow(x1, dimY, -1, 0));
-      svg.append(svgEl("text", { x:(x0+x1)/2, y:dimY+20, "text-anchor":"middle", fill:dimColor, "font-size":15, "font-weight":700, "font-family":"Arial" }, `L = ${format(r.g.L*1000, 3)} mm`));
+      svg.append(svgEl("text", { x:(x0+x1)/2, y:dimY+19, "text-anchor":"middle", fill:dimColor, "font-size":17, "font-weight":700, "font-family":"Arial" }, `L = ${format(r.g.L*1000, 3)} mm`));
 
       const dimX = x1 + ellipseW + 38;
       svg.append(svgEl("line", { x1:x1+ellipseW+4, x2:dimX+5, y1:y0, y2:y0, stroke:"#c9b3b3", "stroke-width":1 }));
@@ -2252,15 +2252,15 @@
       svg.append(svgEl("line", { x1:dimX, x2:dimX, y1:y0, y2:y1, stroke:dimColor, "stroke-width":1.5 }));
       svg.append(arrow(dimX, y0, 0, 1));
       svg.append(arrow(dimX, y1, 0, -1));
-      svg.append(svgEl("text", { x:dimX+13, y:cy+4, fill:dimColor, "font-size":15, "font-weight":700, "font-family":"Arial" }, `D = ${format(r.g.D*1000, 3)} mm`));
+      svg.append(svgEl("text", { x:dimX+13, y:cy+5, fill:dimColor, "font-size":17, "font-weight":700, "font-family":"Arial" }, `D = ${format(r.g.D*1000, 3)} mm`));
 
       const phiText = `φ = ${format(r.g.porosity, 3)}  (${format(r.g.porosity*100, 1)}% void)`;
-      svg.append(svgEl("text", { x:20, y:27, fill:"#102a43", "font-size":18, "font-weight":700, "font-family":"Arial" }, phiText));
-      svg.append(svgEl("text", { x:20, y:51, fill:"#64717d", "font-size":14, "font-family":"Arial" }, `f_solid = ${format(r.g.solidFraction, 3)} · Vol = ${format(r.g.envelopeVolume*1e6, 3)} cm³`));
+      svg.append(svgEl("text", { x:20, y:29, fill:"#102a43", "font-size":21, "font-weight":700, "font-family":"Arial" }, phiText));
+      svg.append(svgEl("text", { x:20, y:55, fill:"#64717d", "font-size":16, "font-family":"Arial" }, `f_solid = ${format(r.g.solidFraction, 3)} · Vol = ${format(r.g.envelopeVolume*1e6, 3)} cm³`));
       const legendLabel = "White area = schematic void fraction";
-      const legendWidth = legendLabel.length * 7.2;
-      svg.append(svgEl("circle", { cx:W-24-legendWidth-11, cy:21, r:6, fill:poreFill, stroke:poreEdge, "stroke-width":1 }));
-      svg.append(svgEl("text", { x:W-20, y:27, "text-anchor":"end", fill:"#64717d", "font-size":14, "font-family":"Arial" }, legendLabel));
+      const legendWidth = legendLabel.length * 8.3;
+      svg.append(svgEl("circle", { cx:W-24-legendWidth-11, cy:23, r:6, fill:poreFill, stroke:poreEdge, "stroke-width":1 }));
+      svg.append(svgEl("text", { x:W-20, y:29, "text-anchor":"end", fill:"#64717d", "font-size":16, "font-family":"Arial" }, legendLabel));
       svg.setAttribute("aria-label", `Calculated cylinder: length ${format(r.g.L*1000,3)} millimeters, diameter ${format(r.g.D*1000,3)} millimeters, porosity ${format(r.g.porosity*100,1)} percent.`);
     }
 
