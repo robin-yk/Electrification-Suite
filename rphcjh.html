@@ -279,7 +279,6 @@
     <button class="tab active" data-tab="animation" role="tab" aria-selected="true">Heating Animation</button>
     <button class="tab" data-tab="jensen" role="tab" aria-selected="false">When Pulsing Helps</button>
     <button class="tab" data-tab="ratios" role="tab" aria-selected="false">&Lambda; and Da Ratios</button>
-    <button class="tab" data-tab="experiments" role="tab" aria-selected="false">CFP Experiments</button>
     <button class="tab" data-tab="calculations" role="tab" aria-selected="false">Calculations</button>
   </div>
 </nav>
@@ -544,63 +543,6 @@
 </section>
 
 <!-- ============ EXPERIMENTS ============ -->
-<section id="experiments" class="panel" role="tabpanel">
-  <p class="section-kicker">Carbon fiber paper reactor, 1 bar</p>
-  <h2 class="section-title">Findings from existing CJH runs</h2>
-  <p class="section-lede">
-    Measured ethane-cracking performance on the Joule-heated CFP element. Every row reflects continuous heating; the
-    table therefore establishes the baseline the pulsed case must exceed, rather than providing evidence for it.
-    The relevant trend appears in the final column.
-  </p>
-
-  <div class="table-shell">
-    <table class="data">
-      <thead>
-        <tr>
-          <th>Condition</th><th>T (&deg;C)</th><th>Q (sccm)</th><th>C<sub>2</sub>H<sub>6</sub> (mol%)</th>
-          <th>&tau; (ms)</th><th>X (%)</th><th>C<sub>2</sub>H<sub>4</sub> yield (wt%)</th><th>C<sub>2</sub>H<sub>4</sub> sel. (wt%)</th>
-        </tr>
-      </thead>
-      <tbody id="expBody"></tbody>
-    </table>
-  </div>
-
-  <div class="calc-grid" style="margin-top:16px">
-    <article class="card">
-      <div class="card-header"><h3>Selectivity pays for conversion</h3></div>
-      <div class="card-body" style="padding:10px 12px 12px">
-        <svg class="chart" id="selChart" viewBox="0 0 520 300" role="img" aria-label="Ethylene selectivity falling as ethane conversion rises"></svg>
-        <p class="chart-note">
-          Every point reflects CJH operation. Selectivity declines from 86% to 61% as conversion increases, because
-          ethylene formed early in the reactor remains in the hot zone and continues to react.
-        </p>
-      </div>
-    </article>
-    <article class="card">
-      <div class="card-header"><h3>The opening this leaves for RPH</h3></div>
-      <div class="card-body">
-        <div class="formula-list">
-          <div class="formula-item">
-            <div class="formula-name">The measured tradeoff</div>
-            <div class="formula">Raising T from 1000 to 1200 &deg;C at fixed &tau; triples conversion at a cost of 24 percentage points of selectivity.</div>
-            <div class="formula-note">1000 &deg;C / 100 sccm: X = 11.3%, S = 85.3%. 1200 &deg;C / 100 sccm: X = 39.2%, S = 61.6%.</div>
-          </div>
-          <div class="formula-item">
-            <div class="formula-name">Why the two clocks differ</div>
-            <div class="formula">Ethane consumption and ethylene destruction do not share an activation energy.</div>
-            <div class="formula-note">A brief excursion to high temperature advances the higher-E<sub>a</sub> step disproportionately relative to the lower one; this effect, rather than &Lambda;, underlies the selectivity argument.</div>
-          </div>
-          <div class="formula-item">
-            <div class="formula-name">What is not yet measured</div>
-            <div class="formula">No pulsed run in this dataset.</div>
-            <div class="formula-note">The dimensionless argument predicts a gain, but the table cannot confirm it; a duty-cycle series at matched time-average temperature remains the missing experiment.</div>
-          </div>
-        </div>
-      </div>
-    </article>
-  </div>
-</section>
-
 <!-- ============ CALCULATIONS ============ -->
 <section id="calculations" class="panel" role="tabpanel">
   <p class="section-kicker">Complete calculation record</p>
@@ -614,10 +556,6 @@
   <div class="calc-note" style="margin-top:10px">
     <strong>Primary reference:</strong> Kwak, Y., Railkar, R., Zheng, W., &amp; Vlachos, D. G. (2025). <em>Tandem Nonoxidative Coupling of Methane and Carbon Dioxide Reduction via Pulsed Joule Thermochemistry.</em> <em>ACS Energy Letters</em>, 10(12), 6188&ndash;6196. <a href="https://doi.org/10.1021/acsenergylett.5c02853">https://doi.org/10.1021/acsenergylett.5c02853</a>. This page implements the RPH-vs-CJH dimensionless analysis developed there.
   </div>
-  <div class="calc-note" style="margin-top:10px">
-    <strong>CFP dataset reference:</strong> Mittal, A.<sup>†</sup>, Kwak, Y.<sup>†</sup>, Zheng, W., Ierapetritou, M., &amp; Vlachos, D. G. (2025). <em>Short contact time, high temperature, internally-heated ethane crackers.</em> <em>Chemical Engineering Journal</em>, 168251. The CFP ethane-cracking table on the Experiments tab is presented as continuous-heating baseline data from this study; it does not validate a pulsed case.
-  </div>
-
   <div class="calc-grid">
     <article class="card formula-card">
       <div class="card-header"><h3>Constitutive forms</h3></div>
@@ -1230,51 +1168,6 @@ function renderRatios() {
 }
 
 /* ------------------------------------------------------------------ */
-/* experiments tab                                                     */
-/* ------------------------------------------------------------------ */
-const EXP = [
-  { note: "70% C₂H₆ in He", T: 1000, Q: 300, c: 70, tau: 3.36, X: 4.24, Y: 3.66, S: 86.15 },
-  { note: "70% C₂H₆ in He", T: 1100, Q: 300, c: 70, tau: 3.36, X: 11.74, Y: 8.95, S: 76.28 },
-  { note: "70% C₂H₆ in He", T: 1200, Q: 300, c: 70, tau: 3.36, X: 19.16, Y: 12.19, S: 63.63 },
-  { note: "70% C₂H₆ in He", T: 1000, Q: 200, c: 70, tau: 5.04, X: 6.11, Y: 5.26, S: 86.14 },
-  { note: "70% C₂H₆ in He", T: 1100, Q: 200, c: 70, tau: 5.04, X: 16.14, Y: 12.27, S: 76.05 },
-  { note: "70% C₂H₆ in He", T: 1200, Q: 200, c: 70, tau: 5.04, X: 26.71, Y: 16.41, S: 61.43 },
-  { note: "70% C₂H₆ in He", T: 1000, Q: 100, c: 70, tau: 10.08, X: 11.34, Y: 9.67, S: 85.28 },
-  { note: "70% C₂H₆ in He", T: 1100, Q: 100, c: 70, tau: 10.08, X: 25.17, Y: 19.05, S: 75.66 },
-  { note: "70% C₂H₆ in He", T: 1200, Q: 100, c: 70, tau: 10.08, X: 39.23, Y: 24.17, S: 61.61 },
-  { note: "5% C₂H₆ + steam", T: 1100, Q: 50, c: 5, tau: 76.61, X: 81.93, Y: 51.12, S: 62.40, flag: true },
-  { note: "5% C₂H₆ + steam", T: 1150, Q: 50, c: 5, tau: 76.61, X: 89.36, Y: 44.31, S: 49.58, flag: true }
-];
-
-function renderExperiments() {
-  document.getElementById("expBody").innerHTML = EXP.map(r =>
-    `<tr class="${r.flag ? "flag" : ""}"><td>${r.note}</td><td>${r.T}</td><td>${r.Q}</td><td>${r.c}</td>` +
-    `<td>${r.tau.toFixed(2)}</td><td>${r.X.toFixed(2)}</td><td>${r.Y.toFixed(2)}</td><td>${r.S.toFixed(1)}</td></tr>`
-  ).join("");
-
-  const f = frame(520, 300, { l: 54, r: 16, t: 16, b: 42 });
-  let s = axes(f, {
-    xLo: 0, xHi: 100, yLo: 40, yHi: 95,
-    yTicks: ticks(40, 95, 5, v => v.toFixed(0) + "%"),
-    xTicks: ticks(0, 100, 5, v => v.toFixed(0) + "%"),
-    xLabel: "ethane conversion X", yLabel: "C₂H₄ selectivity S"
-  });
-  const dilute = EXP.filter(r => r.flag), neat = EXP.filter(r => !r.flag);
-  s += path(neat.slice().sort((a, b) => a.X - b.X).map(r => [r.X, r.S]), f, 0, 100, 40, 95, "#b9c4cf", 1.6);
-  neat.forEach(r => {
-    s += `<circle cx="${f.x(r.X, 0, 100).toFixed(1)}" cy="${f.y(r.S, 40, 95).toFixed(1)}" r="5" fill="${r.T >= 1200 ? "#c53a3a" : r.T >= 1100 ? "#b46714" : "#2c6e9b"}"/>`;
-  });
-  dilute.forEach(r => {
-    s += `<rect x="${(f.x(r.X, 0, 100) - 4.5).toFixed(1)}" y="${(f.y(r.S, 40, 95) - 4.5).toFixed(1)}" width="9" height="9" fill="#13795b"/>`;
-  });
-  s += `<text x="${f.w - f.pad.r - 4}" y="${f.pad.t + 14}" text-anchor="end" font-size="11" fill="#2c6e9b">● 1000 °C</text>`;
-  s += `<text x="${f.w - f.pad.r - 4}" y="${f.pad.t + 30}" text-anchor="end" font-size="11" fill="#b46714">● 1100 °C</text>`;
-  s += `<text x="${f.w - f.pad.r - 4}" y="${f.pad.t + 46}" text-anchor="end" font-size="11" fill="#c53a3a">● 1200 °C</text>`;
-  s += `<text x="${f.w - f.pad.r - 4}" y="${f.pad.t + 62}" text-anchor="end" font-size="11" fill="#13795b">■ dilute + steam</text>`;
-  document.getElementById("selChart").innerHTML = s;
-}
-
-/* ------------------------------------------------------------------ */
 /* wiring                                                              */
 /* ------------------------------------------------------------------ */
 function syncOutputs() {
@@ -1360,7 +1253,6 @@ document.querySelectorAll(".tab").forEach(tab => {
   });
 });
 
-renderExperiments();
 resetIntegration();
 redrawAll();
 state.running = true; state.lastFrame = 0;
