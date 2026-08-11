@@ -730,17 +730,17 @@
       tab-size: 2;
       white-space: pre;
     }
-    .t2d-layout { display:grid; grid-template-columns:340px minmax(0,1fr); gap:18px; align-items:start; }
-    .t2d-inputs { display:grid; gap:14px; }
-    .t2d-results { min-width:0; }
-    .t2d-kpis { display:grid; grid-template-columns:repeat(6,minmax(110px,1fr)); gap:10px; margin-bottom:14px; }
+    .t2d-layout { display:grid; grid-template-columns:340px minmax(0,1fr); grid-template-areas:"inputs results"; gap:18px; align-items:start; }
+    .t2d-inputs { display:grid; gap:14px; grid-area:inputs; }
+    .t2d-results { min-width:0; grid-area:results; }
+    .t2d-kpis { display:grid; grid-template-columns:repeat(6,minmax(110px,1fr)); gap:10px; margin-top:14px; }
     .t2d-kpi { min-height:104px; border:1px solid var(--line); border-top:3px solid var(--navy); border-radius:9px; background:#fff; padding:13px; }
     .t2d-kpi .kpi-label { font-size:13px; }
     .t2d-kpi .kpi-value { font-size:21px; margin-top:6px; }
     .t2d-map-grid { display:grid; grid-template-columns:minmax(340px,1fr) 310px; gap:14px; align-items:start; }
     .t2d-canvas-shell { padding:14px; }
-    #thermalMap { display:block; max-width:min(100%,620px); max-height:70vh; margin:0 auto; border:1px solid #9aa8b3; background:#f3f6f8; image-rendering:pixelated; cursor:crosshair; }
-    .t2d-colorbar { width:min(100%,620px); margin:10px auto 0; }
+    #thermalMap { display:block; max-width:min(100%,860px); max-height:70vh; margin:0 auto; border:1px solid #9aa8b3; background:#f3f6f8; image-rendering:pixelated; cursor:crosshair; }
+    .t2d-colorbar { width:min(100%,860px); margin:10px auto 0; }
     .t2d-gradient { height:16px; border:1px solid #a9b4bc; border-radius:3px; background:linear-gradient(90deg,#102a43 0%,#2878a5 25%,#58b8b1 50%,#ebbe46 75%,#d33737 100%); }
     .t2d-scale { display:flex; justify-content:space-between; color:var(--muted); font-size:15px; margin-top:5px; }
     .t2d-hover { min-height:28px; margin-top:10px; color:var(--navy); font-size:15px; font-weight:700; text-align:center; }
@@ -779,7 +779,8 @@
       .topbar-right { justify-items: start; }
       .topbar-meta { justify-content: flex-start; }
       .author-line { text-align: left; }
-      .t2d-layout, .t2d-map-grid { grid-template-columns:1fr; }
+      .t2d-layout { grid-template-columns:1fr; grid-template-areas:"results" "inputs"; }
+      .t2d-map-grid { grid-template-columns:1fr; }
       .t2d-inputs { grid-template-columns:repeat(2,minmax(0,1fr)); }
     }
     @media (max-width: 640px) {
@@ -1124,6 +1125,53 @@
       <div class="t2d-assumption"><strong>Resolved physics:</strong> temperature-dependent element resistivity and conductivity, radial/axial conduction, element-to-wall gap radiation, full-height wall conduction, surrounding-air conduction, wall/air convection and radiation, end heat transfer, electrical contact loss, and top-to-bottom He enthalpy transport at 50 sccm.</div>
 
       <div class="t2d-layout">
+        <div class="t2d-results">
+          <div class="t2d-map-grid">
+            <article class="card t2d-canvas-shell">
+              <div class="card-header"><h3 id="t2dMapTitle">Temperature Field</h3><span id="t2dMeshLabel" class="context-note">Fixed 60 × 60 mesh · solve to update</span></div>
+              <canvas id="thermalMap" width="600" height="600" aria-label="Axisymmetric element, full-height reactor wall, helium, and surrounding-air temperature field"></canvas>
+              <div class="t2d-colorbar"><div class="t2d-gradient"></div><div class="t2d-scale"><span id="t2dScaleMin">—</span><span>Temperature (°C)</span><span id="t2dScaleMax">—</span></div></div>
+              <div id="t2dHover" class="t2d-hover">He flows from top to bottom at 50 sccm. Move over a cell to inspect x, z, material, and temperature.</div>
+              <div class="t2d-material-key"><span style="color:#102a43"><i></i>Element boundary</span><span style="color:#b46714"><i></i>Gap boundary</span><span style="color:#64717d"><i></i>Full-height wall</span><span style="color:#2878a5"><i></i>He process gas</span><span style="color:#8bb9cf"><i></i>Surrounding air</span></div>
+            </article>
+
+            <article class="card">
+              <div class="card-header"><h3>Calculated Checkpoints</h3><span id="t2dConverged" class="status warn">No solution</span></div>
+              <div class="card-body"><table class="metric-table"><tbody>
+                <tr><th>Element min / max</th><td id="t2dMinMax">—</td></tr>
+                <tr><th>Center / side</th><td id="t2dCenterSide">—</td></tr>
+                <tr><th>Bottom / top center</th><td id="t2dEnds">—</td></tr>
+                <tr><th>Wall inner / outer</th><td id="t2dWallTemps">—</td></tr>
+                <tr><th>2D avg − 0D T<sub>ss</sub></th><td id="t2dVsZeroD">—</td></tr>
+                <tr><th>Current / total voltage</th><td id="t2dIV">—</td></tr>
+                <tr><th>R<sub>bulk</sub> / 2R<sub>c</sub></th><td id="t2dResistance">—</td></tr>
+                <tr><th>Bulk / contact power</th><td id="t2dPowers">—</td></tr>
+                <tr><th>He outlet / heat removal</th><td id="t2dGasCooling">—</td></tr>
+                <tr><th>Boundary heat loss</th><td id="t2dBoundaryLoss">—</td></tr>
+                <tr><th>Nonlinear / linear iterations</th><td id="t2dResidual">—</td></tr>
+                <tr><th>Radial cells</th><td id="t2dRadialCells">—</td></tr>
+                <tr><th>Radial cell sizes</th><td id="t2dRadialCellSizes">—</td></tr>
+                <tr><th>Axial cell size</th><td id="t2dAxialCell">—</td></tr>
+              </tbody></table></div>
+            </article>
+          </div>
+
+          <div class="t2d-kpis" aria-label="2D thermal results">
+            <article class="t2d-kpi"><div class="kpi-label">Volume-average element</div><div class="kpi-value" id="t2dAvg">—</div><div class="kpi-sub">T<sub>avg</sub></div></article>
+            <article class="t2d-kpi"><div class="kpi-label">Maximum element</div><div class="kpi-value" id="t2dMax">—</div><div class="kpi-sub">T<sub>max</sub></div></article>
+            <article class="t2d-kpi"><div class="kpi-label">Element spread</div><div class="kpi-value" id="t2dDelta">—</div><div class="kpi-sub">T<sub>max</sub> − T<sub>min</sub></div></article>
+            <article class="t2d-kpi"><div class="kpi-label">Bulk Joule power</div><div class="kpi-value" id="t2dPower">—</div><div class="kpi-sub">Deposited in element</div></article>
+            <article class="t2d-kpi"><div class="kpi-label">Active constraint</div><div class="kpi-value" id="t2dConstraint">—</div><div class="kpi-sub">Lowest allowed current</div></article>
+            <article class="t2d-kpi"><div class="kpi-label">Energy closure</div><div class="kpi-value" id="t2dClosure">—</div><div class="kpi-sub">|P − Q<sub>boundary</sub>|/P</div></article>
+          </div>
+
+          <details class="audit" style="margin-top:14px">
+            <summary>Show substituted 2D equations for this solution</summary>
+            <div class="equations" id="t2dEquations"><div class="equation">Solve a material to populate the substituted finite-volume and electrical balances.</div></div>
+          </details>
+
+        </div>
+
         <aside class="t2d-inputs" aria-label="2D model inputs">
           <article class="card">
             <div class="card-header"><h3>Imported Single Design</h3><span id="t2dSyncBadge" class="status warn">Not solved</span></div>
@@ -1176,53 +1224,6 @@
           </details>
 
         </aside>
-
-        <div class="t2d-results">
-          <div class="t2d-kpis" aria-label="2D thermal results">
-            <article class="t2d-kpi"><div class="kpi-label">Volume-average element</div><div class="kpi-value" id="t2dAvg">—</div><div class="kpi-sub">T<sub>avg</sub></div></article>
-            <article class="t2d-kpi"><div class="kpi-label">Maximum element</div><div class="kpi-value" id="t2dMax">—</div><div class="kpi-sub">T<sub>max</sub></div></article>
-            <article class="t2d-kpi"><div class="kpi-label">Element spread</div><div class="kpi-value" id="t2dDelta">—</div><div class="kpi-sub">T<sub>max</sub> − T<sub>min</sub></div></article>
-            <article class="t2d-kpi"><div class="kpi-label">Bulk Joule power</div><div class="kpi-value" id="t2dPower">—</div><div class="kpi-sub">Deposited in element</div></article>
-            <article class="t2d-kpi"><div class="kpi-label">Active constraint</div><div class="kpi-value" id="t2dConstraint">—</div><div class="kpi-sub">Lowest allowed current</div></article>
-            <article class="t2d-kpi"><div class="kpi-label">Energy closure</div><div class="kpi-value" id="t2dClosure">—</div><div class="kpi-sub">|P − Q<sub>boundary</sub>|/P</div></article>
-          </div>
-
-          <div class="t2d-map-grid">
-            <article class="card t2d-canvas-shell">
-              <div class="card-header"><h3 id="t2dMapTitle">Temperature Field</h3><span id="t2dMeshLabel" class="context-note">Fixed 60 × 60 mesh · solve to update</span></div>
-              <canvas id="thermalMap" width="600" height="600" aria-label="Axisymmetric element, full-height reactor wall, helium, and surrounding-air temperature field"></canvas>
-              <div class="t2d-colorbar"><div class="t2d-gradient"></div><div class="t2d-scale"><span id="t2dScaleMin">—</span><span>Temperature (°C)</span><span id="t2dScaleMax">—</span></div></div>
-              <div id="t2dHover" class="t2d-hover">He flows from top to bottom at 50 sccm. Move over a cell to inspect x, z, material, and temperature.</div>
-              <div class="t2d-material-key"><span style="color:#102a43"><i></i>Element boundary</span><span style="color:#b46714"><i></i>Gap boundary</span><span style="color:#64717d"><i></i>Full-height wall</span><span style="color:#2878a5"><i></i>He process gas</span><span style="color:#8bb9cf"><i></i>Surrounding air</span></div>
-            </article>
-
-            <article class="card">
-              <div class="card-header"><h3>Calculated Checkpoints</h3><span id="t2dConverged" class="status warn">No solution</span></div>
-              <div class="card-body"><table class="metric-table"><tbody>
-                <tr><th>Element min / max</th><td id="t2dMinMax">—</td></tr>
-                <tr><th>Center / side</th><td id="t2dCenterSide">—</td></tr>
-                <tr><th>Bottom / top center</th><td id="t2dEnds">—</td></tr>
-                <tr><th>Wall inner / outer</th><td id="t2dWallTemps">—</td></tr>
-                <tr><th>2D avg − 0D T<sub>ss</sub></th><td id="t2dVsZeroD">—</td></tr>
-                <tr><th>Current / total voltage</th><td id="t2dIV">—</td></tr>
-                <tr><th>R<sub>bulk</sub> / 2R<sub>c</sub></th><td id="t2dResistance">—</td></tr>
-                <tr><th>Bulk / contact power</th><td id="t2dPowers">—</td></tr>
-                <tr><th>He outlet / heat removal</th><td id="t2dGasCooling">—</td></tr>
-                <tr><th>Boundary heat loss</th><td id="t2dBoundaryLoss">—</td></tr>
-                <tr><th>Nonlinear / linear iterations</th><td id="t2dResidual">—</td></tr>
-                <tr><th>Radial cells</th><td id="t2dRadialCells">—</td></tr>
-                <tr><th>Radial cell sizes</th><td id="t2dRadialCellSizes">—</td></tr>
-                <tr><th>Axial cell size</th><td id="t2dAxialCell">—</td></tr>
-              </tbody></table></div>
-            </article>
-          </div>
-
-          <details class="audit" style="margin-top:14px">
-            <summary>Show substituted 2D equations for this solution</summary>
-            <div class="equations" id="t2dEquations"><div class="equation">Solve a material to populate the substituted finite-volume and electrical balances.</div></div>
-          </details>
-
-        </div>
       </div>
     </section>
 
@@ -1626,7 +1627,7 @@
       // Size the on-screen box to exactly match the native pixel aspect ratio (no CSS
       // stretching, no letterbox gap) — fit inside the available column width and a
       // sane on-screen height cap, whichever is more restrictive.
-      const displayMaxW=Math.min(canvas.parentElement.clientWidth||620,620),displayMaxH=Math.min(window.innerHeight*0.7||760,760);
+      const displayMaxW=Math.min(canvas.parentElement.clientWidth||860,860),displayMaxH=Math.min(window.innerHeight*0.7||760,760);
       const displayScale=Math.min(displayMaxW/canvas.width,displayMaxH/canvas.height);
       canvas.style.width=`${Math.round(canvas.width*displayScale)}px`;
       canvas.style.height=`${Math.round(canvas.height*displayScale)}px`;
