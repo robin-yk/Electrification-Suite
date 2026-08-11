@@ -1281,15 +1281,6 @@
       <p class="section-kicker">Electrical design window</p>
       <h2 class="section-title">Resistivity and geometry sweep</h2>
       <p class="section-lede">At fixed solid volume and heat capacity, initial ramp rate follows electrical power. The peak occurs where the current-limited rising branch meets the voltage-limited falling branch.</p>
-      <div class="calc-note" id="sweepInsight">
-        <strong>Why the default peak is near R = 5 Ω:</strong>
-        below 5 Ω, I = 20 A and P = I²R, so increasing R raises power. Above 5 Ω, V = 100 V and P = V²/R, so increasing R lowers power. At R = Vmax/Imax = 5 Ω, P = IV = 2,000 W and P/Vsolid—and therefore the initial ramp rate—reaches its maximum.
-      </div>
-      <div class="calc-grid calc-grid-3" style="margin-bottom:18px">
-        <article class="card formula-card"><div class="card-header"><h3>Low resistance</h3></div><div class="card-body"><div class="formula">P = I<sub>cap</sub>²R ↑</div><div class="formula-note">Current is already at its ceiling. More resistance converts the same current into more heat.</div></div></article>
-        <article class="card formula-card"><div class="card-header"><h3>Best-matched resistance</h3></div><div class="card-body"><div class="formula">R* = V<sub>max</sub>/I<sub>cap</sub></div><div class="formula-note">Current and voltage capability are used together. A lower Pmax can broaden this point into a constant-power plateau.</div></div></article>
-        <article class="card formula-card"><div class="card-header"><h3>High resistance</h3></div><div class="card-body"><div class="formula">P = V<sub>max</sub>²/R ↓</div><div class="formula-note">Voltage is already at its ceiling. More resistance reduces current faster than resistance increases.</div></div></article>
-      </div>
       <div class="card toolbar">
         <div class="toolbar-fields">
           <div class="field">
@@ -1325,6 +1316,15 @@
           <div class="card-header"><h3>Electrical Power vs Resistance</h3><span class="context-note">Peak power gives peak initial ramp</span></div>
           <div class="chart-wrap"><svg id="powerSweepChart" class="chart" viewBox="0 0 700 420" role="img" aria-label="Electrical power versus resistance"></svg></div>
         </article>
+      </div>
+      <div class="calc-note" id="sweepInsight" style="margin-top:18px">
+        <strong>Why the default peak is near R = 5 Ω:</strong>
+        below 5 Ω, I = 20 A and P = I²R, so increasing R raises power. Above 5 Ω, V = 100 V and P = V²/R, so increasing R lowers power. At R = Vmax/Imax = 5 Ω, P = IV = 2,000 W and P/Vsolid—and therefore the initial ramp rate—reaches its maximum.
+      </div>
+      <div class="calc-grid calc-grid-3" style="margin-top:18px">
+        <article class="card formula-card"><div class="card-header"><h3>Low resistance</h3></div><div class="card-body"><div class="formula">P = I<sub>cap</sub>²R ↑</div><div class="formula-note">Current is already at its ceiling. More resistance converts the same current into more heat.</div></div></article>
+        <article class="card formula-card"><div class="card-header"><h3>Best-matched resistance</h3></div><div class="card-body"><div class="formula">R* = V<sub>max</sub>/I<sub>cap</sub></div><div class="formula-note">Current and voltage capability are used together. A lower Pmax can broaden this point into a constant-power plateau.</div></div></article>
+        <article class="card formula-card"><div class="card-header"><h3>High resistance</h3></div><div class="card-body"><div class="formula">P = V<sub>max</sub>²/R ↓</div><div class="formula-note">Voltage is already at its ceiling. More resistance reduces current faster than resistance increases.</div></div></article>
       </div>
     </section>
 
