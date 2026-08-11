@@ -1113,7 +1113,7 @@
       <div class="section-head-row">
         <div>
           <p class="section-kicker">Temperature field from the current design</p>
-          <h2 class="section-title">Axisymmetric 2D thermal optimizer</h2>
+          <h2 class="section-title">Thermal Map Solver</h2>
         </div>
         <span class="context-note" id="t2dSummary">—</span>
       </div>
@@ -1122,7 +1122,6 @@
         <button class="btn" id="export2D" type="button" disabled>Export field CSV</button>
       </div>
       <div id="t2dProgress" class="t2d-progress">The 2D field solves automatically when this tab opens.</div>
-      <div class="t2d-assumption"><strong>Resolved physics:</strong> temperature-dependent element resistivity and conductivity, radial/axial conduction, element-to-wall gap radiation, full-height wall conduction, surrounding-air conduction, wall/air convection and radiation, end heat transfer, electrical contact loss, and top-to-bottom He enthalpy transport at 50 sccm.</div>
 
       <div class="t2d-layout">
         <div class="t2d-results">
@@ -1164,6 +1163,8 @@
             <article class="t2d-kpi"><div class="kpi-label">Active constraint</div><div class="kpi-value" id="t2dConstraint">—</div><div class="kpi-sub">Lowest allowed current</div></article>
             <article class="t2d-kpi"><div class="kpi-label">Energy closure</div><div class="kpi-value" id="t2dClosure">—</div><div class="kpi-sub">|P − Q<sub>boundary</sub>|/P</div></article>
           </div>
+
+          <div class="t2d-assumption" style="margin-top:14px"><strong>Resolved physics:</strong> temperature-dependent element resistivity and conductivity, radial/axial conduction, element-to-wall gap radiation, full-height wall conduction, surrounding-air conduction, wall/air convection and radiation, end heat transfer, electrical contact loss, and top-to-bottom He enthalpy transport at 50 sccm.</div>
 
           <details class="audit" style="margin-top:14px">
             <summary>Show substituted 2D equations for this solution</summary>
@@ -1497,6 +1498,13 @@
       if (ax >= 1e5 || ax < 1e-3) return x.toExponential(2);
       return x.toPrecision(3);
     }
+    function sig4(x) {
+      if (!finite(x)) return "—";
+      if (x === 0) return "0";
+      const ax = Math.abs(x);
+      if (ax >= 1e5 || ax < 1e-3) return x.toExponential(3);
+      return Number(x.toPrecision(4)).toLocaleString("en-US", { maximumFractionDigits: 8 });
+    }
     function fmtTemp(k) {
       if (!finite(k)) return "—";
       return `${format(celsius(k), 1)} °C`;
@@ -1591,10 +1599,10 @@
     function sync2DImported(result=currentResult()) {
       if (!result || result.errors?.length) return;
       $("t2dMaterial").textContent=result.material.name;
-      $("t2dDimensions").textContent=`${format(result.g.L*1000,4)} × ${format(result.g.D*1000,4)} mm`;
+      $("t2dDimensions").textContent=`${sig4(result.g.L*1000)} × ${sig4(result.g.D*1000)} mm`;
       $("t2dFraction").textContent=`${format(result.g.solidFraction,3)} / ${format(result.g.porosity*100,1)}%`;
-      $("t2dVolumes").textContent=`${format(result.g.solidVolume*1e6,4)} / ${format(result.g.envelopeVolume*1e6,4)} cm³`;
-      $("t2dImportedProps").textContent=`${format(result.initial.props.rhoOhmCm,6)} Ω·cm / ${format(result.initial.props.k,3)} W/m·K`;
+      $("t2dVolumes").textContent=`${sig4(result.g.solidVolume*1e6)} / ${sig4(result.g.envelopeVolume*1e6)} cm³`;
+      $("t2dImportedProps").textContent=`${sig4(result.initial.props.rhoOhmCm)} Ω·cm / ${sig4(result.initial.props.k)} W/m·K`;
       $("t2dZeroD").textContent=fmtTemp(result.tss);
       if (!current2DResult) return;
       const fresh=current2DResult.material.name===result.material.name && current2DResult.signature===signature2D(result.input,result.material);
@@ -1688,8 +1696,8 @@
       const good=result.converged && result.closure<0.02;
       $("t2dAvg").textContent=fmtTemp(result.avgK);
       $("t2dMax").textContent=fmtTemp(result.tMax);
-      $("t2dDelta").textContent=`${format(result.deltaT,2)} °C`;
-      $("t2dPower").textContent=`${format(result.op.pBulk,3)} W`;
+      $("t2dDelta").textContent=`${sig4(result.deltaT)} °C`;
+      $("t2dPower").textContent=`${sig4(result.op.pBulk)} W`;
       $("t2dConstraint").textContent=result.op.constraint;
       $("t2dClosure").textContent=`${format(result.closure*100,3)}%`;
       $("t2dMapTitle").textContent=`${result.material.name} Temperature Field`;
@@ -1700,23 +1708,23 @@
       $("t2dCenterSide").textContent=`${fmtTemp(result.center)} / ${fmtTemp(result.side)}`;
       $("t2dEnds").textContent=`${fmtTemp(result.bottom)} / ${fmtTemp(result.top)}`;
       $("t2dWallTemps").textContent=`${fmtTemp(result.wallInner)} / ${fmtTemp(result.wallOuter)}`;
-      $("t2dVsZeroD").textContent=finite(result.zeroD.tss)?`${format(result.avgK-result.zeroD.tss,2)} K`:"0D unbounded";
-      $("t2dIV").textContent=`${format(result.op.current,4)} A / ${format(result.op.voltage,4)} V`;
-      $("t2dResistance").textContent=`${format(result.op.rBulk,7)} / ${format(2*result.op.rContact,7)} Ω`;
-      $("t2dPowers").textContent=`${format(result.op.pBulk,4)} / ${format(result.op.pContact,4)} W`;
-      $("t2dGasCooling").textContent=result.heFlowConnected?`${format(celsius(result.heOutletK),3)} °C / ${format(result.heCooling,5)} W · 50 sccm top → bottom`:`No continuous gas path · set a positive element–wall gap`;
-      $("t2dBoundaryLoss").textContent=`${format(result.boundaryLoss,4)} W`;
-      $("t2dResidual").textContent=`${result.iterations.toLocaleString()} / ${result.linearIterations.toLocaleString()} · ${format(result.residual,6)} K`;
+      $("t2dVsZeroD").textContent=finite(result.zeroD.tss)?`${sig4(result.avgK-result.zeroD.tss)} K`:"0D unbounded";
+      $("t2dIV").textContent=`${sig4(result.op.current)} A / ${sig4(result.op.voltage)} V`;
+      $("t2dResistance").textContent=`${sig4(result.op.rBulk)} / ${sig4(2*result.op.rContact)} Ω`;
+      $("t2dPowers").textContent=`${sig4(result.op.pBulk)} / ${sig4(result.op.pContact)} W`;
+      $("t2dGasCooling").textContent=result.heFlowConnected?`${sig4(celsius(result.heOutletK))} °C / ${sig4(result.heCooling)} W · 50 sccm top → bottom`:`No continuous gas path · set a positive element–wall gap`;
+      $("t2dBoundaryLoss").textContent=`${sig4(result.boundaryLoss)} W`;
+      $("t2dResidual").textContent=`${result.iterations.toLocaleString()} / ${result.linearIterations.toLocaleString()} · ${sig4(result.residual)} K`;
       $("t2dRadialCells").textContent=`${result.mesh.nElement} element + ${result.mesh.nGap} gap + ${result.mesh.nWall} wall + ${result.mesh.nAir} outside air · wall spans all 60 axial cells`;
       const radialSize=(start,count)=>count?(result.mesh.edges[start+count]-result.mesh.edges[start])*1000/count:0;
       const radialSizes=[
-        `element ${format(radialSize(0,result.mesh.nElement),4)} mm`,
-        result.mesh.nGap?`gap ${format(radialSize(result.mesh.nElement,result.mesh.nGap),4)} mm`:null,
-        `wall ${format(radialSize(result.mesh.nElement+result.mesh.nGap,result.mesh.nWall),4)} mm`,
-        `outside air ${format(radialSize(result.mesh.nElement+result.mesh.nGap+result.mesh.nWall,result.mesh.nAir),4)} mm`
+        `element ${sig4(radialSize(0,result.mesh.nElement))} mm`,
+        result.mesh.nGap?`gap ${sig4(radialSize(result.mesh.nElement,result.mesh.nGap))} mm`:null,
+        `wall ${sig4(radialSize(result.mesh.nElement+result.mesh.nGap,result.mesh.nWall))} mm`,
+        `outside air ${sig4(radialSize(result.mesh.nElement+result.mesh.nGap+result.mesh.nWall,result.mesh.nAir))} mm`
       ].filter(Boolean);
       $("t2dRadialCellSizes").textContent=radialSizes.join(" · ");
-      $("t2dAxialCell").textContent=`${format(result.mesh.dz*1000,4)} mm`;
+      $("t2dAxialCell").textContent=`${sig4(result.mesh.dz*1000)} mm`;
       $("export2D").disabled=false;
       draw2D(result);
       render2DEquations(result);
@@ -1756,7 +1764,7 @@
         const result=solveThermal2D(zeroD.input,zeroD,cfg,zeroD.material);
         result.signature=signature2D(zeroD.input,zeroD.material);
         render2D(result);
-        $("t2dProgress").textContent=`Solved ${result.material.name}: ${result.iterations.toLocaleString()} nonlinear + ${result.linearIterations.toLocaleString()} linear iterations, ${format(result.residual,6)} K residual, ${format(result.closure*100,3)}% energy closure.`;
+        $("t2dProgress").textContent=`Solved ${result.material.name}: ${result.iterations.toLocaleString()} nonlinear + ${result.linearIterations.toLocaleString()} linear iterations, ${sig4(result.residual)} K residual, ${format(result.closure*100,3)}% energy closure.`;
         $("t2dSummary").textContent=`${result.material.name} · ${result.converged?"Converged":"Iteration limit"} · ${format(result.closure*100,3)}% closure`;
       }catch(error){
         $("t2dProgress").textContent=`2D solve failed: ${error.message}`;
