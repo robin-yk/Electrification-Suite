@@ -757,6 +757,7 @@
     .t2d-batch-row:hover { background:#edf4f8; }
     .t2d-batch-row.selected { background:#e4f0f6; box-shadow:inset 3px 0 #2c6e9b; }
     .t2d-assumption { border-left:4px solid #b46714; background:#fff9ed; padding:11px 13px; color:#66420b; font-size:14px; margin-bottom:14px; }
+    .t2d-canvas-shell .card-header { flex-direction:column; align-items:flex-start; gap:3px; }
     .t2d-canvas-shell .card-header h3 { font-size:20px; }
     .t2d-controls { display:flex; gap:8px; flex-wrap:wrap; }
     .t2d-controls .btn { flex:1 1 130px; }
@@ -1003,7 +1004,7 @@
                 <span>Fill color tracks the computed element temperature.</span>
               </div>
               <div class="geometry-visual-body">
-                <svg id="geometryVisual" viewBox="0 0 820 260" role="img" aria-label="Calculated porous cylinder geometry with length, diameter, and porosity, colored by the computed steady-state temperature"></svg>
+                <svg id="geometryVisual" viewBox="0 0 680 320" role="img" aria-label="Calculated porous cylinder geometry with length, diameter, and porosity, colored by the computed steady-state temperature"></svg>
                 <div class="geometry-colorbar" aria-hidden="true">
                   <span class="geometry-colorbar-label" id="geomColorMax">—</span>
                   <div class="geometry-colorbar-track"><div class="geometry-colorbar-marker" id="geomColorMarker"></div></div>
@@ -1016,7 +1017,7 @@
                 <strong>Ramp-Up Curve</strong>
                 <span>Illustrative approach to steady state.</span>
               </div>
-              <svg id="rampChart" viewBox="0 0 820 260" role="img" aria-label="Illustrative temperature versus time curve approaching the steady-state temperature, matching the computed initial ramp rate and steady-state temperature"></svg>
+              <svg id="rampChart" viewBox="0 0 680 320" role="img" aria-label="Illustrative temperature versus time curve approaching the steady-state temperature, matching the computed initial ramp rate and steady-state temperature"></svg>
             </article>
           </div>
           <div class="kpi-grid" aria-label="Primary calculation results">
@@ -2075,7 +2076,7 @@
     function renderRampChart(r) {
       const svg = $("rampChart");
       svg.replaceChildren();
-      const W = 820, H = 260, m = { l: 64, r: 22, t: 20, b: 46 };
+      const W = 680, H = 320, m = { l: 64, r: 22, t: 20, b: 46 };
       const innerW = W - m.l - m.r, innerH = H - m.t - m.b;
       const TaK = r.input.ambientK, TssK = r.tss;
 
@@ -2147,11 +2148,11 @@
     function renderGeometryVisual(r) {
       const svg = $("geometryVisual");
       svg.replaceChildren();
-      const W = 820, H = 260;
+      const W = 680, H = 320;
       // True-to-scale: body width/height keep the real L/D ratio (a 1:1 rod draws as an
       // actual square profile, not a fixed 5:3 box). Only the true extremes of the allowed
       // range are floored/capped so a very short-and-fat or long-and-thin rod stays legible.
-      const maxBodyW = 470, maxBodyH = 150, minBodyW = 76, minBodyH = 48;
+      const maxBodyW = 310, maxBodyH = 180, minBodyW = 76, minBodyH = 48;
       const ratio = clamp(r.g.aspectRatio, 0.18, 8);
       let bodyW = ratio, bodyH = 1;
       const fit = Math.min(maxBodyW / bodyW, maxBodyH / bodyH);
@@ -2164,7 +2165,7 @@
       const ellipseW = clamp(bodyH * 0.25, 14, 34);
       const x0 = (W - bodyW) / 2;
       const x1 = x0 + bodyW;
-      const cy = 122;
+      const cy = 160;
       const y0 = cy - bodyH / 2;
       const y1 = cy + bodyH / 2;
       const edge = "#102a43";
