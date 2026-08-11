@@ -740,10 +740,10 @@
     .t2d-kpi { min-height:104px; border:1px solid var(--line); border-top:3px solid var(--navy); border-radius:9px; background:#fff; padding:13px; }
     .t2d-kpi .kpi-label { font-size:13px; }
     .t2d-kpi .kpi-value { font-size:21px; margin-top:6px; }
-    .t2d-map-grid { display:grid; grid-template-columns:minmax(340px,1fr) 310px; gap:14px; align-items:start; }
+    .t2d-map-grid { display:grid; grid-template-columns:minmax(280px,1fr) 420px; gap:14px; align-items:start; }
     .t2d-canvas-shell { padding:14px; }
-    #thermalMap { display:block; max-width:min(100%,860px); max-height:70vh; margin:0 auto; border:1px solid #9aa8b3; background:#f3f6f8; image-rendering:pixelated; cursor:crosshair; }
-    .t2d-colorbar { width:min(100%,860px); margin:10px auto 0; }
+    #thermalMap { display:block; max-width:min(100%,420px); max-height:52vh; margin:0 auto; border:1px solid #9aa8b3; background:#f3f6f8; image-rendering:pixelated; cursor:crosshair; }
+    .t2d-colorbar { width:min(100%,420px); margin:10px auto 0; }
     .t2d-gradient { height:16px; border:1px solid #a9b4bc; border-radius:3px; background:linear-gradient(90deg,#102a43 0%,#2878a5 25%,#58b8b1 50%,#ebbe46 75%,#d33737 100%); }
     .t2d-scale { display:flex; justify-content:space-between; color:var(--muted); font-size:15px; margin-top:5px; }
     .t2d-hover { min-height:28px; margin-top:10px; color:var(--navy); font-size:15px; font-weight:700; text-align:center; }
@@ -1651,7 +1651,7 @@
       // Size the on-screen box to exactly match the native pixel aspect ratio (no CSS
       // stretching, no letterbox gap) — fit inside the available column width and a
       // sane on-screen height cap, whichever is more restrictive.
-      const displayMaxW=Math.min(canvas.parentElement.clientWidth||860,860),displayMaxH=Math.min(window.innerHeight*0.7||760,760);
+      const displayMaxW=Math.min(canvas.parentElement.clientWidth||420,420),displayMaxH=Math.min(window.innerHeight*0.52||420,420);
       const displayScale=Math.min(displayMaxW/canvas.width,displayMaxH/canvas.height);
       canvas.style.width=`${Math.round(canvas.width*displayScale)}px`;
       canvas.style.height=`${Math.round(canvas.height*displayScale)}px`;
