@@ -47,7 +47,7 @@ references:
     end: 6196
     year: 2025
     doi: "10.1021/acsenergylett.5c02853"
-    notes: "Companion paper for the RPH vs CJH dimensionless visualizer (rphcjh.html)."
+    notes: "Companion paper for the RPH vs CJH dimensionless visualizer (apps/rphcjh/)."
   - type: article
     title: "Short contact time, high temperature, internally-heated ethane crackers"
     authors:
@@ -63,4 +63,4 @@ references:
         given-names: "Dionisios G."
     journal: "Chemical Engineering Journal"
     year: 2025
-    notes: "Source of the continuous-heating (CJH) ethane-cracking dataset shown in the RPH vs CJH visualizer's CFP Experiments tab."
+    notes: "Source (Table 1) for several of the Joule tool's built-in material properties (apps/joule/solver.js): CFP, SiC, 304 stainless steel, molybdenum, tungsten, and titanium."

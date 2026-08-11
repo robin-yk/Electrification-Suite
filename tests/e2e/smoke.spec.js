@@ -5,9 +5,9 @@
 import { test, expect } from "@playwright/test";
 
 const pages = [
-  { path: "/joule.html", valueSelector: "#tssValue", label: "Joule steady-state temperature" },
-  { path: "/microwave.html", valueSelector: "#center-value", label: "Microwave FBG center temperature" },
-  { path: "/rphcjh.html", valueSelector: "#valKratio", label: "RPH/CJH ideal k ratio" },
+  { path: "/apps/joule/", valueSelector: "#tssValue", label: "Joule steady-state temperature" },
+  { path: "/apps/microwave/", valueSelector: "#center-value", label: "Microwave FBG center temperature" },
+  { path: "/apps/rphcjh/", valueSelector: "#valKratio", label: "RPH/CJH ideal k ratio" },
 ];
 
 for (const { path, valueSelector, label } of pages) {

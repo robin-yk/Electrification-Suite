@@ -469,6 +469,11 @@
         joule: "Joule Heating 2D Optimizer",
         rphcjh: "RPH vs CJH Dimensionless Visualizer"
       };
+      const routePaths = {
+        microwave: "apps/microwave/",
+        joule: "apps/joule/",
+        rphcjh: "apps/rphcjh/"
+      };
 
       const home = document.getElementById("home");
       const stage = document.getElementById("project-stage");
@@ -500,7 +505,7 @@
           document.title = routeTitles[route] + " | Yeonsu Kwak";
           frame.title = routeTitles[route];
           if (loadedRoute !== route) {
-            frame.src = route + ".html";
+            frame.src = routePaths[route];
             loadedRoute = route;
           }
         }

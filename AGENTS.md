@@ -1,10 +1,11 @@
 # Agent notes
 
-Static, framework-free site: three interactive tools (`joule.html`, `microwave.html`,
-`rphcjh.html`) plus `index.html`, each paired with a dependency-free `<tool>-solver.js`
-ES module that holds the actual physics/math and never touches `document`/`window`.
-No backend, no bundler required to *run* the site — Vite is only used for local dev
-serving and producing a minified `dist/` build.
+Static, framework-free site: three interactive tools under `apps/` (`apps/joule/`,
+`apps/microwave/`, `apps/rphcjh/`) plus the root `index.html` router. Each tool folder
+is `index.html` (DOM/UI) paired with `solver.js`, a dependency-free ES module that holds
+the actual physics/math and never touches `document`/`window`. No backend, no bundler
+required to *run* the site — Vite is only used for local dev serving and producing a
+minified `dist/` build.
 
 ## Setup
 
@@ -20,8 +21,8 @@ npm run test:e2e # Playwright browser smoke test, needs Chromium
 ```
 
 `npm test` is the primary gate and covers solver correctness (convergence, energy
-balance, physical limits, extreme/boundary inputs) — run this for any change to a
-`*-solver.js` file. It needs nothing but Node.
+balance, physical limits, extreme/boundary inputs) — run this for any change to an
+`apps/*/solver.js` file. It needs nothing but Node.
 
 `npm run test:e2e` needs a Chromium binary. `playwright.config.js` checks a few common
 pre-installed paths (see the file) before falling back to Playwright's own managed
@@ -37,16 +38,17 @@ validate solver/physics changes.
 npm run build
 ```
 
-Copies each page and its paired `-solver.js` file into `dist/`. If you add a new page
-or a new solver module, add it to the `projectPages` array in `vite.config.js` — the
-build asserts every listed file exists, but won't catch a file you *forgot* to list.
+Copies each `apps/*/index.html` and its paired `solver.js` into `dist/apps/*/`. If you
+add a new tool or a new solver module, add it to the `projectPages` array in
+`vite.config.js` — the build asserts every listed file exists, but won't catch a file
+you *forgot* to list.
 
 ## Where things live
 
-- `<tool>-solver.js` — pure functions, the actual physics/numerics. Edit here for
+- `apps/<tool>/solver.js` — pure functions, the actual physics/numerics. Edit here for
   anything about correctness.
-- `<tool>.html` — DOM/UI layer, imports its solver module. Edit here for anything about
-  presentation.
+- `apps/<tool>/index.html` — DOM/UI layer, imports its solver module. Edit here for
+  anything about presentation.
 - `tests/<tool>-solver.test.js` — matching regression suite for each solver module.
 - `tests/e2e/smoke.spec.js` — the one Playwright test file.
 

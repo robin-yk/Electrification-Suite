@@ -4,7 +4,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   MATERIALS, geometry, calculate, build2DMesh, solveThermal2D
-} from "../joule-solver.js";
+} from "../apps/joule/solver.js";
 
 const DEFAULT_ENCLOSURE = {
   wallMaterial: "quartz", wallK: 1.4, wallThickness: 0.003, wallEmissivity: 0.93,

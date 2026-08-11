@@ -10,9 +10,9 @@ Electrified reactor design (resistive/Joule heating, microwave/dielectric heatin
 
 ## Projects
 
-- **Microwave Heating 2D Model** ([`microwave.html`](microwave.html), core: [`microwave-solver.js`](microwave-solver.js)) — steady-state powder-bed temperature fields with dielectric response, penetration depth, heat transfer, and experimental calibration.
-- **Joule Heating 2D Optimizer** ([`joule.html`](joule.html), core: [`joule-solver.js`](joule-solver.js)) — electrical and thermal screening across materials, geometry, hardware limits, heat losses, and an axisymmetric temperature field.
-- **RPH vs CJH Dimensionless Visualizer** ([`rphcjh.html`](rphcjh.html), core: [`rphcjh-solver.js`](rphcjh-solver.js)) — Jensen's-inequality effects of ramped vs. continuous heating on temperature-dependent kinetics and transport, and the resulting exposure and Damköhler ratios for ethane cracking.
+- **Microwave Heating 2D Model** ([`apps/microwave/index.html`](apps/microwave/index.html), core: [`apps/microwave/solver.js`](apps/microwave/solver.js)) — steady-state powder-bed temperature fields with dielectric response, penetration depth, heat transfer, and experimental calibration.
+- **Joule Heating 2D Optimizer** ([`apps/joule/index.html`](apps/joule/index.html), core: [`apps/joule/solver.js`](apps/joule/solver.js)) — electrical and thermal screening across materials, geometry, hardware limits, heat losses, and an axisymmetric temperature field.
+- **RPH vs CJH Dimensionless Visualizer** ([`apps/rphcjh/index.html`](apps/rphcjh/index.html), core: [`apps/rphcjh/solver.js`](apps/rphcjh/solver.js)) — Jensen's-inequality effects of ramped vs. continuous heating on temperature-dependent kinetics and transport, and the resulting exposure and Damköhler ratios for ethane cracking.
 
 Each project opens in place from the home screen and is also reachable directly via URL hash (`#microwave`, `#joule`, `#rphcjh`).
 
@@ -34,21 +34,21 @@ npm run build    # production build to dist/
 npm run preview  # preview the production build
 ```
 
-Or just open any of `index.html`, `microwave.html`, `joule.html`, `rphcjh.html` directly in a browser — nothing needs to be compiled first.
+Or just open `index.html`, or any of `apps/microwave/index.html`, `apps/joule/index.html`, `apps/rphcjh/index.html`, directly in a browser — nothing needs to be compiled first.
 
 ## Solver API
 
 Each tool's numeric core is a dependency-free ES module that can be imported on its own, in Node or in a browser, independent of the page's UI:
 
 ```js
-import { calculate, solveThermal2D, MATERIALS } from "./joule-solver.js";
-import { solve2D, transportNumbers, materialProfiles } from "./microwave-solver.js";
-import { arrheniusRate, pulseWaveform, idealTwoStateAverages } from "./rphcjh-solver.js";
+import { calculate, solveThermal2D, MATERIALS } from "./apps/joule/solver.js";
+import { solve2D, transportNumbers, materialProfiles } from "./apps/microwave/solver.js";
+import { arrheniusRate, pulseWaveform, idealTwoStateAverages } from "./apps/rphcjh/solver.js";
 ```
 
-- **`joule-solver.js`** — `calculate(input)` (0D electrical/thermal screening), `solveThermal2D(config)` (axisymmetric finite-volume steady-state field), `propertiesAt(material, T)`, `MATERIALS` (built-in material property table).
-- **`microwave-solver.js`** — `solve2D(params)` (steady-state powder-bed temperature field), `transportNumbers(params)` (Biot/penetration-depth diagnostics), `dielectric(material, T)`, `materialProfiles` (built-in material + calibration data).
-- **`rphcjh-solver.js`** — `arrheniusRate(TC, ea)`, `transportCoefficient(TC, beta)`, `velocity(TC)`, `pulseWaveform(phase, params)`, `idealTwoStateAverages(params)` (the ramp→0 analytical limit).
+- **`apps/joule/solver.js`** — `calculate(input)` (0D electrical/thermal screening), `solveThermal2D(config)` (axisymmetric finite-volume steady-state field), `propertiesAt(material, T)`, `MATERIALS` (built-in material property table).
+- **`apps/microwave/solver.js`** — `solve2D(params)` (steady-state powder-bed temperature field), `transportNumbers(params)` (Biot/penetration-depth diagnostics), `dielectric(material, T)`, `materialProfiles` (built-in material + calibration data).
+- **`apps/rphcjh/solver.js`** — `arrheniusRate(TC, ea)`, `transportCoefficient(TC, beta)`, `velocity(TC)`, `pulseWaveform(phase, params)`, `idealTwoStateAverages(params)` (the ramp→0 analytical limit).
 
 Each HTML page imports its module and layers DOM/UI code on top — the module itself never touches `document` or `window`, so it runs the same way in a test runner as it does in the page.
 
@@ -58,7 +58,7 @@ Run a solve directly from Node, no browser involved:
 
 ```bash
 node -e '
-import("./joule-solver.js").then(({ calculate, MATERIALS }) => {
+import("./apps/joule/solver.js").then(({ calculate, MATERIALS }) => {
   const material = MATERIALS.find(m => m.name === "SiC");
   console.log(calculate({ material, imax: 20, vmax: 100, pmax: 2000,
     volumeCm3: 10, solidFraction: 1, ambientK: 293.15, targetK: 1273.15 }));
@@ -111,10 +111,6 @@ A machine-readable citation is also available in [`CITATION.cff`](CITATION.cff).
 The RPH vs CJH visualizer is a companion to:
 
 > Kwak, Y., Railkar, R., Zheng, W., & Vlachos, D. G. (2025). Tandem Nonoxidative Coupling of Methane and Carbon Dioxide Reduction via Pulsed Joule Thermochemistry. *ACS Energy Letters*, 10(12), 6188–6196. https://doi.org/10.1021/acsenergylett.5c02853
-
-Its "CFP Experiments" tab uses continuous-heating (CJH) ethane-cracking data from:
-
-> Mittal, A., Kwak, Y., Zheng, W., Ierapetritou, M., & Vlachos, D. G. (2025). Short contact time, high temperature, internally-heated ethane crackers. *Chemical Engineering Journal*, 168251.
 
 ## License
 

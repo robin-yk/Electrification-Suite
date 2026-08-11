@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import {
   R_GAS, T_REF, K2C, arrheniusRate, transportCoefficient, velocity,
   timeAverageTemperature, pulseWaveform, idealTwoStateAverages
-} from "../rphcjh-solver.js";
+} from "../apps/rphcjh/solver.js";
 
 test("arrheniusRate() equals 1 at the reference temperature by construction", () => {
   assert.ok(Math.abs(arrheniusRate(T_REF - K2C, 273) - 1) < 1e-9);
