@@ -10,9 +10,9 @@ import { resolve, dirname } from "node:path";
 // page is copied raw (never parsed as an HTML entry), Vite never sees that
 // reference either — it needs the same explicit copy.
 const projectPages = [
-  "apps/microwave/index.html", "apps/microwave/solver.js",
-  "apps/joule/index.html", "apps/joule/solver.js",
-  "apps/rphcjh/index.html", "apps/rphcjh/solver.js",
+  "apps/microwave/index.html", "apps/microwave/solver.js", "apps/microwave/citation.ris",
+  "apps/joule/index.html", "apps/joule/solver.js", "apps/joule/citation.ris",
+  "apps/rphcjh/index.html", "apps/rphcjh/solver.js", "apps/rphcjh/citation.ris",
   "Yeonsu-Kwak-CV.pdf",
 ];
 
