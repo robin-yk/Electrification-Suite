@@ -12,8 +12,8 @@ url: "https://robin-yk.github.io/Electrification/"
 abstract: >-
   Browser-based interactive models of chemical process electrification:
   a 2D microwave-heating powder-bed temperature model with dielectric
-  response and experimental calibration, a 2D Joule-heating design
-  optimizer with nonlinear thermal solving, and a dimensionless
+  response and experimental calibration, a 2D Joule-heating model
+  with nonlinear thermal solving, and a dimensionless
   visualizer of ramped-vs-continuous (RPH vs CJH) Joule heating and its
   Jensen's-inequality effects on temperature-dependent kinetics and
   transport. All calculations run client-side with no backend.
@@ -47,7 +47,7 @@ references:
     end: 6196
     year: 2025
     doi: "10.1021/acsenergylett.5c02853"
-    notes: "Companion paper for the RPH vs CJH dimensionless visualizer (apps/rphcjh/)."
+    notes: "Companion paper for the RPH vs CJH visualizer (apps/rphcjh/)."
   - type: article
     title: "Short contact time, high temperature, internally-heated ethane crackers"
     authors:

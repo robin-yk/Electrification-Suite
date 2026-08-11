@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Browser-based 0D Joule heating calculator for material, geometry, electrical, and thermal screening.">
-  <title>Joule Heating 2D Optimizer</title>
+  <title>Joule Heating 2D Model</title>
   <style>
     :root {
       --ink: #14202b;
@@ -828,7 +828,7 @@
     <div class="topbar-inner">
       <div>
         <p class="eyebrow">0D screening + axisymmetric thermal field</p>
-        <h1>Joule Heating 2D Optimizer</h1>
+        <h1>Joule Heating 2D Model</h1>
       </div>
       <div class="topbar-right">
         <div class="author-line">Yeonsu Kwak | Vlachos Lab, University of Delaware</div>
@@ -858,7 +858,7 @@
   <main>
     <section id="howto" class="panel" role="tabpanel">
       <p class="section-kicker">Five-minute workflow</p>
-      <h2 class="section-title">How to use this optimizer</h2>
+      <h2 class="section-title">How to use this model</h2>
       <p class="section-lede">Start with the transparent 0D screen, then solve the selected design on a fixed 60 × 60 axisymmetric display mesh. The physical cell size and surrounding-air domain scale automatically with the defined reactor geometry.</p>
       <div class="calc-grid">
         <article class="card formula-card"><div class="card-header"><h3>1 · Choose a material</h3></div><div class="card-body formula-list"><div class="formula-item"><div class="formula-name">Preset or custom</div><div class="formula-note">Presets load cited room-temperature data plus temperature interpolation where a source supplies it. You may overwrite every field.</div></div></div></article>
@@ -1332,7 +1332,7 @@
     <section id="calculations" class="panel" role="tabpanel">
       <p class="section-kicker">Transparent model documentation</p>
       <h2 class="section-title">Calculations &amp; implementation</h2>
-      <p class="section-lede">Every equation used by the optimizer is listed below in execution order. All internal calculations use SI units and absolute temperature.</p>
+      <p class="section-lede">Every equation used by the model is listed below in execution order. All internal calculations use SI units and absolute temperature.</p>
       <div class="calc-note"><strong>Model scope:</strong> zero-dimensional screening plus a steady axisymmetric finite-volume temperature field for a porous cylindrical envelope, optional gas gap, and enclosing wall. Preset ρ(T), Cp(T), and k(T) use piecewise-linear source data where available; marked fallback properties remain constant.</div>
 
       <div class="calc-grid">
@@ -1474,6 +1474,11 @@
         <p>Mittal, A., Ierapetritou, M., &amp; Vlachos, D. G. (2025). <em>Joule-heating materials for advanced chemical manufacturing.</em> <em>Chemical Engineering Journal</em>, 166348.</p>
         <p><a href="https://doi.org/10.1016/j.cej.2025.166348" target="_blank" rel="noopener">https://doi.org/10.1016/j.cej.2025.166348</a></p>
         <a class="btn primary" href="citation.ris" download="mittal-2025-joule-heating-materials.ris">Download citation (.ris)</a>
+      </div>
+
+      <div class="cite-box" style="margin-top:14px">
+        <p>Mittal, A., Kwak, Y., Zheng, W., Ierapetritou, M., &amp; Vlachos, D. G. (2025). <em>Short contact time, high temperature, internally-heated ethane crackers.</em> <em>Chemical Engineering Journal</em>, 168251.</p>
+        <a class="btn primary" href="citation-2.ris" download="mittal-2025-ethane-crackers.ris">Download citation (.ris)</a>
       </div>
     </section>
   </main>
@@ -2692,7 +2697,7 @@
       sync2DImported();
       drawEmpty2D();
       const tests = runSelfTests();
-      window.JouleHeatingOptimizer = { calculate, solveThermal2D, MATERIALS, tests };
+      window.JouleHeatingModel = { calculate, solveThermal2D, MATERIALS, tests };
     }
 
     init();

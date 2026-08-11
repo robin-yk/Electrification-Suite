@@ -11,8 +11,8 @@ Electrified reactor design (resistive/Joule heating, microwave/dielectric heatin
 ## Projects
 
 - **Microwave Heating 2D Model** ([`apps/microwave/index.html`](apps/microwave/index.html), core: [`apps/microwave/solver.js`](apps/microwave/solver.js)) — steady-state powder-bed temperature fields with dielectric response, penetration depth, heat transfer, and experimental calibration.
-- **Joule Heating 2D Optimizer** ([`apps/joule/index.html`](apps/joule/index.html), core: [`apps/joule/solver.js`](apps/joule/solver.js)) — electrical and thermal screening across materials, geometry, hardware limits, heat losses, and an axisymmetric temperature field.
-- **RPH vs CJH Dimensionless Visualizer** ([`apps/rphcjh/index.html`](apps/rphcjh/index.html), core: [`apps/rphcjh/solver.js`](apps/rphcjh/solver.js)) — Jensen's-inequality effects of ramped vs. continuous heating on temperature-dependent kinetics and transport, and the resulting exposure and Damköhler ratios for ethane cracking.
+- **Joule Heating 2D Model** ([`apps/joule/index.html`](apps/joule/index.html), core: [`apps/joule/solver.js`](apps/joule/solver.js)) — electrical and thermal screening across materials, geometry, hardware limits, heat losses, and an axisymmetric temperature field.
+- **RPH vs CJH Visualizer** ([`apps/rphcjh/index.html`](apps/rphcjh/index.html), core: [`apps/rphcjh/solver.js`](apps/rphcjh/solver.js)) — Jensen's-inequality effects of ramped vs. continuous heating on temperature-dependent kinetics and transport, and the resulting exposure and Damköhler ratios for ethane cracking.
 
 Each project opens in place from the home screen and is also reachable directly via URL hash (`#microwave`, `#joule`, `#rphcjh`).
 

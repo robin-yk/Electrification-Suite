@@ -234,9 +234,23 @@
     .project-summary {
       max-width: 420px;
       margin: 0;
+      padding: 0;
+      list-style: none;
       color: var(--muted);
       font-size: 14px;
       line-height: 1.5;
+    }
+    .project-summary li {
+      position: relative;
+      padding-left: 14px;
+      margin-bottom: 4px;
+    }
+    .project-summary li:last-child { margin-bottom: 0; }
+    .project-summary li::before {
+      content: "•";
+      position: absolute;
+      left: 0;
+      color: var(--project-accent);
     }
     .project-meta {
       margin-top: auto;
@@ -392,7 +406,11 @@
           <button class="project-card microwave" type="button" data-route="microwave">
             <span class="project-number">Project 01 · Microwave</span>
             <h2>Microwave Heating 2D Model</h2>
-            <p class="project-summary">Steady-state powder-bed temperature fields with dielectric response, penetration depth, heat transfer, and experimental calibration.</p>
+            <ul class="project-summary">
+              <li>Steady-state powder-bed temperature fields</li>
+              <li>Dielectric response and penetration depth</li>
+              <li>Experimental calibration</li>
+            </ul>
             <span class="project-meta">
               <span class="project-tags" aria-label="Microwave model topics">
                 <span class="project-tag">Material profile</span>
@@ -405,22 +423,30 @@
 
           <button class="project-card joule" type="button" data-route="joule">
             <span class="project-number">Project 02 · Joule</span>
-            <h2>Joule Heating 2D Optimizer</h2>
-            <p class="project-summary">Electrical and thermal screening across materials, geometry, hardware limits, heat losses, and an axisymmetric temperature field.</p>
+            <h2>Joule Heating 2D Model</h2>
+            <ul class="project-summary">
+              <li>Electrical and thermal screening</li>
+              <li>Materials, geometry, hardware limits</li>
+              <li>Axisymmetric temperature field</li>
+            </ul>
             <span class="project-meta">
               <span class="project-tags" aria-label="Joule model topics">
                 <span class="project-tag">Material compare</span>
                 <span class="project-tag">Power limits</span>
-                <span class="project-tag">2D optimization</span>
+                <span class="project-tag">2D thermal field</span>
               </span>
-              <span class="open-label">Open optimizer <span aria-hidden="true">→</span></span>
+              <span class="open-label">Open model <span aria-hidden="true">→</span></span>
             </span>
           </button>
 
           <button class="project-card rphcjh" type="button" data-route="rphcjh">
             <span class="project-number">Project 03 · RPH vs CJH</span>
-            <h2>RPH vs CJH Dimensionless Visualizer</h2>
-            <p class="project-summary">Jensen's-inequality effects of ramped vs. continuous heating on temperature-dependent kinetics and transport, and the resulting exposure and Damköhler ratios for ethane cracking.</p>
+            <h2>RPH vs CJH Visualizer</h2>
+            <ul class="project-summary">
+              <li>Rapid vs. continuous heating</li>
+              <li>Temperature-dependent kinetics and transport</li>
+              <li>Exposure and Damköhler ratios for ethane cracking</li>
+            </ul>
             <span class="project-meta">
               <span class="project-tags" aria-label="RPH vs CJH model topics">
                 <span class="project-tag">Jensen's inequality</span>
@@ -466,8 +492,8 @@
 
       const routeTitles = {
         microwave: "Microwave Heating 2D Model",
-        joule: "Joule Heating 2D Optimizer",
-        rphcjh: "RPH vs CJH Dimensionless Visualizer"
+        joule: "Joule Heating 2D Model",
+        rphcjh: "RPH vs CJH Visualizer"
       };
       const routePaths = {
         microwave: "apps/microwave/",
