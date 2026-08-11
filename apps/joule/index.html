@@ -391,6 +391,8 @@
     }
     .metric-table tr:last-child th,
     .metric-table tr:last-child td { border-bottom: 0; }
+    .metric-table-compact { font-size: 12.5px; }
+    .metric-table-compact th, .metric-table-compact td { padding: 5.5px 10px; }
     .status {
       display: inline-flex;
       align-items: center;
@@ -1127,7 +1129,7 @@
 
             <article class="card">
               <div class="card-header"><h3>Calculated Checkpoints</h3><span id="t2dConverged" class="status warn">No solution</span></div>
-              <div class="card-body"><table class="metric-table"><tbody>
+              <div class="card-body"><table class="metric-table metric-table-compact"><tbody>
                 <tr><th>Element min / max</th><td id="t2dMinMax">—</td></tr>
                 <tr><th>Center / side</th><td id="t2dCenterSide">—</td></tr>
                 <tr><th>Bottom / top center</th><td id="t2dEnds">—</td></tr>
