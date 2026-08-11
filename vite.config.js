@@ -11,7 +11,7 @@ import { resolve, dirname } from "node:path";
 // reference either — it needs the same explicit copy.
 const projectPages = [
   "apps/microwave/index.html", "apps/microwave/solver.js", "apps/microwave/citation.ris",
-  "apps/joule/index.html", "apps/joule/solver.js", "apps/joule/citation.ris",
+  "apps/joule/index.html", "apps/joule/solver.js", "apps/joule/citation.ris", "apps/joule/citation-2.ris",
   "apps/rphcjh/index.html", "apps/rphcjh/solver.js", "apps/rphcjh/citation.ris", "apps/rphcjh/citation-2.ris",
   "Yeonsu-Kwak-CV.pdf",
 ];
