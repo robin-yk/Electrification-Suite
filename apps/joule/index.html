@@ -1114,15 +1114,6 @@
     </section>
 
     <section id="thermal2d" class="panel" role="tabpanel">
-      <div class="section-head-row">
-        <span class="context-note" id="t2dSummary">—</span>
-      </div>
-      <div class="t2d-controls">
-        <button class="btn primary" id="solve2D" type="button">Recalculate 2D field</button>
-        <button class="btn" id="export2D" type="button" disabled>Export field CSV</button>
-      </div>
-      <div id="t2dProgress" class="t2d-progress">The 2D field solves automatically when this tab opens.</div>
-
       <div class="t2d-layout">
         <div class="t2d-results">
           <div class="t2d-map-grid">
@@ -1174,6 +1165,15 @@
         </div>
 
         <aside class="t2d-inputs" aria-label="2D model inputs">
+          <div class="section-head-row" style="margin-bottom:0">
+            <span class="context-note" id="t2dSummary">—</span>
+          </div>
+          <div class="t2d-controls">
+            <button class="btn primary" id="solve2D" type="button">Recalculate 2D field</button>
+            <button class="btn" id="export2D" type="button" disabled>Export field CSV</button>
+          </div>
+          <div id="t2dProgress" class="t2d-progress">The 2D field solves automatically when this tab opens.</div>
+
           <article class="card">
             <div class="card-header"><h3>Imported Single Design</h3><span id="t2dSyncBadge" class="status warn">Not solved</span></div>
             <div class="card-body">
