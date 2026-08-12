@@ -1727,7 +1727,7 @@
       boundary(result.mesh.domainRadius,-physicalHeight/2,physicalHeight/2,"#8bb9cf",2);
       ctx.strokeStyle="rgba(255,255,255,.78)";ctx.lineWidth=1.4;ctx.setLineDash([7,6]);ctx.beginPath();ctx.moveTo(cx,oy);ctx.lineTo(cx,oy+plotHeight);ctx.stroke();ctx.setLineDash([]);
       const elementTopY=oy+(physicalHeight/2-result.g.L/2)*scale,flowX=cx,flowTop=oy+1.2*ch,flowBottom=Math.max(flowTop+28,elementTopY-1.2*ch);
-      ctx.save();ctx.lineCap="round";ctx.strokeStyle="rgba(255,255,255,.92)";ctx.lineWidth=8;ctx.beginPath();ctx.moveTo(flowX,flowTop);ctx.lineTo(flowX,flowBottom);ctx.stroke();ctx.strokeStyle="#102a43";ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(flowX,flowTop);ctx.lineTo(flowX,flowBottom);ctx.stroke();ctx.fillStyle="#102a43";ctx.beginPath();ctx.moveTo(flowX,flowBottom+12);ctx.lineTo(flowX-9,flowBottom-3);ctx.lineTo(flowX+9,flowBottom-3);ctx.closePath();ctx.fill();ctx.font="700 17px Roboto, Arial";ctx.textAlign="left";ctx.fillText("He 50 sccm",flowX+15,flowTop+21);ctx.font="15px Roboto, Arial";ctx.fillText("top → bottom",flowX+15,flowTop+42);ctx.restore();
+      ctx.save();ctx.lineCap="round";ctx.strokeStyle="rgba(255,255,255,.92)";ctx.lineWidth=8;ctx.beginPath();ctx.moveTo(flowX,flowTop);ctx.lineTo(flowX,flowBottom);ctx.stroke();ctx.strokeStyle="#102a43";ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(flowX,flowTop);ctx.lineTo(flowX,flowBottom);ctx.stroke();ctx.fillStyle="#102a43";ctx.beginPath();ctx.moveTo(flowX,flowBottom+12);ctx.lineTo(flowX-9,flowBottom-3);ctx.lineTo(flowX+9,flowBottom-3);ctx.closePath();ctx.fill();ctx.font="500 17px Roboto, Arial";ctx.textAlign="left";ctx.fillText("He 50 sccm",flowX+15,flowTop+21);ctx.font="15px Roboto, Arial";ctx.fillText("top → bottom",flowX+15,flowTop+42);ctx.restore();
       $("t2dScaleMin").textContent=`${format(celsius(lo),1)} °C`;
       $("t2dScaleMax").textContent=`${format(celsius(hi),1)} °C`;
       canvas.setAttribute("aria-label",`${result.material.name} axisymmetric temperature field with a full-height reactor wall and helium flowing from top to bottom, from ${format(celsius(lo),1)} to ${format(celsius(hi),1)} degrees Celsius.`);
@@ -1873,7 +1873,7 @@
     function drawEmpty2D() {
       const canvas=$("thermalMap"),ctx=canvas.getContext("2d");
       ctx.fillStyle="#eef2f5";ctx.fillRect(0,0,canvas.width,canvas.height);
-      ctx.fillStyle="#52616d";ctx.textAlign="center";ctx.font="700 22px Roboto, Arial";ctx.fillText("Solve a material to generate the 2D field",canvas.width/2,canvas.height/2-8);
+      ctx.fillStyle="#52616d";ctx.textAlign="center";ctx.font="500 22px Roboto, Arial";ctx.fillText("Solve a material to generate the 2D field",canvas.width/2,canvas.height/2-8);
       ctx.font="16px Roboto, Arial";ctx.fillText("Current Single Design inputs will be imported automatically",canvas.width/2,canvas.height/2+22);
       ctx.textAlign="start";
     }
@@ -2122,10 +2122,10 @@
       if (finite(r.tss) && r.tss >= startK && r.tss <= endK) {
         const ssPower = operatingAt(r.tss,r.input,r.g).power;
         svg.append(svgEl("circle", { cx:x(ssPower), cy:y(r.tss), r:5.5, fill:"#102a43", stroke:"#fff", "stroke-width":2 }));
-        svg.append(svgEl("text", { x:x(ssPower)+8, y:y(r.tss)-9, fill:"#102a43", "font-size":12, "font-weight":700, "font-family":"Roboto, Arial" }, `Tss ${format(celsius(r.tss), 1)} °C`));
+        svg.append(svgEl("text", { x:x(ssPower)+8, y:y(r.tss)-9, fill:"#102a43", "font-size":12, "font-weight":500, "font-family":"Roboto, Arial" }, `Tss ${format(celsius(r.tss), 1)} °C`));
       }
-      svg.append(svgEl("text", { x: m.l + innerW / 2, y: H - 9, "text-anchor": "middle", fill: "#334451", "font-size": 12, "font-weight": 700, "font-family": "Roboto, Arial" }, "Power (W)"));
-      const yLabel = svgEl("text", { x: 15, y: m.t + innerH / 2, transform: `rotate(-90 15 ${m.t + innerH / 2})`, "text-anchor": "middle", fill: "#334451", "font-size": 12, "font-weight": 700, "font-family": "Roboto, Arial" }, "Temperature (°C)");
+      svg.append(svgEl("text", { x: m.l + innerW / 2, y: H - 9, "text-anchor": "middle", fill: "#334451", "font-size": 12, "font-weight": 400, "font-family": "Roboto, Arial" }, "Power (W)"));
+      const yLabel = svgEl("text", { x: 15, y: m.t + innerH / 2, transform: `rotate(-90 15 ${m.t + innerH / 2})`, "text-anchor": "middle", fill: "#334451", "font-size": 12, "font-weight": 400, "font-family": "Roboto, Arial" }, "Temperature (°C)");
       svg.append(yLabel);
     }
 
@@ -2182,12 +2182,12 @@
       if (t95 <= tMax) {
         const T95 = TssK - (TssK - TaK) * 0.05;
         svg.append(svgEl("circle", { cx: x(t95), cy: y(T95), r: 5.5, fill: "#102a43", stroke: "#fff", "stroke-width": 2 }));
-        svg.append(svgEl("text", { x: x(t95) + 8, y: y(T95) - 9, fill: "#102a43", "font-size": 16, "font-weight": 700, "font-family": "Roboto, Arial" }, `95% at ${fmtTime(t95)}`));
+        svg.append(svgEl("text", { x: x(t95) + 8, y: y(T95) - 9, fill: "#102a43", "font-size": 16, "font-weight": 500, "font-family": "Roboto, Arial" }, `95% at ${fmtTime(t95)}`));
       }
-      svg.append(svgEl("text", { x: W - m.r, y: ssY - 8, "text-anchor": "end", fill: "#b46714", "font-size": 16, "font-weight": 700, "font-family": "Roboto, Arial" }, `Tss ${format(celsius(TssK), 1)} °C`));
+      svg.append(svgEl("text", { x: W - m.r, y: ssY - 8, "text-anchor": "end", fill: "#b46714", "font-size": 16, "font-weight": 500, "font-family": "Roboto, Arial" }, `Tss ${format(celsius(TssK), 1)} °C`));
 
-      svg.append(svgEl("text", { x: m.l + innerW / 2, y: H - 8, "text-anchor": "middle", fill: "#334451", "font-size": 16, "font-weight": 700, "font-family": "Roboto, Arial" }, "Time (min)"));
-      const yLabel = svgEl("text", { x: 16, y: m.t + innerH / 2, transform: `rotate(-90 16 ${m.t + innerH / 2})`, "text-anchor": "middle", fill: "#334451", "font-size": 16, "font-weight": 700, "font-family": "Roboto, Arial" }, "Temperature (°C)");
+      svg.append(svgEl("text", { x: m.l + innerW / 2, y: H - 8, "text-anchor": "middle", fill: "#334451", "font-size": 16, "font-weight": 400, "font-family": "Roboto, Arial" }, "Time (min)"));
+      const yLabel = svgEl("text", { x: 16, y: m.t + innerH / 2, transform: `rotate(-90 16 ${m.t + innerH / 2})`, "text-anchor": "middle", fill: "#334451", "font-size": 16, "font-weight": 400, "font-family": "Roboto, Arial" }, "Temperature (°C)");
       svg.append(yLabel);
     }
 
@@ -2328,7 +2328,7 @@
       svg.append(svgEl("line", { x1:x0, x2:x1, y1:dimY, y2:dimY, stroke:dimColor, "stroke-width":1.5 }));
       svg.append(arrow(x0, dimY, 1, 0));
       svg.append(arrow(x1, dimY, -1, 0));
-      svg.append(svgEl("text", { x:(x0+x1)/2, y:dimY+19, "text-anchor":"middle", fill:dimColor, "font-size":17, "font-weight":700, "font-family":"Roboto, Arial" }, `L = ${format(r.g.L*1000, 3)} mm`));
+      svg.append(svgEl("text", { x:(x0+x1)/2, y:dimY+19, "text-anchor":"middle", fill:dimColor, "font-size":17, "font-weight":500, "font-family":"Roboto, Arial" }, `L = ${format(r.g.L*1000, 3)} mm`));
 
       const dimX = x1 + ellipseW + 38;
       svg.append(svgEl("line", { x1:x1+ellipseW+4, x2:dimX+5, y1:y0, y2:y0, stroke:"#c9b3b3", "stroke-width":1 }));
@@ -2336,10 +2336,10 @@
       svg.append(svgEl("line", { x1:dimX, x2:dimX, y1:y0, y2:y1, stroke:dimColor, "stroke-width":1.5 }));
       svg.append(arrow(dimX, y0, 0, 1));
       svg.append(arrow(dimX, y1, 0, -1));
-      svg.append(svgEl("text", { x:dimX+13, y:cy+5, fill:dimColor, "font-size":17, "font-weight":700, "font-family":"Roboto, Arial" }, `D = ${format(r.g.D*1000, 3)} mm`));
+      svg.append(svgEl("text", { x:dimX+13, y:cy+5, fill:dimColor, "font-size":17, "font-weight":500, "font-family":"Roboto, Arial" }, `D = ${format(r.g.D*1000, 3)} mm`));
 
       const phiText = `φ = ${format(r.g.porosity, 3)}  (${format(r.g.porosity*100, 1)}% void)`;
-      svg.append(svgEl("text", { x:20, y:29, fill:"#102a43", "font-size":21, "font-weight":700, "font-family":"Roboto, Arial" }, phiText));
+      svg.append(svgEl("text", { x:20, y:29, fill:"#102a43", "font-size":21, "font-weight":500, "font-family":"Roboto, Arial" }, phiText));
       svg.append(svgEl("text", { x:20, y:55, fill:"#64717d", "font-size":16, "font-family":"Roboto, Arial" }, `f_solid = ${format(r.g.solidFraction, 3)} · Vol = ${format(r.g.envelopeVolume*1e6, 3)} cm³`));
       const legendLabel = "White area = schematic void fraction";
       const legendWidth = legendLabel.length * 8.3;
@@ -2505,7 +2505,7 @@
       if (referenceX && referenceX >= xMin && referenceX <= xMax) {
         const px = x(referenceX);
         svg.append(svgEl("line", { x1:px, x2:px, y1:margin.t, y2:H-margin.b, stroke:"#102a43", "stroke-width":2, "stroke-dasharray":"6 5" }));
-        svg.append(svgEl("text", { x:px+7, y:margin.t+15, fill:"#102a43", "font-size":12, "font-weight":700, "font-family":"Roboto, Arial" }, `R* = ${format(referenceX,3)} Ω`));
+        svg.append(svgEl("text", { x:px+7, y:margin.t+15, fill:"#102a43", "font-size":12, "font-weight":500, "font-family":"Roboto, Arial" }, `R* = ${format(referenceX,3)} Ω`));
       }
 
       for (let e = Math.ceil(lx0); e <= Math.floor(lx1); e++) {
@@ -2527,7 +2527,7 @@
         svg.append(svgEl("circle", { cx:x(peak[xKey]), cy:y(peak[yKey]), r:5, fill:COLORS[i%COLORS.length], stroke:"#fff", "stroke-width":2 }));
         const ly = margin.t + i*21;
         svg.append(svgEl("line", { x1:W-148, x2:W-124, y1:ly+3, y2:ly+3, stroke:COLORS[i%COLORS.length], "stroke-width":3.5 }));
-        svg.append(svgEl("text", { x:W-117, y:ly+7, fill:"#52616d", "font-size":13, "font-weight":700, "font-family":"Roboto, Arial" }, s.name));
+        svg.append(svgEl("text", { x:W-117, y:ly+7, fill:"#52616d", "font-size":13, "font-weight":500, "font-family":"Roboto, Arial" }, s.name));
       });
       if (selectedMarker && selectedMarker.x > 0) {
         const markerValue = clamp(selectedMarker.x, xMin, xMax);
@@ -2543,7 +2543,7 @@
         const labelX = anchor === "end" ? px-7 : px+7;
         svg.append(svgEl("text", {
           x:labelX, y:H-margin.b-10, "text-anchor":anchor,
-          fill:"#982929", "font-size":12, "font-weight":700, "font-family":"Roboto, Arial"
+          fill:"#982929", "font-size":12, "font-weight":500, "font-family":"Roboto, Arial"
         }, `${rangePrefix}${selectedMarker.label}`));
         if (!below && !above && selectedMarker.y > 0 && selectedMarker.y >= Math.pow(10,ly0) && selectedMarker.y <= Math.pow(10,ly1)) {
           svg.append(svgEl("circle", {
@@ -2552,8 +2552,8 @@
           }));
         }
       }
-      svg.append(svgEl("text", { x:margin.l+innerW/2, y:H-11, "text-anchor":"middle", fill:"#334451", "font-size":14, "font-weight":700, "font-family":"Roboto, Arial" }, xLabel));
-      svg.append(svgEl("text", { x:18, y:margin.t+innerH/2, transform:`rotate(-90 18 ${margin.t+innerH/2})`, "text-anchor":"middle", fill:"#334451", "font-size":14, "font-weight":700, "font-family":"Roboto, Arial" }, yLabel));
+      svg.append(svgEl("text", { x:margin.l+innerW/2, y:H-11, "text-anchor":"middle", fill:"#334451", "font-size":14, "font-weight":400, "font-family":"Roboto, Arial" }, xLabel));
+      svg.append(svgEl("text", { x:18, y:margin.t+innerH/2, transform:`rotate(-90 18 ${margin.t+innerH/2})`, "text-anchor":"middle", fill:"#334451", "font-size":14, "font-weight":400, "font-family":"Roboto, Arial" }, yLabel));
     }
 
     function superscript(n) {
