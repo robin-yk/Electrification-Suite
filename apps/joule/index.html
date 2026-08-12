@@ -1489,13 +1489,15 @@
         </div>
       </article>
 
-      <div class="code-shell">
-        <div class="code-toolbar">
-          <span>Raw JavaScript · exact calculation engine used by this page</span>
-          <button class="btn" id="copyCode" type="button">Copy raw code</button>
-        </div>
-        <pre><code id="rawCode"></code></pre>
-      </div>
+      <details class="crosscheck">
+        <summary>Cross-check · Wismann et al., <em>Science</em> 2019 electrified reformer tube</summary>
+        <p class="calc-note" style="margin-top:10px">
+          The published FeCrAl reformer tube (OD 6.0 mm × 50 cm, 0.35 mm wall; <a href="https://doi.org/10.1126/science.aaw8775">doi:10.1126/science.aaw8775</a>)
+          entered as nominal volume 14.14 cm³, L/D 83.3, void fraction φ = 0.78, driven at 65 A with the page-default enclosure.
+          The reaction heat duty of the reformer is outside this tool's scope — the comparison checks the bare heated tube.
+        </p>
+        <div class="table-wrap" style="margin-top:10px"><table class="metric-table"><thead><tr><th>Quantity</th><th>This tool</th><th>Reference</th></tr></thead><tbody id="crossCheckBody"></tbody></table></div>
+      </details>
     </section>
 
     <section id="cite" class="panel" role="tabpanel">
@@ -2625,69 +2627,29 @@
       }
     }
 
-    function renderRawCode() {
-      const source = [
-        `const SIGMA_SB = ${SIGMA_SB};`,
-        `const HE_FLOW_SCCM = ${HE_FLOW_SCCM};`,
-        `const HE_CP_MOLAR = ${HE_CP_MOLAR};`,
-        `const MOLAR_VOLUME_STP = ${MOLAR_VOLUME_STP};`,
-        `const HE_CAPACITY_RATE = ${HE_CAPACITY_RATE};`,
-        `const OUTSIDE_AIR_K = ${OUTSIDE_AIR_K};`,
-        `// The 2D display is fixed at 60 × 60 cells; physical domain and regional cell widths scale with reactor geometry.`,
-        `// Gap radiation and 50 sccm top-to-bottom He enthalpy advection are included in the thermal balance.`,
-        `const MATERIALS = ${JSON.stringify(MATERIALS, null, 2)};`,
-        "",
-        interpolate.toString(),
-        "",
-        propertiesAt.toString(),
-        "",
-        validateInput.toString(),
-        "",
-        geometry.toString(),
-        "",
-        directSurfaceHeatLoss.toString(),
-        "",
-        enclosureHeatLoss.toString(),
-        "",
-        heatLoss.toString(),
-        "",
-        operatingAt.toString(),
-        "",
-        solveSteadyTemperature.toString(),
-        "",
-        calculate.toString(),
-        "",
-        validate2DConfig.toString(),
-        "",
-        allocateSegmentCells.toString(),
-        "",
-        build2DMesh.toString(),
-        "",
-        cellK2D.toString(),
-        "",
-        operating2DAt.toString(),
-        "",
-        radiationCoefficient.toString(),
-        "",
-        gapRadiationCoefficient.toString(),
-        "",
-        gasFlowCells2D.toString(),
-        "",
-        gasBulkRowTemperature2D.toString(),
-        "",
-        assemble2DSystem.toString(),
-        "",
-        multiply2DSystem.toString(),
-        "",
-        pcg2D.toString(),
-        "",
-        bicgstab2D.toString(),
-        "",
-        boundaryLoss2D.toString(),
-        "",
-        solveThermal2D.toString()
-      ].join("\n");
-      $("rawCode").textContent = source;
+    // Live validation against Wismann et al., Science 364, 756 (2019): their
+    // FeCrAl tube expressed in this tool's inputs (annulus wall as void fraction).
+    function renderCrossCheck() {
+      const material = MATERIALS.find((m) => /Kanthal|FeCrAl/i.test(m.name));
+      if (!material) return;
+      const x = {
+        material, solidFraction: 0.2198, porosity: 0.7802,
+        volumeCm3: 14.137 * 0.2198, aspectRatio: 83.3,
+        imax: 65, vmax: 100, pmax: 2000, supplyMode: "auto", iset: 65, vset: 100,
+        ambientK: kelvin(20), targetK: kelvin(800),
+        emissivity: material.emissivity ?? 0.8, convection: false, h: 0,
+        gasK: kelvin(20), biLimit: 0.01, enclosure: get2DConfig()
+      };
+      const r = calculate(x);
+      if (r.errors.length) return;
+      const rows = [
+        ["Element geometry L × D", `${sig4(r.g.L*1000)} × ${sig4(r.g.D*1000)} mm`, "500 × 6.0 mm tube (paper Fig. 2)"],
+        ["Element resistance", `${sig4(r.resistance)} Ω`, "ρL/A = 0.117 Ω for the 0.35 mm annulus"],
+        ["Electrical power at 65 A", `${sig4(r.power)} W`, "I²R ≈ 495 W"],
+        ["Steady-state temperature", fmtTemp(r.tss), "800 °C maximum measured"],
+        ["Biot number", sig4(r.bi), "no measurable wall temperature gradient"]
+      ];
+      $("crossCheckBody").innerHTML = rows.map(([a,b,c]) => `<tr><th>${a}</th><td>${b}</td><td>${c}</td></tr>`).join("");
     }
 
     function renderPropertyTable() {
@@ -2695,25 +2657,6 @@
         <td>${m.name}</td><td>${format(m.rhoOhmCm,7)}</td><td>${format(m.density,0)} kg/m³</td>
         <td>${format(m.cp,0)} J/kg·K</td><td>${format(m.k,1)} W/m·K</td><td>${format(m.jmax,2)} A/m²</td>
         <td>${m.model || "constant"}</td><td>${m.source || "user input"}</td></tr>`).join("");
-    }
-
-    async function copyRawCode() {
-      const text = $("rawCode").textContent;
-      try {
-        await navigator.clipboard.writeText(text);
-      } catch (_) {
-        const area = document.createElement("textarea");
-        area.value = text;
-        area.style.position = "fixed";
-        area.style.opacity = "0";
-        document.body.appendChild(area);
-        area.select();
-        document.execCommand("copy");
-        area.remove();
-      }
-      const button = $("copyCode");
-      button.textContent = "Copied";
-      setTimeout(() => { button.textContent = "Copy raw code"; }, 1400);
     }
 
     function init() {
@@ -2748,7 +2691,6 @@
       document.querySelectorAll(".tab").forEach((tab) => tab.addEventListener("click", () => activateTab(tab.dataset.tab)));
       $("exportCompare").addEventListener("click", exportComparison);
       $("exportSweep").addEventListener("click", exportSweep);
-      $("copyCode").addEventListener("click", copyRawCode);
       $("t2dWallMaterial").addEventListener("change", () => {
         const wall=T2D_WALLS[$("t2dWallMaterial").value];
         if (wall && $("t2dWallMaterial").value!=="custom") {
@@ -2766,7 +2708,7 @@
       loadMaterial(1);
       updateAll();
       renderPropertyTable();
-      renderRawCode();
+      renderCrossCheck();
       sync2DImported();
       drawEmpty2D();
       const tests = runSelfTests();
