@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="description" content="Interactive visualizer for the RPH vs CJH dimensionless analysis: Jensen's inequality on k(T), h(T), u(T), and the resulting Lambda and Damkohler ratios for ethane cracking.">
 <title>RPH vs CJH Visualizer</title>
+<link rel="preload" href="../../assets/fonts/roboto-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../../assets/fonts/roboto.css">
 <style>
   :root {
     --ink: #14202b;
@@ -34,7 +36,7 @@
     margin: 0;
     color: var(--ink);
     background: var(--cream);
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: Roboto, Arial, Helvetica, sans-serif;
     font-size: 15px;
     line-height: 1.45;
   }
@@ -842,7 +844,7 @@ function drawReactor(TC) {
   });
 
   // labels
-  ctx.font = "12px Arial, Helvetica, sans-serif";
+  ctx.font = "12px Roboto, Arial, Helvetica, sans-serif";
   ctx.fillStyle = "#8fa3b4";
   ctx.textAlign = "left";
   ctx.fillText("C₂H₆ in", 30, 84);
@@ -853,7 +855,7 @@ function drawReactor(TC) {
   ctx.fillText("C₂H₄ out", CW - 30, 84);
 
   ctx.textAlign = "center";
-  ctx.font = "bold 22px Arial, Helvetica, sans-serif";
+  ctx.font = "bold 22px Roboto, Arial, Helvetica, sans-serif";
   ctx.fillStyle = tempColor(Math.max(700, TC));
   ctx.fillText(TC.toFixed(0) + " °C", (ZONE_X0 + ZONE_X1) / 2, 264);
 }
