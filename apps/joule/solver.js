@@ -177,6 +177,19 @@ export function heatLoss(T, x, g) {
   return enclosureHeatLoss(T,x,g).total;
 }
 
+// Setpoint modes ("cc"/"cv") drive the supply exactly at the user's set current
+// or voltage; other limits are reported as violations, never clamped, so the
+// numbers answer "what would this drive point require".
+export function supplyViolations(mode, x, current, voltage, power, jmax, area) {
+  const over = (v, lim) => lim > 0 && v > lim * (1 + 1e-9);
+  const violations = [];
+  if (mode === "cv" && over(current, x.imax)) violations.push(`I ${">"} Imax`);
+  if (mode === "cc" && over(voltage, x.vmax)) violations.push(`V ${">"} Vmax`);
+  if (over(current, jmax * area)) violations.push(`J ${">"} Jmax`);
+  if (over(power, x.pmax)) violations.push(`P ${">"} Pmax`);
+  return violations;
+}
+
 export function operatingAt(tempK, x, g) {
   const props = propertiesAt(x.material, tempK);
   const rhoE = props.rhoOhmCm * 0.01;
@@ -187,10 +200,18 @@ export function operatingAt(tempK, x, g) {
     "Current density": x.material.jmax * g.area,
     Power: Math.sqrt(x.pmax / resistance)
   };
+  const mode = x.supplyMode === "cc" || x.supplyMode === "cv" ? x.supplyMode : "auto";
+  if (mode !== "auto") {
+    const current = Math.max(0, mode === "cc" ? (x.iset ?? x.imax) : (x.vset ?? x.vmax) / resistance);
+    const voltage = current * resistance, power = current * current * resistance;
+    const violations = supplyViolations(mode, x, current, voltage, power, x.material.jmax, g.area);
+    const constraint = mode === "cc" ? "A limited" : "V limited";
+    return { props, rhoE, resistance, candidates, constraint, mode, violations, current, voltage, power };
+  }
   const current = Math.min(...Object.values(candidates));
   const tolerance = Math.max(1e-10, current * 1e-8);
   const constraint = Object.entries(candidates).filter(([,v]) => Math.abs(v-current) <= tolerance).map(([n]) => n).join(" + ");
-  return { props, rhoE, resistance, candidates, constraint, current, voltage:current*resistance, power:current*current*resistance };
+  return { props, rhoE, resistance, candidates, constraint, mode, violations: [], current, voltage:current*resistance, power:current*current*resistance };
 }
 
 export function solveSteadyTemperature(x, g) {
@@ -249,6 +270,7 @@ export function calculate(x) {
 
   return {
     errors: [], g, rhoE, sigma, mass, resistance, candidates, constraint,
+    supplyMode: target.mode, violations: target.violations,
     operatingCurrent, voltage, power, specificPower, currentDensity,
     volumetricPowerMW, rampRate, tss, requiredPower, requiredVoltage,
     requiredCurrent, feasible, adiabaticTime, hEffective, bi, kcrit,
@@ -328,11 +350,19 @@ export function operating2DAt(tempK, x, g, cfg, material) {
     "Current density": material.jmax * g.area,
     Power: Math.sqrt(x.pmax / rTotal)
   };
-  const current = Math.max(0, Math.min(...Object.values(candidates)));
-  const tolerance = Math.max(1e-10,current*1e-8);
-  const constraint = Object.entries(candidates).filter(([,v]) => Math.abs(v-current)<=tolerance).map(([name])=>name).join(" + ");
+  const mode = x.supplyMode === "cc" || x.supplyMode === "cv" ? x.supplyMode : "auto";
+  let current, constraint, violations = [];
+  if (mode !== "auto") {
+    current = Math.max(0, mode === "cc" ? (x.iset ?? x.imax) : (x.vset ?? x.vmax) / rTotal);
+    violations = supplyViolations(mode, x, current, current*rTotal, current*current*rTotal, material.jmax, g.area);
+    constraint = mode === "cc" ? "A limited" : "V limited";
+  } else {
+    current = Math.max(0, Math.min(...Object.values(candidates)));
+    const tolerance = Math.max(1e-10,current*1e-8);
+    constraint = Object.entries(candidates).filter(([,v]) => Math.abs(v-current)<=tolerance).map(([name])=>name).join(" + ");
+  }
   return {
-    props, rhoE, rBulk, rContact, rTotal, candidates, current, constraint,
+    props, rhoE, rBulk, rContact, rTotal, candidates, current, constraint, mode, violations,
     voltage:current*rTotal,
     pBulk:current*current*rBulk,
     pContact:current*current*2*rContact,

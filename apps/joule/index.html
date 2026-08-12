@@ -225,6 +225,19 @@
       grid-template-columns: minmax(0, 1fr) auto;
       gap: 6px;
     }
+    .mode-label { display: block; font-size: 12.5px; font-weight: 700; color: var(--muted); margin-bottom: 5px; }
+    .mode-toggle { display: flex; border: 1px solid var(--line-dark); border-radius: 8px; overflow: hidden; }
+    .mode-btn {
+      flex: 1; min-height: 34px; padding: 6px 4px; border: none; background: #fff;
+      border-right: 1px solid var(--line-dark); font: inherit; font-size: 12.5px;
+      font-weight: 700; color: var(--muted); cursor: pointer;
+    }
+    .mode-btn:last-child { border-right: none; }
+    .mode-btn.active { background: var(--navy); color: #fff; }
+    .set-slider-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 3px; }
+    .set-slider-head label { font-size: 12.5px; font-weight: 700; color: var(--muted); }
+    .set-slider-head output { font-size: 13px; font-weight: 700; color: var(--navy); font-variant-numeric: tabular-nums; }
+    input[type="range"] { min-height: 26px; padding: 0; border: none; background: transparent; accent-color: var(--navy); }
     input, select {
       width: 100%;
       min-height: 38px;
@@ -954,6 +967,23 @@
                 <label for="pmax">P<sub>max</sub></label>
                 <div class="control-row"><input id="pmax" type="number" min="0" step="any" value="2000"><span class="unit">W</span></div>
               </div>
+              <div class="field full">
+                <span class="mode-label">Supply mode</span>
+                <div class="mode-toggle" role="group" aria-label="Supply drive mode">
+                  <button type="button" class="mode-btn active" data-mode="auto">Auto</button>
+                  <button type="button" class="mode-btn" data-mode="cc">A limited</button>
+                  <button type="button" class="mode-btn" data-mode="cv">V limited</button>
+                </div>
+                <span class="context-note" id="modeNote">Auto drives at the first limit reached (real supply CC↔CV behavior).</span>
+              </div>
+              <div class="field full" id="isetField" hidden>
+                <div class="set-slider-head"><label for="iset">Set current</label><output id="isetOut">20 A</output></div>
+                <input id="iset" type="range" min="0" max="20" step="0.01" value="20">
+              </div>
+              <div class="field full" id="vsetField" hidden>
+                <div class="set-slider-head"><label for="vset">Set voltage</label><output id="vsetOut">100 V</output></div>
+                <input id="vset" type="range" min="0" max="100" step="0.01" value="100">
+              </div>
             </div>
           </div>
 
@@ -1157,7 +1187,7 @@
             <article class="t2d-kpi"><div class="kpi-label">Maximum element</div><div class="kpi-value" id="t2dMax">—</div><div class="kpi-sub">T<sub>max</sub></div></article>
             <article class="t2d-kpi"><div class="kpi-label">Element spread</div><div class="kpi-value" id="t2dDelta">—</div><div class="kpi-sub">T<sub>max</sub> − T<sub>min</sub></div></article>
             <article class="t2d-kpi"><div class="kpi-label">Bulk Joule power</div><div class="kpi-value" id="t2dPower">—</div><div class="kpi-sub">Deposited in element</div></article>
-            <article class="t2d-kpi"><div class="kpi-label">Active constraint</div><div class="kpi-value" id="t2dConstraint">—</div><div class="kpi-sub">Lowest allowed current</div></article>
+            <article class="t2d-kpi"><div class="kpi-label">Active constraint</div><div class="kpi-value" id="t2dConstraint">—</div><div class="kpi-sub" id="t2dConstraintSub">Lowest allowed current</div></article>
             <article class="t2d-kpi"><div class="kpi-label">Energy closure</div><div class="kpi-value" id="t2dClosure">—</div><div class="kpi-sub">|P − Q<sub>boundary</sub>|/P</div></article>
           </div>
 
@@ -1237,7 +1267,7 @@
     <section id="compare" class="panel" role="tabpanel">
       <p class="section-kicker">Same hardware, different materials</p>
       <h2 class="section-title">Material comparison</h2>
-      <p class="section-lede">Each material is recalculated with the current geometry, power-supply limits, and heat-loss conditions from Single Design.</p>
+      <p class="section-lede">Each material is recalculated with the current geometry, power-supply limits, and heat-loss conditions from Single Design. Supply mode: auto (each material runs at its own first limit).</p>
       <div class="card toolbar">
         <div class="toolbar-fields">
           <div class="field">
@@ -1283,7 +1313,7 @@
     <section id="sweep" class="panel" role="tabpanel">
       <p class="section-kicker">Electrical design window</p>
       <h2 class="section-title">Resistivity and geometry sweep</h2>
-      <p class="section-lede">At fixed solid volume and heat capacity, initial ramp rate follows electrical power. The peak occurs where the current-limited rising branch meets the voltage-limited falling branch.</p>
+      <p class="section-lede">At fixed solid volume and heat capacity, initial ramp rate follows electrical power. The peak occurs where the current-limited rising branch meets the voltage-limited falling branch. Supply mode: auto.</p>
       <div class="card toolbar">
         <div class="toolbar-fields">
           <div class="field">
@@ -1356,7 +1386,7 @@
             <div class="formula-item"><div class="formula-name">Temperature-dependent properties</div><div class="formula">y(T) = y<sub>i</sub> + (y<sub>i+1</sub>−y<sub>i</sub>)(T−T<sub>i</sub>)/(T<sub>i+1</sub>−T<sub>i</sub>)</div><div class="formula-note">Piecewise-linear interpolation with endpoint clamping. For pure-metal fallback: ρ(T)=ρ<sub>20</sub>[1+α(T−20°C)].</div></div>
             <div class="formula-item"><div class="formula-name">Conductivity &amp; resistance</div><div class="formula">σ<sub>e</sub>(T) = 1/ρ<sub>e</sub>(T), &nbsp; R(T) = ρ<sub>e</sub>(T)L/A<sub>eff</sub></div></div>
             <div class="formula-item"><div class="formula-name">Four current ceilings</div><div class="formula">I<sub>I</sub> = I<sub>max</sub><br>I<sub>V</sub> = V<sub>max</sub>/R<br>I<sub>J</sub> = J<sub>max</sub>A<br>I<sub>P</sub> = √(P<sub>max</sub>/R)</div></div>
-            <div class="formula-item"><div class="formula-name">Selected current</div><div class="formula">I = min(I<sub>I</sub>, I<sub>V</sub>, I<sub>J</sub>, I<sub>P</sub>)</div><div class="formula-note">Equal minima are reported as simultaneous active constraints.</div></div>
+            <div class="formula-item"><div class="formula-name">Selected current</div><div class="formula">I = min(I<sub>I</sub>, I<sub>V</sub>, I<sub>J</sub>, I<sub>P</sub>)</div><div class="formula-note">Equal minima are reported as simultaneous active constraints. In A-limited mode I = I<sub>set</sub> and in V-limited mode I = V<sub>set</sub>/R instead; any other limit exceeded at that drive point is flagged as a violation rather than clamped.</div></div>
             <div class="formula-item"><div class="formula-name">Voltage, power &amp; densities</div><div class="formula">V<sub>e</sub>(T) = I(T)R(T), &nbsp; P(T) = I(T)²R(T)<br>J = I/A<sub>eff</sub>, &nbsp; p‴ = P/V<sub>solid</sub>, &nbsp; P<sub>sp</sub> = P/m</div></div>
             <div class="formula-item"><div class="formula-name">Design recommendation</div><div class="formula">R ∝ ρ<sub>e</sub>(L/D)<sup>4/3</sup>, &nbsp; A<sub>eff</sub> ∝ (L/D)<sup>−2/3</sup></div><div class="formula-note">L/D and ρe are searched over ±4 decades. Imax, Vmax, Pmax, and Jmax are applied at every candidate. The closest candidate delivering at least 99.5% of the maximum initial power is reported.</div></div>
           </div>
@@ -1580,6 +1610,9 @@
         imax: num("imax"),
         vmax: num("vmax"),
         pmax: num("pmax"),
+        supplyMode: document.querySelector(".mode-btn.active")?.dataset.mode || "auto",
+        iset: num("iset"),
+        vset: num("vset"),
         ambientK: kelvin(num("ambientC")),
         targetK: kelvin(num("targetC")),
         emissivity: num("emissivity"),
@@ -1613,7 +1646,7 @@
       return JSON.stringify({
         material:material.name,rho:material.rhoOhmCm,k:material.k,cp:material.cp,density:material.density,jmax:material.jmax,
         volume:x.volumeCm3,ratio:x.aspectRatio,solidFraction:x.solidFraction,
-        imax:x.imax,vmax:x.vmax,pmax:x.pmax,ambient:x.ambientK,target:x.targetK,
+        imax:x.imax,vmax:x.vmax,pmax:x.pmax,supplyMode:x.supplyMode,iset:x.iset,vset:x.vset,ambient:x.ambientK,target:x.targetK,
         emissivity:x.emissivity,convection:x.convection,h:x.h,gas:x.gasK,cfg
       });
     }
@@ -1721,6 +1754,9 @@
       $("t2dDelta").textContent=`${sig4(result.deltaT)} °C`;
       $("t2dPower").textContent=`${sig4(result.op.pBulk)} W`;
       $("t2dConstraint").textContent=result.op.constraint;
+      $("t2dConstraintSub").textContent=result.op.mode==="cc"||result.op.mode==="cv"
+        ?(result.op.violations.length?`Exceeds ${result.op.violations.join(" · ")}`:"Set point · within limits")
+        :"Lowest allowed current";
       $("t2dClosure").textContent=`${format(result.closure*100,3)}%`;
       $("t2dMapTitle").textContent=`${result.material.name} Temperature Field`;
       $("t2dMeshLabel").textContent=`${2*result.mesh.nr} × ${result.mesh.nz} mesh · ${format(2*result.mesh.domainRadius*1000,2)} × ${format(result.mesh.domainHeight*1000,2)} mm domain · equal x–z scale · element L/D ${format(result.g.L/result.g.D,3)}`;
@@ -1973,7 +2009,12 @@
       validation.classList.remove("show");
       const r = result;
       $("constraintValue").textContent = r.constraint;
-      $("constraintSub").textContent = `${sig4(r.operatingCurrent)} A allowed`;
+      const manualMode = r.supplyMode === "cc" || r.supplyMode === "cv";
+      $("constraintSub").textContent = manualMode
+        ? (r.violations.length
+            ? `Exceeds ${r.violations.join(" · ")}`
+            : `set ${r.supplyMode === "cc" ? `${sig4(r.input.iset)} A` : `${sig4(r.input.vset)} V`} · within limits`)
+        : `${sig4(r.operatingCurrent)} A allowed`;
       $("rampValue").textContent = `${sig4(r.rampRate)} K/s`;
       $("tssValue").textContent = fmtTemp(r.tss);
       $("timeValue").textContent = fmtTime(r.adiabaticTime);
@@ -1982,7 +2023,7 @@
       $("biValue").textContent = sig4(r.bi);
       $("biSub").textContent = r.uniform ? "Bi ≤ screening limit" : "Temperature-gradient risk";
 
-      setClass($("kpiConstraint"), r.constraint.includes("+") ? "warn" : "good");
+      setClass($("kpiConstraint"), r.violations?.length ? "bad" : r.constraint.includes("+") ? "warn" : "good");
       setClass($("kpiTss"), r.feasible ? "good" : "bad");
       setClass($("kpiTime"), "good");
       setClass($("kpiFeasible"), r.feasible ? "good" : "bad");
@@ -2319,7 +2360,17 @@
       return calculate(baseInputs());
     }
 
+    function syncSetpointSliders() {
+      [["iset","imax","A"],["vset","vmax","V"]].forEach(([setId, maxId, unit]) => {
+        const slider = $(setId), max = Math.max(0, num(maxId));
+        if (Number(slider.max) !== max) slider.max = max;
+        if (Number(slider.value) > max) slider.value = max;
+        $(setId + "Out").textContent = `${sig4(Number(slider.value))} ${unit}`;
+      });
+    }
+
     function updateAll() {
+      syncSetpointSliders();
       const result = currentResult();
       renderCalculator(result);
       sync2DImported(result);
@@ -2345,7 +2396,7 @@
 
     function materialResults() {
       const base = baseInputs();
-      return MATERIALS.filter((m) => !m.custom).map((material) => calculate({ ...base, material }));
+      return MATERIALS.filter((m) => !m.custom).map((material) => calculate({ ...base, supplyMode: "auto", material }));
     }
 
     function renderComparison() {
@@ -2407,7 +2458,7 @@
             rhoOhmCm,
             rhoTable: base.material.rhoTable?.map(([t,v]) => [t,v*scale])
           };
-          const result = calculate({ ...base, aspectRatio: ratio, material });
+          const result = calculate({ ...base, supplyMode: "auto", aspectRatio: ratio, material });
           return {
             x:rhoOhmCm,
             rate:result.rampRate,
@@ -2542,7 +2593,7 @@
       let passed = 0;
       cases.forEach((tc) => {
         const material = { name:"test", rhoOhmCm:tc.rho, density:1000, cp:1000, k:120, jmax:1e7 };
-        const r = calculate({ ...base, volumeCm3:2.5137436116, aspectRatio:tc.ratio, material });
+        const r = calculate({ ...base, supplyMode:"auto", volumeCm3:2.5137436116, aspectRatio:tc.ratio, material });
         const rel = (a,b) => Math.abs(a-b)/Math.max(1,Math.abs(b));
         const ok = rel(r.resistance,tc.R)<2e-6 && rel(r.operatingCurrent,tc.I)<2e-6
           && rel(r.voltage,tc.V)<2e-6 && rel(r.power,tc.P)<2e-6
@@ -2670,8 +2721,20 @@
         loadMaterial($("material").selectedIndex);
         updateAll();
       });
-      ["rhoValue","rhoUnit","density","cp","thermalK","jmax","volumeCm3","aspectRatio","solidFraction","imax","vmax","pmax","ambientC","targetC","emissivity","convection","hConv","gasC","biLimit"]
+      ["rhoValue","rhoUnit","density","cp","thermalK","jmax","volumeCm3","aspectRatio","solidFraction","imax","vmax","pmax","iset","vset","ambientC","targetC","emissivity","convection","hConv","gasC","biLimit"]
         .forEach((id) => $(id).addEventListener("input", updateAll));
+      document.querySelectorAll(".mode-btn").forEach((btn) => btn.addEventListener("click", () => {
+        document.querySelectorAll(".mode-btn").forEach((b) => b.classList.toggle("active", b === btn));
+        const mode = btn.dataset.mode;
+        $("isetField").hidden = mode !== "cc";
+        $("vsetField").hidden = mode !== "cv";
+        $("modeNote").textContent = mode === "auto"
+          ? "Auto drives at the first limit reached (real supply CC↔CV behavior)."
+          : mode === "cc"
+            ? "Drives exactly at the set current; exceeded limits are flagged, not clamped."
+            : "Drives exactly at the set voltage; exceeded limits are flagged, not clamped.";
+        updateAll();
+      }));
       $("compareSort").addEventListener("change", renderComparison);
       ["sweepMin","sweepMax","sweepPoints"].forEach((id) => $(id).addEventListener("input", renderSweep));
       document.querySelectorAll('input[name="ratio"]').forEach((el) => el.addEventListener("change", renderSweep));

@@ -58,6 +58,40 @@ test("calculate() reports validation errors instead of throwing on bad input", (
   assert.ok(result.errors.length > 0);
 });
 
+test("supplyMode cc drives exactly at the set current and flags exceeded limits instead of clamping", () => {
+  const auto = calculate(makeInput("SiC", 6));
+  const half = calculate(makeInput("SiC", 6, { supplyMode: "cc", iset: 10 }));
+  assert.deepEqual(half.errors, []);
+  assert.equal(half.constraint, "A limited");
+  assert.ok(Math.abs(half.operatingCurrent - 10) < 1e-12);
+  assert.ok(Math.abs(half.voltage - 10 * half.resistance) < 1e-9);
+  assert.ok(half.power < auto.power, "half the current must give less power than the auto drive point");
+  assert.deepEqual(half.violations, [], "10 A inside a 20 A / 100 V / 2000 W supply violates nothing");
+
+  const hot = calculate(makeInput("SiC", 6, { supplyMode: "cc", iset: 20, vmax: 0.1 }));
+  assert.ok(hot.violations.some((v) => v.includes("Vmax")), "20 A across this rod needs more than 0.1 V");
+  assert.ok(Math.abs(hot.operatingCurrent - 20) < 1e-12, "violations must not clamp the drive point");
+});
+
+test("supplyMode cv drives exactly at the set voltage and mirrors the violation logic", () => {
+  const r = calculate(makeInput("SiC", 6, { supplyMode: "cv", vset: 0.3 }));
+  assert.deepEqual(r.errors, []);
+  assert.equal(r.constraint, "V limited");
+  assert.ok(Math.abs(r.voltage - 0.3) < 1e-9);
+  assert.ok(Math.abs(r.operatingCurrent - 0.3 / r.resistance) < 1e-9);
+
+  const surge = calculate(makeInput("SiC", 6, { supplyMode: "cv", vset: 100, imax: 1 }));
+  assert.ok(surge.violations.some((v) => v.includes("Imax")), "100 V across this rod pushes far more than 1 A");
+});
+
+test("supplyMode auto (or absent) preserves the original min-of-limits behavior", () => {
+  const implicit = calculate(makeInput("SiC", 6));
+  const explicit = calculate(makeInput("SiC", 6, { supplyMode: "auto" }));
+  assert.equal(implicit.operatingCurrent, explicit.operatingCurrent);
+  assert.equal(implicit.constraint, explicit.constraint);
+  assert.deepEqual(implicit.violations, []);
+});
+
 test("build2DMesh() partitions the exact radial cell count for every L/D in the sweep", () => {
   for (const aspectRatio of [1, 2, 4, 8, 12, 20, 30]) {
     const x = makeInput("SiC", aspectRatio);
