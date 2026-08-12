@@ -880,7 +880,7 @@
       <p class="section-lede">Start with the transparent 0D screen, then solve the selected design on a fixed 60 × 60 axisymmetric display mesh. The physical cell size and surrounding-air domain scale automatically with the defined reactor geometry.</p>
       <div class="calc-grid">
         <article class="card formula-card"><div class="card-header"><h3>1 · Choose a material</h3></div><div class="card-body formula-list"><div class="formula-item"><div class="formula-name">Preset or custom</div><div class="formula-note">Presets load cited room-temperature data plus temperature interpolation where a source supplies it. You may overwrite every field.</div></div></div></article>
-        <article class="card formula-card"><div class="card-header"><h3>2 · Enter cylindrical geometry</h3></div><div class="card-body formula-list"><div class="formula-item"><div class="formula-name">Volume + L/D + solid fraction</div><div class="formula-note">Volume means solid material volume. Solid fraction f<sub>s</sub> = 1 is a dense rod; lower values enlarge the porous envelope while preserving the entered solid volume.</div></div></div></article>
+        <article class="card formula-card"><div class="card-header"><h3>2 · Enter cylindrical geometry</h3></div><div class="card-body formula-list"><div class="formula-item"><div class="formula-name">Nominal volume + L/D + void fraction</div><div class="formula-note">Nominal volume is the outer L × D envelope. Void fraction φ = 0 is a dense rod; higher φ removes conducting solid from the same envelope.</div></div></div></article>
         <article class="card formula-card"><div class="card-header"><h3>3 · Define hardware limits</h3></div><div class="card-body formula-list"><div class="formula-item"><div class="formula-name">I, V, P and J ceilings</div><div class="formula-note">The page chooses the lowest allowed current at each temperature. Jmax is a screening/design limit, not a universal failure constant; assumed presets are marked in Calculations.</div></div></div></article>
         <article class="card formula-card"><div class="card-header"><h3>4 · Set the thermal case</h3></div><div class="card-body formula-list"><div class="formula-item"><div class="formula-name">Ambient, target and enclosure</div><div class="formula-note">Single Design uses the same gas gap, wall, surrounding-air domain, end condition, gap radiation, and 50 sccm He inlet defined for the 2D field.</div></div></div></article>
         <article class="card formula-card"><div class="card-header"><h3>5 · Read the flags</h3></div><div class="card-body formula-list"><div class="formula-item"><div class="formula-name">Feasibility and Biot screening</div><div class="formula-note">“Feasible” means the source can balance modeled heat loss at target. Bi ≤ the selected limit supports a lumped-temperature approximation; it does not prove local uniformity in a porous body.</div></div></div></article>
@@ -937,18 +937,18 @@
             <div class="card-header"><h2>Geometry</h2><span class="status good">Cylinder</span></div>
             <div class="card-body fields">
               <div class="field">
-                <label for="volumeCm3">Solid volume</label>
-                <div class="control-row"><input id="volumeCm3" type="number" min="0" step="any" value="10"><span class="unit">cm³</span></div>
+                <label for="nominalVolume">Nominal volume</label>
+                <div class="control-row"><input id="nominalVolume" type="number" min="0" step="any" value="10"><span class="unit">cm³</span></div>
               </div>
               <div class="field">
                 <label for="aspectRatio">Aspect ratio, L/D</label>
                 <input id="aspectRatio" type="number" min="0" step="any" value="1">
               </div>
               <div class="field full">
-                <label for="solidFraction">Solid fraction, f<sub>s</sub> = 1−φ</label>
-                <div class="control-row"><input id="solidFraction" type="number" min="0.01" max="1" step="0.01" value="1"><span class="unit">1 = solid rod</span></div>
+                <label for="voidFraction">Void fraction, φ</label>
+                <div class="control-row"><input id="voidFraction" type="number" min="0" max="0.99" step="0.01" value="0"><span class="unit">0 = solid rod</span></div>
               </div>
-              <div class="field full"><span class="context-note">Porosity is φ = 1−f<sub>s</sub>. Lower f<sub>s</sub> gives a larger L × D envelope at fixed solid volume.</span></div>
+              <div class="field full"><span class="context-note">Nominal volume sets the L × D envelope directly. Solid material is V<sub>solid</sub> = (1−φ)·V<sub>nominal</sub>, so higher φ means less conducting solid in the same envelope.</span></div>
             </div>
           </div>
 
@@ -1372,8 +1372,8 @@
           <div class="card-header"><h3>1 · Unit conversion &amp; geometry</h3></div>
           <div class="card-body formula-list">
             <div class="formula-item"><div class="formula-name">Electrical resistivity</div><div class="formula">ρ<sub>e</sub> [Ω·m] = 0.01 · ρ<sub>e</sub> [Ω·cm]</div><div class="formula-note">For µΩ·m input: ρ<sub>e</sub> [Ω·cm] = 10<sup>−4</sup> · value.</div></div>
-            <div class="formula-item"><div class="formula-name">Solid fraction and porosity</div><div class="formula">f<sub>s</sub> = 1−φ, &nbsp; V<sub>env</sub> = V<sub>solid</sub>/f<sub>s</sub></div><div class="formula-note">f<sub>s</sub> = 1 is a solid rod. At fixed L/D, both L and D scale by f<sub>s</sub><sup>−1/3</sup>.</div></div>
-            <div class="formula-item"><div class="formula-name">Fixed solid volume + aspect ratio</div><div class="formula">D = ∛(4V<sub>env</sub> / π(L/D)), &nbsp; L = (L/D)D</div></div>
+            <div class="formula-item"><div class="formula-name">Void fraction and solid volume</div><div class="formula">V<sub>env</sub> = V<sub>nominal</sub>, &nbsp; V<sub>solid</sub> = (1−φ)·V<sub>nominal</sub></div><div class="formula-note">φ = 0 is a solid rod. The nominal volume fixes the L × D envelope; φ only removes conducting solid (and mass) from it.</div></div>
+            <div class="formula-item"><div class="formula-name">Nominal volume + aspect ratio</div><div class="formula">D = ∛(4V<sub>env</sub> / π(L/D)), &nbsp; L = (L/D)D</div></div>
             <div class="formula-item"><div class="formula-name">Electrical area</div><div class="formula">A<sub>eff</sub> = f<sub>s</sub>πD²/4</div><div class="formula-note">Uniform axial pores and tortuosity τ = 1. Random foams generally require Aeff/τ and a measured effective conductivity.</div></div>
             <div class="formula-item"><div class="formula-name">Exposed surface &amp; thermal length</div><div class="formula">A<sub>s</sub> = πDL + πD²/2, &nbsp; L<sub>c</sub> = V<sub>env</sub>/A<sub>s</sub></div><div class="formula-note">Internal pore area is excluded because pore topology is not provided.</div></div>
             <div class="formula-item"><div class="formula-name">Mass</div><div class="formula">m = ρ<sub>m</sub>V<sub>solid</sub></div></div>
@@ -1603,9 +1603,9 @@
     function baseInputs() {
       return {
         material: materialFromInputs(),
-        solidFraction: num("solidFraction"),
-        porosity: 1 - num("solidFraction"),
-        volumeCm3: num("volumeCm3"),
+        solidFraction: 1 - num("voidFraction"),
+        porosity: num("voidFraction"),
+        volumeCm3: num("nominalVolume") * (1 - num("voidFraction")),
         aspectRatio: num("aspectRatio"),
         imax: num("imax"),
         vmax: num("vmax"),
@@ -2600,7 +2600,7 @@
       let passed = 0;
       cases.forEach((tc) => {
         const material = { name:"test", rhoOhmCm:tc.rho, density:1000, cp:1000, k:120, jmax:1e7 };
-        const r = calculate({ ...base, supplyMode:"auto", volumeCm3:2.5137436116, aspectRatio:tc.ratio, material });
+        const r = calculate({ ...base, supplyMode:"auto", volumeCm3:2.5137436116, solidFraction:1, porosity:0, aspectRatio:tc.ratio, material });
         const rel = (a,b) => Math.abs(a-b)/Math.max(1,Math.abs(b));
         const ok = rel(r.resistance,tc.R)<2e-6 && rel(r.operatingCurrent,tc.I)<2e-6
           && rel(r.voltage,tc.V)<2e-6 && rel(r.power,tc.P)<2e-6
@@ -2728,7 +2728,7 @@
         loadMaterial($("material").selectedIndex);
         updateAll();
       });
-      ["rhoValue","rhoUnit","density","cp","thermalK","jmax","volumeCm3","aspectRatio","solidFraction","imax","vmax","pmax","iset","vset","ambientC","targetC","emissivity","convection","hConv","gasC","biLimit"]
+      ["rhoValue","rhoUnit","density","cp","thermalK","jmax","nominalVolume","aspectRatio","voidFraction","imax","vmax","pmax","iset","vset","ambientC","targetC","emissivity","convection","hConv","gasC","biLimit"]
         .forEach((id) => $(id).addEventListener("input", updateAll));
       document.querySelectorAll(".mode-btn").forEach((btn) => btn.addEventListener("click", () => {
         document.querySelectorAll(".mode-btn").forEach((b) => b.classList.toggle("active", b === btn));
