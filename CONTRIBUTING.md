@@ -22,6 +22,16 @@ Each page's numeric core lives in a standalone, DOM-free ES module (`apps/joule/
 
 Please keep pull requests focused: one change (a bug fix, a new material, a new diagnostic) per PR, with a short description of what changed and why.
 
+## AI-assisted development
+
+Parts of this codebase were implemented with AI coding assistants. The physics
+formulations, validation targets (the published reactors reproduced in the
+cross-check panels), material property sources, and all design and acceptance
+decisions are owned and reviewed by the human author; AI involvement in a
+commit is recorded with a `Co-Authored-By` trailer. Contributions are held to
+the same standard regardless of how they were drafted: solver changes need a
+matching test, and physical claims need a citable source.
+
 ## Code style
 
 - No framework, no bundler-required syntax — the pages must keep working when served as plain static files.
