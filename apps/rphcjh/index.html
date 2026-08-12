@@ -382,9 +382,9 @@
       </div>
 
       <div class="card reactor-shell">
-        <canvas id="reactorCanvas" width="1120" height="300" aria-label="Animated Joule-heated element with gas flowing through it"></canvas>
+        <canvas id="reactorCanvas" width="1120" height="300" aria-label="Two animated Joule-heated reactors side by side: a pulsed RPH element on the left and a continuous CJH element held at the time-average temperature on the right"></canvas>
         <div class="reactor-caption">
-          <span>Gas enters cold at left, crosses the heated zone, and quenches downstream. Particle colour tracks the local gas temperature.</span>
+          <span>Two reactors, same feed: the left element pulses between T<sub>min</sub> and T<sub>peak</sub>, the right is held at their time-average. Particle colour tracks the local gas temperature.</span>
           <span id="cycleCount">cycle 0</span>
         </div>
       </div>
@@ -788,52 +788,61 @@ function tempColor(TC, alpha) {
 const canvas = document.getElementById("reactorCanvas");
 const ctx = canvas.getContext("2d");
 const CW = canvas.width, CH = canvas.height;
-const ZONE_X0 = CW * 0.34, ZONE_X1 = CW * 0.62;
+const PANEL_GAP = 20;
+const PANEL_W = (CW - PANEL_GAP) / 2;
 
-const particles = [];
-for (let i = 0; i < 90; i++) {
-  particles.push({ x: Math.random() * CW, y: 108 + Math.random() * 84, v: 1.4 + Math.random() * 1.6, T: 25 });
+function makeParticles(x0) {
+  const arr = [];
+  for (let i = 0; i < 45; i++) {
+    arr.push({ x: x0 + 26 + Math.random() * (PANEL_W - 52), y: 108 + Math.random() * 84, v: 1.4 + Math.random() * 1.6, T: 25 });
+  }
+  return arr;
 }
 
-function drawReactor(TC) {
-  ctx.clearRect(0, 0, CW, CH);
-  ctx.fillStyle = "#0d1620";
-  ctx.fillRect(0, 0, CW, CH);
+const reactorPanels = [
+  { x0: 0, title: "RPH — pulsed element", particles: makeParticles(0) },
+  { x0: PANEL_W + PANEL_GAP, title: "CJH — held at T_avg", particles: makeParticles(PANEL_W + PANEL_GAP) }
+];
+
+function drawReactorPanel(panel, TC) {
+  const x0 = panel.x0;
+  const zone0 = x0 + PANEL_W * 0.30, zone1 = x0 + PANEL_W * 0.70;
+  const cx = (zone0 + zone1) / 2;
 
   // tube walls
   ctx.strokeStyle = "#2a3d4f";
   ctx.lineWidth = 2;
-  ctx.strokeRect(24, 92, CW - 48, 116);
+  ctx.strokeRect(x0 + 20, 92, PANEL_W - 40, 116);
 
   // glow halo around the heated zone
-  const glow = ctx.createRadialGradient((ZONE_X0 + ZONE_X1) / 2, 150, 8, (ZONE_X0 + ZONE_X1) / 2, 150, 240);
+  const glow = ctx.createRadialGradient(cx, 150, 8, cx, 150, 185);
   const heat = Math.max(0, Math.min(1, (TC - 500) / 900));
   glow.addColorStop(0, tempColor(TC, 0.42 * heat));
   glow.addColorStop(1, "rgba(0,0,0,0)");
   ctx.fillStyle = glow;
-  ctx.fillRect(0, 0, CW, CH);
+  ctx.fillRect(x0, 0, PANEL_W, CH);
 
   // the CFP element
   ctx.save();
   ctx.shadowColor = tempColor(TC, 0.9);
   ctx.shadowBlur = 34 * heat;
   ctx.fillStyle = tempColor(TC);
-  ctx.fillRect(ZONE_X0, 128, ZONE_X1 - ZONE_X0, 44);
+  ctx.fillRect(zone0, 128, zone1 - zone0, 44);
   ctx.restore();
   ctx.strokeStyle = "rgba(255,255,255,0.18)";
   ctx.lineWidth = 1;
-  ctx.strokeRect(ZONE_X0, 128, ZONE_X1 - ZONE_X0, 44);
+  ctx.strokeRect(zone0, 128, zone1 - zone0, 44);
 
   // electrodes
   ctx.fillStyle = "#7f8b95";
-  ctx.fillRect(ZONE_X0 - 16, 118, 16, 64);
-  ctx.fillRect(ZONE_X1, 118, 16, 64);
+  ctx.fillRect(zone0 - 14, 118, 14, 64);
+  ctx.fillRect(zone1, 118, 14, 64);
 
   // particles
-  particles.forEach(p => {
+  panel.particles.forEach(p => {
     p.x += p.v * (state.running ? 1 : 0.12);
-    if (p.x > CW - 26) { p.x = 26; p.T = 25; }
-    const inZone = p.x > ZONE_X0 && p.x < ZONE_X1;
+    if (p.x > x0 + PANEL_W - 24) { p.x = x0 + 24; p.T = 25; }
+    const inZone = p.x > zone0 && p.x < zone1;
     const target = inZone ? TC : 25;
     p.T += (target - p.T) * (inZone ? 0.30 : 0.045);
     ctx.fillStyle = tempColor(Math.max(60, p.T), 0.92);
@@ -843,20 +852,39 @@ function drawReactor(TC) {
   });
 
   // labels
-  ctx.font = "15px Roboto, Arial, Helvetica, sans-serif";
+  ctx.font = "bold 14px Roboto, Arial, Helvetica, sans-serif";
+  ctx.fillStyle = "#c3d2de";
+  ctx.textAlign = "center";
+  ctx.fillText(panel.title, x0 + PANEL_W / 2, 40);
+  ctx.font = "12px Roboto, Arial, Helvetica, sans-serif";
   ctx.fillStyle = "#8fa3b4";
   ctx.textAlign = "left";
-  ctx.fillText("CH₄, CO₂ in", 30, 84);
-  ctx.textAlign = "center";
-  ctx.fillText("Joule-heated CFP element", (ZONE_X0 + ZONE_X1) / 2, 116);
-  ctx.fillText("quench zone", (ZONE_X1 + CW - 24) / 2, 226);
+  ctx.fillText("CH₄, CO₂ in", x0 + 24, 84);
   ctx.textAlign = "right";
-  ctx.fillText("C₂H₂, CO, H₂O out", CW - 30, 84);
-
+  ctx.fillText("C₂H₂, CO, H₂O out", x0 + PANEL_W - 24, 84);
   ctx.textAlign = "center";
-  ctx.font = "bold 22px Roboto, Arial, Helvetica, sans-serif";
+  ctx.fillText("quench zone", (zone1 + x0 + PANEL_W - 20) / 2, 226);
+
+  ctx.font = "bold 20px Roboto, Arial, Helvetica, sans-serif";
   ctx.fillStyle = tempColor(Math.max(700, TC));
-  ctx.fillText(TC.toFixed(0) + " °C", (ZONE_X0 + ZONE_X1) / 2, 264);
+  ctx.fillText(TC.toFixed(0) + " °C", cx, 264);
+}
+
+function drawReactor(rphT, cjhT) {
+  ctx.clearRect(0, 0, CW, CH);
+  ctx.fillStyle = "#0d1620";
+  ctx.fillRect(0, 0, CW, CH);
+
+  drawReactorPanel(reactorPanels[0], rphT);
+  drawReactorPanel(reactorPanels[1], cjhT);
+
+  // divider between the two reactors
+  ctx.strokeStyle = "#26394b";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(PANEL_W + PANEL_GAP / 2, 14);
+  ctx.lineTo(PANEL_W + PANEL_GAP / 2, CH - 14);
+  ctx.stroke();
 }
 
 /* ------------------------------------------------------------------ */
@@ -903,7 +931,7 @@ function step(now) {
     }
 
     updateLive(TC);
-    drawReactor(TC);
+    drawReactor(TC, state.accTime ? state.accT / state.accTime : tAvgOf());
     drawTrace();
     drawRaces();
   }
@@ -1204,7 +1232,7 @@ function resetIntegration() {
   state.t = 0; state.cycles = 0; state.lastFrame = 0;
   state.accK = state.accH = state.accU = state.accKH = state.accKU = state.accT = state.accTime = 0;
   state.trace = []; state.kHist = []; state.hHist = [];
-  drawReactor(state.tMin);
+  drawReactor(state.tMin, tAvgOf());
   drawTrace(); drawRaces();
   document.getElementById("valTnow").textContent = "—";
   document.getElementById("valTavg").textContent = tAvgOf().toFixed(0) + " °C";
@@ -1220,7 +1248,10 @@ function redrawAll() {
   renderRatios();
   if (!state.running) {
     document.getElementById("valTavg").textContent = tAvgOf().toFixed(0) + " °C";
-    drawReactor(state.accTime ? waveform((state.t % state.period) / state.period) : state.tMin);
+    drawReactor(
+      state.accTime ? waveform((state.t % state.period) / state.period) : state.tMin,
+      state.accTime ? state.accT / state.accTime : tAvgOf()
+    );
   }
 }
 
