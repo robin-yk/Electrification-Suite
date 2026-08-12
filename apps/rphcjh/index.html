@@ -295,11 +295,6 @@
 <section id="animation" class="panel active" role="tabpanel">
   <p class="section-kicker">Pulsed versus continuous heating, compared in real time</p>
   <h2 class="section-title">Time-averaged kinetics under pulsed and continuous heating</h2>
-  <p class="section-lede">
-    Press <strong>Run</strong>: one heater pulses between T<sub>min</sub> and T<sub>peak</sub>, while a
-    continuous heater sits at the <em>same average temperature</em>. The charts compare their
-    time-averaged &lang;k&rang;, &lang;h&rang;, and &lang;u&rang; as they run.
-  </p>
 
   <div class="anim-layout">
     <aside class="anim-inputs" aria-label="Pulse controls">
@@ -348,6 +343,11 @@
             <button class="btn" id="btnPause" type="button">Pause</button>
             <button class="btn" id="btnReset" type="button">Reset</button>
           </div>
+          <p class="chart-note" style="margin-top:10px">
+            Press <strong>Run</strong>: one heater pulses between T<sub>min</sub> and T<sub>peak</sub>, while a
+            continuous heater sits at the <em>same average temperature</em>. The charts compare their
+            time-averaged &lang;k&rang;, &lang;h&rang;, and &lang;u&rang; as they run.
+          </p>
         </div>
       </div>
     </aside>
@@ -844,15 +844,15 @@ function drawReactor(TC) {
   });
 
   // labels
-  ctx.font = "12px Roboto, Arial, Helvetica, sans-serif";
+  ctx.font = "15px Roboto, Arial, Helvetica, sans-serif";
   ctx.fillStyle = "#8fa3b4";
   ctx.textAlign = "left";
-  ctx.fillText("C₂H₆ in", 30, 84);
+  ctx.fillText("CH₄, CO₂ in", 30, 84);
   ctx.textAlign = "center";
   ctx.fillText("Joule-heated CFP element", (ZONE_X0 + ZONE_X1) / 2, 116);
   ctx.fillText("quench zone", (ZONE_X1 + CW - 24) / 2, 226);
   ctx.textAlign = "right";
-  ctx.fillText("C₂H₄ out", CW - 30, 84);
+  ctx.fillText("C₂H₂, CO, H₂O out", CW - 30, 84);
 
   ctx.textAlign = "center";
   ctx.font = "bold 22px Roboto, Arial, Helvetica, sans-serif";
