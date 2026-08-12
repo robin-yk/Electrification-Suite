@@ -978,11 +978,11 @@
               </div>
               <div class="field full" id="isetField" hidden>
                 <div class="set-slider-head"><label for="iset">Set current</label><output id="isetOut">20 A</output></div>
-                <input id="iset" type="range" min="0" max="20" step="0.01" value="20">
+                <input id="iset" type="range" min="0" max="20" step="any" value="20">
               </div>
               <div class="field full" id="vsetField" hidden>
                 <div class="set-slider-head"><label for="vset">Set voltage</label><output id="vsetOut">100 V</output></div>
-                <input id="vset" type="range" min="0" max="100" step="0.01" value="100">
+                <input id="vset" type="range" min="0" max="100" step="any" value="100">
               </div>
             </div>
           </div>
@@ -1386,7 +1386,7 @@
             <div class="formula-item"><div class="formula-name">Temperature-dependent properties</div><div class="formula">y(T) = y<sub>i</sub> + (y<sub>i+1</sub>−y<sub>i</sub>)(T−T<sub>i</sub>)/(T<sub>i+1</sub>−T<sub>i</sub>)</div><div class="formula-note">Piecewise-linear interpolation with endpoint clamping. For pure-metal fallback: ρ(T)=ρ<sub>20</sub>[1+α(T−20°C)].</div></div>
             <div class="formula-item"><div class="formula-name">Conductivity &amp; resistance</div><div class="formula">σ<sub>e</sub>(T) = 1/ρ<sub>e</sub>(T), &nbsp; R(T) = ρ<sub>e</sub>(T)L/A<sub>eff</sub></div></div>
             <div class="formula-item"><div class="formula-name">Four current ceilings</div><div class="formula">I<sub>I</sub> = I<sub>max</sub><br>I<sub>V</sub> = V<sub>max</sub>/R<br>I<sub>J</sub> = J<sub>max</sub>A<br>I<sub>P</sub> = √(P<sub>max</sub>/R)</div></div>
-            <div class="formula-item"><div class="formula-name">Selected current</div><div class="formula">I = min(I<sub>I</sub>, I<sub>V</sub>, I<sub>J</sub>, I<sub>P</sub>)</div><div class="formula-note">Equal minima are reported as simultaneous active constraints. In A-limited mode I = I<sub>set</sub> and in V-limited mode I = V<sub>set</sub>/R instead; any other limit exceeded at that drive point is flagged as a violation rather than clamped.</div></div>
+            <div class="formula-item"><div class="formula-name">Selected current</div><div class="formula">I = min(I<sub>I</sub>, I<sub>V</sub>, I<sub>J</sub>, I<sub>P</sub>)</div><div class="formula-note">Equal minima are reported as simultaneous active constraints. In A-limited mode I = I<sub>set</sub> and in V-limited mode I = V<sub>set</sub>/R instead; the setpoint slider range is capped by the other limits at the target-temperature resistance, and any residual exceedance from the temperature dependence of ρ(T) is flagged rather than clamped.</div></div>
             <div class="formula-item"><div class="formula-name">Voltage, power &amp; densities</div><div class="formula">V<sub>e</sub>(T) = I(T)R(T), &nbsp; P(T) = I(T)²R(T)<br>J = I/A<sub>eff</sub>, &nbsp; p‴ = P/V<sub>solid</sub>, &nbsp; P<sub>sp</sub> = P/m</div></div>
             <div class="formula-item"><div class="formula-name">Design recommendation</div><div class="formula">R ∝ ρ<sub>e</sub>(L/D)<sup>4/3</sup>, &nbsp; A<sub>eff</sub> ∝ (L/D)<sup>−2/3</sup></div><div class="formula-note">L/D and ρe are searched over ±4 decades. Imax, Vmax, Pmax, and Jmax are applied at every candidate. The closest candidate delivering at least 99.5% of the maximum initial power is reported.</div></div>
           </div>
@@ -2360,18 +2360,25 @@
       return calculate(baseInputs());
     }
 
-    function syncSetpointSliders() {
-      [["iset","imax","A"],["vset","vmax","V"]].forEach(([setId, maxId, unit]) => {
-        const slider = $(setId), max = Math.max(0, num(maxId));
-        if (Number(slider.max) !== max) slider.max = max;
-        if (Number(slider.value) > max) slider.value = max;
-        $(setId + "Out").textContent = `${sig4(Number(slider.value))} ${unit}`;
+    // The setpoint range is capped by every other limit (at the target-temperature
+    // resistance), mirroring a real supply that switches limits instead of
+    // exceeding them: a CV setpoint can never ask for more than Imax allows.
+    function applySetpointBounds(r) {
+      const autoI = Math.max(0, Math.min(...Object.values(r.candidates)));
+      let changed = false;
+      [["iset", autoI, "A"], ["vset", autoI * r.resistance, "V"]].forEach(([id, max, unit]) => {
+        const slider = $(id);
+        slider.step = "any";
+        slider.max = max;
+        if (Number(slider.value) > max) { slider.value = max; changed = true; }
+        $(id + "Out").textContent = `${sig4(Number(slider.value))} ${unit}`;
       });
+      return changed;
     }
 
     function updateAll() {
-      syncSetpointSliders();
-      const result = currentResult();
+      let result = currentResult();
+      if (!result.errors.length && applySetpointBounds(result)) result = currentResult();
       renderCalculator(result);
       sync2DImported(result);
       if (!result.errors.length) {
@@ -2731,8 +2738,8 @@
         $("modeNote").textContent = mode === "auto"
           ? "Auto drives at the first limit reached (real supply CC↔CV behavior)."
           : mode === "cc"
-            ? "Drives exactly at the set current; exceeded limits are flagged, not clamped."
-            : "Drives exactly at the set voltage; exceeded limits are flagged, not clamped.";
+            ? "Drives at the set current. The slider range is already capped by the other limits."
+            : "Drives at the set voltage. The slider range is already capped by the other limits.";
         updateAll();
       }));
       $("compareSort").addEventListener("change", renderComparison);
