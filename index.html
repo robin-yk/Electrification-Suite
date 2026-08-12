@@ -115,6 +115,7 @@
       color: var(--navy);
     }
     .nav-button-short { display: none; }
+    a.nav-button { text-decoration: none; display: inline-block; }
 
     .home {
       position: relative;
@@ -384,11 +385,12 @@
   <div class="suite">
     <header class="suite-header">
       <div class="suite-header-inner">
-        <a class="brand" href="https://robin-yk.github.io/yeonsukwak-folio/" target="_blank" rel="noopener" aria-label="Yeonsu Kwak — personal website">
+        <a class="brand" href="https://robin-yk.github.io/yeonsu.kwak/" target="_blank" rel="noopener" aria-label="Yeonsu Kwak — personal website">
           <span class="brand-name">Yeonsu Kwak</span>
           <span class="brand-title">Electrified Reactor Models</span>
         </a>
         <nav class="suite-nav" aria-label="Project navigation">
+          <a class="nav-button" href="https://robin-yk.github.io/yeonsu.kwak/" target="_blank" rel="noopener"><span class="nav-button-label">Personal Website</span><span class="nav-button-short" aria-hidden="true">PW</span></a>
           <button class="nav-button active" type="button" data-route="home">Home</button>
           <button class="nav-button" type="button" data-route="microwave"><span class="nav-button-label">Microwave</span><span class="nav-button-short" aria-hidden="true">MW</span></button>
           <button class="nav-button" type="button" data-route="joule"><span class="nav-button-label">Joule</span><span class="nav-button-short" aria-hidden="true">JH</span></button>
