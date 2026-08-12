@@ -26,8 +26,8 @@
     --success-bg: #e8f4ef;
     --warn-bg: #fff3df;
     --danger-bg: #fbeaea;
-    --shadow: 0 8px 26px rgba(16, 42, 67, 0.08);
-    --radius: 12px;
+    --shadow: none;
+    --radius: 8px;
   }
 
   * { box-sizing: border-box; }
@@ -66,11 +66,12 @@
   .tabs-shell { background: #fff; border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 20; }
   .tabs { max-width: 1500px; margin: 0 auto; padding: 0 28px; display: flex; overflow-x: auto; scrollbar-width: thin; }
   .tab {
-    appearance: none; border: 0; border-bottom: 3px solid transparent; background: transparent;
-    color: var(--muted); padding: 14px 18px 12px; font-size: 16px; font-weight: 700; white-space: nowrap;
+    appearance: none; border: 0; border-bottom: 2px solid transparent; background: transparent;
+    color: var(--ink); padding: 14px 18px 12px; font-size: 15.5px; font-weight: 400; white-space: nowrap;
+    text-transform: lowercase;
   }
-  .tab:hover { color: var(--navy); }
-  .tab.active { color: var(--navy); border-bottom-color: var(--red); }
+  .tab:hover { color: var(--blue); }
+  .tab.active { color: var(--blue); font-weight: 500; border-bottom-color: var(--blue); }
   .tab:focus-visible { outline: 2px solid var(--blue); outline-offset: -3px; }
 
   main { max-width: 1500px; margin: 0 auto; padding: 24px 28px 40px; }
@@ -78,7 +79,7 @@
   .panel.active { display: block; }
 
   .section-kicker {
-    margin: 0 0 5px; color: var(--red-dark); font-size: 12px; font-weight: 700;
+    margin: 0 0 5px; color: var(--muted); font-size: 12px; font-weight: 700;
     letter-spacing: 0.12em; text-transform: uppercase;
   }
   .section-title { margin: 0; color: var(--navy); font-size: clamp(24px, 2.4vw, 34px); line-height: 1.12; letter-spacing: -0.025em; }
@@ -101,7 +102,7 @@
     width: 100%; min-height: 38px; border: 1px solid var(--line-dark); border-radius: 7px;
     background: #fff; color: var(--ink); padding: 7px 9px; outline: none;
   }
-  input[type="range"] { width: 100%; accent-color: var(--red); }
+  input[type="range"] { width: 100%; accent-color: var(--blue); }
   input:focus-visible, select:focus-visible, button:focus-visible {
     border-color: var(--blue); box-shadow: 0 0 0 3px rgba(44, 110, 155, 0.12);
   }
@@ -113,23 +114,22 @@
   }
 
   .btn {
-    border: 1px solid var(--line-dark); border-radius: 7px; background: #fff;
-    color: var(--navy); padding: 8px 11px; font-size: 12px; font-weight: 700;
+    border: 1px solid #ced4da; border-radius: 6px; background: #fff;
+    color: var(--ink); padding: 8px 11px; font-size: 12px; font-weight: 500;
   }
-  .btn:hover { border-color: var(--navy); }
-  .btn.primary { border-color: var(--navy); background: var(--navy); color: #fff; }
-  .btn.primary:hover { background: var(--navy-2); }
-  .btn.red { border-color: var(--red); background: var(--red); color: #fff; }
-  .btn.red:hover { background: var(--red-dark); }
+  .btn:hover { border-color: var(--blue); color: var(--blue); }
+  .btn.primary { border-color: var(--blue); background: var(--blue); color: #fff; }
+  .btn.primary:hover { background: #27786e; color: #fff; }
+  .btn.red { border-color: var(--blue); background: var(--blue); color: #fff; }
+  .btn.red:hover { background: #27786e; }
 
   .kpi-grid { display: grid; grid-template-columns: repeat(5, minmax(135px, 1fr)); gap: 10px; margin-bottom: 14px; }
   .kpi {
-    min-height: 112px; background: #fff; border: 1px solid var(--line);
-    border-top: 3px solid var(--navy); border-radius: 9px; padding: 13px 13px 11px;
+    min-height: 100px; background: transparent; border: none;
+    border-bottom: 1px solid var(--line); border-radius: 0; padding: 6px 14px 12px 0;
   }
-  .kpi.good { border-top-color: var(--teal); }
-  .kpi.warn { border-top-color: var(--amber); }
-  .kpi.bad { border-top-color: var(--red); }
+  .kpi.warn .kpi-value { color: var(--amber); }
+  .kpi.bad .kpi-value { color: var(--red); }
   .kpi-label { color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
   .kpi-value {
     margin-top: 11px; color: var(--navy); font-size: clamp(20px, 2vw, 28px); font-weight: 700;
@@ -237,23 +237,24 @@
 
         <style id="electrification-suite-theme">
           :root {
-            --navy: #102a43 !important;
-            --navy-2: #173b5c !important;
-            --ink: #172733 !important;
-            --muted: #63717c !important;
-            --line: #d5dde3 !important;
-            --soft: #f1f4f6 !important;
-            --cream: #f5f2ec !important;
+            --navy: #212529 !important;
+            --navy-2: #343a40 !important;
+            --ink: #212529 !important;
+            --muted: #6c757d !important;
+            --line: #e3e7ea !important;
+            --soft: #f4f6f8 !important;
+            --cream: #ffffff !important;
             --paper: #ffffff !important;
+            --blue: #2f8f83 !important;
           }
-          html, body { background: #f5f2ec !important; }
+          html, body { background: #fff !important; }
           .site-header, .topbar { display: none !important; }
-          .tabs-shell { top: 0 !important; box-shadow: 0 3px 14px rgba(16,42,67,.06) !important; }
+          .tabs-shell { top: 0 !important; box-shadow: none !important; }
           .card, .formula-card, .doc-card, .canvas-wrap, .profile-svg, .fit-metric {
-            border-color: #d5dde3 !important;
+            border-color: #e3e7ea !important;
           }
           button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible {
-            outline: 3px solid rgba(52,122,161,.32) !important;
+            outline: 3px solid rgba(47,143,131,.35) !important;
             outline-offset: 2px !important;
           }
         </style></head>

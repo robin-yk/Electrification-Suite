@@ -9,26 +9,26 @@
   <link rel="stylesheet" href="../../assets/fonts/roboto.css">
   <style>
     :root {
-      --ink: #14202b;
-      --muted: #64717d;
-      --navy: #102a43;
-      --navy-2: #163b5c;
+      --ink: #212529;
+      --muted: #6c757d;
+      --navy: #212529;
+      --navy-2: #343a40;
       --red: #c53a3a;
       --red-dark: #982929;
       --teal: #13795b;
       --amber: #b46714;
-      --blue: #00539f;
-      --gold: #ffd200;
-      --cream: #f6f3ed;
+      --blue: #2f8f83;
+      --gold: #2f8f83;
+      --cream: #ffffff;
       --paper: #ffffff;
-      --line: #d8dee5;
-      --line-dark: #b9c4cf;
-      --soft: #eef2f5;
+      --line: #e3e7ea;
+      --line-dark: #ced4da;
+      --soft: #f4f6f8;
       --success-bg: #e8f4ef;
       --warn-bg: #fff3df;
       --danger-bg: #fbeaea;
-      --shadow: 0 8px 26px rgba(16, 42, 67, 0.08);
-      --radius: 12px;
+      --shadow: none;
+      --radius: 8px;
     }
 
     * { box-sizing: border-box; }
@@ -45,9 +45,9 @@
     button { cursor: pointer; }
 
     .topbar {
-      background: var(--navy);
-      color: #fff;
-      border-bottom: 4px solid var(--gold);
+      background: #fff;
+      color: var(--ink);
+      border-bottom: 1px solid var(--line);
     }
     .topbar-inner {
       max-width: 1500px;
@@ -60,7 +60,7 @@
     }
     .eyebrow {
       margin: 0 0 5px;
-      color: #b9cada;
+      color: var(--muted);
       font-size: 12px;
       font-weight: 700;
       letter-spacing: 0.16em;
@@ -84,17 +84,17 @@
       gap: 9px;
     }
     .author-line {
-      color: #fff;
+      color: var(--muted);
       font-size: 13px;
-      font-weight: 700;
+      font-weight: 400;
       letter-spacing: 0.01em;
       text-align: right;
     }
     .meta-pill {
-      border: 1px solid rgba(255,255,255,0.28);
+      border: 1px solid var(--line);
       border-radius: 999px;
       padding: 5px 9px;
-      color: #e6eef4;
+      color: var(--muted);
       font-size: 12px;
       white-space: nowrap;
     }
@@ -117,17 +117,19 @@
     .tab {
       appearance: none;
       border: 0;
-      border-bottom: 3px solid transparent;
+      border-bottom: 2px solid transparent;
       background: transparent;
-      color: var(--muted);
+      color: var(--ink);
       padding: 14px 18px 12px;
-      font-size: 16px;
-      font-weight: 700;
+      font-size: 15.5px;
+      font-weight: 400;
       white-space: nowrap;
+      text-transform: lowercase;
     }
-    .tab:hover { color: var(--navy); }
+    .tab:hover { color: var(--blue); }
     .tab.active {
-      color: var(--navy);
+      color: var(--blue);
+      font-weight: 500;
       border-bottom-color: var(--blue);
     }
 
@@ -179,7 +181,7 @@
     .card-body { padding: 15px; }
     .section-kicker {
       margin: 0 0 5px;
-      color: var(--red-dark);
+      color: var(--muted);
       font-size: 12px;
       font-weight: 700;
       letter-spacing: 0.12em;
@@ -233,11 +235,11 @@
       font-weight: 700; color: var(--muted); cursor: pointer;
     }
     .mode-btn:last-child { border-right: none; }
-    .mode-btn.active { background: var(--navy); color: #fff; }
+    .mode-btn.active { background: var(--blue); color: #fff; }
     .set-slider-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 3px; }
     .set-slider-head label { font-size: 12.5px; font-weight: 700; color: var(--muted); }
     .set-slider-head output { font-size: 13px; font-weight: 700; color: var(--navy); font-variant-numeric: tabular-nums; }
-    input[type="range"] { min-height: 26px; padding: 0; border: none; background: transparent; accent-color: var(--navy); }
+    input[type="range"] { min-height: 26px; padding: 0; border: none; background: transparent; accent-color: var(--blue); }
     input, select {
       width: 100%;
       min-height: 38px;
@@ -285,20 +287,20 @@
     }
     .btn {
       border: 1px solid var(--line-dark);
-      border-radius: 7px;
+      border-radius: 6px;
       background: #fff;
-      color: var(--navy);
+      color: var(--ink);
       padding: 8px 11px;
       font-size: 14px;
-      font-weight: 700;
+      font-weight: 500;
     }
-    .btn:hover { border-color: var(--navy); }
+    .btn:hover { border-color: var(--blue); color: var(--blue); }
     .btn.primary {
-      border-color: var(--navy);
-      background: var(--navy);
+      border-color: var(--blue);
+      background: var(--blue);
       color: #fff;
     }
-    .btn.primary:hover { background: var(--navy-2); }
+    .btn.primary:hover { background: #27786e; color: #fff; }
     .btn.red {
       border-color: var(--red);
       background: var(--red);
@@ -323,16 +325,15 @@
       margin-bottom: 14px;
     }
     .kpi {
-      min-height: 120px;
-      background: #fff;
-      border: 1px solid var(--line);
-      border-top: 3px solid var(--navy);
-      border-radius: 9px;
-      padding: 13px 13px 11px;
+      min-height: 104px;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--line);
+      border-radius: 0;
+      padding: 6px 16px 12px 0;
     }
-    .kpi.good { border-top-color: var(--teal); }
-    .kpi.warn { border-top-color: var(--amber); }
-    .kpi.bad { border-top-color: var(--red); }
+    .kpi.warn .kpi-value { color: var(--amber); }
+    .kpi.bad .kpi-value { color: var(--red); }
     .kpi-label {
       color: var(--muted);
       font-size: 12px;
@@ -343,11 +344,11 @@
     .kpi-value {
       margin-top: 11px;
       color: var(--navy);
-      font-size: clamp(20px, 2vw, 28px);
+      font-size: clamp(19px, 1.8vw, 26px);
       font-weight: 700;
       line-height: 1.05;
       letter-spacing: -0.025em;
-      overflow-wrap: anywhere;
+      overflow-wrap: break-word;
     }
     .kpi-sub {
       margin-top: 7px;
@@ -363,8 +364,8 @@
     }
     .recommendation-card {
       margin-bottom: 14px;
-      border-left: 5px solid var(--blue);
-      background: linear-gradient(90deg, #eef6fb 0%, #fff 72%);
+      border-left: 3px solid var(--blue);
+      background: #f8f9fa;
     }
     .recommendation-body {
       padding: 14px 16px;
@@ -821,23 +822,24 @@
 
         <style id="electrification-suite-theme">
           :root {
-            --navy: #102a43 !important;
-            --navy-2: #173b5c !important;
-            --ink: #172733 !important;
-            --muted: #63717c !important;
-            --line: #d5dde3 !important;
-            --soft: #f1f4f6 !important;
-            --cream: #f5f2ec !important;
+            --navy: #212529 !important;
+            --navy-2: #343a40 !important;
+            --ink: #212529 !important;
+            --muted: #6c757d !important;
+            --line: #e3e7ea !important;
+            --soft: #f4f6f8 !important;
+            --cream: #ffffff !important;
             --paper: #ffffff !important;
+            --blue: #2f8f83 !important;
           }
-          html, body { background: #f5f2ec !important; }
+          html, body { background: #fff !important; }
           .site-header, .topbar { display: none !important; }
-          .tabs-shell { top: 0 !important; box-shadow: 0 3px 14px rgba(16,42,67,.06) !important; }
+          .tabs-shell { top: 0 !important; box-shadow: none !important; }
           .card, .formula-card, .doc-card, .canvas-wrap, .profile-svg, .fit-metric {
-            border-color: #d5dde3 !important;
+            border-color: #e3e7ea !important;
           }
           button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible {
-            outline: 3px solid rgba(52,122,161,.32) !important;
+            outline: 3px solid rgba(47,143,131,.35) !important;
             outline-offset: 2px !important;
           }
         </style></head>
