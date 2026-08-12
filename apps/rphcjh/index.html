@@ -193,6 +193,10 @@
   .slider-head output { color: var(--navy); font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
   .transport-controls { display: flex; gap: 8px; flex-wrap: wrap; }
   .transport-controls .btn { flex: 1 1 88px; }
+  .drive-select { width: 100%; border: 1px solid #c3ced8; border-radius: 7px; background: #fff; padding: 7px 9px; font: inherit; font-size: 13px; color: var(--ink); }
+  [hidden] { display: none !important; }
+  .phys-summary { border: 1px solid var(--line); border-radius: 8px; background: #f6f9fb; padding: 9px 11px; font-size: 12px; line-height: 1.6; color: var(--muted); }
+  .phys-summary strong { color: var(--navy); font-variant-numeric: tabular-nums; }
 
   #reactorCanvas {
     display: block; width: 100%; height: auto; border-radius: 9px;
@@ -304,12 +308,35 @@
         <div class="card-header"><h2>Pulse shape</h2><span class="status warn" id="runState">Idle</span></div>
         <div class="card-body">
           <div class="slider-row">
-            <div class="slider-head"><label for="tPeak">T<sub>peak</sub></label><output id="tPeakOut">1250 &deg;C</output></div>
-            <input id="tPeak" type="range" min="900" max="1400" step="10" value="1250">
+            <div class="slider-head"><label for="driveMode">Waveform source</label></div>
+            <select id="driveMode" class="drive-select">
+              <option value="ideal" selected>Ideal trapezoid &mdash; set temperatures</option>
+              <option value="physical">Physical CFP drive &mdash; set voltage</option>
+            </select>
           </div>
-          <div class="slider-row">
-            <div class="slider-head"><label for="tMin">T<sub>min</sub></label><output id="tMinOut">750 &deg;C</output></div>
-            <input id="tMin" type="range" min="400" max="1200" step="10" value="750">
+          <div id="idealControls">
+            <div class="slider-row">
+              <div class="slider-head"><label for="tPeak">T<sub>peak</sub></label><output id="tPeakOut">1250 &deg;C</output></div>
+              <input id="tPeak" type="range" min="900" max="1400" step="10" value="1250">
+            </div>
+            <div class="slider-row">
+              <div class="slider-head"><label for="tMin">T<sub>min</sub></label><output id="tMinOut">750 &deg;C</output></div>
+              <input id="tMin" type="range" min="400" max="1200" step="10" value="750">
+            </div>
+          </div>
+          <div id="physicalControls" hidden>
+            <div class="slider-row">
+              <div class="slider-head"><label for="voltage">Supply voltage V</label><output id="voltageOut">40.0 V</output></div>
+              <input id="voltage" type="range" min="5" max="60" step="0.5" value="40">
+            </div>
+            <div class="slider-row">
+              <div class="slider-head"><label for="cjhRef">CJH reference</label></div>
+              <select id="cjhRef" class="drive-select">
+                <option value="tavg" selected>Held at the RPH time-average T</option>
+                <option value="power">Steady CJH at equal average power</option>
+              </select>
+            </div>
+            <div id="physSummary" class="phys-summary">Computed waveform appears here.</div>
           </div>
           <div class="slider-row">
             <div class="slider-head"><label for="duty">Duty cycle d</label><output id="dutyOut">0.35</output></div>
@@ -319,11 +346,11 @@
             <div class="slider-head"><label for="period">Pulse period</label><output id="periodOut">1.2 s</output></div>
             <input id="period" type="range" min="0.3" max="4" step="0.1" value="1.2">
           </div>
-          <div class="slider-row">
+          <div id="rampControl" class="slider-row">
             <div class="slider-head"><label for="ramp">Ramp fraction</label><output id="rampOut">0.10</output></div>
             <input id="ramp" type="range" min="0" max="0.45" step="0.01" value="0.10">
           </div>
-          <p class="chart-note" style="margin-top:10px">
+          <p class="chart-note" style="margin-top:10px" id="pulseShapeNote">
             Ramp 0 is the ideal square wave. Each ramp is constrained so the stated duty cycle remains the actual high-temperature fraction; the CJH reference stays matched at the exact waveform-average temperature.
           </p>
         </div>
@@ -364,7 +391,7 @@
         <div class="kpi" id="kpiTavg">
           <div class="kpi-label">Time-avg T</div>
           <div class="kpi-value" id="valTavg">&mdash;</div>
-          <div class="kpi-sub">CJH is held here</div>
+          <div class="kpi-sub" id="subTavg">CJH is held here</div>
         </div>
         <div class="kpi" id="kpiK">
           <div class="kpi-label">&lang;k&rang; / k(T<sub>avg</sub>)</div>
@@ -618,6 +645,34 @@
 
   <div class="calc-grid">
     <article class="card formula-card">
+      <div class="card-header"><h3>Physical CFP drive (animation tab option)</h3></div>
+      <div class="card-body formula-list">
+        <div class="formula-item">
+          <div class="formula-name">Lumped element energy balance</div>
+          <div class="formula">m c<sub>p</sub>(T) dT/dt = V<sup>2</sup>/R(T) &middot; pulse(t) &minus; &epsilon;&sigma;A(T<sup>4</sup> &minus; T<sub>&infin;</sub><sup>4</sup>) &minus; C&#775;<sub>He</sub>(T &minus; T<sub>in</sub>)</div>
+          <div class="formula-note">Integrated with RK4 over whole pulse cycles until the cycle-start temperature repeats (periodic steady state). A single temperature is justified by the element's measured spatial uniformity (companion-paper SI, Scheme S2) and its 210 &mu;m thickness.</div>
+        </div>
+        <div class="formula-item">
+          <div class="formula-name">Element and parameters</div>
+          <div class="formula">R(T) = 4.22 &minus; 7.24&times;10<sup>&minus;4</sup> T &nbsp;&Omega;; &nbsp; A = 2 &times; 38 &times; 8 mm<sup>2</sup>; &nbsp; m = 28.8 mg; &nbsp; &epsilon; = 0.57</div>
+          <div class="formula-note">Freudenberg H23 carbon fiber paper from the companion-paper SI: measured resistance line (its Fig. S11a), strip geometry and mass, and the IR-calibrated surface emissivity. c<sub>p</sub>(T) uses a graphite table capped near the Dulong&ndash;Petit limit; He pickup uses the 50 sccm capacity rate with the gas leaving at element temperature.</div>
+        </div>
+        <div class="formula-item">
+          <div class="formula-name">CJH references</div>
+          <div class="formula">V<sup>2</sup>/R(T<sub>CJH</sub>) = losses(T<sub>CJH</sub>) &nbsp; or &nbsp; P&#772; = losses(T<sub>CJH</sub>)</div>
+          <div class="formula-note">The comparison panel can hold CJH at the RPH time-average temperature (the analysis convention) or at the steady temperature that consumes the same average electrical power (the experimental convention, the paper's Scheme S1f). Steady solutions come from bisection on the same loss terms.</div>
+        </div>
+        <div class="formula-item">
+          <div class="formula-name">What this adds, and what it still omits</div>
+          <div class="formula">Asymmetric rise and radiative-decay waveform; amplitude collapse when the period is shorter than m c<sub>p</sub>/G.</div>
+          <div class="formula-note">Contact and lead conduction default to zero (lumpable via a conductance parameter in the solver); coke deposition, element ageing, and gas thermal lag remain outside the model, as in the ideal mode. Below 500 &deg;C the IR camera cannot see the element, so that part of the trace is model prediction only.</div>
+        </div>
+      </div>
+    </article>
+  </div>
+
+  <div class="calc-grid">
+    <article class="card formula-card">
       <div class="card-header"><h3>Assumptions carried, and their cost</h3></div>
       <div class="card-body formula-list">
         <div class="formula-item">
@@ -689,7 +744,8 @@
 <script type="module">
 import {
   R_GAS, K2C, arrheniusRate, transportCoefficient, velocity,
-  timeAverageTemperature, pulseWaveform, idealTwoStateAverages
+  timeAverageTemperature, pulseWaveform, idealTwoStateAverages,
+  integratePulsedElement, steadyElementTemperature, sampledWaveform, cfpResistance
 } from "./solver.js";
 
 /* ------------------------------------------------------------------ */
@@ -698,6 +754,7 @@ import {
 const state = {
   tPeak: 1250, tMin: 750, duty: 0.35, period: 1.2, ramp: 0.10,
   ea: 422, beta: 0.50,
+  driveMode: "ideal", voltage: 40, cjhRef: "tavg", physical: null,
   running: false, t: 0, lastFrame: 0, cycles: 0,
   accK: 0, accH: 0, accU: 0, accKH: 0, accKU: 0, accT: 0, accTime: 0,
   trace: [], kHist: [], hHist: []
@@ -714,7 +771,53 @@ const uOf  = TC => velocity(TC);
 const tAvgOf = () => timeAverageTemperature(state.duty, state.tPeak, state.tMin);
 
 function waveform(phase) {
+  if (state.driveMode === "physical" && state.physical) return sampledWaveform(state.physical.samples, phase);
   return pulseWaveform(phase, state);
+}
+
+/* CJH reference temperature: the running time-average in the matched-Tavg
+   modes, or the steady equal-average-power element temperature when the
+   physical drive compares at equal electrical power. */
+function usingEqualPower() {
+  return state.driveMode === "physical" && state.physical && state.cjhRef === "power";
+}
+function idleAvgT() {
+  return state.driveMode === "physical" && state.physical ? state.physical.tAvg : tAvgOf();
+}
+function cjhTemp(tAvgRun) {
+  if (usingEqualPower()) return state.physical.equalPowerT;
+  return tAvgRun !== undefined ? tAvgRun : idleAvgT();
+}
+
+let physTimer = null;
+function schedulePhysicalRecompute() {
+  if (state.driveMode !== "physical") return;
+  clearTimeout(physTimer);
+  physTimer = setTimeout(recomputePhysical, 50);
+}
+function recomputePhysical() {
+  if (state.driveMode !== "physical") { state.physical = null; return; }
+  // start near the equal-power steady temperature so the periodic state is
+  // reached in a handful of cycles at any frequency
+  const startC = steadyElementTemperature({ power: state.duty * state.voltage * state.voltage / cfpResistance(600) });
+  const run = integratePulsedElement({ voltage: state.voltage, period: state.period, duty: state.duty, startC });
+  run.equalPowerT = steadyElementTemperature({ power: run.avgPower });
+  state.physical = run;
+  // pin the two-state anchors to the computed extremes so the trace range and
+  // the Jensen/ratio tabs track the physical waveform
+  state.tPeak = Math.round(run.tPeak);
+  state.tMin = Math.round(run.tMin);
+  document.getElementById("physSummary").innerHTML =
+    `T<sub>peak</sub> <strong>${run.tPeak.toFixed(0)} &deg;C</strong> &middot; T<sub>min</sub> <strong>${run.tMin.toFixed(0)} &deg;C</strong> &middot; T<sub>avg</sub> <strong>${run.tAvg.toFixed(0)} &deg;C</strong><br>` +
+    `average electrical power <strong>${run.avgPower.toFixed(1)} W</strong> &middot; on-phase peak <strong>${run.peakPower.toFixed(0)} W</strong><br>` +
+    `steady CJH at the same average power: <strong>${run.equalPowerT.toFixed(0)} &deg;C</strong>` +
+    (run.converged ? "" : " &middot; <em>waveform not yet fully periodic</em>") +
+    (run.tPeak > 1800 ? "<br><em>T<sub>peak</sub> exceeds the 1800 &deg;C IR-camera ceiling and realistic CFP operating limits — lower the voltage or duty.</em>" : "");
+  syncCjhTitle();
+  redrawAll();
+}
+function syncCjhTitle() {
+  reactorPanels[1].title = usingEqualPower() ? "CJH — equal average power" : "CJH — held at T_avg";
 }
 
 function idealAverages() {
@@ -941,7 +1044,7 @@ function step(now) {
     }
 
     updateLive(TC);
-    drawReactor(TC, state.accTime ? state.accT / state.accTime : tAvgOf());
+    drawReactor(TC, cjhTemp(state.accTime ? state.accT / state.accTime : undefined));
     drawTrace();
     drawRaces();
   }
@@ -949,8 +1052,9 @@ function step(now) {
 }
 
 function updateLive(TC) {
-  const tAvgRun = state.accTime ? state.accT / state.accTime : tAvgOf();
-  const kRef = kOf(tAvgRun), hRef = hOf(tAvgRun), uRef = uOf(tAvgRun);
+  const tAvgRun = state.accTime ? state.accT / state.accTime : idleAvgT();
+  const tRef = usingEqualPower() ? state.physical.equalPowerT : tAvgRun;
+  const kRef = kOf(tRef), hRef = hOf(tRef), uRef = uOf(tRef);
   // Before the leaky integrators accumulate any weight (the very first animation
   // frame, accTime === 0), fall back to the instantaneous reference values instead
   // of dividing 0/0 — otherwise the KPI tiles flash "NaN" for a frame.
@@ -965,8 +1069,11 @@ function updateLive(TC) {
   const rDa = kuAvg / (kRef / uRef);
 
   document.getElementById("valTnow").textContent = TC.toFixed(0) + " °C";
-  document.getElementById("subTnow").textContent = TC > tAvgRun ? "above the CJH set point" : "below the CJH set point";
+  document.getElementById("subTnow").textContent = TC > tRef ? "above the CJH set point" : "below the CJH set point";
   document.getElementById("valTavg").textContent = tAvgRun.toFixed(0) + " °C";
+  document.getElementById("subTavg").textContent = usingEqualPower()
+    ? "CJH held at " + tRef.toFixed(0) + " °C (equal power)"
+    : "CJH is held here";
   document.getElementById("valKratio").textContent = rK.toFixed(rK >= 100 ? 0 : 2) + "×";
   document.getElementById("valRlam").textContent = rLam.toFixed(rLam >= 100 ? 0 : 2) + "×";
   document.getElementById("valRda").textContent = rDa.toFixed(rDa >= 100 ? 0 : 2) + "×";
@@ -986,8 +1093,9 @@ function updateLive(TC) {
 
   const exposureRPH = kuAvg;
   const exposureCJH = kRef / uRef;
-  document.getElementById("verdictMain").textContent =
-    `Same average temperature, ${rDa.toFixed(2)}× the relative kinetic exposure.`;
+  document.getElementById("verdictMain").textContent = usingEqualPower()
+    ? `Same average electrical power, ${rDa.toFixed(2)}× the relative kinetic exposure.`
+    : `Same average temperature, ${rDa.toFixed(2)}× the relative kinetic exposure.`;
   document.getElementById("verdictSub").innerHTML =
     `&lang;k/u&rang;<sub>RPH</sub> = ${exposureRPH.toExponential(2)} &nbsp;vs&nbsp; [k/u]<sub>CJH</sub> = ${exposureCJH.toExponential(2)} ` +
     `&nbsp;|&nbsp; trailing ~${Math.min(state.t, TRACE_WINDOW).toFixed(1)} s window`;
@@ -995,7 +1103,7 @@ function updateLive(TC) {
 
 function drawTrace() {
   const f = frame(760, 260, { l: 62, r: 14, t: 14, b: 34 });
-  const tAvgRun = state.accTime ? state.accT / state.accTime : tAvgOf();
+  const tRef = cjhTemp(state.accTime ? state.accT / state.accTime : undefined);
   const lo = Math.min(state.tMin, 300) - 40, hi = state.tPeak + 60;
   const x0 = Math.max(0, state.t - TRACE_WINDOW), x1 = Math.max(TRACE_WINDOW, state.t);
 
@@ -1005,7 +1113,12 @@ function drawTrace() {
     xTicks: ticks(x0, x1, 4, v => v.toFixed(1) + "s"),
     xLabel: "time (s)", yLabel: "T (°C)"
   });
-  s += path([[x0, tAvgRun], [x1, tAvgRun]], f, x0, x1, lo, hi, "#2c6e9b", 2, "6 5");
+  if (state.driveMode === "physical" && lo < 500) {
+    const yb = f.y(Math.min(500, hi), lo, hi);
+    s += `<rect x="${f.pad.l}" y="${yb.toFixed(1)}" width="${f.w - f.pad.l - f.pad.r}" height="${(f.h - f.pad.b - yb).toFixed(1)}" fill="#8fa3b4" opacity="0.10"/>`;
+    s += `<text x="${f.pad.l + 6}" y="${(yb + 13).toFixed(1)}" font-size="10" fill="#64717d">below the IR camera range (&lt;500 &deg;C) — model prediction only</text>`;
+  }
+  s += path([[x0, tRef], [x1, tRef]], f, x0, x1, lo, hi, "#2c6e9b", 2, "6 5");
   s += path(state.trace, f, x0, x1, lo, hi, "#c53a3a", 2.2);
   if (state.trace.length) {
     const last = state.trace[state.trace.length - 1];
@@ -1234,6 +1347,7 @@ function syncOutputs() {
   document.getElementById("dutyOut").textContent = state.duty.toFixed(2);
   document.getElementById("periodOut").textContent = state.period.toFixed(1) + " s";
   document.getElementById("rampOut").textContent = state.ramp.toFixed(2);
+  document.getElementById("voltageOut").textContent = state.voltage.toFixed(1) + " V";
   document.getElementById("eaOut").textContent = state.ea.toFixed(0) + " kJ/mol";
   document.getElementById("betaOut").textContent = state.beta.toFixed(2);
 }
@@ -1242,10 +1356,10 @@ function resetIntegration() {
   state.t = 0; state.cycles = 0; state.lastFrame = 0;
   state.accK = state.accH = state.accU = state.accKH = state.accKU = state.accT = state.accTime = 0;
   state.trace = []; state.kHist = []; state.hHist = [];
-  drawReactor(state.tMin, tAvgOf());
+  drawReactor(state.tMin, cjhTemp());
   drawTrace(); drawRaces();
   document.getElementById("valTnow").textContent = "—";
-  document.getElementById("valTavg").textContent = tAvgOf().toFixed(0) + " °C";
+  document.getElementById("valTavg").textContent = idleAvgT().toFixed(0) + " °C";
   ["valKratio", "valRlam", "valRda"].forEach(id => { document.getElementById(id).textContent = "—"; });
   document.getElementById("cycleCount").textContent = "cycle 0";
   document.getElementById("verdictMain").textContent = "Select Run to begin the comparison.";
@@ -1257,10 +1371,10 @@ function redrawAll() {
   renderJensen();
   renderRatios();
   if (!state.running) {
-    document.getElementById("valTavg").textContent = tAvgOf().toFixed(0) + " °C";
+    document.getElementById("valTavg").textContent = idleAvgT().toFixed(0) + " °C";
     drawReactor(
       state.accTime ? waveform((state.t % state.period) / state.period) : state.tMin,
-      state.accTime ? state.accT / state.accTime : tAvgOf()
+      cjhTemp(state.accTime ? state.accT / state.accTime : undefined)
     );
   }
 }
@@ -1277,6 +1391,7 @@ const bind = (id, key, transform) => {
       state.tMin = Math.max(400, state.tPeak - 20);
       document.getElementById("tMin").value = state.tMin;
     }
+    if (key === "voltage" || key === "duty" || key === "period") schedulePhysicalRecompute();
     redrawAll();
   });
 };
@@ -1285,8 +1400,34 @@ bind("tMin", "tMin", Number);
 bind("duty", "duty", Number);
 bind("period", "period", Number);
 bind("ramp", "ramp", Number);
+bind("voltage", "voltage", Number);
 bind("ea", "ea", Number);
 bind("beta", "beta", Number);
+
+const IDEAL_NOTE = "Ramp 0 is the ideal square wave. Each ramp is constrained so the stated duty cycle remains the actual high-temperature fraction; the CJH reference stays matched at the exact waveform-average temperature.";
+const PHYSICAL_NOTE = "The waveform is integrated from m·cp(T)·dT/dt = V²/R(T)·pulse − radiation − He pickup for the paper's 38 × 8 × 0.21 mm CFP element (28.8 mg, ε = 0.57, R(T) from its Fig. S11a). Peak and minimum temperatures are outputs here, not settings.";
+document.getElementById("driveMode").addEventListener("change", e => {
+  state.driveMode = e.target.value;
+  const physical = state.driveMode === "physical";
+  document.getElementById("idealControls").hidden = physical;
+  document.getElementById("physicalControls").hidden = !physical;
+  document.getElementById("rampControl").hidden = physical;
+  document.getElementById("pulseShapeNote").textContent = physical ? PHYSICAL_NOTE : IDEAL_NOTE;
+  if (physical) {
+    recomputePhysical();
+  } else {
+    state.physical = null;
+    state.tPeak = Number(document.getElementById("tPeak").value);
+    state.tMin = Number(document.getElementById("tMin").value);
+    syncCjhTitle();
+    redrawAll();
+  }
+});
+document.getElementById("cjhRef").addEventListener("change", e => {
+  state.cjhRef = e.target.value;
+  syncCjhTitle();
+  redrawAll();
+});
 
 const runState = document.getElementById("runState");
 document.getElementById("btnRun").addEventListener("click", () => {

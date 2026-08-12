@@ -52,3 +52,149 @@ export function idealTwoStateAverages({ duty, tPeak, tMin, ea, beta }) {
     ku: d * kPeak / uPeak + (1 - d) * kMin / uMin
   };
 }
+
+/* ------------------------------------------------------------------ */
+/* Physical CFP drive: lumped electro-thermal model of the paper's     */
+/* carbon-fiber-paper heating element (SI, "Experimental Setup" and    */
+/* Fig. S11). One ODE, m cp(T) dT/dt = V^2/R(T) - losses(T), justified */
+/* as 0D by the element's measured spatial uniformity (Scheme S2) and  */
+/* its 210 um thickness.                                               */
+/* ------------------------------------------------------------------ */
+export const SIGMA_SB = 5.670374419e-8;   // W/m^2/K^4
+
+export const CFP_ELEMENT = {
+  // Freudenberg H23 strip, 38 x 8 x 0.21 mm, 28.8 mg
+  length: 0.038, width: 0.008, thickness: 210e-6,   // m
+  mass: 28.8e-6,                                    // kg
+  emissivity: 0.57,        // IR-calibrated carbon-surface value
+  resistA: 7.24e-4,        // ohm per degC, R(T) = b - a T (Fig. S11a)
+  resistB: 4.22            // ohm at 0 degC
+};
+
+// He carrier at 50 sccm passes through the permeable element; with the
+// fiber-scale exchange area the gas leaves at element temperature, so the
+// convective loss is the full capacity rate times (T - T_inlet).
+export const HE_CAPACITY_RATE = 50e-6 / 60 / 0.022414 * 20.786;  // W/K
+
+// Graphitic carbon specific heat, J/kg/K, capped near the Dulong-Petit
+// limit 3R/M = 2078 J/kg/K.
+export const CFP_CP_TABLE = [
+  [25, 710], [200, 1050], [400, 1390], [600, 1590], [800, 1730],
+  [1000, 1830], [1200, 1900], [1400, 1950], [1600, 2000], [1800, 2040]
+];
+
+export function interpolateTable(table, x) {
+  if (x <= table[0][0]) return table[0][1];
+  const last = table[table.length - 1];
+  if (x >= last[0]) return last[1];
+  for (let i = 1; i < table.length; i++) {
+    if (x <= table[i][0]) {
+      const [x0, y0] = table[i - 1], [x1, y1] = table[i];
+      return y0 + (y1 - y0) * (x - x0) / (x1 - x0);
+    }
+  }
+  return last[1];
+}
+
+export function cfpResistance(TC, el = CFP_ELEMENT) {
+  // carbon's resistance falls with temperature; clamp well above zero so a
+  // runaway extrapolation of the linear fit can never divide by ~0
+  return Math.max(0.2, el.resistB - el.resistA * TC);
+}
+
+export function cfpHeatCapacity(TC) {
+  return interpolateTable(CFP_CP_TABLE, TC);
+}
+
+export function lumpedLossPower(TC, p) {
+  const el = p.element, TK = TC + K2C, TaK = p.ambientC + K2C;
+  const area = 2 * el.length * el.width;   // both strip faces; edges negligible
+  const rad = SIGMA_SB * el.emissivity * area * (TK ** 4 - TaK ** 4);
+  const gas = p.gasCapacityRate * Math.max(0, TC - p.gasInletC);
+  const contact = p.contactConductance * (TC - p.ambientC);
+  return rad + gas + contact;
+}
+
+export function physicalDriveDefaults(overrides = {}) {
+  return Object.assign({
+    voltage: 40, period: 1, duty: 0.05,
+    ambientC: 25, gasInletC: 25,
+    element: CFP_ELEMENT,
+    gasCapacityRate: HE_CAPACITY_RATE,
+    contactConductance: 0
+  }, overrides);
+}
+
+// Steady CJH element temperature under either a voltage or a fixed-power
+// drive: bisection on P_in(T) = P_loss(T). Losses grow as T^4 while the
+// voltage-drive input grows only through the falling R(T), so the crossing
+// is unique.
+export function steadyElementTemperature(cfg = {}) {
+  const p = physicalDriveDefaults(cfg);
+  const pin = TC => (cfg.power !== undefined ? cfg.power : p.voltage * p.voltage / cfpResistance(TC, p.element));
+  const f = TC => pin(TC) - lumpedLossPower(TC, p);
+  let lo = p.ambientC, hi = 3500;
+  if (f(lo) <= 0) return lo;
+  for (let i = 0; i < 90; i++) {
+    const mid = (lo + hi) / 2;
+    if (f(mid) > 0) lo = mid; else hi = mid;
+  }
+  return (lo + hi) / 2;
+}
+
+// RK4 over whole pulse cycles until the cycle-start temperature repeats
+// (periodic steady state). The step grid is aligned so the on->off switch
+// falls exactly on a step boundary for duty at 0.01 resolution.
+export function integratePulsedElement(cfg = {}) {
+  const p = physicalDriveDefaults(cfg);
+  const steps = 2400, dt = p.period / steps, onSteps = Math.round(p.duty * steps);
+  const maxCycles = cfg.maxCycles ?? 400, tolC = cfg.tolC ?? 0.02;
+  const deriv = (TC, on) => {
+    const pin = on ? p.voltage * p.voltage / cfpResistance(TC, p.element) : 0;
+    return (pin - lumpedLossPower(TC, p)) / (p.element.mass * cfpHeatCapacity(TC));
+  };
+  let T = cfg.startC ?? p.ambientC, cycles = 0, converged = false;
+  let samples = [], tPeak = 0, tMin = 0, tAvg = 0, electricalEnergy = 0, lossEnergy = 0;
+  for (let c = 0; c < maxCycles; c++) {
+    const startT = T;
+    const record = [];
+    tPeak = -Infinity; tMin = Infinity; tAvg = 0; electricalEnergy = 0; lossEnergy = 0;
+    for (let i = 0; i < steps; i++) {
+      const on = i < onSteps;
+      if (i % 6 === 0) record.push([i / steps, T]);
+      tPeak = Math.max(tPeak, T); tMin = Math.min(tMin, T);
+      tAvg += T * dt;
+      if (on) electricalEnergy += p.voltage * p.voltage / cfpResistance(T, p.element) * dt;
+      lossEnergy += lumpedLossPower(T, p) * dt;
+      const k1 = deriv(T, on);
+      const k2 = deriv(T + dt / 2 * k1, on);
+      const k3 = deriv(T + dt / 2 * k2, on);
+      const k4 = deriv(T + dt * k3, on);
+      T += dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4);
+    }
+    cycles = c + 1;
+    samples = record;
+    if (Math.abs(T - startT) < tolC) { converged = true; break; }
+  }
+  tPeak = Math.max(tPeak, T); tMin = Math.min(tMin, T);
+  samples.push([1, T]);
+  return {
+    samples, tPeak, tMin, tAvg: tAvg / p.period,
+    avgPower: electricalEnergy / p.period,
+    peakPower: p.voltage * p.voltage / cfpResistance(tPeak, p.element),
+    energyResidual: (electricalEnergy - lossEnergy) / Math.max(electricalEnergy, 1e-12),
+    cycles, converged
+  };
+}
+
+// linear phase lookup into an integratePulsedElement() sample list
+export function sampledWaveform(samples, phase) {
+  const ph = phase - Math.floor(phase);
+  let lo = 0, hi = samples.length - 1;
+  while (hi - lo > 1) {
+    const mid = (lo + hi) >> 1;
+    if (samples[mid][0] <= ph) lo = mid; else hi = mid;
+  }
+  const [p0, t0] = samples[lo], [p1, t1] = samples[hi];
+  return p1 === p0 ? t0 : t0 + (t1 - t0) * (ph - p0) / (p1 - p0);
+}

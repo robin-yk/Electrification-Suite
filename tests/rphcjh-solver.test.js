@@ -120,3 +120,76 @@ test("all property/waveform functions stay finite across the full UI slider rang
   }
   assert.deepEqual(failures, []);
 });
+
+/* ---- physical CFP drive (lumped electro-thermal model) ---- */
+import {
+  cfpResistance, cfpHeatCapacity, lumpedLossPower, physicalDriveDefaults,
+  steadyElementTemperature, integratePulsedElement, sampledWaveform, HE_CAPACITY_RATE
+} from "../apps/rphcjh/solver.js";
+
+test("cfpResistance() reproduces the SI Fig. S11a line and never collapses to zero", () => {
+  assert.ok(Math.abs(cfpResistance(0) - 4.22) < 1e-9);
+  assert.ok(Math.abs(cfpResistance(1000) - (4.22 - 0.724)) < 1e-9);
+  assert.ok(cfpResistance(1e6) >= 0.2, "clamp must keep R positive under wild extrapolation");
+});
+
+test("steadyElementTemperature() closes the energy balance for a fixed-power drive", () => {
+  const T = steadyElementTemperature({ power: 40 });
+  const loss = lumpedLossPower(T, physicalDriveDefaults());
+  assert.ok(Math.abs(loss - 40) / 40 < 1e-6, `loss ${loss} W should equal the 40 W drive`);
+});
+
+test("steady T_avg vs power scaling exponent sits in the radiation-dominated range the paper measured (~0.35)", () => {
+  const t1 = steadyElementTemperature({ power: 20 }), t2 = steadyElementTemperature({ power: 80 });
+  const exponent = Math.log(t2 / t1) / Math.log(4);
+  assert.ok(exponent > 0.25 && exponent < 0.45, `exponent ${exponent} outside 0.25-0.45`);
+});
+
+test("integratePulsedElement() at duty = 1 recovers the steady voltage-drive temperature", () => {
+  const steady = steadyElementTemperature({ voltage: 18 });
+  const run = integratePulsedElement({ voltage: 18, period: 1, duty: 1 });
+  assert.ok(run.converged);
+  assert.ok(Math.abs(run.tPeak - steady) < 1, `pulsed ${run.tPeak} vs steady ${steady}`);
+  assert.ok(run.tPeak - run.tMin < 1, "duty = 1 should have no swing");
+});
+
+test("integratePulsedElement() closes the per-cycle energy balance at periodic steady state", () => {
+  const run = integratePulsedElement({ voltage: 40, period: 1, duty: 0.05 });
+  assert.ok(run.converged, "must reach a periodic state");
+  assert.ok(Math.abs(run.energyResidual) < 0.01, `per-cycle residual ${run.energyResidual} above 1%`);
+});
+
+test("faster pulsing collapses the temperature swing (element cannot follow above ~1/tau)", () => {
+  const slow = integratePulsedElement({ voltage: 40, period: 1, duty: 0.05 });
+  const fast = integratePulsedElement({ voltage: 40, period: 0.05, duty: 0.05 });
+  assert.ok(fast.tPeak - fast.tMin < (slow.tPeak - slow.tMin) / 5,
+    `20 Hz swing ${fast.tPeak - fast.tMin} not far below 1 Hz swing ${slow.tPeak - slow.tMin}`);
+});
+
+test("higher voltage raises the pulsed peak temperature monotonically", () => {
+  const a = integratePulsedElement({ voltage: 30, period: 1, duty: 0.05 });
+  const b = integratePulsedElement({ voltage: 45, period: 1, duty: 0.05 });
+  assert.ok(b.tPeak > a.tPeak + 50);
+});
+
+test("the pulsed waveform peaks at the end of the on-phase and its samples interpolate cleanly", () => {
+  const run = integratePulsedElement({ voltage: 40, period: 1, duty: 0.05 });
+  let peakPhase = 0, peakT = -Infinity;
+  run.samples.forEach(([ph, T]) => { if (T > peakT) { peakT = T; peakPhase = ph; } });
+  assert.ok(Math.abs(peakPhase - 0.05) < 0.02, `peak at phase ${peakPhase}, expected near duty 0.05`);
+  const mid = sampledWaveform(run.samples, 0.5);
+  assert.ok(mid > run.tMin - 1 && mid < run.tPeak + 1);
+  assert.ok(Math.abs(sampledWaveform(run.samples, 1.25) - sampledWaveform(run.samples, 0.25)) < 1e-9, "phase wraps");
+});
+
+test("He capacity rate matches 50 sccm of helium", () => {
+  assert.ok(Math.abs(HE_CAPACITY_RATE - 50e-6 / 60 / 0.022414 * 20.786) < 1e-12);
+  assert.ok(HE_CAPACITY_RATE > 7e-4 && HE_CAPACITY_RATE < 9e-4);
+});
+
+test("cfpHeatCapacity() interpolates and saturates near the Dulong-Petit limit", () => {
+  assert.equal(cfpHeatCapacity(25), 710);
+  assert.equal(cfpHeatCapacity(3000), 2040);
+  const mid = cfpHeatCapacity(300);
+  assert.ok(mid > 1050 && mid < 1390);
+});
