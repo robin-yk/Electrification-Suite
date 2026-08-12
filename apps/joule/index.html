@@ -1508,6 +1508,15 @@
           voltages then reproduces all ten reported operating points within ±6%; two are tabulated here.
         </p>
         <div class="table-wrap" style="margin-top:10px"><table class="metric-table"><thead><tr><th>Quantity</th><th>This tool</th><th>Reference</th></tr></thead><tbody id="crossCheckBody2"></tbody></table></div>
+        <p class="calc-note" style="margin-top:16px">
+          <strong>3 · Kwak et al., <em>ACS Energy Lett.</em> 2025 CFP element under continuous drive</strong>
+          (<a href="https://doi.org/10.1021/acsenergylett.5c02853">doi:10.1021/acsenergylett.5c02853</a>, SI Fig. S11).
+          The 38 × 8 × 0.21 mm carbon-fiber-paper strip enters as a radiating-area-equivalent cylinder with the measured
+          R(T) = 4.25 − 7.24×10⁻⁴ T Ω, the measured 28.8 mg mass, and the calibrated emissivity 0.57, inside the paper's
+          quartz tube with He flow. The steady T(P) scaling law is the comparison target; the uniform offset in absolute
+          temperature is expected — conduction into the copper clamps and the IR camera's area-averaging are not modeled.
+        </p>
+        <div class="table-wrap" style="margin-top:10px"><table class="metric-table"><thead><tr><th>Quantity</th><th>This tool</th><th>Reference</th></tr></thead><tbody id="crossCheckBody3"></tbody></table></div>
       </details>
     </section>
 
@@ -2685,6 +2694,41 @@
         ["Power at 14.10 V", `${sig4(z2.power)} W`, "489.3 W measured"]
       ];
       $("crossCheckBody2").innerHTML = zRows.map(([a,b,c]) => `<tr><th>${a}</th><td>${b}</td><td>${c}</td></tr>`).join("");
+
+      // Kwak et al., ACS Energy Lett. (2025), SI Fig. S11: the CFP strip as a
+      // radiating-area-equivalent cylinder carrying the measured R(T), mass, and emissivity.
+      const cfpD = 4.93e-3, cfpL = 0.038, cfpA = Math.PI / 4 * cfpD * cfpD;
+      const cfpRho = (T) => (4.25 - 7.24e-4 * T) * cfpA * 100 / cfpL;
+      const cfp = {
+        name: "CFP H23 (effective)", rhoOhmCm: cfpRho(25), density: 39.7, cp: 900, k: 5, jmax: 1e9, emissivity: 0.57,
+        rhoTable: [[25, cfpRho(25)], [500, cfpRho(500)], [1000, cfpRho(1000)], [1500, cfpRho(1500)], [1800, cfpRho(1800)]]
+      };
+      const cBase = {
+        material: cfp, solidFraction: 1, porosity: 0,
+        volumeCm3: 0.7254, aspectRatio: cfpL / cfpD,
+        imax: 20, vmax: 75, pmax: 1500, supplyMode: "cv", iset: 20, vset: 20,
+        ambientK: kelvin(20), targetK: kelvin(1200),
+        emissivity: 0.57, convection: false, h: 0, gasK: kelvin(20), biLimit: 0.01,
+        enclosure: { wallMaterial: "quartz", wallK: 1.4, wallThickness: 0.001, wallEmissivity: 0.93,
+          gap: (17e-3 - cfpD) / 2, gapK: 0.15, endMode: "ambient", endK: kelvin(20), endH: 200,
+          contactRho: 0, maxIter: 160, tolerance: 1e-4 }
+      };
+      const cfpPoint = (V) => {
+        const x = { ...cBase, vset: V }, res = calculate(x);
+        if (res.errors.length) return null;
+        const P = operatingAt(res.tss, x, res.g).power;
+        return { P, T: celsius(res.tss), R25: res.initial.resistance };
+      };
+      const c1 = cfpPoint(16), c2 = cfpPoint(20), c3 = cfpPoint(31);
+      if (!c1 || !c2 || !c3) return;
+      const cExp = Math.log(c3.T / c1.T) / Math.log(c3.P / c1.P);
+      const cRows = [
+        ["Strip as equivalent cylinder", `Ø${sig4(cfpD*1000)} × ${sig4(cfpL*1000)} mm`, "38 × 8 × 0.21 mm strip, same radiating area"],
+        ["Cold resistance R(25 °C)", `${sig4(c2.R25)} Ω`, "4.23 Ω from the measured R(T) fit"],
+        ["T–P scaling exponent", cExp.toFixed(3), "0.3525 measured, R² = 0.997 (Fig. S11b)"],
+        [`Steady T at 20 V (${sig4(c2.P)} W)`, `${sig4(c2.T)} °C`, `${sig4(202.24 * Math.pow(c2.P, 0.3525))} °C from the paper fit — clamp conduction and IR averaging explain the offset`]
+      ];
+      $("crossCheckBody3").innerHTML = cRows.map(([a,b,c]) => `<tr><th>${a}</th><td>${b}</td><td>${c}</td></tr>`).join("");
     }
 
     function renderPropertyTable() {
