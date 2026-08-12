@@ -1117,7 +1117,7 @@
 
           <article class="card diagnostic-card" aria-label="Joule-heating dimensionless and normalized diagnostics">
             <div class="card-header">
-              <div><h3>Key Dimensionless &amp; Normalized Diagnostics</h3><p class="diagnostic-intro">Ranked by target feasibility, internal temperature uniformity, and electrical operating margin.</p></div>
+              <div><h3>Key Dimensionless &amp; Normalized Diagnostics</h3><p class="diagnostic-intro">The two screening verdicts: can the supply hold the target, and is the element internally uniform.</p></div>
             </div>
             <div class="diagnostic-wrap">
               <table class="diagnostic-table">
@@ -1126,7 +1126,7 @@
               </table>
             </div>
             <details class="diagnostic-secondary">
-              <summary>Supporting heat-path fractions</summary>
+              <summary>Supporting diagnostics — supply utilization, geometry, heat-path fractions</summary>
               <div class="diagnostic-wrap"><table class="diagnostic-table"><thead><tr><th>Priority</th><th>Metric</th><th>Value</th><th>Physical meaning</th></tr></thead><tbody id="jhSecondaryDiagnostics"></tbody></table></div>
             </details>
           </article>
@@ -1222,7 +1222,8 @@
                   <tr><th>Length × diameter</th><td id="t2dDimensions">—</td></tr>
                   <tr><th>Solid fraction · porosity</th><td id="t2dFraction">—</td></tr>
                   <tr><th>Solid · envelope volume</th><td id="t2dVolumes">—</td></tr>
-                  <tr><th>ρ<sub>e</sub>(T<sub>a</sub>) · k(T<sub>a</sub>)</th><td id="t2dImportedProps">—</td></tr>
+                  <tr><th>ρ<sub>e</sub>(T<sub>a</sub>)</th><td id="t2dImportedRho">—</td></tr>
+                  <tr><th>k(T<sub>a</sub>)</th><td id="t2dImportedK">—</td></tr>
                   <tr><th>0D steady state</th><td id="t2dZeroD">—</td></tr>
                   <tr><th>Process gas</th><td>He · 50 sccm · top → bottom</td></tr>
                 </tbody>
@@ -1669,7 +1670,8 @@
       $("t2dDimensions").textContent=`${sig4(result.g.L*1000)} × ${sig4(result.g.D*1000)} mm`;
       $("t2dFraction").textContent=`${format(result.g.solidFraction,3)} · ${format(result.g.porosity*100,1)}%`;
       $("t2dVolumes").textContent=`solid ${sig4(result.g.solidVolume*1e6)} · envelope ${sig4(result.g.envelopeVolume*1e6)} cm³`;
-      $("t2dImportedProps").textContent=`${sig4(result.initial.props.rhoOhmCm)} Ω·cm · ${sig4(result.initial.props.k)} W/m·K`;
+      $("t2dImportedRho").textContent=`${sig4(result.initial.props.rhoOhmCm)} Ω·cm`;
+      $("t2dImportedK").textContent=`${sig4(result.initial.props.k)} W/m·K`;
       $("t2dZeroD").textContent=fmtTemp(result.tss);
       if (!current2DResult) return;
       const fresh=current2DResult.material.name===result.material.name && current2DResult.signature===signature2D(result.input,result.material);
@@ -1975,11 +1977,12 @@
         if (!finite(value)) return "—";
         return percent ? `${format(value * 100, 2)}%` : format(value, 5);
       };
-      const utilizationReading = (value, limitName) => value >= .995
-        ? `Active ${limitName} limit`
-        : value >= .8
-          ? `Near ${limitName} limit`
+      const utilizationReading = (value, limitName) => {
+        const reading = value >= .995 ? `Active ${limitName} limit`
+          : value >= .8 ? `Near ${limitName} limit`
           : `${limitName} headroom available`;
+        return reading.charAt(0).toUpperCase() + reading.slice(1);
+      };
       const powerMargin = ratio(r.power,r.requiredPower);
       const iUse = ratio(r.operatingCurrent,r.input.imax);
       const vUse = ratio(r.voltage,r.input.vmax);
@@ -1987,16 +1990,16 @@
       const jUse = ratio(r.currentDensity,r.material.jmax);
       const primary = [
         ["Target power margin, Pavail/Preq",displayRatio(powerMargin),powerMargin >= 1 ? "Target thermally feasible" : "Available electrical power is insufficient",`Ratio of limit-constrained Joule power to the enclosure heat loss at the target temperature; ≥ 1 can maintain the target.`],
-        ["Biot number, Bi",displayRatio(r.bi),r.uniform ? "Lumped-temperature screen passes" : "Internal temperature gradients expected",`Bi = heff(V/As)/k compares internal conduction with total external heat removal; screening limit = ${format(r.input.biLimit,4)}.`],
-        ["Current utilization, I/Imax",displayRatio(iUse,true),utilizationReading(iUse,"current"),"Fraction of the source current ceiling used at the target-temperature resistance."],
-        ["Voltage utilization, V/Vmax",displayRatio(vUse,true),utilizationReading(vUse,"voltage"),"Fraction of the source voltage ceiling; high values identify a resistance/length-driven voltage bottleneck."],
-        ["Power utilization, P/Pmax",displayRatio(pUse,true),utilizationReading(pUse,"power"),"Fraction of rated source power delivered after the current, voltage, power, and current-density limits are applied together."],
-        ["Current-density utilization, J/Jmax",displayRatio(jUse,true),utilizationReading(jUse,"current-density"),"Material electrical-loading margin; values near one mean the material Jmax sets or nearly sets the allowable current."],
-        ["Cylinder aspect ratio, L/D",displayRatio(r.g.aspectRatio),r.g.aspectRatio > 3 ? "Slender cylinder" : r.g.aspectRatio < .33 ? "Disk-like cylinder" : "Compact cylinder","Dimensionless geometry controlling resistance, exposed area, conduction length, and the 60 × 60 field proportions."],
-        ["Envelope porosity, φ",displayRatio(r.g.porosity),r.g.porosity > .7 ? "Highly porous envelope" : r.g.porosity > .2 ? "Porous envelope" : "Low-porosity envelope","Void fraction expands the envelope at fixed solid volume; it changes D, L, surface area, resistance geometry, and the imported 2D domain."]
+        ["Biot number, Bi",displayRatio(r.bi),r.uniform ? "Lumped-temperature screen passes" : "Internal temperature gradients expected",`Bi = heff(V/As)/k compares internal conduction with total external heat removal; screening limit = ${format(r.input.biLimit,4)}.`]
       ];
       const total = Math.max(r.targetLoss.total,1e-30);
       const secondary = [
+        ["Current utilization, I/Imax",displayRatio(iUse,true),utilizationReading(iUse,"current") + ". Fraction of the source current ceiling used at the target-temperature resistance."],
+        ["Voltage utilization, V/Vmax",displayRatio(vUse,true),utilizationReading(vUse,"voltage") + ". High values identify a resistance/length-driven voltage bottleneck."],
+        ["Power utilization, P/Pmax",displayRatio(pUse,true),utilizationReading(pUse,"power") + ". Fraction of rated source power delivered after all four limits are applied together."],
+        ["Current-density utilization, J/Jmax",displayRatio(jUse,true),utilizationReading(jUse,"current-density") + ". Values near one mean the material Jmax sets or nearly sets the allowable current."],
+        ["Cylinder aspect ratio, L/D",displayRatio(r.g.aspectRatio),(r.g.aspectRatio > 3 ? "Slender cylinder" : r.g.aspectRatio < .33 ? "Disk-like cylinder" : "Compact cylinder") + ". Controls resistance, exposed area, conduction length, and the 2D field proportions."],
+        ["Envelope porosity, φ",displayRatio(r.g.porosity),(r.g.porosity > .7 ? "Highly porous envelope" : r.g.porosity > .2 ? "Porous envelope" : "Low-porosity envelope") + ". Porosity removes conducting solid from the fixed nominal envelope, changing electrical area, mass, and resistance."],
         ["Side path / total",displayRatio(r.targetLoss.side/total,true),"Gap radiation/conduction, full-height wall, and outside-air losses divided by total target heat removal."],
         ["End path / total",displayRatio(r.targetLoss.end/total,true),"Heat removed through the two axial end boundaries divided by total target heat removal."],
         ["He 50 sccm / total",displayRatio(r.targetLoss.heAdvective/total,true),"Top-to-bottom helium sensible-heat pickup divided by total target heat removal; this shows its actual cooling importance." ]
