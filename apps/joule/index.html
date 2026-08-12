@@ -1490,13 +1490,20 @@
       </article>
 
       <details class="crosscheck">
-        <summary>Cross-check · Wismann et al., <em>Science</em> 2019 electrified reformer tube</summary>
+        <summary>Cross-check · published electrified reactors reproduced by this engine</summary>
         <p class="calc-note" style="margin-top:10px">
-          The published FeCrAl reformer tube (OD 6.0 mm × 50 cm, 0.35 mm wall; <a href="https://doi.org/10.1126/science.aaw8775">doi:10.1126/science.aaw8775</a>)
+          <strong>1 · Wismann et al., <em>Science</em> 2019 FeCrAl reformer tube</strong> (OD 6.0 mm × 50 cm, 0.35 mm wall; <a href="https://doi.org/10.1126/science.aaw8775">doi:10.1126/science.aaw8775</a>)
           entered as nominal volume 14.14 cm³, L/D 83.3, void fraction φ = 0.78, driven at 65 A with the page-default enclosure.
           The reaction heat duty of the reformer is outside this tool's scope — the comparison checks the bare heated tube.
         </p>
         <div class="table-wrap" style="margin-top:10px"><table class="metric-table"><thead><tr><th>Quantity</th><th>This tool</th><th>Reference</th></tr></thead><tbody id="crossCheckBody"></tbody></table></div>
+        <p class="calc-note" style="margin-top:16px">
+          <strong>2 · Zheng et al., <em>AIChE J.</em> 2022 SiSiC foam reformer</strong> (Ø32 × 99 mm open-cell foam, ε = 0.88; <a href="https://doi.org/10.1002/aic.17620">doi:10.1002/aic.17620</a>).
+          A random foam conducts less than this page's straight-pore area model, so the paper's measured 0.43 Ω enters as an effective
+          resistivity of 0.0419 Ω·cm (bulk ρ with the foam shape factor F = ⅓ + ⅔(1−ε) divided out). V-limited drive at the published
+          voltages then reproduces all ten reported operating points within ±6%; two are tabulated here.
+        </p>
+        <div class="table-wrap" style="margin-top:10px"><table class="metric-table"><thead><tr><th>Quantity</th><th>This tool</th><th>Reference</th></tr></thead><tbody id="crossCheckBody2"></tbody></table></div>
       </details>
     </section>
 
@@ -2650,6 +2657,28 @@
         ["Biot number", sig4(r.bi), "no measurable wall temperature gradient"]
       ];
       $("crossCheckBody").innerHTML = rows.map(([a,b,c]) => `<tr><th>${a}</th><td>${b}</td><td>${c}</td></tr>`).join("");
+
+      // Zheng et al., AIChE J. 69, e17620 (2022): SiSiC foam entered through the
+      // measured foam resistance as an effective straight-pore resistivity.
+      const foam = { name: "SiSiC foam (effective)", rhoOhmCm: 0.0419, density: 3050, cp: 680, k: 40, jmax: 1e7, emissivity: 0.9 };
+      const zBase = {
+        material: foam, solidFraction: 0.12, porosity: 0.88,
+        volumeCm3: 79.6 * 0.12, aspectRatio: 9.9 / 3.2,
+        imax: 50, vmax: 30, pmax: 2000, supplyMode: "cv", iset: 50, vset: 13.04,
+        ambientK: kelvin(20), targetK: kelvin(750),
+        emissivity: 0.9, convection: false, h: 0,
+        gasK: kelvin(20), biLimit: 0.01, enclosure: get2DConfig()
+      };
+      const z1 = calculate(zBase), z2 = calculate({ ...zBase, vset: 14.10 });
+      if (z1.errors.length || z2.errors.length) return;
+      const zRows = [
+        ["Foam geometry L × D", `${sig4(z1.g.L*1000)} × ${sig4(z1.g.D*1000)} mm`, "99 × 32 mm foam (paper §3.1)"],
+        ["Foam resistance", `${sig4(z1.resistance)} Ω`, "0.41–0.45 Ω measured"],
+        ["Current at 13.04 V", `${sig4(z1.operatingCurrent)} A`, "30.26 A measured"],
+        ["Current at 14.10 V", `${sig4(z2.operatingCurrent)} A`, "34.70 A measured"],
+        ["Power at 14.10 V", `${sig4(z2.power)} W`, "489.3 W measured"]
+      ];
+      $("crossCheckBody2").innerHTML = zRows.map(([a,b,c]) => `<tr><th>${a}</th><td>${b}</td><td>${c}</td></tr>`).join("");
     }
 
     function renderPropertyTable() {

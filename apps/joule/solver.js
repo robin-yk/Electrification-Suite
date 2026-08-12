@@ -21,6 +21,11 @@ export const T2D_WALLS = {
 export const MATERIALS = [
   { name:"CFP", rhoOhmCm:0.05, density:452, cp:990, k:400, jmax:1e7, source:"Mittal et al. (2025), Table 1", model:"constant; anisotropy not represented" },
   { name:"SiC", rhoOhmCm:0.0555556, density:3210, cp:750, k:120, jmax:5e6, source:"Mittal et al. (2025), Table 1", model:"constant grade proxy" },
+  { name:"SiSiC (Si-infiltrated SiC)", rhoOhmCm:0.08, density:3050, cp:680, k:140, jmax:5e6, emissivity:0.9,
+    rhoTable:[[20,0.08],[300,0.028],[550,0.0179],[650,0.0174],[750,0.0165],[1000,0.0155],[1350,0.015]],
+    kTable:[[20,140],[600,60],[1000,45],[1350,40]],
+    source:"550-750 °C bulk ρ back-calculated from Zheng et al., AIChE J. 69, e17620 (2022), Table 2; RT branch is a commercial SiC-element proxy",
+    model:"ρ(T) table; RT resistivity varies by orders of magnitude between SiSiC grades — prefer a datasheet. Free Si melts at 1414 °C" },
   { name:"MoSi₂", rhoOhmCm:2.5e-5, density:6500, cp:420, k:30, jmax:3e6, emissivity:0.78, rhoTable:[[20,2.5e-5],[200,7e-5],[600,1.5e-4],[1000,2.3e-4],[1400,3.0e-4],[1800,3.5e-4]], kTable:[[20,30],[600,30],[1200,15],[1800,15]], source:"Kanthal Super handbook", model:"digitized handbook curve" },
   { name:"Kanthal A-1 (FeCrAl)", rhoOhmCm:1.45e-4, density:7100, cp:460, k:11, jmax:1e7, emissivity:0.70, rhoFactor:[[20,1],[500,1.01],[800,1.03],[1000,1.04],[1400,1.05]], source:"Kanthal resistance materials handbook", model:"manufacturer Ct interpolation" },
   { name:"Nikrothal 80 (NiCr)", rhoOhmCm:1.09e-4, density:8300, cp:450, k:15, jmax:1e7, emissivity:0.88, rhoFactor:[[20,1],[400,1.03],[800,1.05],[1200,1.07]], source:"Kanthal resistance materials handbook", model:"manufacturer Ct interpolation" },
