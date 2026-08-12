@@ -310,11 +310,11 @@
           <div class="slider-row">
             <div class="slider-head"><label for="driveMode">Waveform source</label></div>
             <select id="driveMode" class="drive-select">
-              <option value="ideal" selected>Ideal trapezoid &mdash; set temperatures</option>
-              <option value="physical">Physical CFP drive &mdash; set voltage</option>
+              <option value="ideal">Ideal trapezoid &mdash; set temperatures</option>
+              <option value="physical" selected>Physical CFP drive &mdash; set voltage</option>
             </select>
           </div>
-          <div id="idealControls">
+          <div id="idealControls" hidden>
             <div class="slider-row">
               <div class="slider-head"><label for="tPeak">T<sub>peak</sub></label><output id="tPeakOut">1250 &deg;C</output></div>
               <input id="tPeak" type="range" min="900" max="1400" step="10" value="1250">
@@ -324,7 +324,7 @@
               <input id="tMin" type="range" min="400" max="1200" step="10" value="750">
             </div>
           </div>
-          <div id="physicalControls" hidden>
+          <div id="physicalControls">
             <div class="slider-row">
               <div class="slider-head"><label for="voltage">Supply voltage V</label><output id="voltageOut">40.0 V</output></div>
               <input id="voltage" type="range" min="5" max="60" step="0.5" value="40">
@@ -339,19 +339,19 @@
             <div id="physSummary" class="phys-summary">Computed waveform appears here.</div>
           </div>
           <div class="slider-row">
-            <div class="slider-head"><label for="duty">Duty cycle d</label><output id="dutyOut">0.35</output></div>
-            <input id="duty" type="range" min="0.05" max="0.95" step="0.01" value="0.35">
+            <div class="slider-head"><label for="duty">Duty cycle d</label><output id="dutyOut">0.10</output></div>
+            <input id="duty" type="range" min="0.05" max="0.95" step="0.01" value="0.10">
           </div>
           <div class="slider-row">
-            <div class="slider-head"><label for="period">Pulse period</label><output id="periodOut">1.2 s</output></div>
-            <input id="period" type="range" min="0.3" max="4" step="0.1" value="1.2">
+            <div class="slider-head"><label for="period">Pulse period</label><output id="periodOut">1.0 s</output></div>
+            <input id="period" type="range" min="0.3" max="4" step="0.1" value="1.0">
           </div>
-          <div id="rampControl" class="slider-row">
+          <div id="rampControl" class="slider-row" hidden>
             <div class="slider-head"><label for="ramp">Ramp fraction</label><output id="rampOut">0.10</output></div>
             <input id="ramp" type="range" min="0" max="0.45" step="0.01" value="0.10">
           </div>
           <p class="chart-note" style="margin-top:10px" id="pulseShapeNote">
-            Ramp 0 is the ideal square wave. Each ramp is constrained so the stated duty cycle remains the actual high-temperature fraction; the CJH reference stays matched at the exact waveform-average temperature.
+            T(t) is integrated from the CFP element's energy balance, so peak and minimum temperatures are outputs, not settings. Model details in the Calculations tab.
           </p>
         </div>
       </div>
@@ -360,8 +360,8 @@
         <div class="card-header"><h2>Relative chemistry &amp; flow</h2></div>
         <div class="card-body">
           <div class="slider-row">
-            <div class="slider-head"><label for="ea">Activation energy E<sub>a</sub></label><output id="eaOut">422 kJ/mol</output></div>
-            <input id="ea" type="range" min="80" max="500" step="1" value="422">
+            <div class="slider-head"><label for="ea">Activation energy E<sub>a</sub></label><output id="eaOut">100 kJ/mol</output></div>
+            <input id="ea" type="range" min="80" max="500" step="1" value="100">
           </div>
           <div class="slider-row">
             <div class="slider-head"><label for="beta">Mass-transfer exponent &beta;</label><output id="betaOut">0.50</output></div>
@@ -374,7 +374,7 @@
           </div>
           <p class="chart-note" style="margin-top:10px">
             Press <strong>Run</strong>: one heater pulses between T<sub>min</sub> and T<sub>peak</sub>, while a
-            continuous heater sits at the <em>same average temperature</em>. The charts compare their
+            continuous heater sits at the CJH reference &mdash; the <em>same average temperature</em>, or the same average electrical power when that option is selected. The charts compare their
             time-averaged &lang;k&rang;, &lang;h&rang;, and &lang;u&rang; as they run.
           </p>
         </div>
@@ -461,16 +461,21 @@
   <p class="section-kicker">Rate, transport, and velocity curvature, compared</p>
   <h2 class="section-title">Curvature determines whether pulsing provides a benefit</h2>
   <p class="section-lede">
-    A two-state pulse spends fraction d at T<sub>peak</sub> and (1&minus;d) at T<sub>min</sub>. Its time-average of any
-    property f sits on the <strong>chord</strong> between the two endpoints; the continuous heater sits on the <strong>curve</strong>
-    at T<sub>avg</sub>. Whether the chord lies above or below the curve is determined entirely by the sign of f&Prime;.
+    A pulsed element is hot (T<sub>peak</sub>) for a fraction d of each cycle and cold (T<sub>min</sub>) for the rest,
+    so the time-average of any property f is simply the weighted average d&thinsp;f(T<sub>peak</sub>) + (1&minus;d)&thinsp;f(T<sub>min</sub>).
+    On a plot of f versus T, that value lies on the straight <strong>chord</strong> connecting the two endpoints.
+    A continuous heater at the same average temperature gives the <strong>curve</strong> value f(T<sub>avg</sub>) instead.
+    If the curve bends upward (convex &mdash; the Arrhenius rate k does this), the chord lies above the curve and
+    pulsing beats continuous heating; if it bends downward (concave), pulsing loses. All that matters is which way
+    the curve bends: the sign of f&Prime;.
   </p>
 
   <div class="assumption">
-    <strong>The &beta; slider functions as a sensitivity check.</strong> The underlying analysis proves h is concave for 0 &lt; &beta; &lt; 1.
-    Gas-phase diffusivity alone scales approximately as T<sup>1.75</sup>, so a transport coefficient dominated by diffusion may
-    exceed &beta; = 1, rendering h convex and offsetting part of the &Lambda; gain. The validity of the &Lambda; result therefore
-    depends on the exponent applicable to a given reactor.
+    <strong>The &beta; slider is a stress test, not a tuning knob.</strong> The &Lambda; advantage depends on h(T)
+    being concave (bending downward), which is true for 0 &lt; &beta; &lt; 1. But if transport is dominated by
+    gas-phase diffusion, h grows faster than linearly with temperature &mdash; diffusivity alone scales roughly as
+    T<sup>1.75</sup> &mdash; so &beta; goes past 1, h becomes convex, and part of the &Lambda; gain cancels out.
+    Before trusting the &Lambda; result for your reactor, check which exponent actually describes it.
   </div>
 
   <div class="calc-grid" style="grid-template-columns:repeat(3,minmax(0,1fr))">
@@ -596,7 +601,7 @@
         <div class="formula-item">
           <div class="formula-name">Rate constant</div>
           <div class="formula">k(T) = A exp(&minus;E<sub>a</sub> / RT)</div>
-          <div class="formula-note">k&Prime;(T) = k(T) &middot; E<sub>a</sub>(E<sub>a</sub> &minus; 2RT) / (R<sup>2</sup>T<sup>4</sup>), so k is convex whenever E<sub>a</sub> &gt; 2RT. Default E<sub>a</sub> = 422 kJ/mol, the lumped first-order value for homogeneous methane pyrolysis (2CH<sub>4</sub> &rarr; C<sub>2</sub>H<sub>2</sub> + 3H<sub>2</sub>).</div>
+          <div class="formula-note">k&Prime;(T) = k(T) &middot; E<sub>a</sub>(E<sub>a</sub> &minus; 2RT) / (R<sup>2</sup>T<sup>4</sup>), so k is convex whenever E<sub>a</sub> &gt; 2RT. Default E<sub>a</sub> = 100 kJ/mol; the lumped first-order value for homogeneous methane pyrolysis (2CH<sub>4</sub> &rarr; C<sub>2</sub>H<sub>2</sub> + 3H<sub>2</sub>) is &asymp;422 kJ/mol and can be dialed in with the slider.</div>
         </div>
         <div class="formula-item">
           <div class="formula-name">Mass-transfer coefficient</div>
@@ -622,7 +627,7 @@
         <div class="formula-item">
           <div class="formula-name">Continuous integration (animation tab)</div>
           <div class="formula">&lang;f&rang; = (1/t) &int; f(T(t')) dt'</div>
-          <div class="formula-note">Accumulated numerically each animation frame over the real trapezoidal waveform, including the ramps. This is what the running-average charts plot.</div>
+          <div class="formula-note">Accumulated numerically each animation frame over the active waveform — the computed CFP solution in physical mode, or the ideal trapezoid including its ramps. This is what the running-average charts plot.</div>
         </div>
         <div class="formula-item">
           <div class="formula-name">Ideal two-state limit (ratios tab)</div>
@@ -632,7 +637,7 @@
         <div class="formula-item">
           <div class="formula-name">Reference temperature</div>
           <div class="formula">T<sub>avg</sub> = d T<sub>peak</sub> + (1 &minus; d) T<sub>min</sub></div>
-          <div class="formula-note">The CJH comparison is pinned here, so the two systems always share a time-average temperature.</div>
+          <div class="formula-note">The CJH comparison is pinned here by default, so the two systems share a time-average temperature — unless the physical drive's equal-average-power reference is selected.</div>
         </div>
         <div class="formula-item">
           <div class="formula-name">The two ratios</div>
@@ -703,8 +708,8 @@
       <div class="card-body">
         <table class="metric-table symbol-table">
           <tbody>
-            <tr><td>T<sub>peak</sub></td><td style="text-align:left;color:var(--muted)">Element temperature during the on-phase</td></tr>
-            <tr><td>T<sub>min</sub></td><td style="text-align:left;color:var(--muted)">Element temperature during the off-phase</td></tr>
+            <tr><td>T<sub>peak</sub></td><td style="text-align:left;color:var(--muted)">Top of the temperature cycle &mdash; set in ideal mode, computed in physical mode</td></tr>
+            <tr><td>T<sub>min</sub></td><td style="text-align:left;color:var(--muted)">Bottom of the temperature cycle &mdash; set in ideal mode, computed in physical mode</td></tr>
             <tr><td>d</td><td style="text-align:left;color:var(--muted)">Duty cycle, fraction of the period spent at T<sub>peak</sub></td></tr>
             <tr><td>T<sub>avg</sub></td><td style="text-align:left;color:var(--muted)">Time-average temperature, and the CJH set point</td></tr>
             <tr><td>&Lambda;</td><td style="text-align:left;color:var(--muted)">k/h, kinetics against transport</td></tr>
@@ -752,9 +757,9 @@ import {
 /* constants and state                                                 */
 /* ------------------------------------------------------------------ */
 const state = {
-  tPeak: 1250, tMin: 750, duty: 0.35, period: 1.2, ramp: 0.10,
-  ea: 422, beta: 0.50,
-  driveMode: "ideal", voltage: 40, cjhRef: "tavg", physical: null,
+  tPeak: 1250, tMin: 750, duty: 0.10, period: 1.0, ramp: 0.10,
+  ea: 100, beta: 0.50,
+  driveMode: "physical", voltage: 40, cjhRef: "tavg", physical: null,
   running: false, t: 0, lastFrame: 0, cycles: 0,
   accK: 0, accH: 0, accU: 0, accKH: 0, accKU: 0, accT: 0, accTime: 0,
   trace: [], kHist: [], hHist: []
@@ -808,11 +813,10 @@ function recomputePhysical() {
   state.tPeak = Math.round(run.tPeak);
   state.tMin = Math.round(run.tMin);
   document.getElementById("physSummary").innerHTML =
-    `T<sub>peak</sub> <strong>${run.tPeak.toFixed(0)} &deg;C</strong> &middot; T<sub>min</sub> <strong>${run.tMin.toFixed(0)} &deg;C</strong> &middot; T<sub>avg</sub> <strong>${run.tAvg.toFixed(0)} &deg;C</strong><br>` +
-    `average electrical power <strong>${run.avgPower.toFixed(1)} W</strong> &middot; on-phase peak <strong>${run.peakPower.toFixed(0)} W</strong><br>` +
-    `steady CJH at the same average power: <strong>${run.equalPowerT.toFixed(0)} &deg;C</strong>` +
-    (run.converged ? "" : " &middot; <em>waveform not yet fully periodic</em>") +
-    (run.tPeak > 1800 ? "<br><em>T<sub>peak</sub> exceeds the 1800 &deg;C IR-camera ceiling and realistic CFP operating limits — lower the voltage or duty.</em>" : "");
+    `T<sub>peak</sub> <strong>${run.tPeak.toFixed(0)}</strong> &middot; T<sub>min</sub> <strong>${run.tMin.toFixed(0)}</strong> &middot; T<sub>avg</sub> <strong>${run.tAvg.toFixed(0)} &deg;C</strong><br>` +
+    `P&#772; <strong>${run.avgPower.toFixed(1)} W</strong> &middot; on-phase <strong>${run.peakPower.toFixed(0)} W</strong> &middot; equal-power CJH <strong>${run.equalPowerT.toFixed(0)} &deg;C</strong>` +
+    (run.converged ? "" : " &middot; <em>not yet periodic</em>") +
+    (run.tPeak > 1800 ? "<br><em>T<sub>peak</sub> is past the 1800 &deg;C IR/CFP limit — lower V or duty.</em>" : "");
   syncCjhTitle();
   redrawAll();
 }
@@ -1405,7 +1409,7 @@ bind("ea", "ea", Number);
 bind("beta", "beta", Number);
 
 const IDEAL_NOTE = "Ramp 0 is the ideal square wave. Each ramp is constrained so the stated duty cycle remains the actual high-temperature fraction; the CJH reference stays matched at the exact waveform-average temperature.";
-const PHYSICAL_NOTE = "The waveform is integrated from m·cp(T)·dT/dt = V²/R(T)·pulse − radiation − He pickup for the paper's 38 × 8 × 0.21 mm CFP element (28.8 mg, ε = 0.57, R(T) from its Fig. S11a). Peak and minimum temperatures are outputs here, not settings.";
+const PHYSICAL_NOTE = "T(t) is integrated from the CFP element's energy balance, so peak and minimum temperatures are outputs, not settings. Model details in the Calculations tab.";
 document.getElementById("driveMode").addEventListener("change", e => {
   state.driveMode = e.target.value;
   const physical = state.driveMode === "physical";
@@ -1455,6 +1459,7 @@ document.querySelectorAll(".tab").forEach(tab => {
   });
 });
 
+recomputePhysical();
 resetIntegration();
 redrawAll();
 state.running = true; state.lastFrame = 0;

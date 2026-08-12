@@ -12,7 +12,7 @@ test("arrheniusRate() equals 1 at the reference temperature by construction", ()
 });
 
 test("arrheniusRate() is convex in T for Ea > 2RT (the condition the page's convexity test checks)", () => {
-  const ea = 422; // kJ/mol, the page's default
+  const ea = 422; // kJ/mol, the lumped methane-pyrolysis value the page documents
   const tPeak = 1250, tMin = 750, tAvg = 0.35 * tPeak + 0.65 * tMin;
   const chord = 0.35 * arrheniusRate(tPeak, ea) + 0.65 * arrheniusRate(tMin, ea);
   const curve = arrheniusRate(tAvg, ea);
