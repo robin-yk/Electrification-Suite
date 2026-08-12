@@ -12,7 +12,7 @@ test("arrheniusRate() equals 1 at the reference temperature by construction", ()
 });
 
 test("arrheniusRate() is convex in T for Ea > 2RT (the condition the page's convexity test checks)", () => {
-  const ea = 273; // kJ/mol, the page's default
+  const ea = 422; // kJ/mol, the page's default
   const tPeak = 1250, tMin = 750, tAvg = 0.35 * tPeak + 0.65 * tMin;
   const chord = 0.35 * arrheniusRate(tPeak, ea) + 0.65 * arrheniusRate(tMin, ea);
   const curve = arrheniusRate(tAvg, ea);
@@ -84,7 +84,7 @@ test("pulseWaveform() clamps a ramp wider than the shorter of the two dwell phas
 });
 
 test("idealTwoStateAverages() matches the same two-state formula as the live kOf/hOf/uOf composition", () => {
-  const params = { duty: 0.35, tPeak: 1250, tMin: 750, ea: 273, beta: 0.5 };
+  const params = { duty: 0.35, tPeak: 1250, tMin: 750, ea: 422, beta: 0.5 };
   const av = idealTwoStateAverages(params);
   const d = params.duty;
   const expectedK = d * arrheniusRate(params.tPeak, params.ea) + (1 - d) * arrheniusRate(params.tMin, params.ea);
@@ -93,7 +93,7 @@ test("idealTwoStateAverages() matches the same two-state formula as the live kOf
 });
 
 test("idealTwoStateAverages().k exceeds k at the average temperature (the pulsing gain this page visualizes)", () => {
-  const params = { duty: 0.35, tPeak: 1250, tMin: 750, ea: 273, beta: 0.5 };
+  const params = { duty: 0.35, tPeak: 1250, tMin: 750, ea: 422, beta: 0.5 };
   const av = idealTwoStateAverages(params);
   const tAvg = timeAverageTemperature(params.duty, params.tPeak, params.tMin);
   assert.ok(av.k > arrheniusRate(tAvg, params.ea), "Jensen gain on <k> should be positive for this convex, Ea-large case");
@@ -101,7 +101,7 @@ test("idealTwoStateAverages().k exceeds k at the average temperature (the pulsin
 
 test("all property/waveform functions stay finite across the full UI slider ranges (extreme boundary sweep)", () => {
   // matches rphcjh.html's own <input type="range"> min/max for each control
-  const tPeaks = [900, 1400], tMins = [400, 1200], duties = [0.05, 0.95], ramps = [0, 0.45], eas = [80, 400], betas = [0.05, 1.75];
+  const tPeaks = [900, 1400], tMins = [400, 1200], duties = [0.05, 0.95], ramps = [0, 0.45], eas = [80, 500], betas = [0.05, 1.75];
   const failures = [];
   for (const tPeak of tPeaks) for (const tMin of tMins) for (const duty of duties) for (const ramp of ramps) for (const ea of eas) for (const beta of betas) {
     const params = { duty, ramp, tPeak, tMin, ea, beta };

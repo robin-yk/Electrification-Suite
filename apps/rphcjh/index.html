@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Interactive visualizer for the RPH vs CJH dimensionless analysis: Jensen's inequality on k(T), h(T), u(T), and the resulting Lambda and Damkohler ratios for ethane cracking.">
+<meta name="description" content="Interactive visualizer for the RPH vs CJH dimensionless analysis: Jensen's inequality on k(T), h(T), u(T), and the resulting Lambda and Damkohler ratios for pulsed CH4 + CO2 coupling.">
 <title>RPH vs CJH Visualizer</title>
 <link rel="preload" href="../../assets/fonts/roboto-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="../../assets/fonts/roboto.css">
@@ -183,7 +183,7 @@
   .symbol-table td:first-child { color: var(--red); font-weight: 700; white-space: nowrap; width: 20%; }
 
   /* ---- animation tab ---- */
-  .anim-layout { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 18px; align-items: start; }
+  .anim-layout { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 18px; align-items: start; margin-top: 18px; }
   .anim-inputs { display: grid; gap: 14px; position: sticky; top: 64px; }
   .slider-row { display: grid; gap: 5px; margin-bottom: 13px; }
   .slider-row:last-child { margin-bottom: 0; }
@@ -273,7 +273,7 @@
         <span class="meta-pill">&Lambda; = k/h</span>
         <span class="meta-pill">relative k/u exposure</span>
         <span class="meta-pill">Live time-averaging</span>
-        <span class="meta-pill">CFP ethane cracking data</span>
+        <span class="meta-pill">Pulsed CH<sub>4</sub> + CO<sub>2</sub> coupling</span>
       </div>
     </div>
   </div>
@@ -331,8 +331,8 @@
         <div class="card-header"><h2>Relative chemistry &amp; flow</h2></div>
         <div class="card-body">
           <div class="slider-row">
-            <div class="slider-head"><label for="ea">Activation energy E<sub>a</sub></label><output id="eaOut">273 kJ/mol</output></div>
-            <input id="ea" type="range" min="80" max="400" step="1" value="273">
+            <div class="slider-head"><label for="ea">Activation energy E<sub>a</sub></label><output id="eaOut">422 kJ/mol</output></div>
+            <input id="ea" type="range" min="80" max="500" step="1" value="422">
           </div>
           <div class="slider-row">
             <div class="slider-head"><label for="beta">Mass-transfer exponent &beta;</label><output id="betaOut">0.50</output></div>
@@ -547,7 +547,6 @@
   </div>
 </section>
 
-<!-- ============ EXPERIMENTS ============ -->
 <!-- ============ CALCULATIONS ============ -->
 <section id="calculations" class="panel" role="tabpanel">
   <p class="section-kicker">Complete calculation record</p>
@@ -568,7 +567,7 @@
         <div class="formula-item">
           <div class="formula-name">Rate constant</div>
           <div class="formula">k(T) = A exp(&minus;E<sub>a</sub> / RT)</div>
-          <div class="formula-note">k&Prime;(T) = k(T) &middot; E<sub>a</sub>(E<sub>a</sub> &minus; 2RT) / (R<sup>2</sup>T<sup>4</sup>), so k is convex whenever E<sub>a</sub> &gt; 2RT. Default E<sub>a</sub> = 273 kJ/mol, the lumped first-order ethane value.</div>
+          <div class="formula-note">k&Prime;(T) = k(T) &middot; E<sub>a</sub>(E<sub>a</sub> &minus; 2RT) / (R<sup>2</sup>T<sup>4</sup>), so k is convex whenever E<sub>a</sub> &gt; 2RT. Default E<sub>a</sub> = 422 kJ/mol, the lumped first-order value for homogeneous methane pyrolysis (2CH<sub>4</sub> &rarr; C<sub>2</sub>H<sub>2</sub> + 3H<sub>2</sub>).</div>
         </div>
         <div class="formula-item">
           <div class="formula-name">Mass-transfer coefficient</div>
@@ -583,7 +582,7 @@
         <div class="formula-item">
           <div class="formula-name">Relative exposure</div>
           <div class="formula">R<sub>exposure</sub> = &lang;k(T)/u(T)&rang; / [k(T<sub>avg</sub>)/u(T<sub>avg</sub>)]</div>
-          <div class="formula-note">Residence time matters for conversion, but the page deliberately does not report absolute Da without a kinetic prefactor and a reactor model. Measured residence times remain in the experiment table.</div>
+          <div class="formula-note">Residence time matters for conversion, but the page deliberately does not report absolute Da without a kinetic prefactor and a reactor model.</div>
         </div>
       </div>
     </article>
@@ -622,7 +621,7 @@
         <div class="formula-item">
           <div class="formula-name">Single lumped rate</div>
           <div class="formula">One E<sub>a</sub> stands in for the whole radical network.</div>
-          <div class="formula-note">This is why the page never converts Da into a predicted conversion. Ethane cracking is chain-initiated with an induction period, and a lumped k significantly overpredicts conversion at millisecond contact times.</div>
+          <div class="formula-note">This is why the page never converts Da into a predicted conversion. Methane coupling is chain-initiated with an induction period, and a lumped k significantly overpredicts conversion at millisecond contact times.</div>
         </div>
         <div class="formula-item">
           <div class="formula-name">Gas follows the element instantly</div>
@@ -654,7 +653,7 @@
             <tr><td>&Lambda;</td><td style="text-align:left;color:var(--muted)">k/h, kinetics against transport</td></tr>
             <tr><td>Da</td><td style="text-align:left;color:var(--muted)">k&tau;, reaction against convection</td></tr>
             <tr><td>&beta;</td><td style="text-align:left;color:var(--muted)">Power-law exponent on the transport coefficient</td></tr>
-            <tr><td>X, S</td><td style="text-align:left;color:var(--muted)">Ethane conversion and ethylene selectivity, measured</td></tr>
+            <tr><td>X, S</td><td style="text-align:left;color:var(--muted)">Methane conversion and C<sub>2</sub> product selectivity, measured</td></tr>
           </tbody>
         </table>
       </div>
@@ -682,7 +681,7 @@
 
 <footer>
   <span>RPH vs CJH visualizer &mdash; companion to Kwak, Railkar, Zheng &amp; Vlachos, <em>ACS Energy Lett.</em> 2025, 10(12), 6188&ndash;6196, <a href="https://doi.org/10.1021/acsenergylett.5c02853" style="color:var(--blue)">doi.org/10.1021/acsenergylett.5c02853</a>.</span>
-  <span>Ratios are model output. The experiment table is measured CJH data.</span>
+  <span>Ratios are model output, not measured conversions.</span>
 </footer>
 
 <script type="module">
@@ -696,7 +695,7 @@ import {
 /* ------------------------------------------------------------------ */
 const state = {
   tPeak: 1250, tMin: 750, duty: 0.35, period: 1.2, ramp: 0.10,
-  ea: 273, beta: 0.50,
+  ea: 422, beta: 0.50,
   running: false, t: 0, lastFrame: 0, cycles: 0,
   accK: 0, accH: 0, accU: 0, accKH: 0, accKU: 0, accT: 0, accTime: 0,
   trace: [], kHist: [], hHist: []
