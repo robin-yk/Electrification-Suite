@@ -1066,14 +1066,15 @@
                 <table class="metric-table" aria-label="Geometry and thermal screening">
                   <tbody>
                     <tr><th>Length × diameter</th><td id="outDimensions">—</td></tr>
-                    <tr><th>Solid / envelope volume</th><td id="outVolumes">—</td></tr>
+                    <tr><th>Solid · envelope volume</th><td id="outVolumes">—</td></tr>
                     <tr><th>Porosity</th><td id="outPorosity">—</td></tr>
                     <tr><th>Cross-sectional area</th><td id="outArea">—</td></tr>
                     <tr><th>Surface area</th><td id="outSurface">—</td></tr>
                     <tr><th>Volume / surface area</th><td id="outLc">—</td></tr>
                     <tr><th>Mass</th><td id="outMass">—</td></tr>
                     <tr><th>Required target power</th><td id="outPreq">—</td></tr>
-                    <tr><th>Required target V / I</th><td id="outReqVI">—</td></tr>
+                    <tr><th>Required target voltage</th><td id="outReqV">—</td></tr>
+                    <tr><th>Required target current</th><td id="outReqI">—</td></tr>
                     <tr><th>Critical thermal conductivity</th><td id="outKcrit">—</td></tr>
                   </tbody>
                 </table>
@@ -1133,17 +1134,17 @@
             <article class="card">
               <div class="card-header"><h3>Calculated Checkpoints</h3><span id="t2dConverged" class="status warn">No solution</span></div>
               <div class="card-body"><table class="metric-table metric-table-compact"><tbody>
-                <tr><th>Element min / max</th><td id="t2dMinMax">—</td></tr>
-                <tr><th>Center / side</th><td id="t2dCenterSide">—</td></tr>
-                <tr><th>Bottom / top center</th><td id="t2dEnds">—</td></tr>
-                <tr><th>Wall inner / outer</th><td id="t2dWallTemps">—</td></tr>
+                <tr><th>Element min · max</th><td id="t2dMinMax">—</td></tr>
+                <tr><th>Center · side</th><td id="t2dCenterSide">—</td></tr>
+                <tr><th>Bottom · top center</th><td id="t2dEnds">—</td></tr>
+                <tr><th>Wall inner · outer</th><td id="t2dWallTemps">—</td></tr>
                 <tr><th>2D avg − 0D T<sub>ss</sub></th><td id="t2dVsZeroD">—</td></tr>
-                <tr><th>Current / total voltage</th><td id="t2dIV">—</td></tr>
-                <tr><th>R<sub>bulk</sub> / 2R<sub>c</sub></th><td id="t2dResistance">—</td></tr>
-                <tr><th>Bulk / contact power</th><td id="t2dPowers">—</td></tr>
-                <tr><th>He outlet / heat removal</th><td id="t2dGasCooling">—</td></tr>
+                <tr><th>Current · total voltage</th><td id="t2dIV">—</td></tr>
+                <tr><th>R<sub>bulk</sub> · 2R<sub>c</sub></th><td id="t2dResistance">—</td></tr>
+                <tr><th>Bulk · contact power</th><td id="t2dPowers">—</td></tr>
+                <tr><th>He outlet · heat removal</th><td id="t2dGasCooling">—</td></tr>
                 <tr><th>Boundary heat loss</th><td id="t2dBoundaryLoss">—</td></tr>
-                <tr><th>Nonlinear / linear iterations</th><td id="t2dResidual">—</td></tr>
+                <tr><th>Nonlinear · linear iterations</th><td id="t2dResidual">—</td></tr>
                 <tr><th>Radial cells</th><td id="t2dRadialCells">—</td></tr>
                 <tr><th>Radial cell sizes</th><td id="t2dRadialCellSizes">—</td></tr>
                 <tr><th>Axial cell size</th><td id="t2dAxialCell">—</td></tr>
@@ -1186,9 +1187,9 @@
                 <tbody>
                   <tr><th>Element material</th><td id="t2dMaterial">—</td></tr>
                   <tr><th>Length × diameter</th><td id="t2dDimensions">—</td></tr>
-                  <tr><th>Solid fraction / porosity</th><td id="t2dFraction">—</td></tr>
-                  <tr><th>Solid / envelope volume</th><td id="t2dVolumes">—</td></tr>
-                  <tr><th>ρ<sub>e</sub>(T<sub>a</sub>) / k(T<sub>a</sub>)</th><td id="t2dImportedProps">—</td></tr>
+                  <tr><th>Solid fraction · porosity</th><td id="t2dFraction">—</td></tr>
+                  <tr><th>Solid · envelope volume</th><td id="t2dVolumes">—</td></tr>
+                  <tr><th>ρ<sub>e</sub>(T<sub>a</sub>) · k(T<sub>a</sub>)</th><td id="t2dImportedProps">—</td></tr>
                   <tr><th>0D steady state</th><td id="t2dZeroD">—</td></tr>
                   <tr><th>Process gas</th><td>He · 50 sccm · top → bottom</td></tr>
                 </tbody>
@@ -1621,9 +1622,9 @@
       if (!result || result.errors?.length) return;
       $("t2dMaterial").textContent=result.material.name;
       $("t2dDimensions").textContent=`${sig4(result.g.L*1000)} × ${sig4(result.g.D*1000)} mm`;
-      $("t2dFraction").textContent=`${format(result.g.solidFraction,3)} / ${format(result.g.porosity*100,1)}%`;
-      $("t2dVolumes").textContent=`${sig4(result.g.solidVolume*1e6)} / ${sig4(result.g.envelopeVolume*1e6)} cm³`;
-      $("t2dImportedProps").textContent=`${sig4(result.initial.props.rhoOhmCm)} Ω·cm / ${sig4(result.initial.props.k)} W/m·K`;
+      $("t2dFraction").textContent=`${format(result.g.solidFraction,3)} · ${format(result.g.porosity*100,1)}%`;
+      $("t2dVolumes").textContent=`solid ${sig4(result.g.solidVolume*1e6)} · envelope ${sig4(result.g.envelopeVolume*1e6)} cm³`;
+      $("t2dImportedProps").textContent=`${sig4(result.initial.props.rhoOhmCm)} Ω·cm · ${sig4(result.initial.props.k)} W/m·K`;
       $("t2dZeroD").textContent=fmtTemp(result.tss);
       if (!current2DResult) return;
       const fresh=current2DResult.material.name===result.material.name && current2DResult.signature===signature2D(result.input,result.material);
@@ -1725,17 +1726,17 @@
       $("t2dMeshLabel").textContent=`${2*result.mesh.nr} × ${result.mesh.nz} mesh · ${format(2*result.mesh.domainRadius*1000,2)} × ${format(result.mesh.domainHeight*1000,2)} mm domain · equal x–z scale · element L/D ${format(result.g.L/result.g.D,3)}`;
       $("t2dConverged").textContent=good?"Converged":result.converged?"Closure warning":"Iteration limit";
       setClass($("t2dConverged"),good?"good":"warn");
-      $("t2dMinMax").textContent=`${fmtTemp(result.tMin)} / ${fmtTemp(result.tMax)}`;
-      $("t2dCenterSide").textContent=`${fmtTemp(result.center)} / ${fmtTemp(result.side)}`;
-      $("t2dEnds").textContent=`${fmtTemp(result.bottom)} / ${fmtTemp(result.top)}`;
-      $("t2dWallTemps").textContent=`${fmtTemp(result.wallInner)} / ${fmtTemp(result.wallOuter)}`;
+      $("t2dMinMax").textContent=`${fmtTemp(result.tMin)} · ${fmtTemp(result.tMax)}`;
+      $("t2dCenterSide").textContent=`${fmtTemp(result.center)} · ${fmtTemp(result.side)}`;
+      $("t2dEnds").textContent=`${fmtTemp(result.bottom)} · ${fmtTemp(result.top)}`;
+      $("t2dWallTemps").textContent=`${fmtTemp(result.wallInner)} · ${fmtTemp(result.wallOuter)}`;
       $("t2dVsZeroD").textContent=finite(result.zeroD.tss)?`${sig4(result.avgK-result.zeroD.tss)} K`:"0D unbounded";
-      $("t2dIV").textContent=`${sig4(result.op.current)} A / ${sig4(result.op.voltage)} V`;
-      $("t2dResistance").textContent=`${sig4(result.op.rBulk)} / ${sig4(2*result.op.rContact)} Ω`;
-      $("t2dPowers").textContent=`${sig4(result.op.pBulk)} / ${sig4(result.op.pContact)} W`;
-      $("t2dGasCooling").textContent=result.heFlowConnected?`${sig4(celsius(result.heOutletK))} °C / ${sig4(result.heCooling)} W · 50 sccm top → bottom`:`No continuous gas path · set a positive element–wall gap`;
+      $("t2dIV").textContent=`${sig4(result.op.current)} A · ${sig4(result.op.voltage)} V`;
+      $("t2dResistance").textContent=`${sig4(result.op.rBulk)} · ${sig4(2*result.op.rContact)} Ω`;
+      $("t2dPowers").textContent=`${sig4(result.op.pBulk)} · ${sig4(result.op.pContact)} W`;
+      $("t2dGasCooling").textContent=result.heFlowConnected?`${sig4(celsius(result.heOutletK))} °C · ${sig4(result.heCooling)} W · 50 sccm top → bottom`:`No continuous gas path · set a positive element–wall gap`;
       $("t2dBoundaryLoss").textContent=`${sig4(result.boundaryLoss)} W`;
-      $("t2dResidual").textContent=`${result.iterations.toLocaleString()} / ${result.linearIterations.toLocaleString()} · ${sig4(result.residual)} K`;
+      $("t2dResidual").textContent=`${result.iterations.toLocaleString()} · ${result.linearIterations.toLocaleString()} · ${sig4(result.residual)} K`;
       $("t2dRadialCells").textContent=`${result.mesh.nElement} element + ${result.mesh.nGap} gap + ${result.mesh.nWall} wall + ${result.mesh.nAir} outside air · wall spans all 60 axial cells`;
       const radialSize=(start,count)=>count?(result.mesh.edges[start+count]-result.mesh.edges[start])*1000/count:0;
       const radialSizes=[
@@ -1972,13 +1973,13 @@
       validation.classList.remove("show");
       const r = result;
       $("constraintValue").textContent = r.constraint;
-      $("constraintSub").textContent = `${format(r.operatingCurrent, 4)} A allowed`;
-      $("rampValue").textContent = `${format(r.rampRate, 3)} K/s`;
+      $("constraintSub").textContent = `${sig4(r.operatingCurrent)} A allowed`;
+      $("rampValue").textContent = `${sig4(r.rampRate)} K/s`;
       $("tssValue").textContent = fmtTemp(r.tss);
       $("timeValue").textContent = fmtTime(r.adiabaticTime);
       $("feasibleValue").textContent = r.feasible ? "Feasible" : "Unreachable";
-      $("feasibleSub").textContent = `${format(r.power, 2)} / ${format(r.requiredPower, 2)} W`;
-      $("biValue").textContent = r.bi < 0.001 ? r.bi.toFixed(6) : format(r.bi, 5);
+      $("feasibleSub").textContent = `${sig4(r.power)} of ${sig4(r.requiredPower)} W target`;
+      $("biValue").textContent = sig4(r.bi);
       $("biSub").textContent = r.uniform ? "Bi ≤ screening limit" : "Temperature-gradient risk";
 
       setClass($("kpiConstraint"), r.constraint.includes("+") ? "warn" : "good");
@@ -1989,24 +1990,25 @@
       renderRecommendation(r);
       renderJouleDiagnostics(r);
 
-      $("outR").textContent = `${format(r.resistance, 7)} Ω`;
-      $("outI").textContent = `${format(r.operatingCurrent, 5)} A`;
-      $("outV").textContent = `${format(r.voltage, 5)} V`;
-      $("outP").textContent = `${format(r.power, 4)} W`;
-      $("outJ").textContent = `${format(r.currentDensity, 3)} A/m²`;
-      $("outPowerUse").textContent = `${format(r.powerUse * 100, 2)}%`;
-      $("outSpecificPower").textContent = `${format(r.specificPower, 2)} W/kg`;
-      $("outVolPower").textContent = `${format(r.volumetricPowerMW, 3)} MW/m³`;
-      $("outDimensions").textContent = `${format(r.g.L * 1000, 4)} × ${format(r.g.D * 1000, 4)} mm`;
-      $("outVolumes").textContent = `${format(r.g.solidVolume * 1e6, 5)} / ${format(r.g.envelopeVolume * 1e6, 5)} cm³`;
-      $("outPorosity").textContent = `${format(r.g.porosity * 100, 2)}%`;
-      $("outArea").textContent = `${format(r.g.area, 6)} m²`;
-      $("outSurface").textContent = `${format(r.g.surface, 6)} m²`;
-      $("outLc").textContent = `${format(r.g.lc * 1000, 4)} mm`;
-      $("outMass").textContent = `${format(r.mass * 1000, 5)} g`;
-      $("outPreq").textContent = `${format(r.requiredPower, 4)} W`;
-      $("outReqVI").textContent = `${format(r.requiredVoltage, 4)} V / ${format(r.requiredCurrent, 4)} A`;
-      $("outKcrit").textContent = `${format(r.kcrit, 4)} W/m·K`;
+      $("outR").textContent = `${sig4(r.resistance)} Ω`;
+      $("outI").textContent = `${sig4(r.operatingCurrent)} A`;
+      $("outV").textContent = `${sig4(r.voltage)} V`;
+      $("outP").textContent = `${sig4(r.power)} W`;
+      $("outJ").textContent = `${sig4(r.currentDensity)} A/m²`;
+      $("outPowerUse").textContent = `${sig4(r.powerUse * 100)}%`;
+      $("outSpecificPower").textContent = `${sig4(r.specificPower)} W/kg`;
+      $("outVolPower").textContent = `${sig4(r.volumetricPowerMW)} MW/m³`;
+      $("outDimensions").textContent = `${sig4(r.g.L * 1000)} × ${sig4(r.g.D * 1000)} mm`;
+      $("outVolumes").textContent = `solid ${sig4(r.g.solidVolume * 1e6)} · envelope ${sig4(r.g.envelopeVolume * 1e6)} cm³`;
+      $("outPorosity").textContent = `${sig4(r.g.porosity * 100)}%`;
+      $("outArea").textContent = `${sig4(r.g.area)} m²`;
+      $("outSurface").textContent = `${sig4(r.g.surface)} m²`;
+      $("outLc").textContent = `${sig4(r.g.lc * 1000)} mm`;
+      $("outMass").textContent = `${sig4(r.mass * 1000)} g`;
+      $("outPreq").textContent = `${sig4(r.requiredPower)} W`;
+      $("outReqV").textContent = `${sig4(r.requiredVoltage)} V`;
+      $("outReqI").textContent = `${sig4(r.requiredCurrent)} A`;
+      $("outKcrit").textContent = `${sig4(r.kcrit)} W/m·K`;
 
       const targetBadge = $("targetBadge");
       targetBadge.textContent = r.feasible ? "Can maintain target" : "Cannot maintain target";
