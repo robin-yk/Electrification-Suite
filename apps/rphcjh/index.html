@@ -72,6 +72,7 @@
   }
   .tab:hover { color: var(--blue); }
   .tab.active { color: var(--blue); font-weight: 500; border-bottom-color: var(--blue); }
+  .tab.keep-case { text-transform: none; }
   .tab:focus-visible { outline: 2px solid var(--blue); outline-offset: -3px; }
 
   main { max-width: 1500px; margin: 0 auto; padding: 24px 28px 40px; }
@@ -144,8 +145,8 @@
   .status::before { content: "\25CF"; font-size: 12px; }
 
   svg.chart { display: block; width: 100%; height: auto; background: #fff; }
-  .chart-note { margin: 7px 4px 0; color: var(--muted); font-size: 12px; }
-  .legend { display: flex; flex-wrap: wrap; gap: 12px; margin: 8px 4px 0; color: var(--muted); font-size: 12px; }
+  .chart-note { margin: 7px 4px 0; color: var(--muted); font-size: 13px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; margin: 8px 4px 0; color: var(--muted); font-size: 13px; }
   .legend i { display: inline-block; width: 14px; height: 3px; margin-right: 5px; vertical-align: middle; }
   .legend i.dash { background: repeating-linear-gradient(90deg, currentColor 0 5px, transparent 5px 9px); }
 
@@ -284,7 +285,7 @@
   <div class="tabs" role="tablist">
     <button class="tab active" data-tab="animation" role="tab" aria-selected="true">Heating Animation</button>
     <button class="tab" data-tab="jensen" role="tab" aria-selected="false">When Pulsing Helps</button>
-    <button class="tab" data-tab="ratios" role="tab" aria-selected="false">&Lambda; and Da Ratios</button>
+    <button class="tab keep-case" data-tab="ratios" role="tab" aria-selected="false">&Lambda; and Da ratios</button>
     <button class="tab" data-tab="calculations" role="tab" aria-selected="false">Calculations</button>
     <button class="tab" data-tab="cite" role="tab" aria-selected="false">How to Cite</button>
   </div>
@@ -739,15 +740,15 @@ function axes(f, opts) {
   (opts.yTicks || []).forEach(t => {
     const y = f.y(t.v, opts.yLo, opts.yHi);
     s += `<line x1="${pad.l}" y1="${y}" x2="${w - pad.r}" y2="${y}" stroke="#e6ebef"/>`;
-    s += `<text x="${pad.l - 7}" y="${y + 4}" text-anchor="end" font-size="10" fill="#64717d">${esc(t.label)}</text>`;
+    s += `<text x="${pad.l - 7}" y="${y + 4}" text-anchor="end" font-size="12" fill="#64717d">${esc(t.label)}</text>`;
   });
   (opts.xTicks || []).forEach(t => {
     const x = f.x(t.v, opts.xLo, opts.xHi);
     s += `<line x1="${x}" y1="${pad.t}" x2="${x}" y2="${h - pad.b}" stroke="#f0f3f6"/>`;
-    s += `<text x="${x}" y="${h - pad.b + 15}" text-anchor="middle" font-size="10" fill="#64717d">${esc(t.label)}</text>`;
+    s += `<text x="${x}" y="${h - pad.b + 15}" text-anchor="middle" font-size="12" fill="#64717d">${esc(t.label)}</text>`;
   });
-  if (opts.xLabel) s += `<text x="${(pad.l + w - pad.r) / 2}" y="${h - 4}" text-anchor="middle" font-size="11" fill="#64717d">${esc(opts.xLabel)}</text>`;
-  if (opts.yLabel) s += `<text x="12" y="${(pad.t + h - pad.b) / 2}" text-anchor="middle" font-size="11" fill="#64717d" transform="rotate(-90 12 ${(pad.t + h - pad.b) / 2})">${esc(opts.yLabel)}</text>`;
+  if (opts.xLabel) s += `<text x="${(pad.l + w - pad.r) / 2}" y="${h - 4}" text-anchor="middle" font-size="13" fill="#64717d">${esc(opts.xLabel)}</text>`;
+  if (opts.yLabel) s += `<text x="12" y="${(pad.t + h - pad.b) / 2}" text-anchor="middle" font-size="13" fill="#64717d" transform="rotate(-90 12 ${(pad.t + h - pad.b) / 2})">${esc(opts.yLabel)}</text>`;
   return s;
 }
 
@@ -764,6 +765,14 @@ function ticks(lo, hi, n, fmt) {
     out.push({ v, label: fmt(v) });
   }
   return out;
+}
+
+// Compact "×" tick labels so six-figure ratios stay clear of the y-axis title.
+function fmtRatio(v) {
+  if (v >= 1e6) return Number((v / 1e6).toPrecision(3)) + "M×";
+  if (v >= 1e4) return Number((v / 1e3).toPrecision(3)) + "k×";
+  if (v >= 100) return v.toFixed(0) + "×";
+  return v.toFixed(1) + "×";
 }
 
 /* blackbody-ish colour ramp for the element */
@@ -985,7 +994,7 @@ function updateLive(TC) {
 }
 
 function drawTrace() {
-  const f = frame(760, 260, { l: 52, r: 14, t: 14, b: 34 });
+  const f = frame(760, 260, { l: 62, r: 14, t: 14, b: 34 });
   const tAvgRun = state.accTime ? state.accT / state.accTime : tAvgOf();
   const lo = Math.min(state.tMin, 300) - 40, hi = state.tPeak + 60;
   const x0 = Math.max(0, state.t - TRACE_WINDOW), x1 = Math.max(TRACE_WINDOW, state.t);
@@ -1009,10 +1018,10 @@ function drawRaces() {
   const x0 = Math.max(0, state.t - TRACE_WINDOW), x1 = Math.max(TRACE_WINDOW, state.t);
 
   const kMax = Math.max(1.35, ...state.kHist.map(p => p[1])) * 1.08;
-  const fk = frame(500, 230, { l: 48, r: 12, t: 12, b: 32 });
+  const fk = frame(500, 230, { l: 58, r: 12, t: 12, b: 32 });
   let sk = axes(fk, {
     xLo: x0, xHi: x1, yLo: 0.9, yHi: kMax,
-    yTicks: ticks(0.9, kMax, 4, v => v.toFixed(1) + "×"),
+    yTicks: ticks(0.9, kMax, 4, fmtRatio),
     xTicks: ticks(x0, x1, 3, v => v.toFixed(1) + "s"),
     xLabel: "time (s)"
   });
@@ -1022,7 +1031,7 @@ function drawRaces() {
 
   const hVals = state.hHist.map(p => p[1]);
   const hLo = Math.min(0.985, ...hVals) - 0.006, hHi = Math.max(1.015, ...hVals) + 0.006;
-  const fh = frame(500, 230, { l: 52, r: 12, t: 12, b: 32 });
+  const fh = frame(500, 230, { l: 62, r: 12, t: 12, b: 32 });
   let sh = axes(fh, {
     xLo: x0, xHi: x1, yLo: hLo, yHi: hHi,
     yTicks: ticks(hLo, hHi, 4, v => v.toFixed(3)),
@@ -1038,7 +1047,7 @@ function drawRaces() {
 /* jensen tab                                                          */
 /* ------------------------------------------------------------------ */
 function jensenChart(id, fn, color, label) {
-  const f = frame(460, 300, { l: 54, r: 16, t: 16, b: 40 });
+  const f = frame(460, 300, { l: 64, r: 16, t: 16, b: 40 });
   const lo = Math.max(200, state.tMin - 120), hi = state.tPeak + 120;
   const pts = [];
   for (let T = lo; T <= hi; T += (hi - lo) / 160) pts.push([T, fn(T)]);
@@ -1083,7 +1092,7 @@ function jensenChart(id, fn, color, label) {
 }
 
 function drawGainSweep() {
-  const f = frame(500, 250, { l: 54, r: 14, t: 16, b: 40 });
+  const f = frame(500, 250, { l: 64, r: 14, t: 16, b: 40 });
   const pts = [];
   const base = state.tMin;
   for (let dT = 0; dT <= 700; dT += 10) {
@@ -1095,7 +1104,7 @@ function drawGainSweep() {
   const yHi = Math.max(1.2, ...pts.map(p => p[1])) * 1.05;
   let s = axes(f, {
     xLo: 0, xHi: 700, yLo: 0.95, yHi,
-    yTicks: ticks(0.95, yHi, 4, v => v.toFixed(1) + "×"),
+    yTicks: ticks(0.95, yHi, 4, fmtRatio),
     xTicks: ticks(0, 700, 4, v => v.toFixed(0)),
     xLabel: "ΔT = T_peak − T_min (°C)", yLabel: "R_exposure"
   });
@@ -1161,7 +1170,7 @@ function renderRatios() {
   document.getElementById("rkpi4").className = "kpi " + (state.ea > twoRT ? "good" : "bad");
 
   // sweep over T_peak
-  const fp = frame(560, 300, { l: 54, r: 16, t: 16, b: 42 });
+  const fp = frame(560, 300, { l: 64, r: 16, t: 16, b: 42 });
   const lo = state.tMin, hi = Math.max(state.tMin + 50, 1500);
   const ptsDa = [], ptsLam = [];
   for (let p = lo; p <= hi; p += (hi - lo) / 140) {
@@ -1177,7 +1186,7 @@ function renderRatios() {
   const yHi = Math.max(1.5, ...ptsLam.map(p => p[1]), ...ptsDa.map(p => p[1])) * 1.05;
   let s = axes(fp, {
     xLo: lo, xHi: hi, yLo: 0.9, yHi,
-    yTicks: ticks(0.9, yHi, 5, v => v.toFixed(1) + "×"),
+    yTicks: ticks(0.9, yHi, 5, fmtRatio),
     xTicks: ticks(lo, hi, 5, v => v.toFixed(0)),
     xLabel: "T_peak (°C)", yLabel: "ratio vs CJH at T_avg"
   });
@@ -1186,11 +1195,11 @@ function renderRatios() {
   s += path(ptsLam, fp, lo, hi, 0.9, yHi, "#2c6e9b", 2.4);
   const xNow = fp.x(state.tPeak, lo, hi);
   s += `<line x1="${xNow}" y1="${fp.pad.t}" x2="${xNow}" y2="${fp.h - fp.pad.b}" stroke="#102a43" stroke-dasharray="3 4"/>`;
-  s += `<text x="${xNow}" y="${fp.pad.t + 12}" text-anchor="middle" font-size="10" fill="#102a43">current</text>`;
+  s += `<text x="${xNow}" y="${fp.pad.t + 12}" text-anchor="middle" font-size="12" fill="#102a43">current</text>`;
   document.getElementById("sweepPeak").innerHTML = s;
 
   // sweep over duty
-  const fd = frame(560, 300, { l: 54, r: 16, t: 16, b: 42 });
+  const fd = frame(560, 300, { l: 64, r: 16, t: 16, b: 42 });
   const ptsD = [], ptsL = [];
   for (let d = 0.02; d <= 0.98; d += 0.01) {
     const ta = d * state.tPeak + (1 - d) * state.tMin;
@@ -1203,7 +1212,7 @@ function renderRatios() {
   const yHi2 = Math.max(1.5, ...ptsD.map(p => p[1]), ...ptsL.map(p => p[1])) * 1.05;
   let s2 = axes(fd, {
     xLo: 0, xHi: 1, yLo: 0.9, yHi: yHi2,
-    yTicks: ticks(0.9, yHi2, 5, v => v.toFixed(1) + "×"),
+    yTicks: ticks(0.9, yHi2, 5, fmtRatio),
     xTicks: ticks(0, 1, 5, v => v.toFixed(1)),
     xLabel: "duty cycle d", yLabel: "ratio vs CJH at T_avg"
   });
@@ -1212,7 +1221,7 @@ function renderRatios() {
   s2 += path(ptsL, fd, 0, 1, 0.9, yHi2, "#2c6e9b", 2.4);
   const xd = fd.x(state.duty, 0, 1);
   s2 += `<line x1="${xd}" y1="${fd.pad.t}" x2="${xd}" y2="${fd.h - fd.pad.b}" stroke="#102a43" stroke-dasharray="3 4"/>`;
-  s2 += `<text x="${xd}" y="${fd.pad.t + 12}" text-anchor="middle" font-size="10" fill="#102a43">current</text>`;
+  s2 += `<text x="${xd}" y="${fd.pad.t + 12}" text-anchor="middle" font-size="12" fill="#102a43">current</text>`;
   document.getElementById("sweepDuty").innerHTML = s2;
 }
 
