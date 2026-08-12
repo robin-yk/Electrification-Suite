@@ -413,17 +413,18 @@
     .status {
       display: inline-flex;
       align-items: center;
-      gap: 5px;
-      border-radius: 999px;
-      padding: 4px 8px;
-      font-size: 12px;
-      font-weight: 700;
+      gap: 7px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
       white-space: nowrap;
+      color: var(--muted);
     }
-    .status.good { background: var(--success-bg); color: #0d6549; }
-    .status.warn { background: var(--warn-bg); color: #8a4e09; }
-    .status.bad { background: var(--danger-bg); color: #8e2e2e; }
-    .status::before { content: "●"; font-size: 12px; }
+    .status.good { color: #0d6549; }
+    .status.warn { color: #8a4e09; }
+    .status.bad { color: #8e2e2e; }
+    .status::before { content: ""; width: 8px; height: 8px; background: currentColor; }
 
     .chart-wrap { padding: 10px 12px 12px; }
     svg.chart {

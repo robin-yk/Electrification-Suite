@@ -138,11 +138,15 @@
   }
   .kpi-sub { margin-top: 7px; color: var(--muted); font-size: 12px; }
 
-  .status { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; padding: 4px 8px; font-size: 12px; font-weight: 700; white-space: nowrap; }
-  .status.good { background: var(--success-bg); color: #0d6549; }
-  .status.warn { background: var(--warn-bg); color: #8a4e09; }
-  .status.bad { background: var(--danger-bg); color: #8e2e2e; }
-  .status::before { content: "\25CF"; font-size: 12px; }
+  .status { display: inline-flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; white-space: nowrap; color: var(--muted); }
+  .status.good { color: var(--teal); }
+  .status.warn { color: #8a4e09; }
+  .status.bad { color: #8e2e2e; }
+  .status::before { content: ""; width: 8px; height: 8px; background: currentColor; }
+  .status.glyph::before { content: none; }
+  .status.glyph svg { display: block; }
+  .status.glyph.good svg { animation: chip-pulse 1.8s ease-in-out infinite; }
+  @keyframes chip-pulse { 50% { opacity: .35; } }
 
   svg.chart { display: block; width: 100%; height: auto; background: #fff; }
   .chart-note { margin: 7px 4px 0; color: var(--muted); font-size: 13px; }
@@ -305,7 +309,7 @@
   <div class="anim-layout">
     <aside class="anim-inputs" aria-label="Pulse controls">
       <div class="card">
-        <div class="card-header"><h2>Pulse shape</h2><span class="status warn" id="runState">Idle</span></div>
+        <div class="card-header"><h2>Pulse shape</h2><span class="status glyph" id="runState"><svg width="26" height="12" viewBox="0 0 26 12" aria-hidden="true"><path d="M1 10 h24" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>Idle</span></div>
         <div class="card-body">
           <div class="slider-row">
             <div class="slider-head"><label for="driveMode">Waveform source</label></div>
@@ -1434,17 +1438,23 @@ document.getElementById("cjhRef").addEventListener("change", e => {
 });
 
 const runState = document.getElementById("runState");
+const PULSE_GLYPH = '<svg width="26" height="12" viewBox="0 0 26 12" aria-hidden="true"><path d="M1 10 h4 v-8 h5 v8 h5 v-8 h5 v8 h5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>';
+const FLAT_GLYPH = '<svg width="26" height="12" viewBox="0 0 26 12" aria-hidden="true"><path d="M1 10 h24" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>';
+function setRunState(label, running) {
+  runState.className = "status glyph" + (running ? " good" : "");
+  runState.innerHTML = (running ? PULSE_GLYPH : FLAT_GLYPH) + label;
+}
 document.getElementById("btnRun").addEventListener("click", () => {
   state.running = true; state.lastFrame = 0;
-  runState.textContent = "Running"; runState.className = "status good";
+  setRunState("Running", true);
 });
 document.getElementById("btnPause").addEventListener("click", () => {
   state.running = false;
-  runState.textContent = "Paused"; runState.className = "status warn";
+  setRunState("Paused", false);
 });
 document.getElementById("btnReset").addEventListener("click", () => {
   state.running = false;
-  runState.textContent = "Idle"; runState.className = "status warn";
+  setRunState("Idle", false);
   resetIntegration();
 });
 
@@ -1463,7 +1473,7 @@ recomputePhysical();
 resetIntegration();
 redrawAll();
 state.running = true; state.lastFrame = 0;
-runState.textContent = "Running"; runState.className = "status good";
+setRunState("Running", true);
 requestAnimationFrame(step);
 </script>
 </body>
