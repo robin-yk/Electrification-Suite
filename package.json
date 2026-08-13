@@ -6,7 +6,7 @@
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "https://github.com/robin-yk/Electrification.git"
+    "url": "https://github.com/robin-yk/Electrification-Suite.git"
   },
   "exports": {
     "./joule": "./apps/joule/solver.js",

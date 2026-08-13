@@ -7,8 +7,8 @@ authors:
     given-names: Yeonsu
     affiliation: "Vlachos Lab, University of Delaware"
     email: ask.yeonsu@gmail.com
-repository-code: "https://github.com/robin-yk/Electrification"
-url: "https://robin-yk.github.io/Electrification/"
+repository-code: "https://github.com/robin-yk/Electrification-Suite"
+url: "https://robin-yk.github.io/Electrification-Suite/"
 abstract: >-
   Browser-based interactive models of chemical process electrification:
   a 2D microwave-heating powder-bed temperature model with dielectric

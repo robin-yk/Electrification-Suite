@@ -1,6 +1,6 @@
 # Contributing
 
-Bug reports, questions, and pull requests are welcome via [GitHub Issues](https://github.com/robin-yk/Electrification/issues) and [Pull Requests](https://github.com/robin-yk/Electrification/pulls).
+Bug reports, questions, and pull requests are welcome via [GitHub Issues](https://github.com/robin-yk/Electrification-Suite/issues) and [Pull Requests](https://github.com/robin-yk/Electrification-Suite/pulls).
 
 ## Reporting a bug
 
