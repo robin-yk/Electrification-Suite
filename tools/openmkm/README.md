@@ -55,6 +55,36 @@ python tools/openmkm/run_sweep.py \
 python tools/openmkm/run_sweep.py --check --omkm ... --cantera-lib ...  # verify
 ```
 
+## Surrogate/ML need check
+
+Do not choose an ML architecture from the 21-point temperature sweep. Generate
+a broad, resumable five-dimensional design first, then measure whether local
+interpolation already meets the required error:
+
+```bash
+python tools/openmkm/run_design.py --cases 512 --output design-results.jsonl \
+  --omkm ~/openmkm-build/openmkm/src/build/omkm \
+  --cantera-lib ~/openmkm-build/cantera-install/lib
+python tools/openmkm/benchmark_surrogate.py design-results.jsonl
+```
+
+The Halton design covers element temperature (450-1400 C), pressure
+(0.5-10 atm), flow (10-200 cm3/s), feed methane fraction (0.1-0.9), and hot
+plateau length (0.5-3 cm). Pressure and flow are sampled logarithmically.
+JSONL is appended and flushed after every successful case, so an interrupted
+run resumes without discarding expensive solves; independent jobs can use
+non-overlapping `--start` ranges and merge their lines afterward. With
+`--continue-on-error`, failed cases are logged to a `.failures.jsonl` sidecar
+with their inputs and OpenMKM stderr instead of aborting the sweep; the final
+dataset validation must then treat missing indices as failures.
+
+`benchmark_surrogate.py` performs leave-one-out validation of a dependency-free
+local inverse-distance interpolator. Its 0.02 maximum absolute-error threshold
+is deliberately strict and visible: only if this baseline misses the target
+should heavier ML models be introduced. This design is a **steady-state**
+surrogate triage. Dynamic-heating memory requires transient simulator data and
+must not be inferred from this table.
+
 CI (`.github/workflows/openmkm-data.yml`) rebuilds `omkm` (cached on the
 patch/build-script hash; only the first run pays the ~25 min compile) and
 runs `--check` whenever this directory changes, so the committed JSON cannot
