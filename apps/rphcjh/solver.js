@@ -291,6 +291,28 @@ export function integrateSeriesCSTR(cfg = {}) {
   };
 }
 
+// Steady CJH temperature that reaches a target conversion, for the
+// iso-conversion comparison. Selectivity to an intermediate always falls as
+// conversion rises — a property of the A -> B -> C network, not of the heating
+// mode — so comparing selectivities at two different conversions reads partly
+// as a slide along the S(X) curve. Matching X first removes that confound.
+//
+// The inversion is closed form, not a root find: X = k1 tau/(1 + k1 tau) is
+// strictly increasing in k1 and k1 is strictly increasing in T, so
+//   k1* = X / (tau (1 - X)),   1/T = 1/T_REF - (R/Ea1) ln(k1*/k1Ref)
+// has exactly one solution. Returns null when the target is out of reach:
+// X >= 1 would need infinite k1, and a small enough target drives 1/T past 0.
+export function cjhTempForConversion(targetX, cfg = {}) {
+  const p = Object.assign({}, SERIES_DEFAULTS, cfg);
+  if (!(targetX > 0) || targetX >= 1) return null;
+  const k1 = targetX / (p.tau * (1 - targetX));
+  const ratio = k1 / p.k1Ref;
+  if (!(ratio > 0) || !Number.isFinite(ratio)) return null;
+  const invT = 1 / T_REF - (R_GAS / (p.ea1 * 1000)) * Math.log(ratio);
+  if (!(invT > 0) || !Number.isFinite(invT)) return null;
+  return 1 / invT - K2C;
+}
+
 // linear phase lookup into an integratePulsedElement() sample list
 export function sampledWaveform(samples, phase) {
   const ph = phase - Math.floor(phase);

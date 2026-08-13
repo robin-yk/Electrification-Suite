@@ -7,11 +7,31 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- Equal-conversion basis for the A → B → C comparison, alongside equal average
+  temperature and equal electrical power. Selectivity to an intermediate always
+  falls as conversion rises, so comparing two runs at different conversions
+  reads partly as a slide along the S(X) curve; matching X first removes that
+  confound. `cjhTempForConversion()` inverts the steady conversion in closed
+  form.
+- Outlet-composition chart on the A → B → C tab: two stacked A/B/C bars with
+  conversion, selectivity, and yield printed under each, and a guide joining
+  the two A boundaries that stands vertical only when the conversions match.
 - Numerical verification of both 2D solvers (`docs/VERIFICATION.md`,
   `tools/verification/`): manufactured-solution convergence (observed order
   2.0 for the Joule FV discretization), analytic radial-parabola and
   multi-layer-annulus benchmarks, grid-sensitivity studies of the shipped
   default cases, and fast guard tests wired into `npm test`.
+
+### Changed
+- The A → B → C KPIs now report conversion and selectivity alongside the yield
+  they multiply to, so the pair shows which factor moved. Yield alone cannot
+  separate "converted more" from "destroyed less".
+- The instantaneous/running x_B trace is retitled "Inside one cycle" and moved
+  below the composition chart: it explains the averages rather than stating the
+  result.
+
+### Removed
+- The "B yield across pulse period" sweep chart.
 
 ## [0.1.0] - 2026-08-12
 

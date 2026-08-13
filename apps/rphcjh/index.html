@@ -213,6 +213,15 @@
   .reactor-caption { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 9px 2px 0; color: var(--muted); font-size: 12px; }
 
   .race-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 14px; }
+  /* The comparison basis is a claim, not a caption: two bars side by side assert
+     that the runs are comparable, so the basis and what it cost sit on the
+     chart face rather than in a KPI subtitle. */
+  .basis-line {
+    font-size: 12px; color: var(--muted); border-left: 3px solid var(--line);
+    padding: 2px 0 2px 9px; margin: 0 0 10px 2px;
+  }
+  .basis-line strong { color: var(--navy); }
+  .basis-line.unreachable { border-left-color: var(--amber); color: var(--amber); }
   .verdict { margin-top: 14px; border-left: 5px solid var(--blue); background: linear-gradient(90deg, #eef6fb 0%, #fff 72%); }
   .verdict-body { padding: 14px 16px; display: flex; align-items: baseline; justify-content: space-between; gap: 18px; flex-wrap: wrap; }
   .verdict-main { color: var(--navy); font-size: 17px; font-weight: 700; }
@@ -573,6 +582,14 @@
             <div class="slider-head"><label for="abcTau">Residence time &tau;</label><output id="abcTauOut">1.0 s</output></div>
             <input id="abcTau" type="range" min="0.1" max="10" step="0.1" value="1.0">
           </div>
+          <div class="slider-row">
+            <div class="slider-head"><label for="abcBasis">Compare against a continuous run at</label></div>
+            <select id="abcBasis" class="drive-select">
+              <option value="tavg" selected>the same average temperature</option>
+              <option value="power">the same electrical power</option>
+              <option value="conv">the same conversion</option>
+            </select>
+          </div>
           <p class="chart-note" style="margin-top:10px">
             The waveform (duty, period, voltage) is shared with the Kinetic Effect tab.
           </p>
@@ -599,9 +616,9 @@
 
     <div>
       <div class="kpi-grid" style="grid-template-columns:repeat(3,minmax(150px,1fr))">
-        <div class="kpi"><div class="kpi-label">B yield &mdash; pulsed</div><div class="kpi-value" id="abcRphB">&mdash;</div><div class="kpi-sub">cycle-averaged outlet x<sub>B</sub></div></div>
-        <div class="kpi"><div class="kpi-label">B yield &mdash; continuous</div><div class="kpi-value" id="abcCjhB">&mdash;</div><div class="kpi-sub" id="abcCjhSub">steady CSTR at T<sub>avg</sub></div></div>
-        <div class="kpi"><div class="kpi-label">Gain</div><div class="kpi-value" id="abcGain">&mdash;</div><div class="kpi-sub">pulsed &divide; continuous</div></div>
+        <div class="kpi"><div class="kpi-label">Conversion X</div><div class="kpi-value" id="abcConv">&mdash;</div><div class="kpi-sub">A consumed, pulsed vs continuous</div></div>
+        <div class="kpi"><div class="kpi-label">Selectivity S</div><div class="kpi-value" id="abcSel">&mdash;</div><div class="kpi-sub">of what reacted, how much is B</div></div>
+        <div class="kpi"><div class="kpi-label">B yield = X &times; S</div><div class="kpi-value" id="abcYield">&mdash;</div><div class="kpi-sub" id="abcCjhSub">steady CSTR at T<sub>avg</sub></div></div>
       </div>
 
       <div class="card reactor-shell" style="margin-top:14px">
@@ -614,9 +631,23 @@
         </div>
       </div>
 
+      <div class="card" style="margin-top:14px">
+        <div class="card-header"><h3>100 molecules of A go in. What comes out?</h3><span class="status" id="abcVerdict">&mdash;</span></div>
+        <div class="card-body" style="padding:10px 12px 12px">
+          <div id="abcBasisLine" class="basis-line">&mdash;</div>
+          <svg class="chart" id="abcSplitChart" viewBox="0 0 760 250" role="img" aria-label="Outlet composition of the pulsed and continuous reactors as two stacked bars split into unreacted A, the intermediate B, and the over-reacted product C"></svg>
+          <div class="legend">
+            <span><i style="background:#8fa3b4"></i>A, unreacted</span>
+            <span><i style="background:#e2574b"></i>B, what you want</span>
+            <span><i style="background:#555c64"></i>C, burned past B</span>
+          </div>
+          <p class="chart-note" id="abcSplitNote">&mdash;</p>
+        </div>
+      </div>
+
       <div class="race-grid">
         <div class="card">
-          <div class="card-header"><h3>The B yield race</h3><span class="status" id="abcVerdict">&mdash;</span></div>
+          <div class="card-header"><h3>Inside one cycle</h3><span class="chart-note" style="margin:0">last 6 s</span></div>
           <div class="card-body" style="padding:10px 12px 12px">
             <svg class="chart" id="abcTraceChart" viewBox="0 0 500 230" role="img" aria-label="Instantaneous and running-average mole fraction of the intermediate B in the pulsed and continuous reactors over the last six seconds"></svg>
             <div class="legend">
@@ -624,8 +655,9 @@
               <span><i style="background:var(--blue)"></i>continuous</span>
             </div>
             <p class="chart-note">
-              Thin lines: x<sub>B</sub> now (each pulse makes a burst of B, flow washes it out).
-              Bold lines: the running B yield the KPIs report.
+              Why the bars above come out that way. Thin lines: x<sub>B</sub> at this instant &mdash; each pulse makes a
+              burst of B and flow washes it out. Bold lines: the same quantity averaged over time, which is the B in
+              the bars.
             </p>
           </div>
         </div>
@@ -645,24 +677,6 @@
               pulses (1 &minus; d)&thinsp;P/&tau; = <strong id="abcCondWash">&mdash;</strong>.
             </p>
           </div>
-        </div>
-      </div>
-
-      <div class="card" style="margin-top:14px">
-        <div class="card-header"><h3>B yield across pulse period</h3></div>
-        <div class="card-body" style="padding:10px 12px 12px">
-          <svg class="chart" id="abcSweepChart" viewBox="0 0 760 300" role="img" aria-label="Cycle-average B yield versus pulse period for three values of the second rate constant, with the continuous-heating yield as a dashed line"></svg>
-          <div class="legend">
-            <span><i style="background:#dfae9e"></i>k<sub>2</sub> &times;0.2</span>
-            <span><i style="background:var(--red)"></i>k<sub>2</sub> as set</span>
-            <span><i style="background:#7c2d2d"></i>k<sub>2</sub> &times;5</span>
-            <span><i class="dash" style="color:var(--blue)"></i>continuous, k<sub>2</sub> as set</span>
-          </div>
-          <p class="chart-note">
-            Square wave at the current T<sub>peak</sub>, T<sub>min</sub>, and duty; the vertical line is the period now
-            set. Long periods let the hot window outlive 1/k<sub>2</sub>(T<sub>peak</sub>) and B burns before it can
-            flow out.
-          </p>
         </div>
       </div>
 
@@ -1023,7 +1037,8 @@ import {
   R_GAS, K2C, arrheniusRate, transportCoefficient, velocity,
   timeAverageTemperature, pulseWaveform, idealTwoStateAverages,
   integratePulsedElement, steadyElementTemperature, sampledWaveform, cfpResistance,
-  steadySeriesCSTR, integrateSeriesCSTR, seriesRateConstants, seriesStepCoeffs
+  steadySeriesCSTR, integrateSeriesCSTR, seriesRateConstants, seriesStepCoeffs,
+  cjhTempForConversion, lumpedLossPower, physicalDriveDefaults
 } from "./solver.js";
 
 /* ------------------------------------------------------------------ */
@@ -1033,7 +1048,7 @@ const state = {
   tPeak: 1250, tMin: 750, duty: 0.10, period: 1.0, ramp: 0.10,
   ea: 100, beta: 0.50,
   ea1: 400, ea2: 80, k1Ref: 30, k2Ref: 1, tauRes: 1.0,
-  driveMode: "physical", voltage: 40, cjhRef: "tavg", physical: null,
+  driveMode: "physical", voltage: 40, cjhRef: "tavg", abcBasis: "tavg", physical: null,
   running: false, t: 0, lastFrame: 0, cycles: 0,
   accK: 0, accH: 0, accU: 0, accKH: 0, accKU: 0, accT: 0, accTime: 0,
   trace: [], kHist: [], hHist: []
@@ -1329,7 +1344,7 @@ function step(now) {
     // the series race integrates CJH at the fixed reference temperature the
     // KPIs compare against, not the still-settling running average, so the
     // green curve starts from zero instead of a spurious hot transient
-    const tRefLive = cjhTemp();
+    const tRefLive = abcCjhTemp();
     advanceAbcLive(dt, tRefLive);
     if (document.getElementById("abc").classList.contains("active")) {
       drawAbcReactor(TC, tRefLive, dt);
@@ -1791,21 +1806,90 @@ function drawAbcTrace() {
   document.getElementById("abcTraceChart").innerHTML = s;
 }
 
+/* Steady power to hold a CJH element at TC: at steady state the electrical
+   input equals the loss, so the loss curve *is* the forward T -> power map.
+   Only meaningful when the physical element model is driving. */
+function cjhHoldPower(TC) {
+  if (!(state.driveMode === "physical" && state.physical)) return null;
+  return lumpedLossPower(TC, physicalDriveDefaults({ voltage: state.voltage }));
+}
+
+/* Resolve which continuous run the pulsed one is measured against. The three
+   bases answer three different questions and none of them is free, so this
+   returns the sentence the chart prints about itself alongside the
+   temperature. Cached by renderAbc because the conversion basis needs the
+   pulsed run's X, which costs a full periodic integration. */
+let abcRef = { T: null, basis: "tavg", line: "", warn: false };
+function abcCjhTemp() { return abcRef.T === null ? cjhTemp() : abcRef.T; }
+
+function resolveAbcRef(sp, run) {
+  const degC = v => `<strong>${v.toFixed(0)} &deg;C</strong>`;
+  const powerTail = T => {
+    const p = cjhHoldPower(T);
+    return p === null ? "" : ` It draws ${p.toFixed(1)} W there, against ${state.physical.avgPower.toFixed(1)} W pulsed.`;
+  };
+
+  if (state.abcBasis === "conv") {
+    const T = cjhTempForConversion(run.conversion, sp);
+    if (T === null) {
+      const fallback = idleAvgT();
+      return {
+        T: fallback, basis: "tavg", warn: true,
+        line: `No continuous temperature reaches X = ${(run.conversion * 100).toFixed(1)}%, so this falls back to the same average temperature, ${degC(fallback)}. Lower the pulsed conversion to use the equal-conversion basis.`
+      };
+    }
+    return {
+      T, basis: "conv", warn: false,
+      line: `Equal conversion: both reactors consume the same ${(run.conversion * 100).toFixed(1)}% of the feed. The continuous run needs ${degC(T)} to get there.${powerTail(T)}`
+    };
+  }
+
+  if (state.abcBasis === "power") {
+    if (!(state.driveMode === "physical" && state.physical)) {
+      const fallback = idleAvgT();
+      return {
+        T: fallback, basis: "tavg", warn: true,
+        line: `Equal power needs the physical element drive. With the two-state waveform there is no power model, so this falls back to the same average temperature, ${degC(fallback)}.`
+      };
+    }
+    const T = state.physical.equalPowerT;
+    return {
+      T, basis: "power", warn: false,
+      line: `Equal electrical power: both draw ${state.physical.avgPower.toFixed(1)} W on average, which holds the continuous element at ${degC(T)}.`
+    };
+  }
+
+  const T = idleAvgT();
+  return {
+    T, basis: "tavg", warn: false,
+    line: `Equal average temperature: the continuous run sits at ${degC(T)}, the pulsed waveform's time average.${powerTail(T)}`
+  };
+}
+
 function renderAbc() {
   const sp = abcParams();
-  const tRef = cjhTemp();
-  const cjh = steadySeriesCSTR(tRef, sp);
   const run = integrateSeriesCSTR(Object.assign({ tempFn: waveform, period: state.period }, sp));
+  abcRef = resolveAbcRef(sp, run);
+  const tRef = abcRef.T;
+  const cjh = steadySeriesCSTR(tRef, sp);
   const gain = run.avgB / Math.max(cjh.xB, 1e-12);
   const peak = seriesRateConstants(state.tPeak, sp);
   const tauP = state.duty * state.period;
 
-  document.getElementById("abcRphB").textContent = (run.avgB * 100).toFixed(1) + " %";
-  document.getElementById("abcCjhB").textContent = (cjh.xB * 100).toFixed(1) + " %";
-  document.getElementById("abcCjhSub").innerHTML = usingEqualPower()
-    ? `steady CSTR at ${tRef.toFixed(0)} &deg;C (equal power)`
-    : `steady CSTR at T<sub>avg</sub> = ${tRef.toFixed(0)} &deg;C`;
-  document.getElementById("abcGain").textContent = gain < 10 ? gain.toFixed(2) + "×" : fmtRatio(gain);
+  // yield = conversion x selectivity, so reporting the pair shows which factor
+  // moved. Yield alone cannot separate "converted more" from "destroyed less".
+  const pct = v => (v * 100).toFixed(1) + "%";
+  const selOf = (b, x) => x > 1e-12 ? b / x : 0;
+  const cjhX = 1 - cjh.xA;
+  const pair = (a, b) => `${a} <span style="color:var(--muted);font-weight:400">vs</span> ${b}`;
+  document.getElementById("abcConv").innerHTML = pair(pct(run.conversion), pct(cjhX));
+  document.getElementById("abcSel").innerHTML = pair(pct(selOf(run.avgB, run.conversion)), pct(selOf(cjh.xB, cjhX)));
+  document.getElementById("abcYield").innerHTML = pair(pct(run.avgB), pct(cjh.xB));
+  document.getElementById("abcCjhSub").textContent = "pulsed vs continuous";
+
+  const basisLine = document.getElementById("abcBasisLine");
+  basisLine.innerHTML = abcRef.line;
+  basisLine.className = "basis-line" + (abcRef.warn ? " unreachable" : "");
 
   const outcome = gain >= 1.05
     ? `pulsing raises the B yield from ${(cjh.xB * 100).toFixed(1)}% (continuous) to ${(run.avgB * 100).toFixed(1)}%.`
@@ -1826,46 +1910,65 @@ function renderAbc() {
   document.getElementById("abcCondK1").textContent = sAbc(peak.k1 * tauP);
   document.getElementById("abcCondWash").textContent = sAbc((1 - state.duty) * state.period / state.tauRes);
 
-  drawAbcSweep(sp, tRef);
+  drawAbcSplit(run, cjh);
   if (!state.running) {
     drawAbcReactor(waveform((state.t % state.period) / state.period), tRef);
     drawAbcTrace();
   }
 }
 
-function drawAbcSweep(sp, tRef) {
-  const wf = { duty: state.duty, ramp: 0, tPeak: state.tPeak, tMin: state.tMin };
-  const logLo = Math.log10(0.05), logHi = Math.log10(30);
-  const curves = [
-    { m: 0.2, color: "#dfae9e", w: 1.8 },
-    { m: 5, color: "#7c2d2d", w: 1.8 },
-    { m: 1, color: "var(--red)", w: 2.6 }
+function drawAbcSplit(run, cjh) {
+  // Two stacked bars of the outlet stream. Volumetric flow is constant in this
+  // model, so the pulsed reactor's cycle-averaged mole fractions are exactly
+  // its time-averaged outlet composition and the two bars are comparable.
+  // Reuses the particle colours from the canvas above so the same species
+  // reads as the same colour in both views.
+  const W = 760, H = 250, x0 = 128, x1 = 738, bw = x1 - x0, bh = 54;
+  const rows = [
+    { label: "PULSED", y: 44, x: run.conversion, parts: [run.avgA, run.avgB, run.avgC] },
+    { label: "CONTINUOUS", y: 156, x: 1 - cjh.xA, parts: [cjh.xA, cjh.xB, cjh.xC] }
   ];
-  const cjhB = steadySeriesCSTR(tRef, sp).xB;
-  let yMax = Math.max(0.2, cjhB);
-  for (const c of curves) {
-    const p = Object.assign({}, sp, { k2Ref: sp.k2Ref * c.m });
-    c.pts = [];
-    for (let i = 0; i <= 20; i++) {
-      const P = 10 ** (logLo + (logHi - logLo) * i / 20);
-      const r = integrateSeriesCSTR(Object.assign({ tempFn: ph => pulseWaveform(ph, wf), period: P, steps: 1200 }, p));
-      c.pts.push([Math.log10(P), r.avgB]);
-      yMax = Math.max(yMax, r.avgB);
-    }
+  const fill = ["#8fa3b4", "#e2574b", "#555c64"];
+  const ink = ["#2b3a45", "#ffffff", "#ffffff"];
+  let s = "";
+
+  for (const r of rows) {
+    const total = r.parts.reduce((a, b) => a + b, 0) || 1;
+    s += `<text x="${x0}" y="${r.y - 10}" fill="var(--navy)" font-size="12" font-weight="700" letter-spacing="0.06em">${r.label}</text>`;
+    let cx = x0;
+    r.parts.forEach((v, i) => {
+      const w = bw * v / total;
+      if (w <= 0.01) return;
+      s += `<rect x="${cx.toFixed(1)}" y="${r.y}" width="${w.toFixed(1)}" height="${bh}" fill="${fill[i]}"/>`;
+      // a label only fits, and only helps, once the segment is wide enough
+      if (w > 34) {
+        s += `<text x="${(cx + w / 2).toFixed(1)}" y="${r.y + bh / 2 + 5}" fill="${ink[i]}" font-size="14" font-weight="700" text-anchor="middle">${Math.round(v / total * 100)}</text>`;
+      }
+      cx += w;
+    });
+    const sel = r.x > 1e-12 ? r.parts[1] / r.x : 0;
+    s += `<text x="${x0}" y="${r.y + bh + 20}" fill="var(--muted)" font-size="12">` +
+         `X = <tspan fill="var(--navy)" font-weight="700">${(r.x * 100).toFixed(1)}%</tspan>` +
+         `<tspan dx="10">S = </tspan><tspan fill="var(--navy)" font-weight="700">${(sel * 100).toFixed(1)}%</tspan>` +
+         `<tspan dx="10">B yield = </tspan><tspan fill="#c53a3a" font-weight="700">${(r.parts[1] * 100).toFixed(1)}%</tspan></text>`;
   }
-  const f = frame(760, 300, { l: 52, r: 14, t: 12, b: 42 });
-  const yHi = Math.min(1, yMax * 1.12);
-  let s = axes(f, {
-    xLo: logLo, xHi: logHi, yLo: 0, yHi,
-    xTicks: [0.05, 0.2, 1, 5, 30].map(P => ({ v: Math.log10(P), label: String(P) })),
-    yTicks: ticks(0, yHi, 4, v => (v * 100).toFixed(0) + "%"),
-    xLabel: "pulse period P (s), log scale", yLabel: "B yield, cycle average"
-  });
-  s += path([[logLo, cjhB], [logHi, cjhB]], f, logLo, logHi, 0, yHi, "var(--blue)", 1.8, "6 5");
-  const xNow = f.x(Math.min(Math.max(Math.log10(state.period), logLo), logHi), logLo, logHi);
-  s += `<line x1="${xNow.toFixed(1)}" y1="${f.pad.t}" x2="${xNow.toFixed(1)}" y2="${300 - f.pad.b}" stroke="#9aa7b1" stroke-dasharray="3 4"/>`;
-  for (const c of curves) s += path(c.pts, f, logLo, logHi, 0, yHi, c.color, c.w);
-  document.getElementById("abcSweepChart").innerHTML = s;
+
+  // Connect the two A boundaries. When the bases match conversion the guide is
+  // vertical and the bars differ only in where the reacted half went, which is
+  // the whole argument; when it slants, the conversions differ and the yield
+  // comparison is carrying that difference too.
+  const bx = r => x0 + bw * r.parts[0] / (r.parts.reduce((a, b) => a + b, 0) || 1);
+  const [pA, cA] = [bx(rows[0]), bx(rows[1])];
+  s += `<line x1="${pA.toFixed(1)}" y1="${rows[0].y}" x2="${pA.toFixed(1)}" y2="${rows[0].y + bh}" stroke="#fff" stroke-width="1.5"/>`;
+  s += `<line x1="${cA.toFixed(1)}" y1="${rows[1].y}" x2="${cA.toFixed(1)}" y2="${rows[1].y + bh}" stroke="#fff" stroke-width="1.5"/>`;
+  s += `<line x1="${pA.toFixed(1)}" y1="${rows[0].y + bh}" x2="${cA.toFixed(1)}" y2="${rows[1].y}" stroke="#9aa7b1" stroke-width="1.2" stroke-dasharray="3 4"/>`;
+
+  document.getElementById("abcSplitChart").innerHTML = s;
+
+  const same = Math.abs(rows[0].x - rows[1].x) < 0.005;
+  document.getElementById("abcSplitNote").innerHTML = same
+    ? "Both bars consume the same amount of feed, so the dashed guide is vertical and the only difference left is where the reacted half went: B or C."
+    : "The dashed guide slants because the two runs do not convert the same amount of feed. Switch the basis to <em>the same conversion</em> to line them up and read the B&nbsp;/&nbsp;C split on its own.";
 }
 
 function syncOutputs() {
@@ -1891,7 +1994,7 @@ function resetIntegration() {
   resetAbcLive();
   drawReactor(state.tMin, cjhTemp());
   drawTrace(); drawRaces();
-  drawAbcReactor(state.tMin, cjhTemp());
+  drawAbcReactor(state.tMin, abcCjhTemp());
   drawAbcTrace();
   document.getElementById("abcCycleCount").textContent = "cycle 0";
   document.getElementById("valTnow").textContent = "—";
@@ -2065,6 +2168,11 @@ document.getElementById("driveMode").addEventListener("change", e => {
 document.getElementById("cjhRef").addEventListener("change", e => {
   state.cjhRef = e.target.value;
   syncCjhTitle();
+  redrawAll();
+});
+document.getElementById("abcBasis").addEventListener("change", e => {
+  state.abcBasis = e.target.value;
+  resetAbcLive();
   redrawAll();
 });
 
