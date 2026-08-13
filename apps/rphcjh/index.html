@@ -298,6 +298,7 @@
     <button class="tab keep-case" data-tab="abc" role="tab" aria-selected="false">A &rarr; B &rarr; C</button>
     <button class="tab" data-tab="jensen" role="tab" aria-selected="false">When Pulsing Helps</button>
     <button class="tab keep-case" data-tab="ratios" role="tab" aria-selected="false">&Lambda; and Da ratios</button>
+    <button class="tab keep-case" data-tab="openmkm" role="tab" aria-selected="false">OpenMKM PFR</button>
     <button class="tab" data-tab="calculations" role="tab" aria-selected="false">Calculations</button>
     <button class="tab" data-tab="cite" role="tab" aria-selected="false">How to Cite</button>
   </div>
@@ -741,6 +742,68 @@
     demonstrate that pulsing outperforms a continuous heater operated at T<sub>peak</sub>, which is the comparison relevant to
     an operator with sufficient power capacity. In that case, the argument for pulsing rests on selectivity and element lifetime, not on &Lambda; or Da.
   </div>
+</section>
+
+<!-- ============ OPENMKM ============ -->
+<section id="openmkm" class="panel" role="tabpanel">
+  <p class="section-kicker">Reactor-scale check with detailed chemistry</p>
+  <h2 class="section-title">Steady PFR sweep, computed with OpenMKM</h2>
+  <p class="section-lede">
+    The hot zone's residence time is milliseconds while pulses last on the order of a second, so the reactor is
+    quasi-steady at every instant of the pulse: pulsed operation is the duty-weighted blend of the steady states at
+    T<sub>peak</sub> and T<sub>min</sub>. Each point below is a steady OpenMKM plug-flow solution
+    (GRI-Mech 3.0, gas phase, CH<sub>4</sub>:CO<sub>2</sub> = 1:1) with the animation's axial profile:
+    cold feed in, Joule-heated plateau, quench, exit.
+  </p>
+
+  <div class="kpi-grid" style="grid-template-columns:repeat(4,minmax(150px,1fr))">
+    <div class="kpi" id="okpi1"><div class="kpi-label">X<sub>CH4</sub> pulsed</div><div class="kpi-value" id="omkmXPulsed">&mdash;</div><div class="kpi-sub">duty-weighted blend</div></div>
+    <div class="kpi" id="okpi2"><div class="kpi-label">X<sub>CH4</sub> CJH</div><div class="kpi-value" id="omkmXCjh">&mdash;</div><div class="kpi-sub" id="omkmXCjhSub">at the reference T</div></div>
+    <div class="kpi" id="okpi3"><div class="kpi-label">Conversion ratio</div><div class="kpi-value" id="omkmRatio">&mdash;</div><div class="kpi-sub">pulsed / CJH</div></div>
+    <div class="kpi" id="okpi4"><div class="kpi-label">S<sub>C2</sub> pulsed</div><div class="kpi-value" id="omkmSel">&mdash;</div><div class="kpi-sub" id="omkmSelSub">carbon basis</div></div>
+  </div>
+
+  <div class="calc-grid">
+    <article class="card">
+      <div class="card-header"><h3>Outlet conversion and C<sub>2</sub> selectivity vs element temperature</h3><span class="status" id="omkmStatus" style="background:var(--soft);color:var(--muted)">loading&hellip;</span></div>
+      <div class="card-body" style="padding:10px 12px 12px">
+        <svg class="chart" id="omkmChart" viewBox="0 0 560 320" role="img" aria-label="Steady PFR methane conversion and C2 selectivity versus element temperature, with the pulsed blend and CJH reference marked"></svg>
+        <div class="legend">
+          <span><i style="background:var(--red)"></i>X<sub>CH4</sub> steady PFR</span>
+          <span><i style="background:var(--teal)"></i>S<sub>C2</sub> steady PFR</span>
+          <span><i style="background:#102a43"></i>T<sub>min</sub>, T<sub>peak</sub> states</span>
+          <span><i style="background:var(--blue)"></i>CJH reference</span>
+        </div>
+        <p class="chart-note">
+          The pulsed marker sits at T<sub>avg</sub> but <em>above</em> the conversion curve: the same Jensen gap as the
+          &Lambda;/Da tabs, now on a full reactor solution with detailed chemistry instead of a single lumped rate.
+        </p>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-header"><h3>Steady outlet composition (mole fractions)</h3></div>
+      <div class="card-body">
+        <table class="metric-table" id="omkmSlate"><tbody></tbody></table>
+        <p class="chart-note" style="margin-top:8px">
+          Columns are the three steady states the quasi-steady picture blends: the pulse endpoints and the CJH reference.
+          C<sub>2</sub>H<sub>2</sub> appearing at T<sub>peak</sub> but not at the CJH temperature is the tab's whole story.
+        </p>
+      </div>
+    </article>
+  </div>
+
+  <div class="assumption">
+    <strong>Validity limits.</strong> The quasi-steady blend requires the hot-zone residence time (ms) to stay far below
+    the pulse period; it holds across this page's period slider but would fail for kHz pulsing. The chemistry is
+    gas-phase GRI-Mech 3.0, a combustion mechanism used here outside its validation range &mdash; trends and the
+    convexity argument are meaningful, absolute conversions are not. Coke formation and surface chemistry are not modeled.
+  </div>
+
+  <p class="chart-note" id="omkmProvenance">
+    Engine: OpenMKM (Vlachos group, University of Delaware) &mdash; Medasani, B., Kasiraju, S., &amp; Vlachos, D. G.
+    <em>OpenMKM: An Open-Source C++ Multiscale Modeling Simulator for Homogeneous and Heterogeneous Catalytic Reactions.</em>
+    JCIM 2023, 63(11), 3377&ndash;3391. Pipeline: <code>tools/openmkm/</code>.
+  </p>
 </section>
 
 <!-- ============ CALCULATIONS ============ -->
@@ -1839,11 +1902,108 @@ function resetIntegration() {
   document.getElementById("verdictSub").textContent = "Both systems sit at the same time-average temperature by construction.";
 }
 
+/* ------------------------------------------------------------------ */
+/* openmkm tab                                                         */
+/* ------------------------------------------------------------------ */
+let omkmData = null;
+
+function omkmInterp(TC) {
+  const cs = omkmData.cases;
+  const lo = cs[0].element_T_C, hi = cs[cs.length - 1].element_T_C;
+  const t = Math.min(Math.max(TC, lo), hi);
+  let i = 0;
+  while (i < cs.length - 2 && cs[i + 1].element_T_C <= t) i++;
+  const a = cs[i], b = cs[i + 1];
+  const f = (t - a.element_T_C) / (b.element_T_C - a.element_T_C);
+  const lerp = (u, v) => u + (v - u) * f;
+  const slate = {};
+  omkmData.species.forEach(sp => {
+    slate[sp] = lerp(a.outlet_molefrac[sp], b.outlet_molefrac[sp]);
+  });
+  return {
+    clamped: TC < lo || TC > hi,
+    x: lerp(a.ch4_conversion, b.ch4_conversion),
+    s: lerp(a.c2_selectivity_carbon, b.c2_selectivity_carbon),
+    slate
+  };
+}
+
+function renderOpenMKM() {
+  if (!omkmData) return;
+  const d = state.duty, tp = state.tPeak, tm = state.tMin;
+  const tRef = cjhTemp();
+  const hi = omkmInterp(tp), lo = omkmInterp(tm), cj = omkmInterp(tRef);
+  const tA = tAvgOf();
+
+  const xP = d * hi.x + (1 - d) * lo.x;
+  const wHi = d * hi.x, wLo = (1 - d) * lo.x;
+  const sP = (wHi + wLo) > 1e-12 ? (wHi * hi.s + wLo * lo.s) / (wHi + wLo) : 0;
+
+  const pct = v => (v * 100).toFixed(v >= 0.1 ? 1 : 2) + "%";
+  document.getElementById("omkmXPulsed").textContent = pct(xP);
+  document.getElementById("omkmXCjh").textContent = pct(cj.x);
+  document.getElementById("omkmXCjhSub").textContent = `CJH at ${tRef.toFixed(0)} °C` + (hi.clamped ? " · T_peak clamped to table" : "");
+  const ratio = cj.x > 1e-6 ? xP / cj.x : null;
+  document.getElementById("omkmRatio").textContent =
+    ratio === null ? (xP > 1e-6 ? "≫1" : "—") : ratio.toFixed(ratio >= 100 ? 0 : 2) + "×";
+  document.getElementById("omkmSel").textContent = (wHi + wLo) > 1e-12 ? pct(sP) : "—";
+  document.getElementById("omkmSelSub").textContent = cj.x > 1e-6 ? `CJH: ${pct(cj.s)}` : "carbon basis";
+  document.getElementById("okpi3").className = "kpi " + (ratio === null && xP > 1e-6 ? "good" : ratio !== null && ratio > 1.02 ? "good" : ratio !== null && ratio < 0.98 ? "bad" : "warn");
+
+  // sweep chart: both quantities live on the same 0..1 axis
+  const cs = omkmData.cases;
+  const xLo = cs[0].element_T_C, xHi = cs[cs.length - 1].element_T_C;
+  const f = frame(560, 320, { l: 52, r: 16, t: 16, b: 42 });
+  let svg = axes(f, {
+    xLo, xHi, yLo: 0, yHi: 1,
+    yTicks: ticks(0, 1, 4, v => (v * 100).toFixed(0) + "%"),
+    xTicks: ticks(xLo, xHi, 5, v => v.toFixed(0)),
+    xLabel: "element temperature (°C)", yLabel: "fraction"
+  });
+  svg += path(cs.map(c => [c.element_T_C, c.ch4_conversion]), f, xLo, xHi, 0, 1, "#c53a3a", 2.4);
+  svg += path(cs.map(c => [c.element_T_C, c.c2_selectivity_carbon]), f, xLo, xHi, 0, 1, "#13795b", 2.4);
+  const xAt = v => f.x(Math.min(Math.max(v, xLo), xHi), xLo, xHi);
+  const yAt = v => f.y(v, 0, 1);
+  [[tm, lo.x], [tp, hi.x]].forEach(p => {
+    svg += `<circle cx="${xAt(p[0]).toFixed(1)}" cy="${yAt(p[1]).toFixed(1)}" r="4.5" fill="#102a43"/>`;
+  });
+  svg += `<circle cx="${xAt(tRef).toFixed(1)}" cy="${yAt(cj.x).toFixed(1)}" r="5" fill="#fff" stroke="#2c6e9b" stroke-width="2.4"/>`;
+  svg += `<line x1="${xAt(tA)}" y1="${f.pad.t}" x2="${xAt(tA)}" y2="${f.h - f.pad.b}" stroke="#b9c4cf" stroke-dasharray="3 4"/>`;
+  svg += `<circle cx="${xAt(tA).toFixed(1)}" cy="${yAt(xP).toFixed(1)}" r="5.5" fill="#c53a3a"/>`;
+  svg += `<text x="${xAt(tA).toFixed(1)}" y="${(yAt(xP) - 10).toFixed(1)}" text-anchor="middle" font-size="10" font-weight="bold" fill="#c53a3a">pulsed</text>`;
+  document.getElementById("omkmChart").innerHTML = svg;
+
+  // steady outlet slate at the three anchor temperatures
+  const fmtX = v => v >= 0.0005 ? v.toFixed(3) : v > 0 ? v.toExponential(1) : "0";
+  const head = `<tr><th>species</th><td>T<sub>min</sub> ${tm.toFixed(0)} °C</td><td>T<sub>peak</sub> ${tp.toFixed(0)} °C</td><td>CJH ${tRef.toFixed(0)} °C</td></tr>`;
+  document.querySelector("#omkmSlate tbody").innerHTML = head + omkmData.species
+    .map(sp => `<tr><th>${sp.replace(/(\d)/g, "<sub>$1</sub>")}</th><td>${fmtX(lo.slate[sp])}</td><td>${fmtX(hi.slate[sp])}</td><td>${fmtX(cj.slate[sp])}</td></tr>`)
+    .join("");
+}
+
+fetch("data/openmkm-pfr.json")
+  .then(r => (r.ok ? r.json() : Promise.reject(new Error("HTTP " + r.status))))
+  .then(d => {
+    omkmData = d;
+    const st = document.getElementById("omkmStatus");
+    st.textContent = `${d.engine.split("(")[0].trim()} · ${d.mechanism}`;
+    st.className = "status good";
+    document.getElementById("omkmProvenance").innerHTML +=
+      ` Data generated ${d.generated}; feed ${d.feed} at ${d.pressure_atm} atm, ${d.geometry.flow_cm3_s} cm³/s.`;
+    renderOpenMKM();
+  })
+  .catch(() => {
+    const st = document.getElementById("omkmStatus");
+    st.textContent = "data unavailable";
+    st.className = "status warn";
+  });
+
 function redrawAll() {
   syncOutputs();
   renderJensen();
   renderRatios();
   renderAbc();
+  renderOpenMKM();
   if (!state.running) {
     document.getElementById("valTavg").textContent = idleAvgT().toFixed(0) + " °C";
     drawReactor(

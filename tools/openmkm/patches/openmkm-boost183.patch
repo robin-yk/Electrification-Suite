@@ -1,0 +1,35 @@
+diff --git a/src/pfr1d.cpp b/src/pfr1d.cpp
+index 1e643b2..0487cdf 100644
+--- a/src/pfr1d.cpp
++++ b/src/pfr1d.cpp
+@@ -486,7 +486,7 @@ void PFR1d::setTProfile(const map<double, double>& T_profile)
+         m_T_profile.push_back(dist_Tprof.second);
+     }
+ 
+-    m_T_interp = make_shared<boost::math::barycentric_rational<double>>(m_T_profile_ind, m_T_profile, m_T_profile.size());
++    m_T_interp = make_shared<boost::math::interpolators::barycentric_rational<double>>(m_T_profile_ind, m_T_profile, m_T_profile.size());
+ }
+ */
+ 
+@@ -513,7 +513,7 @@ void PFR1d::setTProfile(const map<double, double>& T_profile)
+ 
+     //if (m_T_interp != nullptr){
+     //    m_T_interp = nullptr;
+-        m_T_interp = make_shared<boost::math::barycentric_rational<double>>(
++        m_T_interp = make_shared<boost::math::interpolators::barycentric_rational<double>>(
+                 Zs.begin(), Zs.end(), Ts.begin());
+     //}
+ }
+diff --git a/src/pfr1d.h b/src/pfr1d.h
+index 2a1ea17..9c8ff8a 100644
+--- a/src/pfr1d.h
++++ b/src/pfr1d.h
+@@ -392,7 +392,7 @@ protected:
+     //int m_T_profile_iind;
+ 
+     //! Barycentric interpolator to interpolate temperatures for T profile 
+-    std::shared_ptr<boost::math::barycentric_rational<double>> m_T_interp;
++    std::shared_ptr<boost::math::interpolators::barycentric_rational<double>> m_T_interp;
+ 
+     //! External Heat supplied 
+     bool m_heat = false;

@@ -1,0 +1,57 @@
+diff --git a/interfaces/cython/cantera/ck2cti.py b/interfaces/cython/cantera/ck2cti.py
+index 6185ea1..0724f9b 100644
+--- a/interfaces/cython/cantera/ck2cti.py
++++ b/interfaces/cython/cantera/ck2cti.py
+@@ -1549,7 +1549,7 @@ class Parser(object):
+         transportLines = []
+         self.line_number = 0
+ 
+-        with open(path, 'rU') as ck_file:
++        with open(path, 'r') as ck_file:
+ 
+             def readline():
+                 self.line_number += 1
+@@ -2248,7 +2248,7 @@ duplicate transport data) to be ignored.
+         if transportFile:
+             if not os.path.exists(transportFile):
+                 raise IOError('Missing transport file: {0!r}'.format(transportFile))
+-            with open(transportFile, 'rU') as f:
++            with open(transportFile, 'r') as f:
+                 lines = [strip_nonascii(line) for line in f]
+             parser.parseTransportData(lines, transportFile, 1)
+ 
+diff --git a/interfaces/cython/cantera/ctml_writer.py b/interfaces/cython/cantera/ctml_writer.py
+index 1b161d1..7bcde27 100644
+--- a/interfaces/cython/cantera/ctml_writer.py
++++ b/interfaces/cython/cantera/ctml_writer.py
+@@ -2954,7 +2954,7 @@ def convert(filename=None, outName=None, text=None):
+         outName = 'STDOUT'
+ 
+     open_kw = {'encoding': 'latin-1'} if sys.version_info.major == 3 else {}
+-    open_mode = 'r' if sys.version_info.major == 3 else 'rU'
++    open_mode = 'r' if sys.version_info.major == 3 else 'r'
+     try:
+         if filename is not None:
+             with open(filename, open_mode, **open_kw) as f:
+diff --git a/site_scons/site_tools/subst.py b/site_scons/site_tools/subst.py
+index 3a1c4f6..62c2482 100644
+--- a/site_scons/site_tools/subst.py
++++ b/site_scons/site_tools/subst.py
+@@ -21,7 +21,7 @@ import SCons.Errors
+ def _subst_file(target, source, env, pattern, replace):
+     # Read file
+     #print 'CALLING SUBST_FILE'
+-    f = open(source, "rU")
++    f = open(source, "r")
+     try:
+         contents = f.read()
+     finally:
+@@ -46,7 +46,7 @@ def _subst_file(target, source, env, pattern, replace):
+ # Determine which keys are used
+ def _subst_keys(source, pattern):
+     # Read file
+-    f = open(source, "rU")
++    f = open(source, "r")
+     try:
+         contents = f.read()
+     finally:

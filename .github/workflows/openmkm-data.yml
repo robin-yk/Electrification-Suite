@@ -1,0 +1,40 @@
+name: OpenMKM data
+
+on:
+  push:
+    paths:
+      - "tools/openmkm/**"
+      - "apps/rphcjh/data/openmkm-pfr.json"
+      - ".github/workflows/openmkm-data.yml"
+  workflow_dispatch:
+
+jobs:
+  verify-precomputed-data:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"     # the Cantera fork's SConstruct needs distutils
+
+      - name: Cache the built omkm binary and Cantera fork install
+        id: omkm-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/openmkm-build/cantera-install
+            ~/openmkm-build/omkm-bin
+          key: omkm-${{ runner.os }}-${{ hashFiles('tools/openmkm/patches/**', 'tools/openmkm/build.sh') }}
+
+      - name: Build OpenMKM from source (first run only, ~25 min)
+        if: steps.omkm-cache.outputs.cache-hit != 'true'
+        run: |
+          tools/openmkm/build.sh ~/openmkm-build
+          mkdir -p ~/openmkm-build/omkm-bin
+          cp ~/openmkm-build/openmkm/src/build/omkm ~/openmkm-build/omkm-bin/
+
+      - name: Verify committed JSON matches a fresh sweep
+        run: |
+          python tools/openmkm/run_sweep.py --check \
+            --omkm ~/openmkm-build/omkm-bin/omkm \
+            --cantera-lib ~/openmkm-build/cantera-install/lib
