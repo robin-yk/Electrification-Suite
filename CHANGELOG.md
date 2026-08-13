@@ -16,6 +16,10 @@ All notable changes to this project are documented here. The format follows
 - Outlet-composition chart on the A → B → C tab: two stacked A/B/C bars with
   conversion, selectivity, and yield printed under each, and a guide joining
   the two A boundaries that stands vertical only when the conversions match.
+- "Where pulsing actually wins": the equal-conversion yield ratio swept across
+  pulse period, with a break-even line. Holding conversion fixed at every
+  period leaves only the selectivity question, so the crossing is the period
+  below which pulsing is worth doing.
 - Numerical verification of both 2D solvers (`docs/VERIFICATION.md`,
   `tools/verification/`): manufactured-solution convergence (observed order
   2.0 for the Joule FV discretization), analytic radial-parabola and
@@ -29,6 +33,13 @@ All notable changes to this project are documented here. The format follows
 - The instantaneous/running x_B trace is retitled "Inside one cycle" and moved
   below the composition chart: it explains the averages rather than stating the
   result.
+- The A → B → C tab now opens at 34 V with a 2 s residence time. The previous
+  default ran the element at 1399 °C, where k1(T_peak)·tau_p reached 1570: the
+  feed was consumed almost immediately and the rest of the hot window only
+  burned B to C, so k2(T_peak)·tau_p climbed to 0.35 and the tab opened on an
+  operating point where the effect it describes does not appear. The new
+  default satisfies both stated conditions (16.4 and 0.14) and pulsing wins
+  1.31x at equal conversion.
 
 ### Removed
 - The "B yield across pulse period" sweep chart.

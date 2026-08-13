@@ -344,8 +344,8 @@
           </div>
           <div id="physicalControls">
             <div class="slider-row">
-              <div class="slider-head"><label for="voltage">Supply voltage V</label><output id="voltageOut">40.0 V</output></div>
-              <input id="voltage" type="range" min="5" max="60" step="0.5" value="40">
+              <div class="slider-head"><label for="voltage">Supply voltage V</label><output id="voltageOut">34.0 V</output></div>
+              <input id="voltage" type="range" min="5" max="60" step="0.5" value="34">
             </div>
             <div class="slider-row">
               <div class="slider-head"><label for="cjhRef">CJH reference</label></div>
@@ -579,8 +579,8 @@
             <input id="abcK2" type="range" min="0.05" max="30" step="0.05" value="1">
           </div>
           <div class="slider-row">
-            <div class="slider-head"><label for="abcTau">Residence time &tau;</label><output id="abcTauOut">1.0 s</output></div>
-            <input id="abcTau" type="range" min="0.1" max="10" step="0.1" value="1.0">
+            <div class="slider-head"><label for="abcTau">Residence time &tau;</label><output id="abcTauOut">2.0 s</output></div>
+            <input id="abcTau" type="range" min="0.1" max="10" step="0.1" value="2.0">
           </div>
           <div class="slider-row">
             <div class="slider-head"><label for="abcBasis">Compare against a continuous run at</label></div>
@@ -677,6 +677,14 @@
               pulses (1 &minus; d)&thinsp;P/&tau; = <strong id="abcCondWash">&mdash;</strong>.
             </p>
           </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:14px">
+        <div class="card-header"><h3>Where pulsing actually wins</h3><span class="status" id="abcWinStatus">&mdash;</span></div>
+        <div class="card-body" style="padding:10px 12px 12px">
+          <svg class="chart" id="abcGainChart" viewBox="0 0 760 300" role="img" aria-label="Ratio of pulsed to continuous B yield at equal conversion, versus pulse period, with a break-even line at one"></svg>
+          <p class="chart-note" id="abcGainNote">&mdash;</p>
         </div>
       </div>
 
@@ -1049,8 +1057,8 @@ import {
 const state = {
   tPeak: 1250, tMin: 750, duty: 0.10, period: 1.0, ramp: 0.10,
   ea: 100, beta: 0.50,
-  ea1: 400, ea2: 80, k1Ref: 30, k2Ref: 1, tauRes: 1.0,
-  driveMode: "physical", voltage: 40, cjhRef: "tavg", abcBasis: "tavg", physical: null,
+  ea1: 400, ea2: 80, k1Ref: 30, k2Ref: 1, tauRes: 2.0,
+  driveMode: "physical", voltage: 34, cjhRef: "tavg", abcBasis: "tavg", physical: null,
   running: false, t: 0, lastFrame: 0, cycles: 0,
   accK: 0, accH: 0, accU: 0, accKH: 0, accKU: 0, accT: 0, accTime: 0,
   trace: [], kHist: [], hHist: []
@@ -1913,10 +1921,85 @@ function renderAbc() {
   document.getElementById("abcCondWash").textContent = sAbc((1 - state.duty) * state.period / state.tauRes);
 
   drawAbcSplit(run, cjh);
+  drawAbcGain(sp);
   if (!state.running) {
     drawAbcReactor(waveform((state.t % state.period) / state.period), tRef);
     drawAbcTrace();
   }
+}
+
+/* Yield ratio at *equal conversion* across pulse period. The deleted sweep
+   plotted raw yield, which mostly traced conversion; holding conversion fixed
+   at every period leaves only the selectivity question, so the curve crosses
+   1.0 exactly where pulsing starts to be worth doing.
+
+   The waveform here is the ideal square wave between the current T_peak and
+   T_min, the same two-state idealization the conditions table evaluates. The
+   physical drive's own waveform is not used: re-solving the element at every
+   period costs ~2 s, far too slow for a slider redraw. Ramp time at
+   intermediate temperatures only hurts the pulsed run, so this curve sits
+   above the physically-driven one and the break-even period it reports is an
+   optimistic bound. The badge deliberately reports that period rather than a
+   gain, which would invite comparison with the bars above and disagree. */
+function drawAbcGain(sp) {
+  const wf = { duty: state.duty, ramp: state.ramp, tPeak: state.tPeak, tMin: state.tMin };
+  const logLo = Math.log10(0.02), logHi = Math.log10(30);
+  const N = 34;
+  const pts = [];
+  let gLo = 1, gHi = 1;
+  for (let i = 0; i <= N; i++) {
+    const P = 10 ** (logLo + (logHi - logLo) * i / N);
+    const r = integrateSeriesCSTR(Object.assign({ tempFn: ph => pulseWaveform(ph, wf), period: P, steps: 1200 }, sp));
+    const T = cjhTempForConversion(r.conversion, sp);
+    if (T === null) continue;
+    const c = steadySeriesCSTR(T, sp);
+    if (!(c.xB > 1e-12)) continue;
+    const g = r.avgB / c.xB;
+    if (!Number.isFinite(g) || g <= 0) continue;
+    pts.push([Math.log10(P), Math.log10(g)]);
+    gLo = Math.min(gLo, g); gHi = Math.max(gHi, g);
+  }
+  // log y so a 2x win and a 2x loss are the same distance from break-even
+  const yLo = Math.log10(Math.min(gLo, 1 / 1.4)) * 1.1, yHi = Math.log10(Math.max(gHi, 1.4)) * 1.1;
+  const f = frame(760, 300, { l: 58, r: 14, t: 12, b: 42 });
+  const tickVals = [0.25, 0.5, 0.8, 1, 1.25, 2, 4, 8].filter(v => Math.log10(v) >= yLo && Math.log10(v) <= yHi);
+  let s = axes(f, {
+    xLo: logLo, xHi: logHi, yLo, yHi,
+    xTicks: [0.02, 0.1, 0.5, 2, 10, 30].map(P => ({ v: Math.log10(P), label: String(P) })),
+    yTicks: tickVals.map(v => ({ v: Math.log10(v), label: v + "×" })),
+    xLabel: "pulse period P (s), log scale", yLabel: "B yield, pulsed ÷ continuous"
+  });
+  // break-even: above this line pulsing is genuinely more selective
+  const yBreak = f.y(0, yLo, yHi);
+  s += `<rect x="${f.pad.l}" y="${f.pad.t}" width="${760 - f.pad.l - f.pad.r}" height="${Math.max(0, yBreak - f.pad.t).toFixed(1)}" fill="#e8f3ee"/>`;
+  s += `<line x1="${f.pad.l}" y1="${yBreak.toFixed(1)}" x2="${760 - f.pad.r}" y2="${yBreak.toFixed(1)}" stroke="#13795b" stroke-width="1.6" stroke-dasharray="6 5"/>`;
+  s += `<text x="${760 - f.pad.r - 6}" y="${(yBreak - 7).toFixed(1)}" text-anchor="end" fill="#13795b" font-size="11" font-weight="700">break-even</text>`;
+  const xNow = f.x(Math.min(Math.max(Math.log10(state.period), logLo), logHi), logLo, logHi);
+  s += `<line x1="${xNow.toFixed(1)}" y1="${f.pad.t}" x2="${xNow.toFixed(1)}" y2="${300 - f.pad.b}" stroke="#9aa7b1" stroke-dasharray="3 4"/>`;
+  s += path(pts, f, logLo, logHi, yLo, yHi, "var(--red)", 2.6);
+  document.getElementById("abcGainChart").innerHTML = s;
+
+  // the crossing itself is the number worth reading off
+  let cross = null;
+  for (let i = 1; i < pts.length; i++) {
+    const [x0, y0] = pts[i - 1], [x1, y1] = pts[i];
+    if ((y0 > 0) !== (y1 > 0)) cross = 10 ** (x0 + (x1 - x0) * (0 - y0) / (y1 - y0));
+  }
+  const fmtP = v => v < 1 ? (v * 1000).toFixed(0) + " ms" : v.toFixed(1) + " s";
+  const winsAtShort = pts.length && pts[0][1] > 0;
+  const badge = document.getElementById("abcWinStatus");
+  if (cross) {
+    badge.className = "status " + (state.period < cross ? "good" : "bad");
+    badge.textContent = "break-even at " + fmtP(cross);
+  } else {
+    badge.className = "status " + (winsAtShort ? "good" : "bad");
+    badge.textContent = winsAtShort ? "wins throughout" : "never wins here";
+  }
+  document.getElementById("abcGainNote").innerHTML = (cross
+    ? `At the current duty and temperatures, pulsing pays below a period of about <strong>${fmtP(cross)}</strong> and stops paying above it. `
+    : "Pulsing stays on one side of break-even across this whole period range at the current settings. ")
+    + "Both reactors are held at the same conversion at every point, so this is the selectivity question alone &mdash; the raw-yield version of this curve would mostly be tracking conversion. "
+    + "The sweep uses an ideal square wave between the current T<sub>peak</sub> and T<sub>min</sub>, so it runs above a physically-driven element, whose ramps spend time at intermediate temperatures; read the break-even period as an optimistic bound.";
 }
 
 function drawAbcSplit(run, cjh) {
