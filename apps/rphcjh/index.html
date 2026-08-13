@@ -199,6 +199,9 @@
   .transport-controls .btn { flex: 1 1 88px; }
   .drive-select { width: 100%; border: 1px solid #c3ced8; border-radius: 7px; background: #fff; padding: 7px 9px; font: inherit; font-size: 13px; color: var(--ink); }
   [hidden] { display: none !important; }
+  .fold { border: 1px solid var(--line); border-radius: 8px; background: #fff; box-shadow: var(--shadow); }
+  .fold summary { cursor: pointer; padding: 12px 16px; font-weight: 700; font-size: 14px; color: var(--navy); }
+  .fold .fold-body { padding: 2px 16px 13px; }
   .phys-summary { border: 1px solid var(--line); border-radius: 8px; background: #f6f9fb; padding: 9px 11px; font-size: 12px; line-height: 1.6; color: var(--muted); }
   .phys-summary strong { color: var(--navy); font-variant-numeric: tabular-nums; }
 
@@ -540,8 +543,10 @@
 
 <!-- ============ A -> B -> C ============ -->
 <section id="abc" class="panel" role="tabpanel">
-  <p class="section-kicker">Series selectivity &mdash; a second, separate reason pulsing wins</p>
-  <h2 class="section-title">A &rarr; B &rarr; C: short pulses protect the intermediate</h2>
+  <h2 class="section-title">Why pulsing improves the intermediate yield</h2>
+  <p class="section-lede" id="abcSummary">
+    A hot pulse converts A to B; quenching stops B &rarr; C, and flow removes B during the cold interval.
+  </p>
   <div class="anim-layout">
     <aside class="anim-inputs" aria-label="Series network controls">
       <div class="card">
@@ -568,130 +573,124 @@
             <input id="abcTau" type="range" min="0.1" max="10" step="0.1" value="1.0">
           </div>
           <p class="chart-note" style="margin-top:10px">
-            The temperature waveform &mdash; duty, period, voltage, and the physical CFP drive &mdash; is shared with
-            the Kinetic Effect tab. Change it there; this tab follows.
+            The waveform (duty, period, voltage) is shared with the Kinetic Effect tab.
           </p>
         </div>
       </div>
-      <div class="card">
-        <div class="card-header"><h2>Three things to try</h2></div>
-        <div class="card-body">
+      <details class="fold">
+        <summary>Explore: three things to try</summary>
+        <div class="fold-body">
           <p class="chart-note" style="margin-top:0">
-            <strong>Stretch the period.</strong> At fixed duty the hot window &tau;<sub>p</sub> = d&thinsp;P grows past
-            1/k<sub>2</sub>(T<sub>peak</sub>) and the B yield collapses &mdash; the kinetic cutoff.
+            <strong>Stretch the period.</strong> The hot window &tau;<sub>p</sub> = d&thinsp;P grows past
+            1/k<sub>2</sub>(T<sub>peak</sub>) and the B yield collapses.
           </p>
           <p class="chart-note">
-            <strong>Kill the separation.</strong> Set E<sub>a,2</sub> = E<sub>a,1</sub> and k<sub>2</sub> = k<sub>1</sub>.
-            The gain does not just vanish &mdash; pulsing loses, because everything made in the pulse burns on to C
-            before it can flow out.
+            <strong>Kill the separation.</strong> Set E<sub>a,2</sub> = E<sub>a,1</sub> and k<sub>2</sub> = k<sub>1</sub>:
+            pulsing now loses, because everything made in the pulse burns on to C before it can flow out.
           </p>
           <p class="chart-note" style="margin-bottom:0">
-            <strong>Raise the duty cycle.</strong> Conversion rises, but B now sits in the hot window longer, so
-            selectivity falls. Frequency is the stronger lever, exactly as in the CSTR analysis.
+            <strong>Raise the duty cycle.</strong> Conversion rises but B sits in the hot window longer, so
+            selectivity falls. Frequency is the stronger lever.
           </p>
         </div>
-      </div>
+      </details>
     </aside>
 
     <div>
-      <div class="kpi-grid" style="grid-template-columns:repeat(4,minmax(150px,1fr))">
-        <div class="kpi"><div class="kpi-label">B yield &mdash; pulsed</div><div class="kpi-value" id="abcRphB">&mdash;</div><div class="kpi-sub">time-average outlet x<sub>B</sub></div></div>
-        <div class="kpi"><div class="kpi-label">B yield &mdash; CJH</div><div class="kpi-value" id="abcCjhB">&mdash;</div><div class="kpi-sub" id="abcCjhSub">steady CSTR at T<sub>avg</sub></div></div>
-        <div class="kpi"><div class="kpi-label">B-yield gain</div><div class="kpi-value" id="abcGain">&mdash;</div><div class="kpi-sub">pulsed &divide; continuous</div></div>
-        <div class="kpi"><div class="kpi-label">k<sub>2</sub>(T<sub>peak</sub>) &middot; &tau;<sub>p</sub></div><div class="kpi-value" id="abcCutoff">&mdash;</div><div class="kpi-sub">keep &lt; 1 so B survives the pulse</div></div>
+      <div class="kpi-grid" style="grid-template-columns:repeat(3,minmax(150px,1fr))">
+        <div class="kpi"><div class="kpi-label">B yield &mdash; pulsed</div><div class="kpi-value" id="abcRphB">&mdash;</div><div class="kpi-sub">cycle-averaged outlet x<sub>B</sub></div></div>
+        <div class="kpi"><div class="kpi-label">B yield &mdash; continuous</div><div class="kpi-value" id="abcCjhB">&mdash;</div><div class="kpi-sub" id="abcCjhSub">steady CSTR at T<sub>avg</sub></div></div>
+        <div class="kpi"><div class="kpi-label">Gain</div><div class="kpi-value" id="abcGain">&mdash;</div><div class="kpi-sub">pulsed &divide; continuous</div></div>
       </div>
 
       <div class="card reactor-shell" style="margin-top:14px">
         <canvas id="abcCanvas" width="1120" height="300" aria-label="Two animated reactors running the series network A to B to C side by side: a pulsed element on the left and a continuous element on the right, with particles coloured by chemical species"></canvas>
         <div class="reactor-caption">
           <span>Same feed of pure <strong style="color:#8fa3b4">A</strong>: particles turn
-            <strong style="color:#e2574b">B</strong> at the element (fast step) and burn on to
-            <strong style="color:#555c64">C</strong> if they stay hot too long. Watch the left reactor flash red on each
-            pulse, then wash its B out cold &mdash; while the right one either barely reacts or chars what it makes.</span>
+            <strong style="color:#e2574b">B</strong> at the element and char to
+            <strong style="color:#555c64">C</strong> if they stay hot too long.</span>
           <span id="abcCycleCount">cycle 0</span>
         </div>
       </div>
 
       <div class="race-grid">
         <div class="card">
-          <div class="card-header"><h3>x<sub>B</sub> in each reactor, live</h3><span class="chart-note" style="margin:0">last 6 s</span></div>
+          <div class="card-header"><h3>The B yield race</h3><span class="status" id="abcVerdict">&mdash;</span></div>
           <div class="card-body" style="padding:10px 12px 12px">
-            <svg class="chart" id="abcTraceChart" viewBox="0 0 500 230" role="img" aria-label="Live mole fraction of the intermediate B in the pulsed and continuous reactors over the last six seconds"></svg>
-            <p class="chart-note">
-              Each pulse makes a burst of B; between pulses nothing reacts and flow washes B out &mdash; the sawtooth.
-              The continuous reactor settles to a flat line.
-            </p>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-header"><h3>Running B yield &mdash; the race</h3><span class="status" id="abcVerdict">&mdash;</span></div>
-          <div class="card-body" style="padding:10px 12px 12px">
-            <svg class="chart" id="abcRaceChart" viewBox="0 0 500 230" role="img" aria-label="Running average B yield of the pulsed reactor compared with the continuous reactor"></svg>
-            <p class="chart-note">
-              Time-averaged x<sub>B</sub> since Run. The dashed lines are the exact periodic-state answers the KPIs
-              report &mdash; both curves settle onto them within a few cycles.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div class="race-grid">
-        <div class="card">
-          <div class="card-header"><h3>B yield across pulse period</h3></div>
-          <div class="card-body" style="padding:10px 12px 12px">
-            <svg class="chart" id="abcSweepChart" viewBox="0 0 560 300" role="img" aria-label="Cycle-average B yield versus pulse period for three values of the second rate constant, with the continuous-heating yield as a dashed line"></svg>
+            <svg class="chart" id="abcTraceChart" viewBox="0 0 500 230" role="img" aria-label="Instantaneous and running-average mole fraction of the intermediate B in the pulsed and continuous reactors over the last six seconds"></svg>
             <div class="legend">
-              <span><i style="background:#dfae9e"></i>k<sub>2</sub> &times;0.2</span>
-              <span><i style="background:var(--red)"></i>k<sub>2</sub> as set</span>
-              <span><i style="background:#7c2d2d"></i>k<sub>2</sub> &times;5</span>
-              <span><i class="dash" style="color:var(--blue)"></i>CJH, k<sub>2</sub> as set</span>
+              <span><i style="background:var(--red)"></i>pulsed</span>
+              <span><i style="background:var(--blue)"></i>continuous</span>
             </div>
             <p class="chart-note">
-              Ideal square wave at the current T<sub>peak</sub>, T<sub>min</sub>, and duty; the vertical line marks the
-              period now set. The collapse toward long periods is the kinetic cutoff: the hot window d&thinsp;P outlives
-              1/k<sub>2</sub>(T<sub>peak</sub>) and B burns before it can flow out. Faster B&rarr;C (darker curve) moves
-              the cliff to shorter periods.
+              Thin lines: x<sub>B</sub> now (each pulse makes a burst of B, flow washes it out).
+              Bold lines: the running B yield the KPIs report.
             </p>
           </div>
         </div>
         <div class="card">
-          <div class="card-header"><h3>The two conditions for a gain</h3></div>
+          <div class="card-header"><h3>The two conditions</h3></div>
           <div class="card-body">
             <table class="metric-table">
               <tbody>
-                <tr><th>Timescale separation at the peak: k<sub>1</sub>(T<sub>peak</sub>) &Gt; k<sub>2</sub>(T<sub>peak</sub>)</th><td id="abcCondSep">&mdash;</td></tr>
-                <tr><th>Hot window shorter than the B-destruction time: k<sub>2</sub>(T<sub>peak</sub>) &middot; &tau;<sub>p</sub> &lt; 1</th><td id="abcCondCut">&mdash;</td></tr>
-                <tr><th>First step completes in the pulse: k<sub>1</sub>(T<sub>peak</sub>) &middot; &tau;<sub>p</sub></th><td id="abcCondK1">&mdash;</td></tr>
-                <tr><th>Washout between pulses: (1 &minus; d)&thinsp;P / &tau;</th><td id="abcCondWash">&mdash;</td></tr>
+                <tr><th>Formation completes in the pulse: k<sub>1</sub>(T<sub>peak</sub>) &middot; &tau;<sub>p</sub> &Gt; 1</th><td id="abcCondK1">&mdash;</td></tr>
+                <tr><th>B survives the pulse: k<sub>2</sub>(T<sub>peak</sub>) &middot; &tau;<sub>p</sub> &lt; 1</th><td id="abcCondCut">&mdash;</td></tr>
               </tbody>
             </table>
             <p class="chart-note" style="margin-top:10px">
-              Both conditions must hold at once. The peak temperature sets the <em>ratio</em> k<sub>1</sub>/k<sub>2</sub>
-              (better when E<sub>a,1</sub> &gt; E<sub>a,2</sub>), and the pulse width sets whether B gets out alive.
-              A continuous heater cannot do both: hot enough for the ratio means hot for B too, all the time.
+              A continuous heater cannot satisfy both at once: hot enough to form B means hot for B too, all the time.
+              Supporting numbers: selectivity leverage k<sub>1</sub>/k<sub>2</sub> at T<sub>peak</sub> =
+              <strong id="abcCondSep">&mdash;</strong> (set by E<sub>a,1</sub> &gt; E<sub>a,2</sub>); washout between
+              pulses (1 &minus; d)&thinsp;P/&tau; = <strong id="abcCondWash">&mdash;</strong>.
             </p>
           </div>
         </div>
       </div>
 
-      <p class="section-lede" style="margin-top:16px">
-        The other tabs compare a single rate. Many real targets, though, are <em>intermediates</em>: in pulsed methane
-        pyrolysis the value sits in C<sub>2</sub> products, which the same heat that makes them then converts to
-        aromatics and coke. In a series network A &rarr; B &rarr; C, a short hot pulse lets the fast first step run,
-        then quenches before the slower second step consumes what was just made, while flow carries B out during the
-        cold fraction. The two reactors above run that minimal model live, two first-order steps in a CSTR: pulsed on
-        the left, continuous on the right, same feed, and the B yield race between them.
-      </p>
-      <div class="assumption" style="margin-top:14px">
-        <strong>What this is, and is not.</strong> An isothermal CSTR with two first-order homogeneous steps and an
-        imposed temperature program &mdash; the same minimal idealization Railkar &amp; Vlachos used to rationalize
-        pulsed methane pyrolysis (<em>Ind. Eng. Chem. Res.</em> 2024, <a href="https://doi.org/10.1021/acs.iecr.3c03198">10.1021/acs.iecr.3c03198</a>).
-        The experimental case is Dong et&nbsp;al. (<em>Nature</em> 2022, <a href="https://doi.org/10.1038/s41586-022-04568-6">10.1038/s41586-022-04568-6</a>):
-        CH<sub>4</sub> &rarr; C<sub>2</sub> &rarr; aromatics/coke, where 0.02&ndash;0.055&nbsp;s pulses reached ~80%
-        C<sub>2</sub> selectivity against &lt;35% for the non-catalytic continuous control. Nothing here is fit to those
-        data &mdash; the tab visualizes the two conditions, not the numbers. Reactor thermal mass, gas thermal lag, and
-        transport limits are ignored; in physical-drive mode the energy balance applies to the element only.
+      <div class="card" style="margin-top:14px">
+        <div class="card-header"><h3>B yield across pulse period</h3></div>
+        <div class="card-body" style="padding:10px 12px 12px">
+          <svg class="chart" id="abcSweepChart" viewBox="0 0 760 300" role="img" aria-label="Cycle-average B yield versus pulse period for three values of the second rate constant, with the continuous-heating yield as a dashed line"></svg>
+          <div class="legend">
+            <span><i style="background:#dfae9e"></i>k<sub>2</sub> &times;0.2</span>
+            <span><i style="background:var(--red)"></i>k<sub>2</sub> as set</span>
+            <span><i style="background:#7c2d2d"></i>k<sub>2</sub> &times;5</span>
+            <span><i class="dash" style="color:var(--blue)"></i>continuous, k<sub>2</sub> as set</span>
+          </div>
+          <p class="chart-note">
+            Square wave at the current T<sub>peak</sub>, T<sub>min</sub>, and duty; the vertical line is the period now
+            set. Long periods let the hot window outlive 1/k<sub>2</sub>(T<sub>peak</sub>) and B burns before it can
+            flow out.
+          </p>
+        </div>
       </div>
+
+      <details class="fold" style="margin-top:14px">
+        <summary>Model and references</summary>
+        <div class="fold-body">
+          <p class="chart-note" style="margin-top:0">
+            The other tabs compare a single rate. Many real targets, though, are <em>intermediates</em>: in pulsed
+            methane pyrolysis the value sits in C<sub>2</sub> products, which the same heat that makes them then
+            converts to aromatics and coke. In a series network A &rarr; B &rarr; C, a short hot pulse lets the fast
+            first step run, then quenches before the slower second step consumes what was just made, while flow
+            carries B out during the cold fraction. The two reactors above run that minimal model live, two
+            first-order steps in a CSTR: pulsed on the left, continuous on the right, same feed.
+          </p>
+          <p class="chart-note">
+            The model is an isothermal CSTR with two first-order homogeneous steps and an imposed temperature
+            program: the same minimal idealization Railkar &amp; Vlachos used to rationalize pulsed methane pyrolysis
+            (<em>Ind. Eng. Chem. Res.</em> 2024, <a href="https://doi.org/10.1021/acs.iecr.3c03198">10.1021/acs.iecr.3c03198</a>).
+            The experimental case is Dong et&nbsp;al. (<em>Nature</em> 2022, <a href="https://doi.org/10.1038/s41586-022-04568-6">10.1038/s41586-022-04568-6</a>):
+            CH<sub>4</sub> &rarr; C<sub>2</sub> &rarr; aromatics/coke, where 0.02&ndash;0.055&nbsp;s pulses reached
+            ~80% C<sub>2</sub> selectivity against &lt;35% for the non-catalytic continuous control.
+          </p>
+          <p class="chart-note" style="margin-bottom:0">
+            Nothing here is fit to those data; the tab visualizes the two conditions, not the numbers. Reactor thermal
+            mass, gas thermal lag, and transport limits are ignored, and in physical-drive mode the energy balance
+            applies to the element only. Equations are recorded in the Calculations tab.
+          </p>
+        </div>
+      </details>
     </div>
   </div>
 </section>
@@ -1256,7 +1255,6 @@ function step(now) {
     if (document.getElementById("abc").classList.contains("active")) {
       drawAbcReactor(TC, tRefLive, dt);
       drawAbcTrace();
-      drawAbcRace();
       document.getElementById("abcCycleCount").textContent = "cycle " + state.cycles;
     }
   }
@@ -1562,10 +1560,6 @@ const abcParams = () => ({
 });
 const sAbc = v => (v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v.toFixed(2));
 
-// exact periodic-state answers (updated by renderAbc), drawn as the dashed
-// convergence targets on the live race chart
-const abcExact = { rphB: 0, cjhB: 0 };
-
 // live state of the two reactors: both start from pure A on Reset
 const abcLive = {
   rph: { xA: 1, xB: 0 }, cjh: { xA: 1, xB: 0 },
@@ -1708,28 +1702,14 @@ function drawAbcTrace() {
     xLo: tLo, xHi: tHi, yLo: 0, yHi,
     xTicks: ticks(tLo, tHi, 4, v => v.toFixed(1) + " s"),
     yTicks: ticks(0, yHi, 4, v => (v * 100).toFixed(0) + "%"),
-    yLabel: "xB now"
+    yLabel: "xB"
   });
-  s += path(abcLive.traceC, f, tLo, tHi, 0, yHi, "var(--blue)", 2);
-  s += path(abcLive.traceR, f, tLo, tHi, 0, yHi, "var(--red)", 2.2);
+  // thin: instantaneous xB; bold: the running B yield the KPIs report
+  s += path(abcLive.traceC, f, tLo, tHi, 0, yHi, "color-mix(in srgb, var(--blue) 42%, transparent)", 1.3);
+  s += path(abcLive.traceR, f, tLo, tHi, 0, yHi, "color-mix(in srgb, var(--red) 42%, transparent)", 1.3);
+  s += path(abcLive.histC, f, tLo, tHi, 0, yHi, "var(--blue)", 2.4);
+  s += path(abcLive.histR, f, tLo, tHi, 0, yHi, "var(--red)", 2.6);
   document.getElementById("abcTraceChart").innerHTML = s;
-}
-
-function drawAbcRace() {
-  const f = frame(500, 230, { l: 46, r: 12, t: 10, b: 34 });
-  const tHi = Math.max(state.t, TRACE_WINDOW), tLo = tHi - TRACE_WINDOW;
-  const yHi = Math.min(1, Math.max(abcExact.rphB * 1.3, 0.05, ...abcLive.histR.map(p => p[1] * 1.15)));
-  let s = axes(f, {
-    xLo: tLo, xHi: tHi, yLo: 0, yHi,
-    xTicks: ticks(tLo, tHi, 4, v => v.toFixed(1) + " s"),
-    yTicks: ticks(0, yHi, 4, v => (v * 100).toFixed(0) + "%"),
-    yLabel: "avg xB"
-  });
-  s += path([[tLo, abcExact.rphB], [tHi, abcExact.rphB]], f, tLo, tHi, 0, yHi, "var(--red)", 1.3, "5 5");
-  s += path([[tLo, abcExact.cjhB], [tHi, abcExact.cjhB]], f, tLo, tHi, 0, yHi, "var(--blue)", 1.3, "5 5");
-  s += path(abcLive.histC, f, tLo, tHi, 0, yHi, "var(--blue)", 2.2);
-  s += path(abcLive.histR, f, tLo, tHi, 0, yHi, "var(--red)", 2.4);
-  document.getElementById("abcRaceChart").innerHTML = s;
 }
 
 function renderAbc() {
@@ -1747,7 +1727,15 @@ function renderAbc() {
     ? `steady CSTR at ${tRef.toFixed(0)} &deg;C (equal power)`
     : `steady CSTR at T<sub>avg</sub> = ${tRef.toFixed(0)} &deg;C`;
   document.getElementById("abcGain").textContent = gain < 10 ? gain.toFixed(2) + "×" : fmtRatio(gain);
-  document.getElementById("abcCutoff").textContent = sAbc(peak.k2 * tauP);
+
+  const outcome = gain >= 1.05
+    ? `pulsing raises the B yield from ${(cjh.xB * 100).toFixed(1)}% (continuous) to ${(run.avgB * 100).toFixed(1)}%.`
+    : gain <= 0.95
+      ? `pulsing drops the B yield from ${(cjh.xB * 100).toFixed(1)}% (continuous) to ${(run.avgB * 100).toFixed(1)}%: no timescale separation, no benefit.`
+      : `pulsed and continuous B yields are essentially equal (${(run.avgB * 100).toFixed(1)}% vs ${(cjh.xB * 100).toFixed(1)}%).`;
+  document.getElementById("abcSummary").innerHTML =
+    `A hot pulse converts A to B; quenching stops B &rarr; C, and flow removes B during the cold interval. ` +
+    `With the current settings, ${outcome}`;
 
   const verdict = document.getElementById("abcVerdict");
   if (gain >= 1.05) { verdict.className = "status good"; verdict.textContent = "pulsing wins"; }
@@ -1759,13 +1747,10 @@ function renderAbc() {
   document.getElementById("abcCondK1").textContent = sAbc(peak.k1 * tauP);
   document.getElementById("abcCondWash").textContent = sAbc((1 - state.duty) * state.period / state.tauRes);
 
-  abcExact.rphB = run.avgB;
-  abcExact.cjhB = cjh.xB;
   drawAbcSweep(sp, tRef);
   if (!state.running) {
     drawAbcReactor(waveform((state.t % state.period) / state.period), tRef);
     drawAbcTrace();
-    drawAbcRace();
   }
 }
 
@@ -1789,7 +1774,7 @@ function drawAbcSweep(sp, tRef) {
       yMax = Math.max(yMax, r.avgB);
     }
   }
-  const f = frame(560, 300, { l: 52, r: 14, t: 12, b: 42 });
+  const f = frame(760, 300, { l: 52, r: 14, t: 12, b: 42 });
   const yHi = Math.min(1, yMax * 1.12);
   let s = axes(f, {
     xLo: logLo, xHi: logHi, yLo: 0, yHi,
@@ -1828,7 +1813,7 @@ function resetIntegration() {
   drawReactor(state.tMin, cjhTemp());
   drawTrace(); drawRaces();
   drawAbcReactor(state.tMin, cjhTemp());
-  drawAbcTrace(); drawAbcRace();
+  drawAbcTrace();
   document.getElementById("abcCycleCount").textContent = "cycle 0";
   document.getElementById("valTnow").textContent = "—";
   document.getElementById("valTavg").textContent = idleAvgT().toFixed(0) + " °C";
