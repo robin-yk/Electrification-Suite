@@ -554,7 +554,7 @@
 <!-- ============ A -> B -> C ============ -->
 <section id="abc" class="panel" role="tabpanel">
   <h2 class="section-title">Why pulsing improves the intermediate yield</h2>
-  <p class="section-lede" id="abcSummary">
+  <p class="section-lede">
     A hot pulse converts A to B; quenching stops B &rarr; C, and flow removes B during the cold interval.
   </p>
   <div class="anim-layout">
@@ -1900,15 +1900,6 @@ function renderAbc() {
   const basisLine = document.getElementById("abcBasisLine");
   basisLine.innerHTML = abcRef.line;
   basisLine.className = "basis-line" + (abcRef.warn ? " unreachable" : "");
-
-  const outcome = gain >= 1.05
-    ? `pulsing raises the B yield from ${(cjh.xB * 100).toFixed(1)}% (continuous) to ${(run.avgB * 100).toFixed(1)}%.`
-    : gain <= 0.95
-      ? `pulsing drops the B yield from ${(cjh.xB * 100).toFixed(1)}% (continuous) to ${(run.avgB * 100).toFixed(1)}%: no timescale separation, no benefit.`
-      : `pulsed and continuous B yields are essentially equal (${(run.avgB * 100).toFixed(1)}% vs ${(cjh.xB * 100).toFixed(1)}%).`;
-  document.getElementById("abcSummary").innerHTML =
-    `A hot pulse converts A to B; quenching stops B &rarr; C, and flow removes B during the cold interval. ` +
-    `With the current settings, ${outcome}`;
 
   const verdict = document.getElementById("abcVerdict");
   if (gain >= 1.05) { verdict.className = "status good"; verdict.textContent = "pulsing wins"; }
