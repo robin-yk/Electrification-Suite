@@ -614,6 +614,12 @@
     table.data td:first-child { text-align: left; }
     table.data tbody tr:hover { background: #f3f7f9; }
     table.data tbody tr:last-child td { border-bottom: 0; }
+    /* provenance table: the model and source columns are prose, so let them
+       wrap instead of stretching the whole table off-screen */
+    table.data.prov-table th:nth-child(n+7),
+    table.data.prov-table td:nth-child(n+7) {
+      white-space: normal; text-align: left; min-width: 200px; max-width: 320px;
+    }
 
     .compare-layout {
       display: grid;
@@ -1459,7 +1465,7 @@
       <article class="card" style="margin-bottom:18px">
         <div class="card-header"><h3>Material properties, temperature model &amp; provenance</h3><span class="context-note">Values at 20°C unless noted</span></div>
         <div class="table-shell" style="border:0;border-radius:0">
-          <table class="data" aria-label="Material property provenance">
+          <table class="data prov-table" aria-label="Material property provenance">
             <thead><tr><th>Material</th><th>ρe (Ω·cm)</th><th>ρm</th><th>Cp</th><th>k</th><th>Jmax</th><th>Temperature model</th><th>Source</th></tr></thead>
             <tbody id="propertyBody"></tbody>
           </table>
