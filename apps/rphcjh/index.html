@@ -291,9 +291,9 @@
 
 <nav class="tabs-shell" aria-label="Sections">
   <div class="tabs" role="tablist">
-    <button class="tab active" data-tab="animation" role="tab" aria-selected="true">Heating Animation</button>
-    <button class="tab" data-tab="jensen" role="tab" aria-selected="false">When Pulsing Helps</button>
+    <button class="tab active" data-tab="animation" role="tab" aria-selected="true">Kinetic Effect</button>
     <button class="tab keep-case" data-tab="abc" role="tab" aria-selected="false">A &rarr; B &rarr; C</button>
+    <button class="tab" data-tab="jensen" role="tab" aria-selected="false">When Pulsing Helps</button>
     <button class="tab keep-case" data-tab="ratios" role="tab" aria-selected="false">&Lambda; and Da ratios</button>
     <button class="tab" data-tab="calculations" role="tab" aria-selected="false">Calculations</button>
     <button class="tab" data-tab="cite" role="tab" aria-selected="false">How to Cite</button>
@@ -542,15 +542,6 @@
 <section id="abc" class="panel" role="tabpanel">
   <p class="section-kicker">Series selectivity &mdash; a second, separate reason pulsing wins</p>
   <h2 class="section-title">A &rarr; B &rarr; C: short pulses protect the intermediate</h2>
-  <p class="section-lede">
-    The other tabs compare a single rate. But many real targets are <em>intermediates</em> &mdash; in pulsed methane
-    pyrolysis the money is in C<sub>2</sub> products, which the same heat that makes them then converts to aromatics
-    and coke. In a series network A &rarr; B &rarr; C, a short hot pulse lets the fast first step run, then quenches
-    before the slower second step consumes what was just made, while flow carries B out during the cold fraction.
-    This tab runs that minimal model live &mdash; two first-order steps in a CSTR &mdash; in both reactors below:
-    pulsed on the left, continuous on the right, same feed, and the B yield race between them.
-  </p>
-
   <div class="anim-layout">
     <aside class="anim-inputs" aria-label="Series network controls">
       <div class="card">
@@ -578,7 +569,7 @@
           </div>
           <p class="chart-note" style="margin-top:10px">
             The temperature waveform &mdash; duty, period, voltage, and the physical CFP drive &mdash; is shared with
-            the Heating Animation tab. Change it there; this tab follows.
+            the Kinetic Effect tab. Change it there; this tab follows.
           </p>
         </div>
       </div>
@@ -683,6 +674,14 @@
         </div>
       </div>
 
+      <p class="section-lede" style="margin-top:16px">
+        The other tabs compare a single rate. Many real targets, though, are <em>intermediates</em>: in pulsed methane
+        pyrolysis the value sits in C<sub>2</sub> products, which the same heat that makes them then converts to
+        aromatics and coke. In a series network A &rarr; B &rarr; C, a short hot pulse lets the fast first step run,
+        then quenches before the slower second step consumes what was just made, while flow carries B out during the
+        cold fraction. The two reactors above run that minimal model live, two first-order steps in a CSTR: pulsed on
+        the left, continuous on the right, same feed, and the B yield race between them.
+      </p>
       <div class="assumption" style="margin-top:14px">
         <strong>What this is, and is not.</strong> An isothermal CSTR with two first-order homogeneous steps and an
         imposed temperature program &mdash; the same minimal idealization Railkar &amp; Vlachos used to rationalize
@@ -789,7 +788,7 @@
       <div class="card-header"><h3>Time-averaging</h3></div>
       <div class="card-body formula-list">
         <div class="formula-item">
-          <div class="formula-name">Continuous integration (animation tab)</div>
+          <div class="formula-name">Continuous integration (Kinetic Effect tab)</div>
           <div class="formula">&lang;f&rang; = (1/t) &int; f(T(t')) dt'</div>
           <div class="formula-note">Accumulated numerically each animation frame over the active waveform — the computed CFP solution in physical mode, or the ideal trapezoid including its ramps. This is what the running-average charts plot.</div>
         </div>
@@ -814,7 +813,7 @@
 
   <div class="calc-grid">
     <article class="card formula-card">
-      <div class="card-header"><h3>Physical CFP drive (animation tab option)</h3></div>
+      <div class="card-header"><h3>Physical CFP drive (Kinetic Effect tab option)</h3></div>
       <div class="card-body formula-list">
         <div class="formula-item">
           <div class="formula-name">Lumped element energy balance</div>
@@ -1606,8 +1605,10 @@ function advanceAbcLive(dt, tRefC) {
   abcLive.accTime = abcLive.accTime * decay + dt;
   abcLive.traceR.push([state.t, abcLive.rph.xB]);
   abcLive.traceC.push([state.t, abcLive.cjh.xB]);
-  abcLive.histR.push([state.t, abcLive.accR / abcLive.accTime]);
-  abcLive.histC.push([state.t, abcLive.accC / abcLive.accTime]);
+  if (abcLive.accTime > 0) {
+    abcLive.histR.push([state.t, abcLive.accR / abcLive.accTime]);
+    abcLive.histC.push([state.t, abcLive.accC / abcLive.accTime]);
+  }
   for (const buf of [abcLive.traceR, abcLive.traceC, abcLive.histR, abcLive.histC]) {
     while (buf.length && buf[0][0] < state.t - TRACE_WINDOW) buf.shift();
   }
