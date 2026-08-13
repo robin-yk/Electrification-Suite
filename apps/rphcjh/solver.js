@@ -220,6 +220,30 @@ export function steadySeriesCSTR(TC, cfg = {}) {
   return { xA, xB, xC: Math.max(0, 1 - xA - xB), k1, k2 };
 }
 
+// Exact update coefficients for one time step of length dt with the
+// temperature frozen at TC. The balances are linear, so the step solves
+// in closed form:
+//   xA' = alphaA + betaA xA
+//   xB' = betaB xB + srcConst + srcA xA
+// Exported so the page can advance a live simulation with the same
+// arithmetic the periodic solver uses — unconditionally stable no matter
+// how large k(T_peak) becomes.
+export function seriesStepCoeffs(TC, dt, p) {
+  const { k1, k2 } = seriesRateConstants(TC, p);
+  const invTau = 1 / p.tau;
+  const lamA = invTau + k1, lamB = invTau + k2;
+  const betaA = Math.exp(-lamA * dt), betaB = Math.exp(-lamB * dt);
+  const xAss = invTau / lamA;
+  const G = Math.abs(lamB - lamA) < 1e-9 * (lamA + lamB)
+    ? dt * betaA
+    : (betaA - betaB) / (lamB - lamA);
+  return {
+    alphaA: xAss * (1 - betaA), betaA, betaB,
+    srcConst: k1 * xAss * ((1 - betaB) / lamB - G),
+    srcA: k1 * G
+  };
+}
+
 // Periodic state of the same CSTR under a temperature program tempFn(phase).
 // The ODEs are linear, so each step (temperature frozen over dt) has an
 // exact exponential update, and one full cycle composes to an affine map
@@ -228,25 +252,8 @@ export function steadySeriesCSTR(TC, cfg = {}) {
 // k(T_peak) becomes — no RK stability limit.
 export function integrateSeriesCSTR(cfg = {}) {
   const p = Object.assign({}, SERIES_DEFAULTS, { period: 1, steps: 2000 }, cfg);
-  const dt = p.period / p.steps, invTau = 1 / p.tau;
-
-  // per-step exact update coefficients at temperature TC:
-  //   xA' = alphaA + betaA xA
-  //   xB' = betaB xB + k1 [ xAss ((1-betaB)/lamB - G) + G xA ]
-  const stepCoeffs = TC => {
-    const { k1, k2 } = seriesRateConstants(TC, p);
-    const lamA = invTau + k1, lamB = invTau + k2;
-    const betaA = Math.exp(-lamA * dt), betaB = Math.exp(-lamB * dt);
-    const xAss = invTau / lamA;
-    const G = Math.abs(lamB - lamA) < 1e-9 * (lamA + lamB)
-      ? dt * betaA
-      : (betaA - betaB) / (lamB - lamA);
-    return {
-      alphaA: xAss * (1 - betaA), betaA, betaB,
-      srcConst: k1 * xAss * ((1 - betaB) / lamB - G),
-      srcA: k1 * G
-    };
-  };
+  const dt = p.period / p.steps;
+  const stepCoeffs = TC => seriesStepCoeffs(TC, dt, p);
 
   // pass 1: compose the cycle's affine map
   // xA = a0 + aA xA0,  xB = b0 + bA xA0 + bB xB0

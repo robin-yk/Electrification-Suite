@@ -547,8 +547,8 @@
     pyrolysis the money is in C<sub>2</sub> products, which the same heat that makes them then converts to aromatics
     and coke. In a series network A &rarr; B &rarr; C, a short hot pulse lets the fast first step run, then quenches
     before the slower second step consumes what was just made, while flow carries B out during the cold fraction.
-    This tab solves that minimal model: two first-order steps in a CSTR whose temperature follows the pulse
-    waveform set on the animation tab.
+    This tab runs that minimal model live &mdash; two first-order steps in a CSTR &mdash; in both reactors below:
+    pulsed on the left, continuous on the right, same feed, and the B yield race between them.
   </p>
 
   <div class="anim-layout">
@@ -610,20 +610,37 @@
         <div class="kpi"><div class="kpi-label">k<sub>2</sub>(T<sub>peak</sub>) &middot; &tau;<sub>p</sub></div><div class="kpi-value" id="abcCutoff">&mdash;</div><div class="kpi-sub">keep &lt; 1 so B survives the pulse</div></div>
       </div>
 
-      <div class="card" style="margin-top:14px">
-        <div class="card-header"><h3>One cycle at the periodic state</h3><span class="status" id="abcVerdict">&mdash;</span></div>
-        <div class="card-body" style="padding:10px 12px 12px">
-          <svg class="chart" id="abcCycleChart" viewBox="0 0 760 280" role="img" aria-label="Mole fractions of A, B, and C over one pulse cycle, with the continuous-heating B yield shown as a dashed line"></svg>
-          <div class="legend">
-            <span><i style="background:var(--red)"></i>x<sub>B</sub> pulsed</span>
-            <span><i class="dash" style="color:var(--blue)"></i>x<sub>B</sub> CJH steady</span>
-            <span><i style="background:var(--muted)"></i>x<sub>A</sub></span>
-            <span><i style="background:#8a5a44"></i>x<sub>C</sub></span>
+      <div class="card reactor-shell" style="margin-top:14px">
+        <canvas id="abcCanvas" width="1120" height="300" aria-label="Two animated reactors running the series network A to B to C side by side: a pulsed element on the left and a continuous element on the right, with particles coloured by chemical species"></canvas>
+        <div class="reactor-caption">
+          <span>Same feed of pure <strong style="color:#8fa3b4">A</strong>: particles turn
+            <strong style="color:#e2574b">B</strong> at the element (fast step) and burn on to
+            <strong style="color:#555c64">C</strong> if they stay hot too long. Watch the left reactor flash red on each
+            pulse, then wash its B out cold &mdash; while the right one either barely reacts or chars what it makes.</span>
+          <span id="abcCycleCount">cycle 0</span>
+        </div>
+      </div>
+
+      <div class="race-grid">
+        <div class="card">
+          <div class="card-header"><h3>x<sub>B</sub> in each reactor, live</h3><span class="chart-note" style="margin:0">last 6 s</span></div>
+          <div class="card-body" style="padding:10px 12px 12px">
+            <svg class="chart" id="abcTraceChart" viewBox="0 0 500 230" role="img" aria-label="Live mole fraction of the intermediate B in the pulsed and continuous reactors over the last six seconds"></svg>
+            <p class="chart-note">
+              Each pulse makes a burst of B; between pulses nothing reacts and flow washes B out &mdash; the sawtooth.
+              The continuous reactor settles to a flat line.
+            </p>
           </div>
-          <p class="chart-note">
-            The shaded band is the hot fraction of the cycle. A converts to B during the pulse; in the cold fraction
-            nothing reacts, fresh A flows in, and B flows out before the next pulse can push it on to C.
-          </p>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>Running B yield &mdash; the race</h3><span class="status" id="abcVerdict">&mdash;</span></div>
+          <div class="card-body" style="padding:10px 12px 12px">
+            <svg class="chart" id="abcRaceChart" viewBox="0 0 500 230" role="img" aria-label="Running average B yield of the pulsed reactor compared with the continuous reactor"></svg>
+            <p class="chart-note">
+              Time-averaged x<sub>B</sub> since Run. The dashed lines are the exact periodic-state answers the KPIs
+              report &mdash; both curves settle onto them within a few cycles.
+            </p>
+          </div>
         </div>
       </div>
 
@@ -929,7 +946,7 @@ import {
   R_GAS, K2C, arrheniusRate, transportCoefficient, velocity,
   timeAverageTemperature, pulseWaveform, idealTwoStateAverages,
   integratePulsedElement, steadyElementTemperature, sampledWaveform, cfpResistance,
-  steadySeriesCSTR, integrateSeriesCSTR, seriesRateConstants
+  steadySeriesCSTR, integrateSeriesCSTR, seriesRateConstants, seriesStepCoeffs
 } from "./solver.js";
 
 /* ------------------------------------------------------------------ */
@@ -1228,9 +1245,21 @@ function step(now) {
     }
 
     updateLive(TC);
-    drawReactor(TC, cjhTemp(state.accTime ? state.accT / state.accTime : undefined));
+    const tRefRun = cjhTemp(state.accTime ? state.accT / state.accTime : undefined);
+    drawReactor(TC, tRefRun);
     drawTrace();
     drawRaces();
+    // the series race integrates CJH at the fixed reference temperature the
+    // KPIs compare against, not the still-settling running average, so the
+    // green curve starts from zero instead of a spurious hot transient
+    const tRefLive = cjhTemp();
+    advanceAbcLive(dt, tRefLive);
+    if (document.getElementById("abc").classList.contains("active")) {
+      drawAbcReactor(TC, tRefLive, dt);
+      drawAbcTrace();
+      drawAbcRace();
+      document.getElementById("abcCycleCount").textContent = "cycle " + state.cycles;
+    }
   }
   requestAnimationFrame(step);
 }
@@ -1534,6 +1563,174 @@ const abcParams = () => ({
 });
 const sAbc = v => (v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v.toFixed(2));
 
+// exact periodic-state answers (updated by renderAbc), drawn as the dashed
+// convergence targets on the live race chart
+const abcExact = { rphB: 0, cjhB: 0 };
+
+// live state of the two reactors: both start from pure A on Reset
+const abcLive = {
+  rph: { xA: 1, xB: 0 }, cjh: { xA: 1, xB: 0 },
+  traceR: [], traceC: [], histR: [], histC: [],
+  accR: 0, accC: 0, accTime: 0
+};
+function resetAbcLive() {
+  abcLive.rph = { xA: 1, xB: 0 }; abcLive.cjh = { xA: 1, xB: 0 };
+  abcLive.traceR = []; abcLive.traceC = []; abcLive.histR = []; abcLive.histC = [];
+  abcLive.accR = abcLive.accC = abcLive.accTime = 0;
+}
+
+// advance both reactors from t - dt to t (state.t has already moved).
+// The CJH reactor sits at a constant temperature, so one exact step covers
+// the whole frame; the pulsed reactor sub-steps at 2 ms so it never
+// straddles a pulse edge by more than that.
+function advanceAbcLive(dt, tRefC) {
+  const sp = abcParams();
+  const apply = (st, c) => {
+    const pA = st.xA;
+    st.xA = c.alphaA + c.betaA * st.xA;
+    st.xB = c.betaB * st.xB + c.srcConst + c.srcA * pA;
+  };
+  apply(abcLive.cjh, seriesStepCoeffs(tRefC, dt, sp));
+  const t0 = state.t - dt;
+  let done = 0;
+  while (done < dt - 1e-9) {
+    const h = Math.min(0.002, dt - done);
+    const TC = waveform(((t0 + done + h / 2) % state.period) / state.period);
+    apply(abcLive.rph, seriesStepCoeffs(TC, h, sp));
+    done += h;
+  }
+  // same leaky window as the main tab's accumulators, for the same reason
+  const decay = Math.exp(-dt / TRACE_WINDOW);
+  abcLive.accR = abcLive.accR * decay + abcLive.rph.xB * dt;
+  abcLive.accC = abcLive.accC * decay + abcLive.cjh.xB * dt;
+  abcLive.accTime = abcLive.accTime * decay + dt;
+  abcLive.traceR.push([state.t, abcLive.rph.xB]);
+  abcLive.traceC.push([state.t, abcLive.cjh.xB]);
+  abcLive.histR.push([state.t, abcLive.accR / abcLive.accTime]);
+  abcLive.histC.push([state.t, abcLive.accC / abcLive.accTime]);
+  for (const buf of [abcLive.traceR, abcLive.traceC, abcLive.histR, abcLive.histC]) {
+    while (buf.length && buf[0][0] < state.t - TRACE_WINDOW) buf.shift();
+  }
+}
+
+/* species-coloured particle reactors for the A -> B -> C tab */
+const SPECIES_COLORS = ["#8fa3b4", "#e2574b", "#555c64"];
+let abcCtx = null;
+
+function makeAbcParticles(x0) {
+  const arr = [];
+  for (let i = 0; i < 45; i++) {
+    arr.push({ x: x0 + 26 + Math.random() * (PANEL_W - 52), y: 108 + Math.random() * 84, v: 1.4 + Math.random() * 1.6, sp: 0 });
+  }
+  return arr;
+}
+
+const abcPanels = [
+  { x0: 0, title: "RPH — pulsed element", particles: makeAbcParticles(0) },
+  { x0: PANEL_W + PANEL_GAP, title: "CJH — continuous element", particles: makeAbcParticles(PANEL_W + PANEL_GAP) }
+];
+
+function drawAbcPanel(panel, TC, dtFrame) {
+  const c = abcCtx, x0 = panel.x0;
+  const zone0 = x0 + PANEL_W * 0.30, zone1 = x0 + PANEL_W * 0.70;
+  const cx = (zone0 + zone1) / 2;
+  const sp = abcParams();
+  const { k1, k2 } = seriesRateConstants(TC, sp);
+  const p1 = 1 - Math.exp(-k1 * dtFrame), p2 = 1 - Math.exp(-k2 * dtFrame);
+
+  c.strokeStyle = "#2a3d4f"; c.lineWidth = 2;
+  c.strokeRect(x0 + 20, 92, PANEL_W - 40, 116);
+
+  const glow = c.createRadialGradient(cx, 150, 8, cx, 150, 185);
+  const heat = Math.max(0, Math.min(1, (TC - 500) / 900));
+  glow.addColorStop(0, tempColor(TC, 0.42 * heat));
+  glow.addColorStop(1, "rgba(0,0,0,0)");
+  c.fillStyle = glow; c.fillRect(x0, 0, PANEL_W, CH);
+
+  c.save();
+  c.shadowColor = tempColor(TC, 0.9); c.shadowBlur = 34 * heat;
+  c.fillStyle = tempColor(TC); c.fillRect(zone0, 128, zone1 - zone0, 44);
+  c.restore();
+  c.strokeStyle = "rgba(255,255,255,0.18)"; c.lineWidth = 1;
+  c.strokeRect(zone0, 128, zone1 - zone0, 44);
+  c.fillStyle = "#7f8b95";
+  c.fillRect(zone0 - 14, 118, 14, 64); c.fillRect(zone1, 118, 14, 64);
+
+  panel.particles.forEach(p => {
+    p.x += p.v * (state.running ? 1 : 0.12);
+    if (p.x > x0 + PANEL_W - 24) { p.x = x0 + 24; p.sp = 0; }
+    if (state.running && p.x > zone0 && p.x < zone1) {
+      if (p.sp === 0 && Math.random() < p1) p.sp = 1;
+      else if (p.sp === 1 && Math.random() < p2) p.sp = 2;
+    }
+    c.fillStyle = SPECIES_COLORS[p.sp];
+    c.beginPath();
+    c.arc(p.x, p.y, p.sp === 1 ? 3.0 : 2.4, 0, Math.PI * 2);
+    c.fill();
+  });
+
+  c.font = "bold 14px Roboto, Arial, Helvetica, sans-serif";
+  c.fillStyle = "#c3d2de"; c.textAlign = "center";
+  c.fillText(panel.title, x0 + PANEL_W / 2, 40);
+  c.font = "12px Roboto, Arial, Helvetica, sans-serif";
+  c.fillStyle = "#8fa3b4"; c.textAlign = "left";
+  c.fillText("pure A in", x0 + 24, 84);
+  c.textAlign = "right";
+  c.fillText("A + B + C out", x0 + PANEL_W - 24, 84);
+
+  c.font = "500 20px Roboto, Arial, Helvetica, sans-serif";
+  c.fillStyle = tempColor(Math.max(700, TC));
+  c.textAlign = "center";
+  c.fillText(TC.toFixed(0) + " °C", cx, 264);
+}
+
+function drawAbcReactor(rphT, cjhT, dtFrame = 1 / 60) {
+  if (!abcCtx) abcCtx = document.getElementById("abcCanvas").getContext("2d");
+  const c = abcCtx;
+  c.clearRect(0, 0, CW, CH);
+  c.fillStyle = "#0d1620"; c.fillRect(0, 0, CW, CH);
+  drawAbcPanel(abcPanels[0], rphT, dtFrame);
+  drawAbcPanel(abcPanels[1], cjhT, dtFrame);
+  c.strokeStyle = "#26394b"; c.lineWidth = 2;
+  c.beginPath();
+  c.moveTo(PANEL_W + PANEL_GAP / 2, 14);
+  c.lineTo(PANEL_W + PANEL_GAP / 2, CH - 14);
+  c.stroke();
+}
+
+function drawAbcTrace() {
+  const f = frame(500, 230, { l: 46, r: 12, t: 10, b: 34 });
+  const tHi = Math.max(state.t, TRACE_WINDOW), tLo = tHi - TRACE_WINDOW;
+  const vals = abcLive.traceR.map(p => p[1]).concat(abcLive.traceC.map(p => p[1]), [0.05]);
+  const yHi = Math.min(1, Math.max(...vals) * 1.15);
+  let s = axes(f, {
+    xLo: tLo, xHi: tHi, yLo: 0, yHi,
+    xTicks: ticks(tLo, tHi, 4, v => v.toFixed(1) + " s"),
+    yTicks: ticks(0, yHi, 4, v => (v * 100).toFixed(0) + "%"),
+    yLabel: "xB now"
+  });
+  s += path(abcLive.traceC, f, tLo, tHi, 0, yHi, "var(--blue)", 2);
+  s += path(abcLive.traceR, f, tLo, tHi, 0, yHi, "var(--red)", 2.2);
+  document.getElementById("abcTraceChart").innerHTML = s;
+}
+
+function drawAbcRace() {
+  const f = frame(500, 230, { l: 46, r: 12, t: 10, b: 34 });
+  const tHi = Math.max(state.t, TRACE_WINDOW), tLo = tHi - TRACE_WINDOW;
+  const yHi = Math.min(1, Math.max(abcExact.rphB * 1.3, 0.05, ...abcLive.histR.map(p => p[1] * 1.15)));
+  let s = axes(f, {
+    xLo: tLo, xHi: tHi, yLo: 0, yHi,
+    xTicks: ticks(tLo, tHi, 4, v => v.toFixed(1) + " s"),
+    yTicks: ticks(0, yHi, 4, v => (v * 100).toFixed(0) + "%"),
+    yLabel: "avg xB"
+  });
+  s += path([[tLo, abcExact.rphB], [tHi, abcExact.rphB]], f, tLo, tHi, 0, yHi, "var(--red)", 1.3, "5 5");
+  s += path([[tLo, abcExact.cjhB], [tHi, abcExact.cjhB]], f, tLo, tHi, 0, yHi, "var(--blue)", 1.3, "5 5");
+  s += path(abcLive.histC, f, tLo, tHi, 0, yHi, "var(--blue)", 2.2);
+  s += path(abcLive.histR, f, tLo, tHi, 0, yHi, "var(--red)", 2.4);
+  document.getElementById("abcRaceChart").innerHTML = s;
+}
+
 function renderAbc() {
   const sp = abcParams();
   const tRef = cjhTemp();
@@ -1561,29 +1758,14 @@ function renderAbc() {
   document.getElementById("abcCondK1").textContent = sAbc(peak.k1 * tauP);
   document.getElementById("abcCondWash").textContent = sAbc((1 - state.duty) * state.period / state.tauRes);
 
-  drawAbcCycle(run, cjh.xB);
+  abcExact.rphB = run.avgB;
+  abcExact.cjhB = cjh.xB;
   drawAbcSweep(sp, tRef);
-}
-
-function drawAbcCycle(run, cjhB) {
-  const f = frame(760, 280, { l: 52, r: 14, t: 12, b: 42 });
-  let s = axes(f, {
-    xLo: 0, xHi: 1, yLo: 0, yHi: 1,
-    xTicks: ticks(0, 1, 5, v => v.toFixed(1)),
-    yTicks: ticks(0, 1, 4, v => v.toFixed(2)),
-    xLabel: "phase within one cycle", yLabel: "mole fraction"
-  });
-  // hot fraction of the cycle (the drive is on from phase 0 to d)
-  const x0 = f.x(0, 0, 1), x1 = f.x(state.duty, 0, 1);
-  s += `<rect x="${x0.toFixed(1)}" y="${f.pad.t}" width="${(x1 - x0).toFixed(1)}" height="${280 - f.pad.t - f.pad.b}" fill="rgba(197,58,58,0.07)"/>`;
-  const ptsA = run.samples.map(p => [p[0], p[1]]);
-  const ptsB = run.samples.map(p => [p[0], p[2]]);
-  const ptsC = run.samples.map(p => [p[0], Math.max(0, 1 - p[1] - p[2])]);
-  s += path(ptsA, f, 0, 1, 0, 1, "var(--muted)", 1.6);
-  s += path(ptsC, f, 0, 1, 0, 1, "#8a5a44", 1.6);
-  s += path([[0, cjhB], [1, cjhB]], f, 0, 1, 0, 1, "var(--blue)", 2, "6 5");
-  s += path(ptsB, f, 0, 1, 0, 1, "var(--red)", 2.6);
-  document.getElementById("abcCycleChart").innerHTML = s;
+  if (!state.running) {
+    drawAbcReactor(waveform((state.t % state.period) / state.period), tRef);
+    drawAbcTrace();
+    drawAbcRace();
+  }
 }
 
 function drawAbcSweep(sp, tRef) {
@@ -1641,8 +1823,12 @@ function resetIntegration() {
   state.t = 0; state.cycles = 0; state.lastFrame = 0;
   state.accK = state.accH = state.accU = state.accKH = state.accKU = state.accT = state.accTime = 0;
   state.trace = []; state.kHist = []; state.hHist = [];
+  resetAbcLive();
   drawReactor(state.tMin, cjhTemp());
   drawTrace(); drawRaces();
+  drawAbcReactor(state.tMin, cjhTemp());
+  drawAbcTrace(); drawAbcRace();
+  document.getElementById("abcCycleCount").textContent = "cycle 0";
   document.getElementById("valTnow").textContent = "—";
   document.getElementById("valTavg").textContent = idleAvgT().toFixed(0) + " °C";
   ["valKratio", "valRlam", "valRda"].forEach(id => { document.getElementById(id).textContent = "—"; });
