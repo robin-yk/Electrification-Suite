@@ -8,7 +8,7 @@ Interactive, browser-based models of chemical process electrification (Joule hea
 
 - **Microwave Heating 2D Model** (`apps/microwave/`): steady powder-bed temperature field with dielectric response, calibrated against experiments.
 - **Joule Heating 2D Model** (`apps/joule/`): material, geometry, and power-supply screening with an axisymmetric 2D thermal field, cross-checked against three published reactors.
-- **RPH vs CJH Visualizer** (`apps/rphcjh/`): when rapid pulsed heating beats a continuous heater held at the same average temperature, for pulsed CH₄ + CO₂ coupling.
+- **RPH vs CJH Visualizer** (`apps/rphcjh/`): when rapid pulsed heating protects a reaction intermediate and when it does not, against a continuous heater matched on average temperature, electrical power, or conversion.
 
 ## Quick start
 

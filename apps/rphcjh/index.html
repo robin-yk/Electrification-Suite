@@ -303,8 +303,8 @@
 
 <nav class="tabs-shell" aria-label="Sections">
   <div class="tabs" role="tablist">
-    <button class="tab active" data-tab="animation" role="tab" aria-selected="true">Kinetic Effect</button>
-    <button class="tab keep-case" data-tab="abc" role="tab" aria-selected="false">A &rarr; B &rarr; C</button>
+    <button class="tab keep-case active" data-tab="abc" role="tab" aria-selected="true">A &rarr; B &rarr; C</button>
+    <button class="tab" data-tab="animation" role="tab" aria-selected="false">Kinetic Effect</button>
     <button class="tab" data-tab="jensen" role="tab" aria-selected="false">When Pulsing Helps</button>
     <button class="tab keep-case" data-tab="ratios" role="tab" aria-selected="false">&Lambda; and Da ratios</button>
     <button class="tab keep-case" data-tab="openmkm" role="tab" aria-selected="false">OpenMKM PFR</button>
@@ -316,7 +316,7 @@
 <main>
 
 <!-- ============ ANIMATION ============ -->
-<section id="animation" class="panel active" role="tabpanel">
+<section id="animation" class="panel" role="tabpanel">
   <p class="section-kicker">Pulsed versus continuous heating, compared in real time</p>
   <h2 class="section-title">Time-averaged kinetics under pulsed and continuous heating</h2>
 
@@ -552,7 +552,7 @@
 </section>
 
 <!-- ============ A -> B -> C ============ -->
-<section id="abc" class="panel" role="tabpanel">
+<section id="abc" class="panel active" role="tabpanel">
   <h2 class="section-title">Why pulsing improves the intermediate yield</h2>
   <p class="section-lede">
     A hot pulse converts A to B; quenching stops B &rarr; C, and flow removes B during the cold interval.

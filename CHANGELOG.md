@@ -33,6 +33,11 @@ All notable changes to this project are documented here. The format follows
 - The instantaneous/running x_B trace is retitled "Inside one cycle" and moved
   below the composition chart: it explains the averages rather than stating the
   result.
+- The RPH vs CJH visualizer opens on the A → B → C tab; Kinetic Effect follows
+  it. The series network is the question the tool exists to answer, so it now
+  leads. The suite card and README no longer describe the comparison as being
+  against a heater "held at the same average temperature", which is one of the
+  three bases rather than the only one.
 - The A → B → C tab now opens at 34 V with a 2 s residence time. The previous
   default ran the element at 1399 °C, where k1(T_peak)·tau_p reached 1570: the
   feed was consumed almost immediately and the rest of the hot window only
