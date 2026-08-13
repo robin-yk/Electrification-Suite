@@ -909,6 +909,22 @@
       </div>
     </article>
   </div>
+
+  <article class="card formula-card" style="margin-top:14px">
+    <div class="card-header">
+      <h3>Detailed-mechanism cross-check (Cantera)</h3>
+      <span class="status" id="canteraStatus" style="background:var(--soft);color:var(--muted)">loading&hellip;</span>
+    </div>
+    <div class="card-body">
+      <table class="metric-table" id="canteraTable">
+        <tbody></tbody>
+      </table>
+      <p class="chart-note" id="canteraNote" style="margin-top:10px">
+        Precomputed offline with Cantera (see <code>tools/cantera/</code>); GitHub Pages serves only the resulting JSON.
+        The initiation-limited rate metric and the fit window are documented in the pipeline README.
+      </p>
+    </div>
+  </article>
 </section>
 
 <section id="cite" class="panel" role="tabpanel">
@@ -1925,6 +1941,39 @@ document.querySelectorAll(".tab").forEach(tab => {
 });
 
 recomputePhysical();
+
+/* detailed-mechanism cross-check card: filled from the precomputed
+   tools/cantera pipeline output; the page works unchanged without it */
+fetch("data/cantera.json")
+  .then(r => (r.ok ? r.json() : Promise.reject(new Error("HTTP " + r.status))))
+  .then(d => {
+    const g = d.mechanisms.gri30, a = d.mechanisms.aramco20;
+    const iT = d.T_grid_C.indexOf(1100);
+    const fmt = (v, digits) => Number(v).toFixed(digits);
+    const rows = [
+      ["Mechanism", `${g.name}`, `${a.name}`, "1 lumped step"],
+      ["Size", `${g.n_species} species / ${g.n_reactions} rxn`, `${a.n_species} species / ${a.n_reactions} rxn`, "&mdash;"],
+      [`Effective E<sub>a</sub> (${d.ea_fit_window_C[0]}&ndash;${d.ea_fit_window_C[1]} &deg;C fit)`,
+        fmt(g.Ea_eff_kJ_mol, 0) + " kJ/mol", fmt(a.Ea_eff_kJ_mol, 0) + " kJ/mol", "422 kJ/mol default"],
+      ["Diffusivity exponent &beta;<sub>D</sub>", fmt(g.beta_D, 2), fmt(a.beta_D, 2), "&beta; slider default 0.50"],
+      ["Equilibrium CH<sub>4</sub> conversion at 1100 &deg;C",
+        fmt(g.eq_ch4_conversion[iT] * 100, 1) + "%", fmt(a.eq_ch4_conversion[iT] * 100, 1) + "%", "&mdash;"]
+    ];
+    document.querySelector("#canteraTable tbody").innerHTML = rows
+      .map(r => `<tr><th>${r[0]}</th><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td></tr>`)
+      .join("");
+    const st = document.getElementById("canteraStatus");
+    st.textContent = "loaded";
+    st.className = "status good";
+    document.getElementById("canteraNote").innerHTML +=
+      ` Generated ${d.generated} with Cantera ${d.cantera_version}; feed ${d.feed} at ${d.pressure_atm} atm.`;
+  })
+  .catch(() => {
+    const st = document.getElementById("canteraStatus");
+    st.textContent = "data unavailable";
+    st.className = "status warn";
+  });
+
 resetIntegration();
 redrawAll();
 state.running = true; state.lastFrame = 0;
