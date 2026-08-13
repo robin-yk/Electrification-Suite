@@ -1,14 +1,14 @@
 # Electrification Suite
 
-Interactive, browser-based models of chemical process electrification — Joule heating, microwave heating, and rapid pulsed heating — by Yeonsu Kwak (Vlachos Lab, University of Delaware).
+Interactive, browser-based models of chemical process electrification (Joule heating, microwave heating, and rapid pulsed heating) by Yeonsu Kwak (Vlachos Lab, University of Delaware).
 
-**Live site: https://robin-yk.github.io/Electrification-Suite/** — no install, no account, everything runs in your browser.
+**Live site: https://robin-yk.github.io/Electrification-Suite/**. No install, no account, everything runs in your browser.
 
 ## Projects
 
-- **Microwave Heating 2D Model** (`apps/microwave/`) — steady powder-bed temperature field with dielectric response, calibrated against experiments.
-- **Joule Heating 2D Model** (`apps/joule/`) — material, geometry, and power-supply screening with an axisymmetric 2D thermal field, cross-checked against three published reactors.
-- **RPH vs CJH Visualizer** (`apps/rphcjh/`) — when rapid pulsed heating beats a continuous heater held at the same average temperature, for pulsed CH₄ + CO₂ coupling.
+- **Microwave Heating 2D Model** (`apps/microwave/`): steady powder-bed temperature field with dielectric response, calibrated against experiments.
+- **Joule Heating 2D Model** (`apps/joule/`): material, geometry, and power-supply screening with an axisymmetric 2D thermal field, cross-checked against three published reactors.
+- **RPH vs CJH Visualizer** (`apps/rphcjh/`): when rapid pulsed heating beats a continuous heater held at the same average temperature, for pulsed CH₄ + CO₂ coupling.
 
 ## Quick start
 
@@ -19,7 +19,7 @@ npm install
 npm run dev
 ```
 
-The pages are plain HTML/CSS/JS — you can also just open `index.html` directly in a browser, no build step needed.
+The pages are plain HTML/CSS/JS, so you can also just open `index.html` directly in a browser, no build step needed.
 
 ## Solver API
 
@@ -42,7 +42,7 @@ npm run test:e2e  # Playwright browser smoke test (needs Chromium)
 
 Both run in CI on every push, together with a build that verifies every page's files are packaged.
 
-Numerical verification of the 2D solvers — manufactured solutions, analytic benchmarks, and grid-convergence studies — is documented in [`docs/VERIFICATION.md`](docs/VERIFICATION.md) and reproducible via `npm run verify:joule` / `npm run verify:microwave`.
+Numerical verification of the 2D solvers (manufactured solutions, analytic benchmarks, and grid-convergence studies) is documented in [`docs/VERIFICATION.md`](docs/VERIFICATION.md) and reproducible via `npm run verify:joule` / `npm run verify:microwave`.
 
 ## Citation
 
@@ -62,4 +62,4 @@ The RPH vs CJH visualizer is a companion to:
 
 ## License
 
-[MIT](LICENSE) © Yeonsu Kwak · Bug reports and pull requests welcome — see [`CONTRIBUTING.md`](CONTRIBUTING.md) · ask.yeonsu@gmail.com
+[MIT](LICENSE) © Yeonsu Kwak · Bug reports and pull requests welcome; see [`CONTRIBUTING.md`](CONTRIBUTING.md) · ask.yeonsu@gmail.com

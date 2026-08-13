@@ -1,6 +1,6 @@
 // Joule heating numeric core: material properties, 0D lumped model, and the
 // 2D axisymmetric FVM thermal solver behind joule.html. Pure functions of
-// plain input objects — no DOM access — so this module can be imported
+// plain input objects, with no DOM access, so this module can be imported
 // directly by joule.html (as an ES module) or by a Node test runner.
 "use strict";
 
@@ -416,7 +416,7 @@ export function assemble2DSystem(T, x, g, cfg, material, mesh, op) {
   for(let j=0;j<mesh.nz;j++) for(let i=0;i<mesh.nr;i++) {
     const p=idx(i,j),code=mesh.materialAt(i,j),kp=cellK2D(code,T[j][i],material,cfg,x);
     // cfg.verificationSource(r, z) [W/m³] replaces the Joule source over the whole
-    // domain. Only for code verification (manufactured solutions) — the page never
+    // domain. Only for code verification (manufactured solutions); the page never
     // sets it, and energy-closure reporting assumes the ordinary Joule source.
     if(cfg.verificationSource) rhs[p]+=cfg.verificationSource(mesh.centers[i],mesh.zCenters[j])*mesh.cellVolume(i,j);
     else if(code===0) rhs[p]+=qVol*mesh.cellVolume(i,j);
@@ -570,7 +570,7 @@ export function solveThermal2D(x, zeroD, cfg, material) {
     // A fixed 0.62/0.86 relaxation schedule can settle into a period-2 limit cycle on
     // very stiff cases (extreme element L/D with strongly radiative boundaries): the
     // step size stops shrinking but never falls below tolerance. Detect stagnation and
-    // damp harder — well-behaved cases never trigger this, since maxStep keeps shrinking.
+    // damp harder; well-behaved cases never trigger this, since maxStep keeps shrinking.
     if(outer>=4){
       stallStreak=maxStep>stepBefore*0.9?stallStreak+1:0;
       if(stallStreak>=2){relaxation=Math.max(0.08,relaxation*0.6);stallStreak=0;}

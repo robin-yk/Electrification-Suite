@@ -1,18 +1,18 @@
 // Numerical verification of the Joule 2D axisymmetric FV solver
 // (apps/joule/solver.js: solveThermal2D). Four studies, printed as markdown:
 //
-//   1. Radial-parabola exactness — uniform Joule source, constant k: the exact
+//   1. Radial-parabola exactness: uniform Joule source, constant k: the exact
 //      solution is quadratic in r, which a conservative 2-point-flux FV scheme
 //      reproduces exactly at cell centers. Checks the cylindrical radial
 //      operator + source integration at machine precision.
-//   2. Multi-layer annulus — mid-plane temperature drops across gap and wall
+//   2. Multi-layer annulus: mid-plane temperature drops across gap and wall
 //      vs the ln-resistance solution of an infinite cylinder; the residual
 //      shrinks as the element is made longer (axial leakage -> 0).
-//   3. Manufactured solution (MMS) — uniform-k domain (element k = wall k =
+//   3. Manufactured solution (MMS): uniform-k domain (element k = wall k =
 //      gap k = outside-air k = 0.026 W/m·K), radiation and convection off, a
 //      known smooth T*(r,z) imposed through cfg.verificationSource; L2/Linf
 //      errors vs grid give the observed convergence order.
-//   4. Physical-case grid convergence — the app's default SiC case on a
+//   4. Physical-case grid convergence: the app's default SiC case on a
 //      doubling grid sequence; Richardson extrapolation for the observed
 //      order and the default grid's distance from the extrapolated answer,
 //      plus energy-balance closure and linear-solver residuals per grid.
@@ -63,7 +63,7 @@ function solveCase(x, gridOverrides) {
 // solution is T(r) - T(0) = -q r^2 / (4 k), and a conservative 2-point-flux FV
 // scheme reproduces quadratics exactly at cell centers. The only mismatch left
 // is the *physical* axial curvature of a finite rod, so the error must fall
-// rapidly as L/D grows — that trend separates discretization error (absent)
+// rapidly as L/D grows; that trend separates discretization error (absent)
 // from finite-length physics (present, vanishing).
 export function radialParabola(aspectRatio, { nr = 30, nz = 60, nAir = 8, nAirZ = 8 } = {}) {
   const x = defaultInput(
@@ -196,7 +196,7 @@ export function physicalConvergence(levels = 3) {
 
 // ---------------------------------------------------------------- report
 function main() {
-  console.log("## Joule 2D solver — numerical verification\n");
+  console.log("## Joule 2D solver: numerical verification\n");
 
   console.log("### 1. Radial parabola (discrete exactness)\n");
   const parabolaRows = [];
@@ -220,7 +220,7 @@ function main() {
     mms.map((r) => [r.grid, sci(r.l2), sci(r.linf), r.orderL2 ? fix(r.orderL2, 2) : "—", r.orderLinf ? fix(r.orderLinf, 2) : "—"]),
   ) + "\n");
 
-  console.log("### 4. Default SiC case — grid sensitivity\n");
+  console.log("### 4. Default SiC case: grid sensitivity\n");
   const { rows, rich } = physicalConvergence();
   console.log(markdownTable(
     ["grid", "avg T (°C)", "max T (°C)", "energy closure", "linear residual", "outer iters"],
@@ -231,7 +231,7 @@ function main() {
   if (asymptotic) {
     console.log(`Richardson (avg T): order ${fix(rich.avg.p, 2)}, extrapolated ${fix(rich.avg.qExtrap, 2)} °C, finest-grid error ${sci(rich.avg.fineError, 2)}`);
   } else {
-    console.log(`Richardson order not meaningful here (grid-to-grid differences are not yet in the asymptotic range — the surface-radiation coupling localizes T^4 exchange at cell centers, a first-order effect that dominates before the second-order conduction error does). Reporting sensitivity against the finest grid instead:`);
+    console.log(`Richardson order not meaningful here (grid-to-grid differences are not yet in the asymptotic range: the surface-radiation coupling localizes T^4 exchange at cell centers, a first-order effect that dominates before the second-order conduction error does). Reporting sensitivity against the finest grid instead:`);
   }
   const rise = last.avgC - 20;
   console.log(`Default 30×60 grid vs finest ${last.grid}: avg T differs by ${fix(Math.abs(rows[0].avgC - last.avgC), 2)} K (${fix(100 * Math.abs(rows[0].avgC - last.avgC) / rise, 2)}% of the temperature rise), max T by ${fix(Math.abs(rows[0].maxC - last.maxC), 2)} K.`);

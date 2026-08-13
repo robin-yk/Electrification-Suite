@@ -319,8 +319,8 @@
           <div class="slider-row">
             <div class="slider-head"><label for="driveMode">Waveform source</label></div>
             <select id="driveMode" class="drive-select">
-              <option value="ideal">Ideal trapezoid &mdash; set temperatures</option>
-              <option value="physical" selected>Physical CFP drive &mdash; set voltage</option>
+              <option value="ideal">Ideal trapezoid: set temperatures</option>
+              <option value="physical" selected>Physical CFP drive: set voltage</option>
             </select>
           </div>
           <div id="idealControls" hidden>
@@ -383,7 +383,7 @@
           </div>
           <p class="chart-note" style="margin-top:10px">
             Press <strong>Run</strong>: one heater pulses between T<sub>min</sub> and T<sub>peak</sub>, while a
-            continuous heater sits at the CJH reference &mdash; the <em>same average temperature</em>, or the same average electrical power when that option is selected. The charts compare their
+            continuous heater sits at the CJH reference: the <em>same average temperature</em>, or the same average electrical power when that option is selected. The charts compare their
             time-averaged &lang;k&rang;, &lang;h&rang;, and &lang;u&rang; as they run.
           </p>
         </div>
@@ -474,7 +474,7 @@
     so the time-average of any property f is simply the weighted average d&thinsp;f(T<sub>peak</sub>) + (1&minus;d)&thinsp;f(T<sub>min</sub>).
     On a plot of f versus T, that value lies on the straight <strong>chord</strong> connecting the two endpoints.
     A continuous heater at the same average temperature gives the <strong>curve</strong> value f(T<sub>avg</sub>) instead.
-    If the curve bends upward (convex &mdash; the Arrhenius rate k does this), the chord lies above the curve and
+    If the curve bends upward (convex, as the Arrhenius rate k does), the chord lies above the curve and
     pulsing beats continuous heating; if it bends downward (concave), pulsing loses. All that matters is which way
     the curve bends: the sign of f&Prime;.
   </p>
@@ -482,28 +482,28 @@
   <div class="assumption">
     <strong>The &beta; slider is a stress test, not a tuning knob.</strong> The &Lambda; advantage depends on h(T)
     being concave (bending downward), which is true for 0 &lt; &beta; &lt; 1. But if transport is dominated by
-    gas-phase diffusion, h grows faster than linearly with temperature &mdash; diffusivity alone scales roughly as
-    T<sup>1.75</sup> &mdash; so &beta; goes past 1, h becomes convex, and part of the &Lambda; gain cancels out.
+    gas-phase diffusion, h grows faster than linearly with temperature (diffusivity alone scales roughly as
+    T<sup>1.75</sup>), so &beta; goes past 1, h becomes convex, and part of the &Lambda; gain cancels out.
     Before trusting the &Lambda; result for your reactor, check which exponent actually describes it.
   </div>
 
   <div class="calc-grid" style="grid-template-columns:repeat(3,minmax(0,1fr))">
     <article class="card">
-      <div class="card-header"><h3>k(T) &mdash; convex</h3><span class="status good">chord above</span></div>
+      <div class="card-header"><h3>k(T): convex</h3><span class="status good">chord above</span></div>
       <div class="card-body" style="padding:10px 12px 12px">
         <svg class="chart" id="jensenK" viewBox="0 0 460 300" role="img" aria-label="Rate constant versus temperature with the pulse chord above the curve"></svg>
         <p class="chart-note">&lang;k&rang; exceeds k(T<sub>avg</sub>) whenever E<sub>a</sub> &gt; 2RT; the resulting gap represents the pulsing gain.</p>
       </div>
     </article>
     <article class="card">
-      <div class="card-header"><h3>Transfer response h(T) &mdash; concave</h3><span class="status warn" id="hConcaveTag">chord below</span></div>
+      <div class="card-header"><h3>Transfer response h(T): concave</h3><span class="status warn" id="hConcaveTag">chord below</span></div>
       <div class="card-body" style="padding:10px 12px 12px">
         <svg class="chart" id="jensenH" viewBox="0 0 460 300" role="img" aria-label="Mass transfer coefficient versus temperature with the pulse chord below the curve"></svg>
         <p class="chart-note">&lang;h&rang; falls below h(T<sub>avg</sub>) for &beta; &lt; 1, reducing the denominator of &Lambda;.</p>
       </div>
     </article>
     <article class="card">
-      <div class="card-header"><h3>u(T) &mdash; linear</h3><span class="status" style="background:var(--soft);color:var(--muted)">chord on curve</span></div>
+      <div class="card-header"><h3>u(T): linear</h3><span class="status" style="background:var(--soft);color:var(--muted)">chord on curve</span></div>
       <div class="card-body" style="padding:10px 12px 12px">
         <svg class="chart" id="jensenU" viewBox="0 0 460 300" role="img" aria-label="Flow velocity versus temperature with the pulse chord lying on the curve"></svg>
         <p class="chart-note">&lang;u&rang; equals u(T<sub>avg</sub>) exactly; pulsing provides no benefit on the convective timescale.</p>
@@ -599,8 +599,8 @@
 
     <div>
       <div class="kpi-grid" style="grid-template-columns:repeat(3,minmax(150px,1fr))">
-        <div class="kpi"><div class="kpi-label">B yield &mdash; pulsed</div><div class="kpi-value" id="abcRphB">&mdash;</div><div class="kpi-sub">cycle-averaged outlet x<sub>B</sub></div></div>
-        <div class="kpi"><div class="kpi-label">B yield &mdash; continuous</div><div class="kpi-value" id="abcCjhB">&mdash;</div><div class="kpi-sub" id="abcCjhSub">steady CSTR at T<sub>avg</sub></div></div>
+        <div class="kpi"><div class="kpi-label">B yield: pulsed</div><div class="kpi-value" id="abcRphB">&mdash;</div><div class="kpi-sub">cycle-averaged outlet x<sub>B</sub></div></div>
+        <div class="kpi"><div class="kpi-label">B yield: continuous</div><div class="kpi-value" id="abcCjhB">&mdash;</div><div class="kpi-sub" id="abcCjhSub">steady CSTR at T<sub>avg</sub></div></div>
         <div class="kpi"><div class="kpi-label">Gain</div><div class="kpi-value" id="abcGain">&mdash;</div><div class="kpi-sub">pulsed &divide; continuous</div></div>
       </div>
 
@@ -701,7 +701,7 @@
   <p class="section-kicker">Dimensionless design space</p>
   <h2 class="section-title">Conditions under which pulsing provides a benefit</h2>
   <p class="section-lede">
-    Everything here is a ratio against a continuous heater at the same average temperature &mdash;
+    Everything here is a ratio against a continuous heater at the same average temperature:
     catalyst-specific prefactors cancel, so only E<sub>a</sub>, &beta;, and the temperatures matter.
   </p>
 
@@ -738,7 +738,7 @@
 
   <div class="assumption">
     <strong>The ratio alone does not determine practical benefit.</strong> The relative exposure ratio compares RPH against a CJH heater held at the RPH
-    time-average temperature — that is, it demonstrates that pulsing outperforms a <em>cooler</em> continuous heater. It does not
+    time-average temperature; that is, it demonstrates that pulsing outperforms a <em>cooler</em> continuous heater. It does not
     demonstrate that pulsing outperforms a continuous heater operated at T<sub>peak</sub>, which is the comparison relevant to
     an operator with sufficient power capacity. In that case, the argument for pulsing rests on selectivity and element lifetime, not on &Lambda; or Da.
   </div>
@@ -795,12 +795,12 @@
   <div class="assumption">
     <strong>Validity limits.</strong> The quasi-steady blend requires the hot-zone residence time (ms) to stay far below
     the pulse period; it holds across this page's period slider but would fail for kHz pulsing. The chemistry is
-    gas-phase GRI-Mech 3.0, a combustion mechanism used here outside its validation range &mdash; trends and the
+    gas-phase GRI-Mech 3.0, a combustion mechanism used here outside its validation range, so trends and the
     convexity argument are meaningful, absolute conversions are not. Coke formation and surface chemistry are not modeled.
   </div>
 
   <p class="chart-note" id="omkmProvenance">
-    Engine: OpenMKM (Vlachos group, University of Delaware) &mdash; Medasani, B., Kasiraju, S., &amp; Vlachos, D. G.
+    Engine: OpenMKM (Vlachos group, University of Delaware); Medasani, B., Kasiraju, S., &amp; Vlachos, D. G.
     <em>OpenMKM: An Open-Source C++ Multiscale Modeling Simulator for Homogeneous and Heterogeneous Catalytic Reactions.</em>
     JCIM 2023, 63(11), 3377&ndash;3391. Pipeline: <code>tools/openmkm/</code>.
   </p>
@@ -852,7 +852,7 @@
         <div class="formula-item">
           <div class="formula-name">Continuous integration (Kinetic Effect tab)</div>
           <div class="formula">&lang;f&rang; = (1/t) &int; f(T(t')) dt'</div>
-          <div class="formula-note">Accumulated numerically each animation frame over the active waveform — the computed CFP solution in physical mode, or the ideal trapezoid including its ramps. This is what the running-average charts plot.</div>
+          <div class="formula-note">Accumulated numerically each animation frame over the active waveform: the computed CFP solution in physical mode, or the ideal trapezoid including its ramps. This is what the running-average charts plot.</div>
         </div>
         <div class="formula-item">
           <div class="formula-name">Ideal two-state limit (ratios tab)</div>
@@ -862,7 +862,7 @@
         <div class="formula-item">
           <div class="formula-name">Reference temperature</div>
           <div class="formula">T<sub>avg</sub> = d T<sub>peak</sub> + (1 &minus; d) T<sub>min</sub></div>
-          <div class="formula-note">The CJH comparison is pinned here by default, so the two systems share a time-average temperature — unless the physical drive's equal-average-power reference is selected.</div>
+          <div class="formula-note">The CJH comparison is pinned here by default, so the two systems share a time-average temperature, unless the physical drive's equal-average-power reference is selected.</div>
         </div>
         <div class="formula-item">
           <div class="formula-name">The two ratios</div>
@@ -906,7 +906,7 @@
         <div class="formula-item">
           <div class="formula-name">Species balances, CSTR with pure-A feed</div>
           <div class="formula">dx<sub>A</sub>/dt = (1 &minus; x<sub>A</sub>)/&tau; &minus; k<sub>1</sub>(T)&thinsp;x<sub>A</sub><br>dx<sub>B</sub>/dt = k<sub>1</sub>(T)&thinsp;x<sub>A</sub> &minus; x<sub>B</sub>/&tau; &minus; k<sub>2</sub>(T)&thinsp;x<sub>B</sub></div>
-          <div class="formula-note">Isothermal fixed-mass CSTR, both steps first-order and homogeneous, T(t) imposed from the active waveform &mdash; the ideal trapezoid or the computed CFP solution. x<sub>C</sub> = 1 &minus; x<sub>A</sub> &minus; x<sub>B</sub>.</div>
+          <div class="formula-note">Isothermal fixed-mass CSTR, both steps first-order and homogeneous, T(t) imposed from the active waveform: the ideal trapezoid or the computed CFP solution. x<sub>C</sub> = 1 &minus; x<sub>A</sub> &minus; x<sub>B</sub>.</div>
         </div>
         <div class="formula-item">
           <div class="formula-name">Rate constants</div>
@@ -916,7 +916,7 @@
         <div class="formula-item">
           <div class="formula-name">Periodic state, solved exactly</div>
           <div class="formula">x<sub>end</sub> = M x<sub>start</sub> + c &nbsp;&rArr;&nbsp; x* = (I &minus; M)<sup>&minus;1</sup> c</div>
-          <div class="formula-note">The balances are linear, so each time step has an exact exponential update and one cycle composes to an affine map whose fixed point is the periodic state &mdash; two passes over the cycle, stable no matter how large k(T<sub>peak</sub>) becomes. The reported B yield is the cycle-average outlet fraction &lang;x<sub>B</sub>&rang;; the CJH value is the analytic steady solution at the reference temperature.</div>
+          <div class="formula-note">The balances are linear, so each time step has an exact exponential update and one cycle composes to an affine map whose fixed point is the periodic state: two passes over the cycle, stable no matter how large k(T<sub>peak</sub>) becomes. The reported B yield is the cycle-average outlet fraction &lang;x<sub>B</sub>&rang;; the CJH value is the analytic steady solution at the reference temperature.</div>
         </div>
         <div class="formula-item">
           <div class="formula-name">Provenance</div>
@@ -959,8 +959,8 @@
       <div class="card-body">
         <table class="metric-table symbol-table">
           <tbody>
-            <tr><td>T<sub>peak</sub></td><td style="text-align:left;color:var(--muted)">Top of the temperature cycle &mdash; set in ideal mode, computed in physical mode</td></tr>
-            <tr><td>T<sub>min</sub></td><td style="text-align:left;color:var(--muted)">Bottom of the temperature cycle &mdash; set in ideal mode, computed in physical mode</td></tr>
+            <tr><td>T<sub>peak</sub></td><td style="text-align:left;color:var(--muted)">Top of the temperature cycle: set in ideal mode, computed in physical mode</td></tr>
+            <tr><td>T<sub>min</sub></td><td style="text-align:left;color:var(--muted)">Bottom of the temperature cycle: set in ideal mode, computed in physical mode</td></tr>
             <tr><td>d</td><td style="text-align:left;color:var(--muted)">Duty cycle, fraction of the period spent at T<sub>peak</sub></td></tr>
             <tr><td>T<sub>avg</sub></td><td style="text-align:left;color:var(--muted)">Time-average temperature, and the CJH set point</td></tr>
             <tr><td>&Lambda;</td><td style="text-align:left;color:var(--muted)">k/h, kinetics against transport</td></tr>
@@ -1014,7 +1014,7 @@
 </main>
 
 <footer>
-  <span>RPH vs CJH visualizer &mdash; companion to Kwak, Railkar, Zheng &amp; Vlachos, <em>ACS Energy Lett.</em> 2025, 10(12), 6188&ndash;6196, <a href="https://doi.org/10.1021/acsenergylett.5c02853" style="color:var(--blue)">doi.org/10.1021/acsenergylett.5c02853</a>.</span>
+  <span>RPH vs CJH visualizer, companion to Kwak, Railkar, Zheng &amp; Vlachos, <em>ACS Energy Lett.</em> 2025, 10(12), 6188&ndash;6196, <a href="https://doi.org/10.1021/acsenergylett.5c02853" style="color:var(--blue)">doi.org/10.1021/acsenergylett.5c02853</a>.</span>
   <span>Ratios are model output, not measured conversions.</span>
 </footer>
 
@@ -1090,12 +1090,12 @@ function recomputePhysical() {
     `T<sub>peak</sub> <strong>${run.tPeak.toFixed(0)}</strong> &middot; T<sub>min</sub> <strong>${run.tMin.toFixed(0)}</strong> &middot; T<sub>avg</sub> <strong>${run.tAvg.toFixed(0)} &deg;C</strong><br>` +
     `P&#772; <strong>${run.avgPower.toFixed(1)} W</strong> &middot; on-phase <strong>${run.peakPower.toFixed(0)} W</strong> &middot; equal-power CJH <strong>${run.equalPowerT.toFixed(0)} &deg;C</strong>` +
     (run.converged ? "" : " &middot; <em>not yet periodic</em>") +
-    (run.tPeak > 1800 ? "<br><em>T<sub>peak</sub> is past the 1800 &deg;C IR/CFP limit — lower V or duty.</em>" : "");
+    (run.tPeak > 1800 ? "<br><em>T<sub>peak</sub> is past the 1800 &deg;C IR/CFP limit; lower V or duty.</em>" : "");
   syncCjhTitle();
   redrawAll();
 }
 function syncCjhTitle() {
-  reactorPanels[1].title = usingEqualPower() ? "CJH — equal average power" : "CJH — held at T_avg";
+  reactorPanels[1].title = usingEqualPower() ? "CJH: equal average power" : "CJH: held at T_avg";
 }
 
 function idealAverages() {
@@ -1191,8 +1191,8 @@ function makeParticles(x0) {
 }
 
 const reactorPanels = [
-  { x0: 0, title: "RPH — pulsed element", particles: makeParticles(0) },
-  { x0: PANEL_W + PANEL_GAP, title: "CJH — held at T_avg", particles: makeParticles(PANEL_W + PANEL_GAP) }
+  { x0: 0, title: "RPH: pulsed element", particles: makeParticles(0) },
+  { x0: PANEL_W + PANEL_GAP, title: "CJH: held at T_avg", particles: makeParticles(PANEL_W + PANEL_GAP) }
 ];
 
 function drawReactorPanel(panel, TC) {
@@ -1346,7 +1346,7 @@ function updateLive(TC) {
   const kRef = kOf(tRef), hRef = hOf(tRef), uRef = uOf(tRef);
   // Before the leaky integrators accumulate any weight (the very first animation
   // frame, accTime === 0), fall back to the instantaneous reference values instead
-  // of dividing 0/0 — otherwise the KPI tiles flash "NaN" for a frame.
+  // of dividing 0/0; otherwise the KPI tiles flash "NaN" for a frame.
   const haveHistory = state.accTime > 0;
   const kAvg = haveHistory ? state.accK / state.accTime : kRef;
   const hAvg = haveHistory ? state.accH / state.accTime : hRef;
@@ -1405,7 +1405,7 @@ function drawTrace() {
   if (state.driveMode === "physical" && lo < 500) {
     const yb = f.y(Math.min(500, hi), lo, hi);
     s += `<rect x="${f.pad.l}" y="${yb.toFixed(1)}" width="${f.w - f.pad.l - f.pad.r}" height="${(f.h - f.pad.b - yb).toFixed(1)}" fill="#8fa3b4" opacity="0.10"/>`;
-    s += `<text x="${f.pad.l + 6}" y="${(yb + 13).toFixed(1)}" font-size="10" fill="#64717d">below the IR camera range (&lt;500 &deg;C) — model prediction only</text>`;
+    s += `<text x="${f.pad.l + 6}" y="${(yb + 13).toFixed(1)}" font-size="10" fill="#64717d">below the IR camera range (&lt;500 &deg;C); model prediction only</text>`;
   }
   s += path([[x0, tRef], [x1, tRef]], f, x0, x1, lo, hi, "#2c6e9b", 2, "6 5");
   s += path(state.trace, f, x0, x1, lo, hi, "#c53a3a", 2.2);
@@ -1700,8 +1700,8 @@ function makeAbcParticles(x0) {
 }
 
 const abcPanels = [
-  { x0: 0, title: "RPH — pulsed element", particles: makeAbcParticles(0) },
-  { x0: PANEL_W + PANEL_GAP, title: "CJH — continuous element", particles: makeAbcParticles(PANEL_W + PANEL_GAP) }
+  { x0: 0, title: "RPH: pulsed element", particles: makeAbcParticles(0) },
+  { x0: PANEL_W + PANEL_GAP, title: "CJH: continuous element", particles: makeAbcParticles(PANEL_W + PANEL_GAP) }
 ];
 
 function drawAbcPanel(panel, TC, dtFrame) {

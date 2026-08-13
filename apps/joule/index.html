@@ -1133,7 +1133,7 @@
               </table>
             </div>
             <details class="diagnostic-secondary">
-              <summary>Supporting diagnostics — supply utilization, geometry, heat-path fractions</summary>
+              <summary>Supporting diagnostics: supply utilization, geometry, heat-path fractions</summary>
               <div class="diagnostic-wrap"><table class="diagnostic-table"><thead><tr><th>Priority</th><th>Metric</th><th>Value</th><th>Physical meaning</th></tr></thead><tbody id="jhSecondaryDiagnostics"></tbody></table></div>
             </details>
           </article>
@@ -1363,7 +1363,7 @@
       </div>
       <div class="calc-note" id="sweepInsight" style="margin-top:18px">
         <strong>Why the default peak is near R = 5 Ω:</strong>
-        below 5 Ω, I = 20 A and P = I²R, so increasing R raises power. Above 5 Ω, V = 100 V and P = V²/R, so increasing R lowers power. At R = Vmax/Imax = 5 Ω, P = IV = 2,000 W and P/Vsolid—and therefore the initial ramp rate—reaches its maximum.
+        below 5 Ω, I = 20 A and P = I²R, so increasing R raises power. Above 5 Ω, V = 100 V and P = V²/R, so increasing R lowers power. At R = Vmax/Imax = 5 Ω, P = IV = 2,000 W, and P/Vsolid (and therefore the initial ramp rate) reaches its maximum.
       </div>
       <div class="calc-grid calc-grid-3" style="margin-top:18px">
         <article class="card formula-card"><div class="card-header"><h3>Low resistance</h3></div><div class="card-body"><div class="formula">P = I<sub>cap</sub>²R ↑</div><div class="formula-note">Current is already at its ceiling. More resistance converts the same current into more heat.</div></div></article>
@@ -1505,7 +1505,7 @@
         <p class="calc-note" style="margin-top:10px">
           <strong>1 · Wismann et al., <em>Science</em> 2019 FeCrAl reformer tube</strong> (OD 6.0 mm × 50 cm, 0.35 mm wall; <a href="https://doi.org/10.1126/science.aaw8775">doi:10.1126/science.aaw8775</a>)
           entered as nominal volume 14.14 cm³, L/D 83.3, void fraction φ = 0.78, driven at 65 A with the page-default enclosure.
-          The reaction heat duty of the reformer is outside this tool's scope — the comparison checks the bare heated tube.
+          The reaction heat duty of the reformer is outside this tool's scope; the comparison checks the bare heated tube.
         </p>
         <div class="table-wrap" style="margin-top:10px"><table class="metric-table"><thead><tr><th>Quantity</th><th>This tool</th><th>Reference</th></tr></thead><tbody id="crossCheckBody"></tbody></table></div>
         <p class="calc-note" style="margin-top:16px">
@@ -1521,7 +1521,7 @@
           The 38 × 8 × 0.21 mm carbon-fiber-paper strip enters as a radiating-area-equivalent cylinder with the measured
           R(T) = 4.25 − 7.24×10⁻⁴ T Ω, the measured 28.8 mg mass, and the calibrated emissivity 0.57, inside the paper's
           quartz tube with He flow. The steady T(P) scaling law is the comparison target; the uniform offset in absolute
-          temperature is expected — conduction into the copper clamps and the IR camera's area-averaging are not modeled.
+          temperature is expected: conduction into the copper clamps and the IR camera's area-averaging are not modeled.
         </p>
         <div class="table-wrap" style="margin-top:10px"><table class="metric-table"><thead><tr><th>Quantity</th><th>This tool</th><th>Reference</th></tr></thead><tbody id="crossCheckBody3"></tbody></table></div>
       </details>
@@ -1718,7 +1718,7 @@
       canvas.width=Math.max(1,Math.round(physicalWidth*scale));
       canvas.height=Math.max(1,Math.round(plotHeight));
       // Size the on-screen box to exactly match the native pixel aspect ratio (no CSS
-      // stretching, no letterbox gap) — fit inside the available column width and a
+      // stretching, no letterbox gap): fit inside the available column width and a
       // sane on-screen height cap, whichever is more restrictive.
       const displayMaxW=Math.min(canvas.parentElement.clientWidth||420,420),displayMaxH=Math.min(window.innerHeight*0.52||420,420);
       const displayScale=Math.min(displayMaxW/canvas.width,displayMaxH/canvas.height);
@@ -2733,7 +2733,7 @@
         ["Strip as equivalent cylinder", `Ø${sig4(cfpD*1000)} × ${sig4(cfpL*1000)} mm`, "38 × 8 × 0.21 mm strip, same radiating area"],
         ["Cold resistance R(25 °C)", `${sig4(c2.R25)} Ω`, "4.23 Ω from the measured R(T) fit"],
         ["T–P scaling exponent", cExp.toFixed(3), "0.3525 measured, R² = 0.997 (Fig. S11b)"],
-        [`Steady T at 20 V (${sig4(c2.P)} W)`, `${sig4(c2.T)} °C`, `${sig4(202.24 * Math.pow(c2.P, 0.3525))} °C from the paper fit — clamp conduction and IR averaging explain the offset`]
+        [`Steady T at 20 V (${sig4(c2.P)} W)`, `${sig4(c2.T)} °C`, `${sig4(202.24 * Math.pow(c2.P, 0.3525))} °C from the paper fit; clamp conduction and IR averaging explain the offset`]
       ];
       $("crossCheckBody3").innerHTML = cRows.map(([a,b,c]) => `<tr><th>${a}</th><td>${b}</td><td>${c}</td></tr>`).join("");
     }

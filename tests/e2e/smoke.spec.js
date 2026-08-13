@@ -15,7 +15,7 @@ for (const { path, valueSelector, label } of pages) {
     const errors = [];
     page.on("pageerror", (err) => errors.push(String(err)));
     page.on("console", (msg) => {
-      // ignore the favicon 404 — the site has no favicon yet, unrelated to solver correctness
+      // ignore the favicon 404; the site has no favicon yet, unrelated to solver correctness
       if (msg.type() === "error" && !msg.location().url.includes("favicon")) errors.push(msg.text());
     });
 

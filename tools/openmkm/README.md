@@ -13,13 +13,13 @@ The hot zone's residence time is milliseconds; RPH pulse periods are ~1 s.
 The reactor is therefore quasi-steady at every instant of the pulse, and a
 two-state pulse's time-averaged output is the duty-weighted blend of the
 steady outputs at T_peak and T_min. That blend is computed in the page from
-this 1-D table — no waveform-dependent case matrix is needed.
+this 1-D table; no waveform-dependent case matrix is needed.
 
 ## Model
 
 - Steady 1-D PFR, gas phase only (no surface phase), GRI-Mech 3.0
   (`mechanisms/gri30-ct25.yaml`, the Cantera-2.5-format copy shipped with
-  OpenMKM's examples — the fork cannot read Cantera-3.x YAML).
+  OpenMKM's examples; the fork cannot read Cantera-3.x YAML).
 - Axial temperature profile via OpenMKM's `tprofile` mode, mirroring the
   visualizer's animation: 673 K feed, ramp into the element plateau
   (2–3.5 cm), quench, exit at 6 cm; 1 cm², 50 cm³/s, 1 atm, CH4:CO2 = 1:1.
@@ -56,7 +56,7 @@ python tools/openmkm/run_sweep.py --check --omkm ... --cantera-lib ...  # verify
 ```
 
 CI (`.github/workflows/openmkm-data.yml`) rebuilds `omkm` (cached on the
-patch/build-script hash — only the first run pays the ~25 min compile) and
+patch/build-script hash; only the first run pays the ~25 min compile) and
 runs `--check` whenever this directory changes, so the committed JSON cannot
 drift from the pipeline.
 

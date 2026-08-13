@@ -1,8 +1,8 @@
 // RPH vs CJH numeric core: the Arrhenius rate, transport, and velocity
 // property functions, the pulsed-element waveform, and the ideal two-state
 // (ramp = 0) analytical averages behind rphcjh.html. Pure functions of
-// explicit parameters — no reference to the page's mutable `state` object
-// and no DOM access — so this module can be imported directly by
+// explicit parameters, with no reference to the page's mutable `state` object
+// and no DOM access, so this module can be imported directly by
 // rphcjh.html (as an ES module) or by a Node test runner.
 "use strict";
 
@@ -226,7 +226,7 @@ export function steadySeriesCSTR(TC, cfg = {}) {
 //   xA' = alphaA + betaA xA
 //   xB' = betaB xB + srcConst + srcA xA
 // Exported so the page can advance a live simulation with the same
-// arithmetic the periodic solver uses — unconditionally stable no matter
+// arithmetic the periodic solver uses, unconditionally stable no matter
 // how large k(T_peak) becomes.
 export function seriesStepCoeffs(TC, dt, p) {
   const { k1, k2 } = seriesRateConstants(TC, p);
@@ -249,7 +249,7 @@ export function seriesStepCoeffs(TC, dt, p) {
 // exact exponential update, and one full cycle composes to an affine map
 // x_end = M x_start + c whose fixed point is the periodic state. Two passes
 // over the cycle therefore give the exact answer regardless of how stiff
-// k(T_peak) becomes — no RK stability limit.
+// k(T_peak) becomes, with no RK stability limit.
 export function integrateSeriesCSTR(cfg = {}) {
   const p = Object.assign({}, SERIES_DEFAULTS, { period: 1, steps: 2000 }, cfg);
   const dt = p.period / p.steps;
