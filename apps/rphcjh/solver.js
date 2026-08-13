@@ -187,6 +187,103 @@ export function integratePulsedElement(cfg = {}) {
   };
 }
 
+/* ------------------------------------------------------------------ */
+/* Series network A -> B -> C in a CSTR with an imposed temperature    */
+/* program T(t): the minimal model that rationalizes why short hot     */
+/* pulses protect the intermediate B (Railkar & Vlachos 2024,          */
+/* IECR, 10.1021/acs.iecr.3c03198; the experimental case is Dong et    */
+/* al. 2022, Nature, 10.1038/s41586-022-04568-6). Both steps are       */
+/* first-order and homogeneous; rate constants are anchored at T_REF.  */
+/* ------------------------------------------------------------------ */
+export const SERIES_DEFAULTS = {
+  ea1: 400,   // kJ/mol, A -> B: steep, near the lumped methane-pyrolysis 422
+  ea2: 80,    // kJ/mol, B -> C: flat, so the destruction step never freezes
+  k1Ref: 30,  // 1/s at 1100 C
+  k2Ref: 1,   // 1/s at 1100 C
+  tau: 1.0    // CSTR residence time, s
+};
+
+export function seriesRateConstants(TC, p) {
+  return {
+    k1: p.k1Ref * arrheniusRate(TC, p.ea1),
+    k2: p.k2Ref * arrheniusRate(TC, p.ea2)
+  };
+}
+
+// analytic steady CSTR at constant temperature, pure-A feed:
+// (1 - xA)/tau = k1 xA  and  k1 xA = xB/tau + k2 xB
+export function steadySeriesCSTR(TC, cfg = {}) {
+  const p = Object.assign({}, SERIES_DEFAULTS, cfg);
+  const { k1, k2 } = seriesRateConstants(TC, p);
+  const xA = 1 / (1 + k1 * p.tau);
+  const xB = k1 * p.tau * xA / (1 + k2 * p.tau);
+  return { xA, xB, xC: Math.max(0, 1 - xA - xB), k1, k2 };
+}
+
+// Periodic state of the same CSTR under a temperature program tempFn(phase).
+// The ODEs are linear, so each step (temperature frozen over dt) has an
+// exact exponential update, and one full cycle composes to an affine map
+// x_end = M x_start + c whose fixed point is the periodic state. Two passes
+// over the cycle therefore give the exact answer regardless of how stiff
+// k(T_peak) becomes — no RK stability limit.
+export function integrateSeriesCSTR(cfg = {}) {
+  const p = Object.assign({}, SERIES_DEFAULTS, { period: 1, steps: 2000 }, cfg);
+  const dt = p.period / p.steps, invTau = 1 / p.tau;
+
+  // per-step exact update coefficients at temperature TC:
+  //   xA' = alphaA + betaA xA
+  //   xB' = betaB xB + k1 [ xAss ((1-betaB)/lamB - G) + G xA ]
+  const stepCoeffs = TC => {
+    const { k1, k2 } = seriesRateConstants(TC, p);
+    const lamA = invTau + k1, lamB = invTau + k2;
+    const betaA = Math.exp(-lamA * dt), betaB = Math.exp(-lamB * dt);
+    const xAss = invTau / lamA;
+    const G = Math.abs(lamB - lamA) < 1e-9 * (lamA + lamB)
+      ? dt * betaA
+      : (betaA - betaB) / (lamB - lamA);
+    return {
+      alphaA: xAss * (1 - betaA), betaA, betaB,
+      srcConst: k1 * xAss * ((1 - betaB) / lamB - G),
+      srcA: k1 * G
+    };
+  };
+
+  // pass 1: compose the cycle's affine map
+  // xA = a0 + aA xA0,  xB = b0 + bA xA0 + bB xB0
+  let a0 = 0, aA = 1, b0 = 0, bA = 0, bB = 1;
+  const coeffs = [];
+  for (let i = 0; i < p.steps; i++) {
+    const s = stepCoeffs(p.tempFn((i + 0.5) / p.steps));
+    coeffs.push(s);
+    const na0 = s.alphaA + s.betaA * a0, naA = s.betaA * aA;
+    b0 = s.betaB * b0 + s.srcConst + s.srcA * a0;
+    bA = s.betaB * bA + s.srcA * aA;
+    bB = s.betaB * bB;
+    a0 = na0; aA = naA;
+  }
+  const xA0 = a0 / (1 - aA);
+  const xB0 = (b0 + bA * xA0) / (1 - bB);
+
+  // pass 2: walk one cycle from the fixed point, recording and averaging
+  let xA = xA0, xB = xB0, avgA = 0, avgB = 0, peakB = -Infinity, minB = Infinity;
+  const every = Math.max(1, Math.round(p.steps / 300));
+  const samples = [[0, xA, xB]];
+  for (let i = 0; i < p.steps; i++) {
+    const s = coeffs[i];
+    const pA = xA, pB = xB;
+    xA = s.alphaA + s.betaA * xA;
+    xB = s.betaB * xB + s.srcConst + s.srcA * pA;
+    avgA += (pA + xA) / 2 / p.steps;
+    avgB += (pB + xB) / 2 / p.steps;
+    peakB = Math.max(peakB, xB); minB = Math.min(minB, xB);
+    if ((i + 1) % every === 0 || i === p.steps - 1) samples.push([(i + 1) / p.steps, xA, xB]);
+  }
+  return {
+    samples, avgA, avgB, avgC: Math.max(0, 1 - avgA - avgB),
+    peakB, minB, conversion: 1 - avgA
+  };
+}
+
 // linear phase lookup into an integratePulsedElement() sample list
 export function sampledWaveform(samples, phase) {
   const ph = phase - Math.floor(phase);

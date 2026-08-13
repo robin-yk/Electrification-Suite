@@ -193,3 +193,69 @@ test("cfpHeatCapacity() interpolates and saturates near the Dulong-Petit limit",
   const mid = cfpHeatCapacity(300);
   assert.ok(mid > 1050 && mid < 1390);
 });
+
+/* ------------------------------------------------------------------ */
+/* Series network A -> B -> C (the CSTR selectivity tab)               */
+/* ------------------------------------------------------------------ */
+import {
+  SERIES_DEFAULTS, seriesRateConstants, steadySeriesCSTR, integrateSeriesCSTR
+} from "../apps/rphcjh/solver.js";
+
+const squareWave = { duty: 0.10, ramp: 0, tPeak: 1250, tMin: 750 };
+const squareTemp = ph => pulseWaveform(ph, squareWave);
+const squareTavg = timeAverageTemperature(squareWave.duty, squareWave.tPeak, squareWave.tMin);
+
+test("steadySeriesCSTR() satisfies both species balances and closes the mole balance", () => {
+  const s = steadySeriesCSTR(1000);
+  const { k1, k2 } = seriesRateConstants(1000, SERIES_DEFAULTS);
+  const tau = SERIES_DEFAULTS.tau;
+  assert.ok(Math.abs((1 - s.xA) / tau - k1 * s.xA) < 1e-12, "A balance");
+  assert.ok(Math.abs(k1 * s.xA - s.xB / tau - k2 * s.xB) < 1e-12, "B balance");
+  assert.ok(s.xA >= 0 && s.xB >= 0 && s.xA + s.xB <= 1 + 1e-12);
+});
+
+test("integrateSeriesCSTR() at constant temperature recovers the analytic steady state", () => {
+  const run = integrateSeriesCSTR({ tempFn: () => 1000, period: 1 });
+  const s = steadySeriesCSTR(1000);
+  assert.ok(Math.abs(run.avgA - s.xA) < 1e-6, `avgA ${run.avgA} vs analytic ${s.xA}`);
+  assert.ok(Math.abs(run.avgB - s.xB) < 1e-6, `avgB ${run.avgB} vs analytic ${s.xB}`);
+});
+
+test("integrateSeriesCSTR() returns a genuinely periodic, bounded trajectory", () => {
+  const run = integrateSeriesCSTR({ tempFn: squareTemp, period: 1 });
+  const first = run.samples[0], last = run.samples[run.samples.length - 1];
+  assert.ok(Math.abs(first[1] - last[1]) < 1e-9 && Math.abs(first[2] - last[2]) < 1e-9,
+    "cycle start and end must coincide (affine fixed point)");
+  for (const [, xA, xB] of run.samples) {
+    assert.ok(xA >= -1e-12 && xB >= -1e-12 && xA + xB <= 1 + 1e-9);
+  }
+});
+
+test("pulsing beats the Tavg-matched CJH on B yield with the default separated network", () => {
+  const run = integrateSeriesCSTR({ tempFn: squareTemp, period: 1 });
+  const cjh = steadySeriesCSTR(squareTavg);
+  assert.ok(run.avgB > 4 * cjh.xB,
+    `expected a large gain, got pulsed ${run.avgB} vs continuous ${cjh.xB}`);
+});
+
+test("the B yield collapses when the pulse period stretches past the B-destruction time", () => {
+  const short = integrateSeriesCSTR({ tempFn: squareTemp, period: 0.3 });
+  const long = integrateSeriesCSTR({ tempFn: squareTemp, period: 30 });
+  assert.ok(short.avgB > 0.3, `short-period yield ${short.avgB} should be substantial`);
+  assert.ok(long.avgB < short.avgB / 4,
+    `long-period yield ${long.avgB} should collapse well below the short-period ${short.avgB}`);
+});
+
+test("without timescale separation (k1 = k2) pulsing no longer helps", () => {
+  const flat = { ea2: SERIES_DEFAULTS.ea1, k2Ref: SERIES_DEFAULTS.k1Ref };
+  const run = integrateSeriesCSTR(Object.assign({ tempFn: squareTemp, period: 1 }, flat));
+  const cjh = steadySeriesCSTR(squareTavg, flat);
+  assert.ok(run.avgB < cjh.xB, `k1=k2: pulsed ${run.avgB} should not beat continuous ${cjh.xB}`);
+});
+
+test("integrateSeriesCSTR() stays finite and sane in the stiff limit (huge k at T_peak)", () => {
+  const stiff = { k1Ref: 1e4, k2Ref: 1e3 };
+  const run = integrateSeriesCSTR(Object.assign({ tempFn: squareTemp, period: 1 }, stiff));
+  assert.ok(Number.isFinite(run.avgB) && run.avgB >= 0 && run.avgB <= 1);
+  assert.ok(run.avgA >= 0 && run.avgA + run.avgB <= 1 + 1e-9);
+});
