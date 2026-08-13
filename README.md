@@ -42,6 +42,8 @@ npm run test:e2e  # Playwright browser smoke test (needs Chromium)
 
 Both run in CI on every push, together with a build that verifies every page's files are packaged.
 
+Numerical verification of the 2D solvers — manufactured solutions, analytic benchmarks, and grid-convergence studies — is documented in [`docs/VERIFICATION.md`](docs/VERIFICATION.md) and reproducible via `npm run verify:joule` / `npm run verify:microwave`.
+
 ## Citation
 
 ```bibtex

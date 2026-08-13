@@ -24,8 +24,10 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --test tests/joule-solver.test.js tests/microwave-solver.test.js tests/rphcjh-solver.test.js",
-    "test:e2e": "playwright test"
+    "test": "node --test tests/joule-solver.test.js tests/microwave-solver.test.js tests/rphcjh-solver.test.js tests/verification.test.js",
+    "test:e2e": "playwright test",
+    "verify:joule": "node tools/verification/joule.mjs",
+    "verify:microwave": "node tools/verification/microwave.mjs"
   },
   "devDependencies": {
     "@playwright/test": "1.56.1",

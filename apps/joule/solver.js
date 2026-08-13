@@ -415,7 +415,11 @@ export function assemble2DSystem(T, x, g, cfg, material, mesh, op) {
   };
   for(let j=0;j<mesh.nz;j++) for(let i=0;i<mesh.nr;i++) {
     const p=idx(i,j),code=mesh.materialAt(i,j),kp=cellK2D(code,T[j][i],material,cfg,x);
-    if(code===0) rhs[p]+=qVol*mesh.cellVolume(i,j);
+    // cfg.verificationSource(r, z) [W/m³] replaces the Joule source over the whole
+    // domain. Only for code verification (manufactured solutions) — the page never
+    // sets it, and energy-closure reporting assumes the ordinary Joule source.
+    if(cfg.verificationSource) rhs[p]+=cfg.verificationSource(mesh.centers[i],mesh.zCenters[j])*mesh.cellVolume(i,j);
+    else if(code===0) rhs[p]+=qVol*mesh.cellVolume(i,j);
     if(i<mesh.nr-1) {
       const q=idx(i+1,j),face=mesh.edges[i+1],area=2*Math.PI*face*(mesh.zEdges[j+1]-mesh.zEdges[j]),nextCode=mesh.materialAt(i+1,j),kn=cellK2D(nextCode,T[j][i+1],material,cfg,x);
       const G=pairConductance(area,face-mesh.centers[i],kp,mesh.centers[i+1]-face,kn,code,nextCode);

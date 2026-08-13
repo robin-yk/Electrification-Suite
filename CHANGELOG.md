@@ -4,6 +4,15 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- Numerical verification of both 2D solvers (`docs/VERIFICATION.md`,
+  `tools/verification/`): manufactured-solution convergence (observed order
+  2.0 for the Joule FV discretization), analytic radial-parabola and
+  multi-layer-annulus benchmarks, grid-sensitivity studies of the shipped
+  default cases, and fast guard tests wired into `npm test`.
+
 ## [0.1.0] - 2026-08-12
 
 First tagged release.
