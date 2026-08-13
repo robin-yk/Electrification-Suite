@@ -114,7 +114,7 @@
     }
     .home h1 b { font-weight: 700; }
     .home-lede {
-      margin: 0 0 40px;
+      margin: 0 0 14px;
       color: var(--muted);
       font-size: 17px;
     }
@@ -125,6 +125,24 @@
       color: var(--muted);
       opacity: 0.85;
     }
+    .home-dev {
+      margin: 0 0 40px;
+      font-size: 14px;
+      color: var(--muted);
+      opacity: 0.85;
+    }
+    .home-dev-label {
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    .home-dev ul {
+      margin: 4px 0 0;
+      padding-left: 18px;
+      list-style: disc;
+    }
+    .home-dev li { margin: 2px 0; }
+    .home-dev a { color: var(--accent); text-decoration: none; }
+    .home-dev a:hover { text-decoration: underline; }
 
     .project-grid {
       display: grid;
@@ -240,6 +258,14 @@
       <div class="home-inner">
         <h1>Electrified <b>Reactor Models</b></h1>
         <p class="home-lede">Three interactive physics models of electrified catalytic reactors that run entirely in your browser.<br><span class="home-note">Research software under active development. Use for reference; models and numbers may change.</span></p>
+
+        <div class="home-dev">
+          <span class="home-dev-label">Under development</span>
+          <ul>
+            <li><a href="https://robin-yk.github.io/Solid-gas-thermosolver/" target="_blank" rel="noopener">Solid-Gas Thermosolver</a>: equilibrium of a reacting gas over a reducible oxide, by Gibbs minimization and an oxygen-potential shortcut.</li>
+            <li><a href="https://robin-yk.github.io/Techno-economics/" target="_blank" rel="noopener">Ethane Cracker Techno-Economics</a>: screening cost and carbon-intensity model, including fired versus Joule heating.</li>
+          </ul>
+        </div>
 
         <div class="project-grid" aria-label="Select a project">
           <button class="project-card" type="button" data-route="microwave">
