@@ -198,7 +198,7 @@ test("cfpHeatCapacity() interpolates and saturates near the Dulong-Petit limit",
 /* Series network A -> B -> C (the CSTR selectivity tab)               */
 /* ------------------------------------------------------------------ */
 import {
-  SERIES_DEFAULTS, seriesRateConstants, steadySeriesCSTR, integrateSeriesCSTR
+  SERIES_DEFAULTS, seriesRateConstants, steadySeriesCSTR, integrateSeriesCSTR, cjhTempForConversion
 } from "../apps/rphcjh/solver.js";
 
 const squareWave = { duty: 0.10, ramp: 0, tPeak: 1250, tMin: 750 };
@@ -258,4 +258,36 @@ test("integrateSeriesCSTR() stays finite and sane in the stiff limit (huge k at 
   const run = integrateSeriesCSTR(Object.assign({ tempFn: squareTemp, period: 1 }, stiff));
   assert.ok(Number.isFinite(run.avgB) && run.avgB >= 0 && run.avgB <= 1);
   assert.ok(run.avgA >= 0 && run.avgA + run.avgB <= 1 + 1e-9);
+});
+
+test("cjhTempForConversion() inverts the steady conversion exactly, across tau and Ea", () => {
+  for (const tau of [0.2, 1.0, 5.0]) {
+    for (const ea1 of [150, 400]) {
+      for (const X of [0.05, 0.3, 0.63, 0.9, 0.99]) {
+        const cfg = { tau, ea1 };
+        const T = cjhTempForConversion(X, cfg);
+        assert.ok(T !== null, `no solution for X=${X}, tau=${tau}, ea1=${ea1}`);
+        const back = 1 - steadySeriesCSTR(T, cfg).xA;
+        assert.ok(Math.abs(back - X) < 1e-9,
+          `round trip X=${X} -> T=${T} -> ${back}`);
+      }
+    }
+  }
+});
+
+test("cjhTempForConversion() returns null rather than a bogus temperature out of range", () => {
+  for (const X of [0, 1, 1.5, -0.2, NaN]) {
+    assert.equal(cjhTempForConversion(X), null, `X=${X} should have no solution`);
+  }
+});
+
+test("the equal-conversion basis puts both reactors at the same conversion", () => {
+  const run = integrateSeriesCSTR({ tempFn: squareTemp, period: 1 });
+  const T = cjhTempForConversion(run.conversion);
+  const cjh = steadySeriesCSTR(T);
+  assert.ok(Math.abs((1 - cjh.xA) - run.conversion) < 1e-9,
+    `conversions should match: pulsed ${run.conversion} vs continuous ${1 - cjh.xA}`);
+  // and the comparison then reduces to selectivity alone
+  assert.ok(run.avgB / run.conversion > cjh.xB / (1 - cjh.xA),
+    "at equal conversion the pulsed run should be the more selective one here");
 });
