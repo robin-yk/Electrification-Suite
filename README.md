@@ -102,7 +102,7 @@ If this tool is useful in your own work, please cite it:
   title   = {{Electrification Suite: Interactive Models of Chemical Process Electrification}},
   year    = {2026},
   url     = {https://github.com/robin-yk/Electrification},
-  version = {0.1.0}
+  version = {1.1.0}
 }
 ```
 
