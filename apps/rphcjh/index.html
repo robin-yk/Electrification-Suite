@@ -391,9 +391,8 @@
             <button class="btn" id="btnReset" type="button">Reset</button>
           </div>
           <p class="chart-note" style="margin-top:10px">
-            Press <strong>Run</strong>: one heater pulses between T<sub>min</sub> and T<sub>peak</sub>, while a
-            continuous heater sits at the CJH reference: the <em>same average temperature</em>, or the same average electrical power when that option is selected. The charts compare their
-            time-averaged &lang;k&rang;, &lang;h&rang;, and &lang;u&rang; as they run.
+            One heater pulses between T<sub>min</sub> and T<sub>peak</sub>; the other holds the CJH reference
+            (same average temperature or same average power). The charts compare their running &lang;k&rang;, &lang;h&rang;, and &lang;u&rang;.
           </p>
         </div>
       </div>
@@ -479,21 +478,18 @@
   <p class="section-kicker">Rate, transport, and velocity curvature, compared</p>
   <h2 class="section-title">Curvature determines whether pulsing provides a benefit</h2>
   <p class="section-lede">
-    A pulsed element is hot (T<sub>peak</sub>) for a fraction d of each cycle and cold (T<sub>min</sub>) for the rest,
-    so the time-average of any property f is simply the weighted average d&thinsp;f(T<sub>peak</sub>) + (1&minus;d)&thinsp;f(T<sub>min</sub>).
-    On a plot of f versus T, that value lies on the straight <strong>chord</strong> connecting the two endpoints.
-    A continuous heater at the same average temperature gives the <strong>curve</strong> value f(T<sub>avg</sub>) instead.
-    If the curve bends upward (convex, as the Arrhenius rate k does), the chord lies above the curve and
-    pulsing beats continuous heating; if it bends downward (concave), pulsing loses. All that matters is which way
-    the curve bends: the sign of f&Prime;.
+    A pulsed element spends a fraction d of each cycle at T<sub>peak</sub> and the rest at T<sub>min</sub>, so the
+    time-average of any property f sits on the straight <strong>chord</strong> between its two endpoint values, while a
+    continuous heater at the same average temperature gives the <strong>curve</strong> value f(T<sub>avg</sub>).
+    Chord above curve (convex, like the Arrhenius rate k): pulsing wins. Chord below (concave): pulsing loses.
+    The sign of f&Prime; is all that matters.
   </p>
 
   <div class="assumption">
-    <strong>The &beta; slider is a stress test, not a tuning knob.</strong> The &Lambda; advantage depends on h(T)
-    being concave (bending downward), which is true for 0 &lt; &beta; &lt; 1. But if transport is dominated by
-    gas-phase diffusion, h grows faster than linearly with temperature (diffusivity alone scales roughly as
-    T<sup>1.75</sup>), so &beta; goes past 1, h becomes convex, and part of the &Lambda; gain cancels out.
-    Before trusting the &Lambda; result for your reactor, check which exponent actually describes it.
+    <strong>The &beta; slider is a stress test, not a tuning knob.</strong> The &Lambda; advantage requires h(T)
+    concave (0 &lt; &beta; &lt; 1); if gas-phase diffusion dominates, &beta; exceeds 1 (diffusivity alone scales
+    roughly as T<sup>1.75</sup>) and part of the gain cancels. Check which exponent describes your reactor before
+    trusting the &Lambda; result.
   </div>
 
   <div class="calc-grid" style="grid-template-columns:repeat(3,minmax(0,1fr))">
@@ -543,8 +539,8 @@
       <div class="card-body" style="padding:10px 12px 12px">
         <svg class="chart" id="gainBars" viewBox="0 0 500 250" role="img" aria-label="Sensitivity of the pulsing gain to activation energy, temperature swing and duty cycle"></svg>
         <p class="chart-note">
-          Sweep of R<sub>exposure</sub> against the temperature swing &Delta;T = T<sub>peak</sub> &minus; T<sub>min</sub> at the current
-          E<sub>a</sub> and d. The curve is flat near &Delta;T = 0 and steepens rapidly, indicating that pulse depth has greater influence than pulse frequency.
+          R<sub>exposure</sub> versus the swing &Delta;T = T<sub>peak</sub> &minus; T<sub>min</sub> at the current
+          E<sub>a</sub> and d: flat near zero, then steepening fast. Pulse depth matters more than pulse frequency.
         </p>
       </div>
     </article>
@@ -751,18 +747,18 @@
       <div class="card-body" style="padding:10px 12px 12px">
         <svg class="chart" id="sweepDuty" viewBox="0 0 560 300" role="img" aria-label="Damkohler ratio versus duty cycle"></svg>
         <p class="chart-note">
-          At low duty cycle, most of the period is spent at T<sub>min</sub>, so T<sub>avg</sub> decreases and the ratio against
-          <em>that</em> reference increases. Absolute throughput declines concurrently, which the ratio does not capture.
+          Low duty cycle lowers T<sub>avg</sub>, so the ratio against that cooler reference rises even as
+          absolute throughput falls, which the ratio does not capture.
         </p>
       </div>
     </article>
   </div>
 
   <div class="assumption">
-    <strong>The ratio alone does not determine practical benefit.</strong> The relative exposure ratio compares RPH against a CJH heater held at the RPH
-    time-average temperature; that is, it demonstrates that pulsing outperforms a <em>cooler</em> continuous heater. It does not
-    demonstrate that pulsing outperforms a continuous heater operated at T<sub>peak</sub>, which is the comparison relevant to
-    an operator with sufficient power capacity. In that case, the argument for pulsing rests on selectivity and element lifetime, not on &Lambda; or Da.
+    <strong>The ratio alone does not determine practical benefit.</strong> It compares RPH against a <em>cooler</em>
+    continuous heater held at the RPH average temperature, not against continuous operation at T<sub>peak</sub>, the
+    comparison relevant when power is not limiting. There the case for pulsing rests on selectivity and element
+    lifetime, not on &Lambda; or Da.
   </div>
 </section>
 
