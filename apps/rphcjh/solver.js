@@ -293,9 +293,9 @@ export function integrateSeriesCSTR(cfg = {}) {
 
 // Steady CJH temperature that reaches a target conversion, for the
 // iso-conversion comparison. Selectivity to an intermediate always falls as
-// conversion rises — a property of the A -> B -> C network, not of the heating
-// mode — so comparing selectivities at two different conversions reads partly
-// as a slide along the S(X) curve. Matching X first removes that confound.
+// conversion rises, which is a property of the A -> B -> C network rather than
+// of the heating mode, so comparing selectivities at two different conversions
+// reads partly as a slide along the S(X) curve. Matching X first removes that.
 //
 // The inversion is closed form, not a root find: X = k1 tau/(1 + k1 tau) is
 // strictly increasing in k1 and k1 is strictly increasing in T, so

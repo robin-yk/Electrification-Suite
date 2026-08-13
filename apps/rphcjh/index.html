@@ -655,9 +655,9 @@
               <span><i style="background:var(--blue)"></i>continuous</span>
             </div>
             <p class="chart-note">
-              Why the bars above come out that way. Thin lines: x<sub>B</sub> at this instant &mdash; each pulse makes a
-              burst of B and flow washes it out. Bold lines: the same quantity averaged over time, which is the B in
-              the bars.
+              Why the bars above come out that way. Thin lines: x<sub>B</sub> at this instant, one burst of B per
+              pulse, washed out by flow. Bold lines: the same quantity averaged over time, which is the B in the
+              bars.
             </p>
           </div>
         </div>
@@ -1998,7 +1998,7 @@ function drawAbcGain(sp) {
   document.getElementById("abcGainNote").innerHTML = (cross
     ? `At the current duty and temperatures, pulsing pays below a period of about <strong>${fmtP(cross)}</strong> and stops paying above it. `
     : "Pulsing stays on one side of break-even across this whole period range at the current settings. ")
-    + "Both reactors are held at the same conversion at every point, so this is the selectivity question alone &mdash; the raw-yield version of this curve would mostly be tracking conversion. "
+    + "Both reactors are held at the same conversion at every point, so this is the selectivity question alone. The raw-yield version of this curve would mostly be tracking conversion. "
     + "The sweep uses an ideal square wave between the current T<sub>peak</sub> and T<sub>min</sub>, so it runs above a physically-driven element, whose ramps spend time at intermediate temperatures; read the break-even period as an optimistic bound.";
 }
 
