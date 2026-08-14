@@ -85,6 +85,24 @@ should heavier ML models be introduced. This design is a **steady-state**
 surrogate triage. Dynamic-heating memory requires transient simulator data and
 must not be inferred from this table.
 
+### How to read the 512-case verdict (and how not to)
+
+The committed design returns `TEST_ML_SURROGATES`: leave-one-out IDW misses
+the bar badly (conversion MAE 0.075 and max 0.60; selectivity MAE 0.149).
+**That string is not a finding that this problem needs machine learning.**
+
+It establishes exactly one thing: uniform Halton sampling plus local
+interpolation is a poor combination for this response. The dataset says why.
+Conversion has a median of 0.0004 and 156 of 512 cases are effectively
+unreactive, so most of the five-dimensional box is dead space and the only
+structure is a steep ignition cliff that a space-filling design resolves
+poorly. The honest verdict is a **sampling-design** verdict, not a
+model-class one. Selectivity is worse still, because it is numerically
+ill-defined wherever conversion is ~0.
+
+Before concluding anything about model class, resample: refine near the
+ignition boundary, or reparameterize away from the dead region.
+
 CI (`.github/workflows/openmkm-data.yml`) rebuilds `omkm` (cached on the
 patch/build-script hash; only the first run pays the ~25 min compile) and
 runs `--check` whenever this directory changes, so the committed JSON cannot

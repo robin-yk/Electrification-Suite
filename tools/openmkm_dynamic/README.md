@@ -1,5 +1,30 @@
 # Dynamic pulsed-CSTR pipeline (transient ground truth)
 
+> **STATUS: under development, not wired into the site. Blocked.**
+>
+> Nothing here feeds any page in `apps/`; it is research tooling parked in
+> the repository so it can be picked up later. Two things must be settled
+> before any number produced here is quotable:
+>
+> 1. **Reactor closure is unverified.** The runner uses constant pressure
+>    with equal inlet and outlet mass flows, i.e. constant mass and a
+>    *breathing volume* (~1.5x over 750-1250 C). The companion experiment is
+>    a fixed-volume tube, and the literature closure for that is fixed mass
+>    with pressure swinging (tens of percent), which this does not
+>    reproduce: the recorded pressure is flat at 1 atm. A variable-mass
+>    constant-pressure formulation is separately known to go unphysical at
+>    high pulse frequency (negative outlet flow, super-equilibrium
+>    conversion); this runner cannot show that specific failure because both
+>    mass flows are set equal and positive by construction, and the pilot
+>    conversions stay far below equilibrium. That rules out one symptom, not
+>    the closure question.
+> 2. **No memory test has been run.** Deviation from the quasi-steady blend
+>    is not by itself evidence of chemical memory; Arrhenius convexity
+>    produces it too. See the pilot section.
+>
+> The engine split is deliberate and load-bearing: transient integration is
+> Cantera, steady anchors are OpenMKM. See "Why a CSTR" below.
+
 Generates the *transient* half of the ML dataset family: an ideal-gas CSTR
 under a prescribed trapezoidal temperature pulse train, integrated to
 periodic steady state with full species trajectories. This is the data the
@@ -80,7 +105,12 @@ dimension also needs learning: scale to a 256/512-case dynamic design only
 if the five pilot periods show a real deviation from the quasi-steady
 blend.
 
-## Pilot result (2026-08-14): the dynamic dimension is real
+## Pilot result (2026-08-14): recorded, NOT yet interpretable
+
+**Do not cite these numbers as evidence of chemical memory.** The reactor
+closure below is unverified against the companion paper (see the blocking
+issue in the status block at the top of this file), and the numbers are
+kept only so the diagnosis can be run against them.
 
 T 750-1250 C, duty 0.10, ramps 5 %, tau = 0.1 s, 1 atm, CH4:CO2 = 1:1,
 GRI-3.0. Quasi-steady reference X = 0.0222. Engine anchor: Cantera and
@@ -94,12 +124,22 @@ OpenMKM steady CSTR agree to 2e-9 (750 C) and 3.2e-3 absolute (1250 C).
 | 1 s | 0.0241 | 1.09 | 1.6e-8 |
 | 10 s | 0.0161 | 0.72 | 2.6e-8 |
 
-Every tested period deviates far beyond the 2 % band, and the response is
-**non-monotonic with a resonance near P ~ tau**: fast pulsing rides on a
-persistent radical pool (CH3 carryover grows 300x from P = 1 s to 1 ms),
-the P ~ tau region couples pulse and washout timescales for the peak gain,
-and slow pulsing *underperforms* the blend because the reactor spends
-ramp time (5 tau per ramp at P = 10 s) chemically lagging the steady
-curve. No steady lookup can reproduce this shape; a dynamic (state- or
-waveform-aware) surrogate is justified. Next step: a 256-case design over
-(period, duty, T_peak, T_min, tau) with waveform-family diversity.
+Every tested period deviates beyond the 2 % band and the response is
+non-monotonic in period. **What that means is undetermined.** Two readings
+are still open, and this pilot cannot separate them:
+
+1. Chemical memory: radicals surviving the cold interval, hysteresis
+   between heating and cooling at equal temperature.
+2. Arrhenius convexity alone (the Jensen gap the visualizer already shows),
+   which produces a pulsing gain with no memory whatsoever, plus whatever
+   the unverified closure contributes.
+
+Separating them needs the two tests this pilot did not run: the
+equal-temperature heating/cooling state difference H_x (the recorded
+trajectories already contain the data), and an equal-histogram waveform
+pair that differs only in the *order* of the same temperature sequence.
+The double-burst family added later supplies material for the second test
+but was not designed as a matched-histogram control.
+
+Until the closure is settled and those two tests run, treat the table as a
+recorded observation, not a result.

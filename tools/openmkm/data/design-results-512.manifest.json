@@ -57,11 +57,13 @@
    "RMSE": 0.22255,
    "MAX": 0.78462
   },
-  "decision": "TEST_ML_SURROGATES"
+  "decision": "TEST_ML_SURROGATES (script verdict)",
+  "decision_interpretation": "Establishes only that uniform Halton sampling plus local interpolation suits this response poorly, not that the problem requires machine learning. 156 of 512 cases are effectively unreactive (conversion median 0.0004), so the design spends most of its points in dead space and resolves the ignition cliff badly. Resample before drawing any model-class conclusion."
  },
  "caveats": [
   "steady-state data only; no dynamic-heating memory can be inferred",
   "C2 selectivity is numerically ill-defined where conversion is ~0 (156 zero-conversion cases), inflating its holdout error",
-  "GRI-Mech 3.0 used outside its combustion validation range; trends only"
+  "GRI-Mech 3.0 used outside its combustion validation range; trends only",
+  "the benchmark verdict is a sampling-design result, not evidence that an ML surrogate is needed"
  ]
 }
