@@ -79,3 +79,27 @@ interpolation misses the 0.02 bar). The pilot decides whether the dynamic
 dimension also needs learning: scale to a 256/512-case dynamic design only
 if the five pilot periods show a real deviation from the quasi-steady
 blend.
+
+## Pilot result (2026-08-14): the dynamic dimension is real
+
+T 750-1250 C, duty 0.10, ramps 5 %, tau = 0.1 s, 1 atm, CH4:CO2 = 1:1,
+GRI-3.0. Quasi-steady reference X = 0.0222. Engine anchor: Cantera and
+OpenMKM steady CSTR agree to 2e-9 (750 C) and 3.2e-3 absolute (1250 C).
+
+| period | X_dyn | X_dyn / X_qs | CH3 at cycle start |
+|---|---|---|---|
+| 1 ms | 0.0282 | 1.27 | 5.2e-6 |
+| 10 ms | 0.0327 | 1.48 | 5.3e-7 |
+| 100 ms | 0.0332 | **1.50** | 1.3e-7 |
+| 1 s | 0.0241 | 1.09 | 1.6e-8 |
+| 10 s | 0.0161 | 0.72 | 2.6e-8 |
+
+Every tested period deviates far beyond the 2 % band, and the response is
+**non-monotonic with a resonance near P ~ tau**: fast pulsing rides on a
+persistent radical pool (CH3 carryover grows 300x from P = 1 s to 1 ms),
+the P ~ tau region couples pulse and washout timescales for the peak gain,
+and slow pulsing *underperforms* the blend because the reactor spends
+ramp time (5 tau per ramp at P = 10 s) chemically lagging the steady
+curve. No steady lookup can reproduce this shape; a dynamic (state- or
+waveform-aware) surrogate is justified. Next step: a 256-case design over
+(period, duty, T_peak, T_min, tau) with waveform-family diversity.
