@@ -37,16 +37,40 @@ C2_SPECIES = ("C2H2", "C2H4", "C2H6")
 
 
 def waveform_temperature(phase, p):
-    """Trapezoid: ramp-up, T_peak plateau (duty), ramp-down, T_min floor."""
-    ru, d, rd = p["ramp_up_fraction"], p["duty"], p["ramp_down_fraction"]
-    span = p["t_peak_K"] - p["t_min_K"]
+    """T(t) over one cycle, phase in [0,1).
+
+    Families beyond the trapezoid exist so a surrogate trained on this data
+    cannot degenerate into a square-wave interpolator: "sine" has no plateau
+    at all, and "double" splits the same hot fraction into two shorter
+    bursts, which probes pulse *spacing* at fixed duty and temperature.
+    """
+    lo, hi = p["t_min_K"], p["t_peak_K"]
+    span = hi - lo
+    family = p.get("waveform", "trapezoid")
+
+    if family == "sine":
+        # raised cosine touching both endpoints and holding neither. `duty`
+        # does not set the shape here, so cases carry mean_temperature_K as
+        # the family-independent descriptor a surrogate should key on.
+        return lo + span * 0.5 * (1 - math.cos(2 * math.pi * phase))
+
+    if family == "double":
+        # two identical bursts per cycle: same duty and ramps, half the width
+        return waveform_temperature((phase * 2) % 1.0,
+                                    dict(p, waveform="trapezoid"))
+
+    # trapezoid; "square" is the same shape with the ramps forced to zero
+    d = p["duty"]
+    ru = rd = 0.0
+    if family != "square":
+        ru, rd = p["ramp_up_fraction"], p["ramp_down_fraction"]
     if phase < ru:
-        return p["t_min_K"] + span * (phase / ru if ru else 1.0)
+        return lo + span * (phase / ru if ru else 1.0)
     if phase < ru + d:
-        return p["t_peak_K"]
+        return hi
     if phase < ru + d + rd:
-        return p["t_peak_K"] - span * ((phase - ru - d) / rd if rd else 1.0)
-    return p["t_min_K"]
+        return hi - span * ((phase - ru - d) / rd if rd else 1.0)
+    return lo
 
 
 def make_reactor(ct, mech, p):
@@ -154,9 +178,10 @@ def run_case(mech, p):
             "mechanism": "GRI-Mech 3.0",
             "generated": datetime.date.today().isoformat(),
             "inputs": {k: p[k] for k in
-                       ("t_min_K", "t_peak_K", "period_s", "duty",
-                        "ramp_up_fraction", "ramp_down_fraction",
-                        "pressure_Pa", "tau_s", "feed", "points_per_cycle")},
+                       ("t_min_K", "t_peak_K", "period_s", "duty", "waveform",
+                        "mean_temperature_K", "ramp_up_fraction",
+                        "ramp_down_fraction", "pressure_Pa", "tau_s", "feed",
+                        "points_per_cycle")},
             "reactor_constraint": "constant_pressure_prescribed_T",
             "cycle_summary": {
                 "converged": last["boundary_residual"] < p["cycle_tolerance"],
@@ -174,17 +199,28 @@ def run_case(mech, p):
         }
 
 
+def mean_temperature(p, n=2000):
+    """Time-average of the actual waveform.
+
+    `duty` means different things across families (plateau fraction for the
+    trapezoid, nothing at all for the raised cosine), so this is the
+    family-independent descriptor to train and compare on.
+    """
+    return sum(waveform_temperature((k + 0.5) / n, p) for k in range(n)) / n
+
+
 def build_params(args):
     total_ramp = args.ramp_up_fraction + args.ramp_down_fraction
     if total_ramp + args.duty >= 1.0:
         raise SystemExit("duty + ramps must stay below 1")
     max_cycles = args.max_cycles or min(
         5000, max(args.min_cycles, int(12 * args.residence_time_s / args.period_s) + 5))
-    return {
+    p = {
         "t_min_K": args.t_min_c + 273.15,
         "t_peak_K": args.t_peak_c + 273.15,
         "period_s": args.period_s,
         "duty": args.duty,
+        "waveform": getattr(args, "waveform", "trapezoid"),
         "ramp_up_fraction": args.ramp_up_fraction,
         "ramp_down_fraction": args.ramp_down_fraction,
         "pressure_Pa": args.pressure_atm * 101325.0,
@@ -196,6 +232,8 @@ def build_params(args):
         "cycle_tolerance": args.cycle_tolerance,
         "record_cycles": args.record_cycles,
     }
+    p["mean_temperature_K"] = mean_temperature(p)
+    return p
 
 
 def add_common_args(parser):
@@ -203,6 +241,8 @@ def add_common_args(parser):
     parser.add_argument("--t-min-c", type=float, default=750.0)
     parser.add_argument("--t-peak-c", type=float, default=1250.0)
     parser.add_argument("--duty", type=float, default=0.10)
+    parser.add_argument("--waveform", default="trapezoid",
+                        choices=["trapezoid", "square", "sine", "double"])
     parser.add_argument("--ramp-up-fraction", type=float, default=0.05)
     parser.add_argument("--ramp-down-fraction", type=float, default=0.05)
     parser.add_argument("--pressure-atm", type=float, default=1.0)
