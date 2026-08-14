@@ -55,6 +55,54 @@ python tools/openmkm/run_sweep.py \
 python tools/openmkm/run_sweep.py --check --omkm ... --cantera-lib ...  # verify
 ```
 
+## Surrogate/ML need check
+
+Do not choose an ML architecture from the 21-point temperature sweep. Generate
+a broad, resumable five-dimensional design first, then measure whether local
+interpolation already meets the required error:
+
+```bash
+python tools/openmkm/run_design.py --cases 512 --output design-results.jsonl \
+  --omkm ~/openmkm-build/openmkm/src/build/omkm \
+  --cantera-lib ~/openmkm-build/cantera-install/lib
+python tools/openmkm/benchmark_surrogate.py design-results.jsonl
+```
+
+The Halton design covers element temperature (450-1400 C), pressure
+(0.5-10 atm), flow (10-200 cm3/s), feed methane fraction (0.1-0.9), and hot
+plateau length (0.5-3 cm). Pressure and flow are sampled logarithmically.
+JSONL is appended and flushed after every successful case, so an interrupted
+run resumes without discarding expensive solves; independent jobs can use
+non-overlapping `--start` ranges and merge their lines afterward. With
+`--continue-on-error`, failed cases are logged to a `.failures.jsonl` sidecar
+with their inputs and OpenMKM stderr instead of aborting the sweep; the final
+dataset validation must then treat missing indices as failures.
+
+`benchmark_surrogate.py` performs leave-one-out validation of a dependency-free
+local inverse-distance interpolator. Its 0.02 maximum absolute-error threshold
+is deliberately strict and visible: only if this baseline misses the target
+should heavier ML models be introduced. This design is a **steady-state**
+surrogate triage. Dynamic-heating memory requires transient simulator data and
+must not be inferred from this table.
+
+### How to read the 512-case verdict (and how not to)
+
+The committed design returns `TEST_ML_SURROGATES`: leave-one-out IDW misses
+the bar badly (conversion MAE 0.075 and max 0.60; selectivity MAE 0.149).
+**That string is not a finding that this problem needs machine learning.**
+
+It establishes exactly one thing: uniform Halton sampling plus local
+interpolation is a poor combination for this response. The dataset says why.
+Conversion has a median of 0.0004 and 156 of 512 cases are effectively
+unreactive, so most of the five-dimensional box is dead space and the only
+structure is a steep ignition cliff that a space-filling design resolves
+poorly. The honest verdict is a **sampling-design** verdict, not a
+model-class one. Selectivity is worse still, because it is numerically
+ill-defined wherever conversion is ~0.
+
+Before concluding anything about model class, resample: refine near the
+ignition boundary, or reparameterize away from the dead region.
+
 CI (`.github/workflows/openmkm-data.yml`) rebuilds `omkm` (cached on the
 patch/build-script hash; only the first run pays the ~25 min compile) and
 runs `--check` whenever this directory changes, so the committed JSON cannot

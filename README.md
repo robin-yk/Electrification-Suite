@@ -44,6 +44,14 @@ Both run in CI on every push, together with a build that verifies every page's f
 
 Numerical verification of the 2D solvers (manufactured solutions, analytic benchmarks, and grid-convergence studies) is documented in [`docs/VERIFICATION.md`](docs/VERIFICATION.md) and reproducible via `npm run verify:joule` / `npm run verify:microwave`.
 
+## Offline pipelines and work in progress
+
+`tools/` holds Python and Node pipelines that run offline or in CI, never in the browser. The site only ever ships their committed output.
+
+- `tools/cantera/`, `tools/openmkm/`: detailed-mechanism data behind the RPH vs CJH visualizer's cross-check and OpenMKM PFR tabs. **Shipping.**
+- `tools/verification/`: the 2D solver verification studies above. **Shipping.**
+- `tools/openmkm/run_design.py`, `tools/openmkm_dynamic/`: an unfinished study of whether pulsed heating needs a learned surrogate. Not wired to any page, and its reactor closure and memory tests are open. Each directory's README states what is blocked before its numbers mean anything. **Under development, do not cite.**
+
 ## Citation
 
 ```bibtex

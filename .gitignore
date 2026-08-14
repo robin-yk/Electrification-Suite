@@ -9,3 +9,4 @@ dist-ssr
 .vite
 playwright-report
 test-results
+__pycache__/

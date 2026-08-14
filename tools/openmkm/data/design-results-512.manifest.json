@@ -1,0 +1,69 @@
+{
+ "dataset": "design-results-512.jsonl",
+ "dataset_sha256": "6bc7fa034d15018f1f81780967f99220dcb4cd637248e23778949de38eb54857",
+ "cases_requested": 512,
+ "cases_completed": 512,
+ "cases_failed": 0,
+ "generator": "tools/openmkm/run_design.py",
+ "engine": "OpenMKM steady 1-D PFR (gas phase, tprofile mode)",
+ "mechanism": "GRI-Mech 3.0 (Cantera-2.5 format)",
+ "mechanism_sha256": "ece90e3901874c8020a8277ad2588d3620cb02df8da67f5cd487e1d33c9f0f95",
+ "openmkm_revision": "c316be16a569219dd6f8d5d75a49d1f3099d48cf",
+ "cantera_fork_revision": "0b91789dad3cd93aefc00c73fcedd518396d42b9",
+ "sampling": "5-D Halton; pressure and flow logarithmic",
+ "ranges": {
+  "element_T_C": [
+   450,
+   1400
+  ],
+  "pressure_atm": [
+   0.5,
+   10
+  ],
+  "flow_cm3_s": [
+   10,
+   200
+  ],
+  "ch4_fraction": [
+   0.1,
+   0.9
+  ],
+  "plateau_length_cm": [
+   0.5,
+   3.0
+  ]
+ },
+ "output_summary": {
+  "ch4_conversion": {
+   "min": 0.0,
+   "median": 0.00040964494418793684,
+   "max": 0.9999999967073552,
+   "exactly_zero": 156
+  },
+  "c2_selectivity_carbon": {
+   "min": 0.0,
+   "median": 0.9523785492275271,
+   "max": 1.0
+  }
+ },
+ "loo_benchmark_idw8": {
+  "ch4_conversion": {
+   "MAE": 0.07521,
+   "RMSE": 0.1368,
+   "MAX": 0.5991
+  },
+  "c2_selectivity": {
+   "MAE": 0.14922,
+   "RMSE": 0.22255,
+   "MAX": 0.78462
+  },
+  "decision": "TEST_ML_SURROGATES (script verdict)",
+  "decision_interpretation": "Establishes only that uniform Halton sampling plus local interpolation suits this response poorly, not that the problem requires machine learning. 156 of 512 cases are effectively unreactive (conversion median 0.0004), so the design spends most of its points in dead space and resolves the ignition cliff badly. Resample before drawing any model-class conclusion."
+ },
+ "caveats": [
+  "steady-state data only; no dynamic-heating memory can be inferred",
+  "C2 selectivity is numerically ill-defined where conversion is ~0 (156 zero-conversion cases), inflating its holdout error",
+  "GRI-Mech 3.0 used outside its combustion validation range; trends only",
+  "the benchmark verdict is a sampling-design result, not evidence that an ML surrogate is needed"
+ ]
+}
