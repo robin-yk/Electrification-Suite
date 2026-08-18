@@ -19,23 +19,36 @@ export const T2D_WALLS = {
 };
 
 export const MATERIALS = [
-  { name:"CFP", rhoOhmCm:0.05, density:452, cp:990, k:400, jmax:1e7, source:"Mittal et al. (2025), Table 1", model:"constant; anisotropy not represented" },
-  { name:"SiC", rhoOhmCm:0.0555556, density:3210, cp:750, k:120, jmax:5e6, source:"Mittal et al. (2025), Table 1", model:"constant grade proxy" },
+  { name:"CFP", rhoOhmCm:0.05, density:452, cp:990, k:400, jmax:1e7, source:"Mittal et al. (2025), Table 1", model:"constant; anisotropy not represented",
+    meltC:3600, meltKind:"sublimation", meltNote:"carbon sublimes rather than melting at 1 atm; CRC Handbook graphite value" },
+  { name:"SiC", rhoOhmCm:0.0555556, density:3210, cp:750, k:120, jmax:5e6, source:"Mittal et al. (2025), Table 1", model:"constant grade proxy",
+    meltC:2700, meltKind:"decomposition", meltNote:"SiC decomposes rather than melting at 1 atm; commonly cited onset" },
   { name:"SiSiC (Si-infiltrated SiC)", rhoOhmCm:0.08, density:3050, cp:680, k:140, jmax:5e6, emissivity:0.9,
     rhoTable:[[20,0.08],[300,0.028],[550,0.0179],[650,0.0174],[750,0.0165],[1000,0.0155],[1350,0.015]],
     kTable:[[20,140],[600,60],[1000,45],[1350,40]],
     source:"550-750 °C bulk ρ back-calculated from Zheng et al., AIChE J. 69, e17620 (2022), Table 2; RT branch is a commercial SiC-element proxy",
-    model:"ρ(T) table; RT resistivity varies widely between SiSiC grades, so prefer a datasheet; free Si melts at 1414 °C" },
-  { name:"MoSi₂", rhoOhmCm:2.5e-5, density:6500, cp:420, k:30, jmax:3e6, emissivity:0.78, rhoTable:[[20,2.5e-5],[200,7e-5],[600,1.5e-4],[1000,2.3e-4],[1400,3.0e-4],[1800,3.5e-4]], kTable:[[20,30],[600,30],[1200,15],[1800,15]], source:"Kanthal Super handbook", model:"digitized handbook curve" },
-  { name:"Kanthal A-1 (FeCrAl)", rhoOhmCm:1.45e-4, density:7100, cp:460, k:11, jmax:1e7, emissivity:0.70, rhoFactor:[[20,1],[500,1.01],[800,1.03],[1000,1.04],[1400,1.05]], source:"Kanthal resistance materials handbook", model:"manufacturer Ct interpolation" },
-  { name:"Nikrothal 80 (NiCr)", rhoOhmCm:1.09e-4, density:8300, cp:450, k:15, jmax:1e7, emissivity:0.88, rhoFactor:[[20,1],[400,1.03],[800,1.05],[1200,1.07]], source:"Kanthal resistance materials handbook", model:"manufacturer Ct interpolation" },
-  { name:"Inconel 601", rhoOhmCm:1.18e-4, density:8110, cp:448, k:11.2, jmax:1e7, rhoTable:[[20,1.18e-4],[100,1.192e-4],[200,1.207e-4],[300,1.220e-4],[400,1.229e-4],[500,1.239e-4],[600,1.247e-4],[700,1.249e-4],[800,1.249e-4],[900,1.259e-4],[1000,1.262e-4]], cpTable:[[20,448],[100,469],[200,498],[300,523],[400,548],[500,578],[600,603],[700,632],[800,657],[900,686],[1000,712]], kTable:[[20,11.2],[100,12.7],[200,14.3],[300,16.0],[400,17.7],[500,19.5],[600,21.0],[700,22.8],[800,24.4],[900,26.1],[1000,27.8]], source:"Special Metals Inconel 601 bulletin, Table 3", model:"manufacturer table interpolation" },
-  { name:"304 stainless steel", rhoOhmCm:7.2e-5, density:8000, cp:500, k:16.2, jmax:5e6, rhoAlpha:0.00094, source:"Mittal Table 1; standardized RT correction", model:"linear ρ(T); Cp,k constant" },
-  { name:"Molybdenum", rhoOhmCm:5.34e-6, density:10220, cp:251, k:138, jmax:3e5, rhoAlpha:0.0046, source:"NIST resistivity compilation; Mittal Table 1", model:"linear ρ(T); Cp,k constant" },
-  { name:"Tungsten", rhoOhmCm:5.60e-6, density:19300, cp:134, k:164, jmax:3e7, rhoAlpha:0.0045, source:"NIST resistivity compilation; Mittal Table 1", model:"linear ρ(T); Cp,k constant" },
-  { name:"Copper", rhoOhmCm:1.68e-6, density:8960, cp:385, k:400, jmax:1e7, rhoAlpha:0.00393, source:"NIST recommended data", model:"linear ρ(T); Cp,k constant" },
-  { name:"Aluminum", rhoOhmCm:2.65e-6, density:2700, cp:897, k:237, jmax:5e9, rhoAlpha:0.00429, source:"NIST recommended data", model:"linear ρ(T); Cp,k constant" },
-  { name:"Titanium", rhoOhmCm:4.2e-5, density:4500, cp:523, k:17, jmax:4.5e6, rhoAlpha:0.0038, source:"Mittal Table 1; RT correction", model:"linear ρ(T); Cp,k constant" }
+    model:"ρ(T) table; RT resistivity varies widely between SiSiC grades, so prefer a datasheet; free Si melts at 1414 °C",
+    meltC:1414, meltKind:"melting", meltNote:"free-Si matrix constituent melts here, well below the SiC skeleton" },
+  { name:"MoSi₂", rhoOhmCm:2.5e-5, density:6500, cp:420, k:30, jmax:3e6, emissivity:0.78, rhoTable:[[20,2.5e-5],[200,7e-5],[600,1.5e-4],[1000,2.3e-4],[1400,3.0e-4],[1800,3.5e-4]], kTable:[[20,30],[600,30],[1200,15],[1800,15]], source:"Kanthal Super handbook", model:"digitized handbook curve",
+    meltC:2030, meltKind:"melting", meltNote:"MoSi₂ melting point" },
+  { name:"Kanthal A-1 (FeCrAl)", rhoOhmCm:1.45e-4, density:7100, cp:460, k:11, jmax:1e7, emissivity:0.70, rhoFactor:[[20,1],[500,1.01],[800,1.03],[1000,1.04],[1400,1.05]], source:"Kanthal resistance materials handbook", model:"manufacturer Ct interpolation",
+    meltC:1500, meltKind:"melting", meltNote:"FeCrAl solidus, Kanthal handbook" },
+  { name:"Nikrothal 80 (NiCr)", rhoOhmCm:1.09e-4, density:8300, cp:450, k:15, jmax:1e7, emissivity:0.88, rhoFactor:[[20,1],[400,1.03],[800,1.05],[1200,1.07]], source:"Kanthal resistance materials handbook", model:"manufacturer Ct interpolation",
+    meltC:1400, meltKind:"melting", meltNote:"NiCr 80/20 melting range, Kanthal handbook" },
+  { name:"Inconel 601", rhoOhmCm:1.18e-4, density:8110, cp:448, k:11.2, jmax:1e7, rhoTable:[[20,1.18e-4],[100,1.192e-4],[200,1.207e-4],[300,1.220e-4],[400,1.229e-4],[500,1.239e-4],[600,1.247e-4],[700,1.249e-4],[800,1.249e-4],[900,1.259e-4],[1000,1.262e-4]], cpTable:[[20,448],[100,469],[200,498],[300,523],[400,548],[500,578],[600,603],[700,632],[800,657],[900,686],[1000,712]], kTable:[[20,11.2],[100,12.7],[200,14.3],[300,16.0],[400,17.7],[500,19.5],[600,21.0],[700,22.8],[800,24.4],[900,26.1],[1000,27.8]], source:"Special Metals Inconel 601 bulletin, Table 3", model:"manufacturer table interpolation",
+    meltC:1350, meltKind:"melting", meltNote:"Inconel 601 melting range, Special Metals bulletin" },
+  { name:"304 stainless steel", rhoOhmCm:7.2e-5, density:8000, cp:500, k:16.2, jmax:5e6, rhoAlpha:0.00094, source:"Mittal Table 1; standardized RT correction", model:"linear ρ(T); Cp,k constant",
+    meltC:1400, meltKind:"melting", meltNote:"304 stainless solidus, ASM Metals Handbook" },
+  { name:"Molybdenum", rhoOhmCm:5.34e-6, density:10220, cp:251, k:138, jmax:3e5, rhoAlpha:0.0046, source:"NIST resistivity compilation; Mittal Table 1", model:"linear ρ(T); Cp,k constant",
+    meltC:2623, meltKind:"melting", meltNote:"molybdenum melting point" },
+  { name:"Tungsten", rhoOhmCm:5.60e-6, density:19300, cp:134, k:164, jmax:3e7, rhoAlpha:0.0045, source:"NIST resistivity compilation; Mittal Table 1", model:"linear ρ(T); Cp,k constant",
+    meltC:3422, meltKind:"melting", meltNote:"tungsten melting point" },
+  { name:"Copper", rhoOhmCm:1.68e-6, density:8960, cp:385, k:400, jmax:1e7, rhoAlpha:0.00393, source:"NIST recommended data", model:"linear ρ(T); Cp,k constant",
+    meltC:1085, meltKind:"melting", meltNote:"copper melting point" },
+  { name:"Aluminum", rhoOhmCm:2.65e-6, density:2700, cp:897, k:237, jmax:5e9, rhoAlpha:0.00429, source:"NIST recommended data", model:"linear ρ(T); Cp,k constant",
+    meltC:660, meltKind:"melting", meltNote:"aluminum melting point" },
+  { name:"Titanium", rhoOhmCm:4.2e-5, density:4500, cp:523, k:17, jmax:4.5e6, rhoAlpha:0.0038, source:"Mittal Table 1; RT correction", model:"linear ρ(T); Cp,k constant",
+    meltC:1668, meltKind:"melting", meltNote:"titanium melting point" }
 ];
 
 export const kelvin = (c) => c + 273.15;
@@ -236,6 +249,26 @@ export function solveSteadyTemperature(x, g) {
   return (lo + hi) / 2;
 }
 
+// If the steady-state temperature clears the material's melting (or
+// decomposition/sublimation) point, report the single-parameter Vmax or
+// Imax ceiling that would hold Tss at that point instead, with everything
+// else unchanged. Either ceiling alone is sufficient; a user does not need
+// to lower both.
+export function meltWarning(x, g, m, tss) {
+  if (!finite(m.meltC) || !finite(tss) || tss <= 0) return null;
+  const meltK = kelvin(m.meltC);
+  if (tss <= meltK) return null;
+  const loss = enclosureHeatLoss(meltK, x, g).total;
+  const props = propertiesAt(m, meltK);
+  const resistance = props.rhoOhmCm * 0.01 * g.L / g.area;
+  return {
+    meltC: m.meltC,
+    meltKind: m.meltKind || "melting",
+    safeVoltage: Math.sqrt(Math.max(0, loss * resistance)),
+    safeCurrent: Math.sqrt(Math.max(0, loss / resistance))
+  };
+}
+
 export function calculate(x) {
   const errors = validateInput(x);
   if (errors.length) return { errors };
@@ -272,6 +305,7 @@ export function calculate(x) {
   const maxMaterialRamp = m.jmax * m.jmax * rhoE / (m.density * target.props.cp);
   const maxField = m.jmax * rhoE;
   const voltageAtJmax = maxField * g.L;
+  const melt = meltWarning(x, g, m, tss);
 
   return {
     errors: [], g, rhoE, sigma, mass, resistance, candidates, constraint,
@@ -280,7 +314,7 @@ export function calculate(x) {
     volumetricPowerMW, rampRate, tss, requiredPower, requiredVoltage,
     requiredCurrent, feasible, adiabaticTime, hEffective, bi, kcrit,
     uniform, maxMaterialRamp, maxField, voltageAtJmax,targetLoss,steadyLoss,
-    powerUse: power / x.pmax, material: m, input: x, initial, target
+    powerUse: power / x.pmax, material: m, input: x, initial, target, melt
   };
 }
 

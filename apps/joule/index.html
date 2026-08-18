@@ -318,6 +318,31 @@
     }
     .validation.show { display: block; }
 
+    .melt-warning {
+      display: none;
+      margin: -6px 0 16px;
+      border-left: 4px solid var(--red);
+      background: var(--danger-bg);
+      border-radius: 0 8px 8px 0;
+      padding: 11px 14px;
+      color: #7e2424;
+      font-size: 13.5px;
+      line-height: 1.5;
+    }
+    .melt-warning.show { display: block; }
+    .melt-warning-sub { margin-top: 3px; color: #8a4141; font-size: 12.5px; }
+    .melt-chip {
+      display: inline-block;
+      margin-left: 6px;
+      border-radius: 999px;
+      padding: 1px 7px;
+      background: var(--danger-bg);
+      color: #7e2424;
+      font-size: 11.5px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
     .kpi-grid {
       display: grid;
       grid-template-columns: repeat(6, minmax(135px, 1fr));
@@ -1071,6 +1096,11 @@
             <article class="kpi" id="kpiBi"><div class="kpi-label">Biot number</div><div class="kpi-value" id="biValue">—</div><div class="kpi-sub" id="biSub">Lumped screening</div></article>
           </div>
 
+          <div id="meltWarning" class="melt-warning" role="alert">
+            <strong id="meltWarningMain"></strong>
+            <div id="meltWarningSub" class="melt-warning-sub"></div>
+          </div>
+
           <article class="card recommendation-card" aria-label="Design recommendation">
             <div class="recommendation-body">
               <div>
@@ -1411,6 +1441,7 @@
             <div class="formula-item"><div class="formula-name">Power required at target</div><div class="formula">P<sub>req</sub> = max(0, P<sub>loss</sub>(T<sub>t</sub>))</div></div>
             <div class="formula-item"><div class="formula-name">Required electrical point</div><div class="formula">V<sub>req</sub> = √(P<sub>req</sub>R), &nbsp; I<sub>req</sub> = √(P<sub>req</sub>/R)</div></div>
             <div class="formula-item"><div class="formula-name">Feasibility</div><div class="formula">Target feasible ⇔ P(T<sub>t</sub>) ≥ P<sub>req</sub></div></div>
+            <div class="formula-item"><div class="formula-name">Melting/decomposition check</div><div class="formula">Warn ⇔ T<sub>ss</sub> &gt; T<sub>melt</sub>; &nbsp; V<sub>safe</sub> = √(P<sub>loss</sub>(T<sub>melt</sub>)R(T<sub>melt</sub>)), &nbsp; I<sub>safe</sub> = √(P<sub>loss</sub>(T<sub>melt</sub>)/R(T<sub>melt</sub>))</div><div class="formula-note">T<sub>melt</sub> is each preset's melting, decomposition, or sublimation point (source noted per material). V<sub>safe</sub> and I<sub>safe</sub> are the single-parameter Vmax or Imax ceiling that would hold T<sub>ss</sub> at T<sub>melt</sub> with everything else unchanged; lowering either one alone is sufficient.</div></div>
           </div>
         </article>
 
@@ -1981,6 +2012,18 @@
       };
     }
 
+    function renderMeltWarning(r) {
+      const box = $("meltWarning");
+      if (!r.melt) { box.classList.remove("show"); return; }
+      const { meltC, meltKind, safeVoltage, safeCurrent } = r.melt;
+      const verb = meltKind === "melting" ? "melting point" : meltKind === "sublimation" ? "sublimation point" : "decomposition point";
+      $("meltWarningMain").textContent =
+        `Steady-state temperature (${format(celsius(r.tss), 0)} °C) exceeds ${r.material.name}'s ${verb} (${format(meltC, 0)} °C).`;
+      $("meltWarningSub").textContent =
+        `Lower Vmax to about ${sig3(safeVoltage)} V or Imax to about ${sig3(safeCurrent)} A to hold Tss at or below that limit; either one alone is enough.`;
+      box.classList.add("show");
+    }
+
     function renderRecommendation(r) {
       const rec = designRecommendation(r);
       $("recommendationMain").textContent = rec.main;
@@ -2056,10 +2099,11 @@
       $("biSub").textContent = r.uniform ? "Bi ≤ screening limit" : "Temperature-gradient risk";
 
       setClass($("kpiConstraint"), r.violations?.length ? "bad" : r.constraint.includes("+") ? "warn" : "good");
-      setClass($("kpiTss"), r.feasible ? "good" : "bad");
+      setClass($("kpiTss"), r.melt ? "bad" : r.feasible ? "good" : "bad");
       setClass($("kpiTime"), "good");
       setClass($("kpiFeasible"), r.feasible ? "good" : "bad");
       setClass($("kpiBi"), r.uniform ? "good" : "warn");
+      renderMeltWarning(r);
       renderRecommendation(r);
       renderJouleDiagnostics(r);
 
@@ -2455,7 +2499,7 @@
           <td>${format(r.target.props.rhoOhmCm, 7)} Ω·cm</td>
           <td>${format(r.power, 3)} W</td>
           <td>${format(r.rampRate, 4)}</td>
-          <td>${format(celsius(r.tss), 1)} °C</td>
+          <td>${format(celsius(r.tss), 1)} °C${r.melt ? `<span class="melt-chip" title="Exceeds ${format(r.melt.meltC, 0)} °C ${r.melt.meltKind} point">⚠ melts</span>` : ""}</td>
           <td><span class="status ${r.feasible ? "good" : "bad"}">${r.feasible ? "Feasible" : "No"}</span></td>
         </tr>`).join("");
 

@@ -213,3 +213,37 @@ test("solveThermal2D()'s internal temperature spread grows monotonically with th
   // the lowest-conductivity (highest-Bi, Bi ~ 0.15) case should show a clear internal gradient
   assert.ok(points[points.length - 1].ratio > 0.2, `highest-Bi case should show a clear internal gradient, got ratio=${points[points.length - 1].ratio}`);
 });
+
+test("calculate() flags no melt warning when Tss stays below the material's melting point", () => {
+  const x = makeInput("SiC", 6);
+  const r = calculate(x);
+  assert.ok(r.tss < r.material.meltC + 273.15);
+  assert.equal(r.melt, null);
+});
+
+test("calculate() attaches a melt warning, and its suggested Vmax/Imax each independently cap Tss at the melting point", () => {
+  const material = { ...materialByName("SiC"), jmax: 1e12 };
+  const x = makeInput("SiC", 30, { material, imax: 1e6, vmax: 200, pmax: 1e12 });
+  const overheated = calculate(x);
+  assert.ok(overheated.melt, "expected this overdriven design to trigger a melt warning");
+  assert.equal(overheated.melt.meltC, 2700);
+  assert.equal(overheated.melt.meltKind, "decomposition");
+
+  // Setting Vmax/Imax to exactly the suggested ceiling lands Tss right at the
+  // melting point, up to solver tolerance, so it may sit a hair above or
+  // below; a small margin below the ceiling should clear the warning cleanly.
+  const meltK = overheated.melt.meltC + 273.15;
+  const cappedByVoltage = calculate({ ...x, vmax: overheated.melt.safeVoltage });
+  assert.ok(Math.abs(cappedByVoltage.tss - meltK) < 1e-4);
+
+  const cappedByCurrent = calculate({ ...x, vmax: 1e9, imax: overheated.melt.safeCurrent });
+  assert.ok(Math.abs(cappedByCurrent.tss - meltK) < 1e-4);
+
+  const safelyCappedByVoltage = calculate({ ...x, vmax: overheated.melt.safeVoltage * 0.999 });
+  assert.equal(safelyCappedByVoltage.melt, null);
+  assert.ok(safelyCappedByVoltage.tss < meltK);
+
+  const safelyCappedByCurrent = calculate({ ...x, vmax: 1e9, imax: overheated.melt.safeCurrent * 0.999 });
+  assert.equal(safelyCappedByCurrent.melt, null);
+  assert.ok(safelyCappedByCurrent.tss < meltK);
+});
