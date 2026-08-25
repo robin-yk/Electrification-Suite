@@ -1,0 +1,803 @@
+<title>Joule Solver Figure Plates</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* ------------------------------------------------------------------
+   A proof sheet. The page chrome follows the viewer's theme; the
+   plates never do, because they are print artwork and have to be
+   judged on the paper they will be printed on.
+   ------------------------------------------------------------------ */
+:root{
+  --paper:#FAFAF7; --surface:#FFFFFF; --ink:#14171A; --muted:#565D65;
+  --faint:#868D95; --rule:#DEE1E4; --rule-strong:#B9BEC4; --well:#F2F2EE;
+  --accent:#0072B2; --warn:#D55E00;
+  --plate-bg:#FFFFFF; --plate-edge:#D8DBDE; --plate-shade:transparent;
+  /* one hue per physical role, identical in every figure */
+  --c-scalar:#0072B2; --c-field:#E69F00; --c-thermal:#D55E00;
+  --c-gas:#009E73; --c-grey:#6E6E6E;
+  --sans:"IBM Plex Sans",-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+  --serif:"Fraunces",Georgia,"Times New Roman",serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#131619; --surface:#1A1E22; --ink:#E9EBED; --muted:#A2A9B0;
+    --faint:#7B838B; --rule:#2A2F35; --rule-strong:#3C434A; --well:#1E2227;
+    --accent:#5CB3E4; --warn:#F08C4B;
+    --plate-edge:#3C434A; --plate-shade:#0A0C0E;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#131619; --surface:#1A1E22; --ink:#E9EBED; --muted:#A2A9B0;
+  --faint:#7B838B; --rule:#2A2F35; --rule-strong:#3C434A; --well:#1E2227;
+  --accent:#5CB3E4; --warn:#F08C4B;
+  --plate-edge:#3C434A; --plate-shade:#0A0C0E;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);
+  font-size:15.5px;line-height:1.62;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1060px;margin:0 auto;padding:0 28px 96px}
+
+/* ---- masthead ---- */
+header{padding:56px 0 26px;border-bottom:1px solid var(--rule-strong);margin-bottom:26px}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--faint);margin:0 0 14px}
+h1{font-family:var(--serif);font-weight:700;font-size:clamp(30px,4.6vw,46px);line-height:1.06;
+  letter-spacing:-.015em;margin:0 0 16px;text-wrap:balance;max-width:20ch}
+.sub{color:var(--muted);max-width:66ch;margin:0;font-size:16.5px}
+.stamp{margin:22px 0 0;display:flex;flex-wrap:wrap;gap:6px 26px;
+  font-family:var(--mono);font-size:11.5px;color:var(--faint)}
+.stamp b{color:var(--ink);font-weight:500}
+
+/* ---- notes and register ---- */
+.note{background:var(--well);border:1px solid var(--rule);border-radius:2px;
+  padding:18px 20px;margin:24px 0;font-size:14.5px;color:var(--muted);max-width:78ch}
+.note b{color:var(--ink);font-weight:600}
+.note code{font-family:var(--mono);font-size:12.5px;color:var(--ink)}
+.key{display:flex;flex-wrap:wrap;gap:8px 24px;margin:22px 0 0;
+  font-family:var(--mono);font-size:11.5px;color:var(--muted);letter-spacing:.02em}
+.key i{display:inline-block;width:22px;height:9px;margin-right:7px;vertical-align:0}
+
+/* ---- plates ---- */
+figure{margin:52px 0 0;padding:0}
+.figbar{display:flex;flex-wrap:wrap;gap:4px 20px;align-items:baseline;
+  border-bottom:1px solid var(--rule-strong);padding-bottom:9px;margin-bottom:0}
+.figno{font-family:var(--serif);font-weight:700;font-size:20px;letter-spacing:-.01em}
+.figwhere{font-family:var(--mono);font-size:11.5px;color:var(--muted);letter-spacing:.02em}
+.figsize{font-family:var(--mono);font-size:11.5px;color:var(--faint);margin-left:auto;letter-spacing:.02em}
+.plate{background:var(--plate-bg);border:1px solid var(--plate-edge);border-top:none;
+  padding:16px;overflow-x:auto;box-shadow:0 0 0 6px var(--plate-shade)}
+.plate svg{display:block;width:100%;height:auto;min-width:480px}
+.tools{display:flex;flex-wrap:wrap;gap:8px 10px;margin-top:12px;align-items:center}
+button{font:inherit;font-size:13px;font-family:var(--mono);letter-spacing:.01em;
+  padding:7px 13px;border:1px solid var(--rule-strong);background:var(--surface);
+  color:var(--ink);cursor:pointer;border-radius:2px}
+button:hover{border-color:var(--accent);color:var(--accent)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.hint{font-size:12.5px;color:var(--muted);flex:1 1 240px}
+textarea{width:100%;height:150px;font-family:var(--mono);font-size:11px;line-height:1.45;
+  border:1px solid var(--rule);border-radius:2px;padding:10px;margin-top:10px;display:none;
+  background:var(--surface);color:var(--ink);resize:vertical}
+textarea.on{display:block}
+canvas{max-width:100%;height:auto;border:1px solid var(--plate-edge);margin-top:10px;display:none;
+  background:#FFFFFF}
+canvas.on{display:block}
+.cap{margin-top:14px;padding-left:16px;border-left:2px solid var(--rule-strong);
+  font-size:14px;color:var(--muted);max-width:76ch}
+.cap b{color:var(--ink);font-weight:600}
+
+/* ---- tables ---- */
+h2{font-family:var(--serif);font-weight:600;font-size:26px;letter-spacing:-.012em;
+  margin:64px 0 8px;text-wrap:balance}
+.lede{color:var(--muted);max-width:72ch;margin:0 0 6px;font-size:14.5px}
+.tablewrap{overflow-x:auto;margin-top:14px}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:14px;
+  font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:11px 16px 11px 0;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.1em;
+  color:var(--faint);border-bottom:1px solid var(--rule-strong);font-weight:500;padding-bottom:8px}
+td.q{width:32%;color:var(--ink)}
+td.s,td.n{width:11%;font-family:var(--mono);font-size:12px;letter-spacing:.02em;
+  text-transform:uppercase;white-space:nowrap}
+td.s{color:var(--c-gas);font-weight:500}
+td.n{color:var(--warn);font-weight:500}
+td:last-child{color:var(--muted)}
+.swatch{font-family:var(--mono);font-size:12.5px;white-space:nowrap}
+.swatch i{display:inline-block;width:22px;height:9px;margin-right:8px;vertical-align:0}
+
+footer{margin-top:72px;padding-top:20px;border-top:1px solid var(--rule-strong);
+  font-family:var(--mono);font-size:11.5px;line-height:1.7;color:var(--faint);max-width:80ch}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+<div class="wrap">
+<header>
+<p class="eyebrow">Proof sheet · commit abd2509</p>
+<h1>Figures for the Joule heating solver</h1>
+<p class="sub">Five publication plates and one scope table for the Application Note, drawn to print size from a single frozen data object. Every dimension, cell count, region allocation and equivalent-cylinder property on this page came out of the solver at the audited commit. No number is typed in twice.</p>
+<p class="stamp"><span><b>Solver</b> apps/joule/solver.js</span><span><b>Body width</b> 178 mm / 505 pt</span><span><b>Type</b> Arial, 8 pt floor</span><span><b>Ground</b> white, flat fills only</span></p>
+</header>
+
+<div class="note">
+<b>Getting a plate into Word.</b> Open <i>SVG source</i>, select all, copy, and save the text as a file ending in <code>.svg</code>, then place that file in the manuscript. The vector copy stays sharp at any size and holds the type at a true 8 pt. <i>Render 600 dpi</i> rasterises the same artwork into a canvas; right-click it and choose Save image as to keep a PNG. Neither route can start the download for you, because a published page is not allowed to write to your disk.
+<br><br>
+Captions sit below each plate as text rather than inside the artwork, so they can be pasted in as Word captions and picked up by cross-references and the list of figures.
+</div>
+
+<div class="key">
+<span><i style="background:#0072B2"></i>scalar electrical</span>
+<span><i style="background:#E69F00"></i>local electrical field</span>
+<span><i style="background:#D55E00"></i>thermal solve</span>
+<span><i style="background:#009E73"></i>process gas</span>
+<span><i style="background:#6E6E6E"></i>boundaries, inactive</span>
+</div>
+
+<figure id="f1">
+<div class="figbar"><span class="figno">Figure 1</span><span class="figwhere">Supporting Information, Solver section (near S3–S4)</span><span class="figsize">178 mm</span></div>
+<div class="plate"></div>
+<div class="tools"><button data-src="f1">Show SVG source</button><button data-png="f1">Render 600 dpi</button><button data-copy="f1">Copy SVG</button><span class="hint"></span></div>
+<textarea readonly spellcheck="false"></textarea><canvas></canvas>
+<div class="cap"><b>Figure 1.</b> Order of computation in the coupled solver. A zero-dimensional steady state seeds the temperature field, the axisymmetric mesh is built once and held fixed, and an outer Picard iteration re-evaluates three groups of coefficients from the current field before each linear solve. The scalar electrical branch returns a single total power; the local field branch returns only a spatial distribution; the property branch returns the conductivities, heat capacities and radiation coefficients used to assemble the matrix.</div>
+</figure>
+
+<figure id="f2">
+<div class="figbar"><span class="figno">Figure 2</span><span class="figwhere">Supporting Information, cross-check section (near S4 and S7.3)</span><span class="figsize">178 mm</span></div>
+<div class="plate"></div>
+<div class="tools"><button data-src="f2">Show SVG source</button><button data-png="f2">Render 600 dpi</button><button data-copy="f2">Copy SVG</button><span class="hint"></span></div>
+<textarea readonly spellcheck="false"></textarea><canvas></canvas>
+<div class="cap"><b>Figure 2.</b> Mapping of a rectangular element onto the cylinder the axisymmetric solver meshes, shown for the 38 × 8 × 0.21 mm carbon-fibre-paper strip. Length, radiating surface, mass and electrical resistance carry across unchanged; the equivalent diameter, effective density and effective resistivity are the three quantities derived to hold them. Geometric volume is not preserved and is larger by a factor of 11.38. Nothing in the energy or electrical balance reads volume except through the four preserved quantities. The zero-dimensional solve uses the rectangular dimensions directly, with the conducting cross-section W&#183;H and the full box surface; the substitution is applied only by the axisymmetric solvers, which cannot mesh a box.</div>
+</figure>
+
+<figure id="f3">
+<div class="figbar"><span class="figno">Figure 3</span><span class="figwhere">Supporting Information, model section (near S1 and S3)</span><span class="figsize">178 mm</span></div>
+<div class="plate"></div>
+<div class="tools"><button data-src="f3">Show SVG source</button><button data-png="f3">Render 600 dpi</button><button data-copy="f3">Copy SVG</button><span class="hint"></span></div>
+<textarea readonly spellcheck="false"></textarea><canvas></canvas>
+<div class="cap"><b>Figure 3.</b> Computational domain at the default 30 × 60 resolution, drawn from the cell edges the mesh builder returns. The domain is the axisymmetric half-plane: the left edge is the symmetry line at r = 0, and no mirrored counterpart is solved. Radial cells are divided between the element, the purge gap, the wall and a graded band of outside air; axial cells are uniform and are divided between the element and the gas pads above and below it. The outer radial boundary is held at the far-field condition.</div>
+</figure>
+
+<figure id="f4">
+<div class="figbar"><span class="figno">Figure 4</span><span class="figwhere">Supporting Information, between S3 and S4</span><span class="figsize">178 mm</span></div>
+<div class="plate"></div>
+<div class="tools"><button data-src="f4">Show SVG source</button><button data-png="f4">Render 600 dpi</button><button data-copy="f4">Copy SVG</button><span class="hint"></span></div>
+<textarea readonly spellcheck="false"></textarea><canvas></canvas>
+<div class="cap"><b>Figure 4.</b> The four classes of entry the finite-volume assembly writes into the system matrix, with the stencil each one couples on the left and the position it occupies in the matrix on the right. Adjacent-cell conduction fills the bands next to the diagonal, boundary convection and radiation add to the diagonal alone, and element-to-wall radiation couples two cells that share no face. Directed enthalpy transport by the process gas is the only one-sided term.</div>
+</figure>
+
+<figure id="f5">
+<div class="figbar"><span class="figno">Figure 5</span><span class="figwhere">Main text, Figure 2</span><span class="figsize">178 mm</span></div>
+<div class="plate"></div>
+<div class="tools"><button data-src="f5">Show SVG source</button><button data-png="f5">Render 600 dpi</button><button data-copy="f5">Copy SVG</button><span class="hint"></span></div>
+<textarea readonly spellcheck="false"></textarea><canvas></canvas>
+<div class="cap"><b>Figure 5.</b> The two electrical paths in the model and the point at which they meet. The scalar branch sets the total electrical power from the volume-average temperature and the series resistance. The field branch solves a unit-potential Laplace problem and returns a spatial distribution only. The distribution is renormalised so that its volume integral equals the scalar total, which fixes where the power is deposited without changing how much is drawn.</div>
+</figure>
+
+<h2>Table S7. Questions the solver answers, and the boundary of each answer</h2>
+<p class="lede">Intended as Supporting Information Table S7. Every limitation below is a property of the model as implemented at commit abd2509, not a statement about what a Joule-heated reactor does.</p>
+<div class="tablewrap"><table>
+<thead><tr><th>Question</th><th>Supported</th><th>Limitation</th></tr></thead>
+<tbody>
+<tr><td class="q">What steady temperature does an element reach at a given current or power?</td><td class="s">Yes</td><td>Grid dependence must be checked. The default 30 × 60 mesh sits 0.60 K below the Richardson-extrapolated average, which is 0.07 % of the temperature rise.</td></tr>
+<tr><td class="q">How does temperature vary along the element and across its radius?</td><td class="s">Yes</td><td>Axisymmetric. Azimuthal variation, and any asymmetry in the enclosure or the flow, is outside the formulation.</td></tr>
+<tr><td class="q">Where in the element is the electrical power deposited?</td><td class="s">Yes</td><td>The field solve returns a distribution only. Its integral is renormalised to the scalar total, so a local hot spot redistributes power but cannot increase the power drawn.</td></tr>
+<tr><td class="q">How quickly does the element heat and cool under a pulsed drive?</td><td class="s">Yes</td><td>Backward Euler, first order in time and unconditionally stable. A step size that is stable is not automatically accurate, so the step must be refined and compared.</td></tr>
+<tr><td class="q">How is the heat lost, between radiation, convection and gas enthalpy?</td><td class="s">Yes</td><td>Element-to-wall exchange is a single grey-body pair. The gas is transparent; no participating-medium radiation is computed.</td></tr>
+<tr><td class="q">What does a rectangular element do?</td><td class="s">Yes</td><td>Solved through a cylinder that preserves length, radiating surface, mass and resistance. Geometric volume is not preserved, so any quantity read directly from volume is not meaningful.</td></tr>
+<tr><td class="q">How does the design scale to a multi-element reactor?</td><td class="n">In part</td><td>One element in one enclosure. Element-to-element radiation, manifold distribution and electrical balancing across a bank are outside the model.</td></tr>
+<tr><td class="q">What chemistry does the process gas undergo?</td><td class="n">No</td><td>The gas carries sensible enthalpy only. No reaction, no species transport, no heat of reaction.</td></tr>
+<tr><td class="q">What is the flow field in the purge gap?</td><td class="n">No</td><td>A specified mass flow with plug-flow enthalpy transport. Momentum is not solved, and no velocity profile, pressure drop or recirculation is produced.</td></tr>
+<tr><td class="q">Will the element fail, oxidise or drift with age?</td><td class="n">No</td><td>Current density is reported against a stated material limit. There is no damage, oxidation or property-drift model.</td></tr>
+</tbody>
+</table></div>
+
+<h2>Colour and type conventions</h2>
+<p class="lede">One hue is assigned to one physical role and is used the same way in all five figures. The set is colourblind-safe and stays legible in greyscale because the roles are also distinguished by position and by line style. Type is Arial throughout, no lighter than 8 pt at the printed size, on white with no shadow, gradient or transparency.</p>
+<div class="tablewrap"><table>
+<thead><tr><th>Role</th><th>Hue</th><th>Where it appears</th></tr></thead>
+<tbody>
+<tr><td class="q">Scalar electrical</td><td class="swatch"><i style="background:#0072B2"></i>#0072B2</td><td>The branch that returns one number: volume-average temperature, series resistance, current, total power.</td></tr>
+<tr><td class="q">Local electrical field</td><td class="swatch"><i style="background:#E69F00"></i>#E69F00</td><td>The unit-potential solve and the normalised heating distribution it returns. Also the element region in the mesh.</td></tr>
+<tr><td class="q">Thermal solve</td><td class="swatch"><i style="background:#D55E00"></i>#D55E00</td><td>Matrix assembly, the linear solve, the temperature update, and every conduction or radiation term.</td></tr>
+<tr><td class="q">Process gas</td><td class="swatch"><i style="background:#009E73"></i>#009E73</td><td>The purge gap, the mass flow, and the directed enthalpy transport term.</td></tr>
+<tr><td class="q">Boundaries and inactive regions</td><td class="swatch"><i style="background:#6E6E6E"></i>#6E6E6E</td><td>The symmetry line, the outer boundary, the wall, the outside air, and anything held fixed.</td></tr>
+</tbody>
+</table></div>
+
+<footer>
+Artwork generated from apps/joule/solver.js at commit abd2509. The page does not run the solver; the values were computed from that commit and frozen into one data object, so a figure and the manuscript text cannot drift apart. Regenerating after a solver change means re-running the extraction and republishing this page.
+</footer>
+</div>
+<script>
+const DATA = Object.freeze({"commit":"abd2509","strip":{"L":38,"W":8,"H":0.21,"area":1.68,"surface":6.273,"surface2f":6.08,"edgePct":3.08,"volume":0.06384,"mass":28.8,"rho":0.01871,"density":451.1,"R":4.232},"cyl":{"D":4.934,"L":38,"area":19.12,"surface":6.273,"volume":0.7267,"mass":28.8,"rho":0.213,"density":39.63,"R":4.232,"areaRatio":11.38,"densityScale":0.08785,"volumeRatio":11.38},"mesh":{"nr":30,"nz":60,"nElement":19,"nGap":2,"nWall":4,"nAir":5,"nAirZ":8,"nActiveZ":44,"radius":5.003,"outerRadius":6.503,"domainRadius":8.867,"ratio":1.364,"L":15.01,"domainHeight":20.47,"stretch":8,"redges":[0,0.2633,0.5266,0.7899,1.0532,1.3165,1.5798,1.8431,2.1064,2.3697,2.633,2.8963,3.1596,3.4229,3.6862,3.9495,4.2128,4.4761,4.7394,5.0027,5.2527,5.5027,5.7527,6.0027,6.2527,6.5027,6.6321,6.8498,7.216,7.8317,8.8673],"zedges":[-10.2328,-9.8917,-9.5506,-9.2095,-8.8684,-8.5273,-8.1862,-7.8451,-7.504,-7.1629,-6.8219,-6.4808,-6.1397,-5.7986,-5.4575,-5.1164,-4.7753,-4.4342,-4.0931,-3.752,-3.4109,-3.0698,-2.7287,-2.3876,-2.0466,-1.7055,-1.3644,-1.0233,-0.6822,-0.3411,0,0.3411,0.6822,1.0233,1.3644,1.7055,2.0466,2.3876,2.7287,3.0698,3.4109,3.752,4.0931,4.4342,4.7753,5.1164,5.4575,5.7986,6.1397,6.4808,6.8219,7.1629,7.504,7.8451,8.1862,8.5273,8.8684,9.2095,9.5506,9.8917,10.2328]}});
+// Artwork for the Application Note figures. Authored in points, so a viewBox
+// unit is a printed point and font-size 9 is 9 pt on the page. Every function
+// takes the data object make-figures.mjs builds from apps/joule/solver.js;
+// nothing here knows a number of its own.
+//
+// This file is used twice: imported by make-figures.mjs to write the SVGs, and
+// inlined into the published figure page with the `export ` keywords stripped.
+
+/* ------------------------------------------------------------------ */
+/* Drawing helpers. Every figure is authored in points, so a viewBox   */
+/* unit is a printed point and a font-size of 9 is 9 pt on the page.   */
+/* ------------------------------------------------------------------ */
+const C = { scalar:"#0072B2", field:"#E69F00", thermal:"#D55E00", gas:"#009E73",
+            grey:"#6E6E6E", ink:"#111111", rule:"#BBBBBB" };
+const TINT = { field:"#FCF0DC", gas:"#E4F5EF", wall:"#E8E8E8", air:"#F7F7F7",
+               scalar:"#E6F1F8", thermal:"#FBE9DF", panel:"#FBFBFB" };
+const ZWS = "​";
+
+const esc = (s) => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+/* _{..} and ^{..} become tspans one point smaller, so nothing on any
+   figure falls below the 8 pt floor as long as the base size is 9. */
+function rich(x, y, s, o) {
+  o = o || {};
+  const size = o.size || 9, sub = Math.max(8, size - 1);
+  const fill = o.fill || C.ink, anchor = o.anchor || "start", weight = o.weight || "normal";
+  let out = "", last = 0, m;
+  const re = /([_^])\{([^}]*)\}/g;
+  while ((m = re.exec(s))) {
+    out += esc(s.slice(last, m.index));
+    const dy = m[1] === "_" ? 1.9 : -3.1;
+    out += '<tspan font-size="' + sub + '" dy="' + dy + '">' + esc(m[2]) +
+           '</tspan><tspan dy="' + (-dy) + '">' + ZWS + '</tspan>';
+    last = re.lastIndex;
+  }
+  out += esc(s.slice(last));
+  return '<text x="' + x + '" y="' + y + '" font-size="' + size + '" fill="' + fill +
+         '" text-anchor="' + anchor + '" font-weight="' + weight + '">' + out + '</text>';
+}
+const T = rich;
+
+function rect(x, y, w, h, o) {
+  o = o || {};
+  return '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h +
+    '" rx="' + (o.rx === undefined ? 2 : o.rx) + '" fill="' + (o.fill || "#FFFFFF") +
+    '" stroke="' + (o.stroke || C.grey) + '" stroke-width="' + (o.sw || 0.8) + '"' +
+    (o.dash ? ' stroke-dasharray="' + o.dash + '"' : "") + '/>';
+}
+function line(x1, y1, x2, y2, o) {
+  o = o || {};
+  return '<path d="M' + x1 + ',' + y1 + ' L' + x2 + ',' + y2 + '" fill="none" stroke="' +
+    (o.stroke || C.rule) + '" stroke-width="' + (o.sw || 0.5) + '"' +
+    (o.dash ? ' stroke-dasharray="' + o.dash + '"' : "") + '/>';
+}
+function defs(ns) {
+  return '<defs>' + Object.keys(C).map(function (k) {
+    return '<marker id="' + ns + '-' + k + '" viewBox="0 0 10 8" refX="9.4" refY="4" ' +
+      'markerWidth="5" markerHeight="4" orient="auto"><path d="M0,0 L10,4 L0,8 Z" fill="' +
+      C[k] + '"/></marker>';
+  }).join("") + '</defs>';
+}
+function arrow(ns, d, o) {
+  o = o || {};
+  const c = o.color || "grey";
+  return '<path d="' + d + '" fill="none" stroke="' + C[c] + '" stroke-width="' + (o.sw || 0.9) +
+    '"' + (o.dash ? ' stroke-dasharray="' + o.dash + '"' : "") +
+    ' marker-end="url(#' + ns + '-' + c + ')"' + (o.start ? ' marker-start="url(#' + ns + '-' + c + ')"' : "") + '/>';
+}
+function svgDoc(w, h, body) {
+  return '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + 'pt" height="' + h + 'pt" ' +
+    'viewBox="0 0 ' + w + ' ' + h + '" font-family="Arial, Helvetica, sans-serif">' +
+    '<rect width="' + w + '" height="' + h + '" fill="#FFFFFF"/>' + body + '</svg>';
+}
+/* A titled stage box with an explanatory second line. */
+function stage(x, y, w, h, title, sub, color, fill) {
+  return rect(x, y, w, h, { stroke: color, fill: fill || "#FFFFFF", sw: 1 }) +
+    T(x + w / 2, y + (sub ? 13 : h / 2 + 3.2), title, { size: 9.5, weight: "bold", anchor: "middle", fill: color }) +
+    (sub ? T(x + w / 2, y + 24, sub, { size: 8.5, anchor: "middle", fill: C.grey }) : "");
+}
+
+/* ------------------------------------------------------------------ */
+/* Figure 1. Order of computation.                                     */
+/* ------------------------------------------------------------------ */
+function fig1(DATA) {
+  const ns = "f1", W = 505, H = 572;
+  const sx = 127.5, sw = 250, cx = sx + sw / 2;
+  let b = defs(ns);
+
+  b += stage(sx, 12, sw, 28, "Inputs", "geometry, material, drive setting, enclosure", C.grey);
+  b += arrow(ns, "M" + cx + ",40 L" + cx + ",53");
+  b += stage(sx, 54, sw, 28, "Zero-dimensional steady state", "one temperature, used as the seed", C.scalar, TINT.scalar);
+  b += arrow(ns, "M" + cx + ",82 L" + cx + ",95");
+  b += stage(sx, 96, sw, 28, "Build the axisymmetric mesh", "built once and held fixed", C.grey);
+  b += arrow(ns, "M" + cx + ",124 L" + cx + ",137");
+
+  /* the Picard frame */
+  b += rect(26, 138, 453, 188, { stroke: C.ink, fill: TINT.panel, sw: 1.1, dash: "3 2" });
+  b += T(36, 153, "Outer Picard iteration", { size: 10, weight: "bold" });
+  b += T(163, 153, "coefficients re-evaluated from the current temperature field", { size: 8.5, fill: C.grey });
+
+  const cols = [
+    { x: 34, c: C.scalar, tint: TINT.scalar, head: "Scalar electrical", role: "returns one number",
+      items: ["T_{avg}   volume average", "ρ(T_{avg})   resistivity", "R_{total} = ρ L / A",
+              "I   from the drive setting", "P_{bulk} = I² R_{total}"] },
+    { x: 186, c: C.field, tint: TINT.field, head: "Local electrical field", role: "returns a shape only",
+      items: ["T(r,z)   temperature field", "σ(T) = 1 / ρ(T)", "∇·(σ ∇V) = 0",
+              "q‴_{unit}(r,z)"] },
+    { x: 338, c: C.thermal, tint: TINT.thermal, head: "Thermal properties", role: "returns matrix coefficients",
+      items: ["k(T)   conduction", "c_{p}(T)   storage", "h_{rad}   radiation"] }
+  ];
+  cols.forEach(function (col) {
+    b += T(col.x, 171, col.head, { size: 9.5, weight: "bold", fill: col.c });
+    b += T(col.x, 181, col.role, { size: 8, fill: C.grey });
+    col.items.forEach(function (it, i) {
+      const y = 186 + i * 25;
+      b += rect(col.x, y, 137, 17, { stroke: col.c, fill: col.tint, sw: 0.8 });
+      b += T(col.x + 6, y + 11.6, it, { size: 9 });
+      if (i < col.items.length - 1) b += arrow(ns, "M" + (col.x + 68.5) + "," + (y + 17) + " L" + (col.x + 68.5) + "," + (y + 25), { color: Object.keys(C).find(function (k) { return C[k] === col.c; }), sw: 0.8 });
+    });
+  });
+  b += T(36, 317, "Each sweep re-evaluates all three branches from the temperature field the previous sweep produced.", { size: 8.5, fill: C.grey });
+
+  b += arrow(ns, "M" + cx + ",326 L" + cx + ",341");
+  b += stage(sx, 342, sw, 28, "Assemble the thermal matrix", "one row per finite-volume cell", C.thermal, TINT.thermal);
+  b += arrow(ns, "M" + cx + ",370 L" + cx + ",383");
+  b += rect(sx, 384, sw, 40, { stroke: C.thermal, fill: TINT.thermal, sw: 1 });
+  b += T(cx, 397, "Preconditioned linear solve", { size: 9.5, weight: "bold", anchor: "middle", fill: C.thermal });
+  b += T(cx, 408, "PCG while the matrix is symmetric,", { size: 8.5, anchor: "middle", fill: C.grey });
+  b += T(cx, 418, "BiCGSTAB once gas transport makes it not", { size: 8.5, anchor: "middle", fill: C.grey });
+  b += arrow(ns, "M" + cx + ",424 L" + cx + ",439");
+  b += stage(sx, 440, sw, 28, "Relax the temperature field", "under-relaxed update", C.thermal, TINT.thermal);
+  b += arrow(ns, "M" + cx + ",468 L" + cx + ",481");
+  b += stage(sx, 482, sw, 30, "Convergence and energy closure", "field change, and the residual power balance", C.ink);
+  b += arrow(ns, "M" + cx + ",512 L" + cx + ",527");
+  b += stage(sx, 528, sw, 28, "Converged fields", "T(r,z), power distribution, loss channels", C.grey);
+
+  /* the return path */
+  b += arrow(ns, "M" + sx + ",497 L14,497 L14,232 L25,232", { color: "ink", sw: 1 });
+  b += '<text x="10" y="370" font-size="8.5" fill="' + C.ink + '" text-anchor="middle" transform="rotate(-90 10 370)">not converged</text>';
+  b += T(sx + 6, 524, "converged", { size: 8.5, fill: C.grey });
+
+  return svgDoc(W, H, b);
+}
+
+/* ------------------------------------------------------------------ */
+/* Figure 2. Rectangular element to equivalent cylinder.               */
+/* ------------------------------------------------------------------ */
+function fig2(DATA) {
+  const ns = "f2", W = 505, H = 406, s = 4.474;   /* pt per mm, both drawings */
+  const S = DATA.strip, Q = DATA.cyl;
+  let b = defs(ns);
+
+  b += T(32, 20, "Rectangular element, as specified", { size: 9.5, weight: "bold" });
+  b += T(300, 20, "Cylinder the axisymmetric solver meshes", { size: 9.5, weight: "bold" });
+
+  /* strip, plan and edge view at the same scale as the cylinder */
+  const sl = S.L * s, sw2 = S.W * s, sh = S.H * s;
+  b += rect(32, 30, sl, sw2, { stroke: C.field, fill: TINT.field, sw: 1, rx: 0 });
+  b += T(32 + sl / 2, 30 + sw2 / 2 + 3.2, "plan", { size: 8.5, anchor: "middle", fill: C.grey });
+  b += line(32, 78, 32 + sl, 78, { stroke: C.grey, sw: 0.6 });
+  b += T(32 + sl / 2, 88, S.L.toFixed(2) + " mm", { size: 8.5, anchor: "middle" });
+  b += line(24, 30, 24, 30 + sw2, { stroke: C.grey, sw: 0.6 });
+  b += '<text x="16" y="' + (30 + sw2 / 2) + '" font-size="8.5" fill="' + C.ink + '" text-anchor="middle" transform="rotate(-90 16 ' + (30 + sw2 / 2) + ')">' + S.W.toFixed(2) + ' mm</text>';
+  b += rect(32, 100, sl, sh, { stroke: C.field, fill: C.field, sw: 0.6, rx: 0 });
+  b += T(32, 116, "edge view, drawn to the same scale", { size: 8.5, fill: C.grey });
+  b += arrow(ns, "M" + (32 + sl + 30) + ",101 L" + (32 + sl + 4) + "," + (100 + sh / 2), { color: "grey", sw: 0.6 });
+  b += T(32 + sl + 33, 104, S.H.toFixed(2) + " mm", { size: 8.5 });
+
+  /* the mapping */
+  b += arrow(ns, "M216,52 L288,52", { color: "ink", sw: 1.1 });
+  b += T(252, 44, "surface-equivalent", { size: 8.5, anchor: "middle", fill: C.grey });
+  b += T(252, 64, "mapping", { size: 8.5, anchor: "middle", fill: C.grey });
+
+  /* cylinder, side view */
+  const cd = Q.D * s, cy = 40;
+  b += rect(300, cy, sl, cd, { stroke: C.field, fill: TINT.field, sw: 1, rx: 0 });
+  b += '<ellipse cx="300" cy="' + (cy + cd / 2) + '" rx="3.2" ry="' + (cd / 2) + '" fill="' + TINT.field + '" stroke="' + C.field + '" stroke-width="1"/>';
+  b += '<ellipse cx="' + (300 + sl) + '" cy="' + (cy + cd / 2) + '" rx="3.2" ry="' + (cd / 2) + '" fill="none" stroke="' + C.field + '" stroke-width="1"/>';
+  b += line(300, 78, 300 + sl, 78, { stroke: C.grey, sw: 0.6 });
+  b += T(300 + sl / 2, 88, Q.L.toFixed(2) + " mm", { size: 8.5, anchor: "middle" });
+  b += line(292, cy, 292, cy + cd, { stroke: C.grey, sw: 0.6 });
+  b += T(300 + sl, cy - 6, "D = " + Q.D.toFixed(3) + " mm", { size: 8.5, anchor: "end" });
+  b += T(300, 116, "the diameter follows from the surface, not the volume", { size: 8.5, fill: C.grey });
+
+  /* the ledger */
+  const col = [32, 214, 316, 404], y0 = 146;
+  b += line(32, y0 - 12, 480, y0 - 12, { stroke: C.ink, sw: 0.9 });
+  b += T(col[0], y0, "Quantity", { size: 8.5, weight: "bold", fill: C.grey });
+  b += T(col[1], y0, "Rectangular", { size: 8.5, weight: "bold", fill: C.grey });
+  b += T(col[2], y0, "Cylinder", { size: 8.5, weight: "bold", fill: C.grey });
+  b += T(col[3], y0, "Relation", { size: 8.5, weight: "bold", fill: C.grey });
+  b += line(32, y0 + 5, 480, y0 + 5, { stroke: C.ink, sw: 0.9 });
+
+  const rows = [
+    { g: "Preserved by construction", c: C.scalar },
+    ["Length", S.L.toFixed(2) + " mm", Q.L.toFixed(2) + " mm", "identical"],
+    ["Radiating surface", S.surface.toFixed(3) + " cm²", Q.surface.toFixed(3) + " cm²", "identical"],
+    ["Mass", S.mass.toFixed(1) + " mg", Q.mass.toFixed(1) + " mg", "identical"],
+    ["Electrical resistance", S.R.toFixed(3) + " Ω", Q.R.toFixed(3) + " Ω", "identical"],
+    { g: "Not preserved", c: C.thermal },
+    ["Geometric volume", S.volume.toFixed(5) + " cm³", Q.volume.toFixed(4) + " cm³", "larger by ×" + Q.volumeRatio.toFixed(2), "bad"],
+    { g: "Derived to hold the four above", c: C.grey },
+    ["Diameter", "—", Q.D.toFixed(3) + " mm", "set by the surface"],
+    ["Effective density", S.density.toFixed(1) + " kg/m³", Q.density.toFixed(2) + " kg/m³", "×" + Q.densityScale.toFixed(5)],
+    ["Effective resistivity", S.rho.toFixed(5) + " Ω·cm", Q.rho.toFixed(4) + " Ω·cm", "×" + Q.areaRatio.toFixed(2)]
+  ];
+  let y = y0 + 20;
+  rows.forEach(function (r) {
+    if (r.g) {
+      b += T(col[0], y, r.g.toUpperCase(), { size: 8, weight: "bold", fill: r.c });
+      b += line(32, y + 3.5, 480, y + 3.5, { stroke: r.c, sw: 0.5 });
+      y += 16;
+      return;
+    }
+    const bad = r[4] === "bad";
+    const f = bad ? C.thermal : C.ink;
+    b += T(col[0], y, r[0], { size: 9, fill: f });
+    b += T(col[1], y, r[1], { size: 9, fill: f });
+    b += T(col[2], y, r[2], { size: 9, fill: f });
+    b += T(col[3], y, r[3], { size: 9, fill: bad ? C.thermal : C.grey, weight: bad ? "bold" : "normal" });
+    b += line(32, y + 4.5, 480, y + 4.5, { stroke: "#E4E4E4", sw: 0.4 });
+    y += 17;
+  });
+
+  b += line(32, y + 4, 480, y + 4, { stroke: C.ink, sw: 0.9 });
+  b += T(32, y + 18, "Surface is 2(LW + LH + WH) = " + S.surface.toFixed(3) + " cm². The two-face convention 2LW gives " + S.surface2f.toFixed(3) + " cm² and omits the edges,", { size: 8.5, fill: C.grey });
+  b += T(32, y + 29, "which are " + S.edgePct.toFixed(2) + " % of the total. The solver uses the first convention everywhere.", { size: 8.5, fill: C.grey });
+  b += T(32, y + 43, "The zero-dimensional solve uses the three rectangular dimensions as they are. This substitution applies only to", { size: 8.5 });
+  b += T(32, y + 54, "the axisymmetric solves, which cannot mesh a box.", { size: 8.5 });
+
+  return svgDoc(W, H, b);
+}
+
+/* ------------------------------------------------------------------ */
+/* Figure 3. The real half-domain, drawn from the cell edges the mesh  */
+/* builder returns. Nothing here is mirrored.                          */
+/* ------------------------------------------------------------------ */
+function fig3(DATA) {
+  const ns = "f3", W = 505, H = 386;
+  const M = DATA.mesh, re = M.redges, ze = M.zedges;
+  const s = 15.0, x0 = 66, ytop = 34;
+  const zmax = ze[ze.length - 1], zmin = ze[0];
+  const X = function (r) { return x0 + r * s; };
+  const Y = function (z) { return ytop + (zmax - z) * s; };
+  const ybot = Y(zmin);
+  let b = defs(ns);
+
+  const rEl = re[M.nElement], rGap = re[M.nElement + M.nGap], rWall = re[M.nElement + M.nGap + M.nWall], rOut = re[re.length - 1];
+  const zEl0 = ze[M.nAirZ], zEl1 = ze[M.nAirZ + M.nActiveZ];
+
+  /* region tints, flat fills only */
+  const band = function (r1, r2, z1, z2, fill) {
+    return '<rect x="' + X(r1) + '" y="' + Y(z2) + '" width="' + ((r2 - r1) * s) + '" height="' + ((z2 - z1) * s) + '" fill="' + fill + '"/>';
+  };
+  b += band(0, rEl, zEl0, zEl1, TINT.field);
+  b += band(0, rEl, zmin, zEl0, TINT.gas);
+  b += band(0, rEl, zEl1, zmax, TINT.gas);
+  b += band(rEl, rGap, zmin, zmax, TINT.gas);
+  b += band(rGap, rWall, zmin, zmax, TINT.wall);
+  b += band(rWall, rOut, zmin, zmax, TINT.air);
+
+  /* the mesh itself */
+  let g = "";
+  re.forEach(function (r) { g += "M" + X(r) + "," + ytop + " L" + X(r) + "," + ybot + " "; });
+  ze.forEach(function (z) { g += "M" + x0 + "," + Y(z) + " L" + X(rOut) + "," + Y(z) + " "; });
+  b += '<path d="' + g + '" fill="none" stroke="#C6C6C6" stroke-width="0.25"/>';
+
+  /* region outlines */
+  b += '<rect x="' + X(0) + '" y="' + Y(zEl1) + '" width="' + (rEl * s) + '" height="' + ((zEl1 - zEl0) * s) + '" fill="none" stroke="' + C.field + '" stroke-width="1.1"/>';
+  b += '<rect x="' + X(rGap) + '" y="' + ytop + '" width="' + ((rWall - rGap) * s) + '" height="' + (ybot - ytop) + '" fill="none" stroke="' + C.grey + '" stroke-width="1"/>';
+  b += line(X(rOut), ytop, X(rOut), ybot, { stroke: C.ink, sw: 1.6 });
+  b += line(x0, ytop, X(rOut), ytop, { stroke: C.grey, sw: 1 });
+  b += line(x0, ybot, X(rOut), ybot, { stroke: C.grey, sw: 1 });
+  b += line(x0, ytop, x0, ybot, { stroke: C.ink, sw: 1.4, dash: "5 3" });
+
+  /* axes and boundary labels */
+  b += '<text x="' + (x0 - 12) + '" y="' + ((ytop + ybot) / 2) + '" font-size="9" fill="' + C.ink + '" text-anchor="middle" transform="rotate(-90 ' + (x0 - 12) + ' ' + ((ytop + ybot) / 2) + ')">symmetry axis, r = 0</text>';
+  b += T(x0, ytop - 8, "r", { size: 9, weight: "bold" });
+  b += arrow(ns, "M" + (x0 + 6) + "," + (ytop - 11) + " L" + (x0 + 34) + "," + (ytop - 11), { color: "grey", sw: 0.7 });
+  b += T(X(rOut), ytop - 8, "domain radius " + M.domainRadius.toFixed(3) + " mm", { size: 8.5, anchor: "end", fill: C.grey });
+
+  /* flow through the purge gap */
+  const xg = X((rEl + rGap) / 2);
+  b += arrow(ns, "M" + xg + "," + (ybot - 6) + " L" + xg + "," + (ytop + 8), { color: "gas", sw: 1.4 });
+
+  /* radial allocation brackets */
+  const brk = function (r1, r2, label, color) {
+    const a = X(r1), c = X(r2), yb = ybot + 8;
+    return line(a, yb, c, yb, { stroke: color, sw: 1 }) + line(a, yb - 3, a, yb, { stroke: color, sw: 1 }) +
+      line(c, yb - 3, c, yb, { stroke: color, sw: 1 }) +
+      T((a + c) / 2, yb + 10, label, { size: 8, anchor: "middle", fill: color });
+  };
+  b += brk(0, rEl, String(M.nElement), C.field);
+  b += brk(rEl, rGap, String(M.nGap), C.gas);
+  b += brk(rGap, rWall, String(M.nWall), C.grey);
+  b += brk(rWall, rOut, String(M.nAir), C.grey);
+  b += T(x0, ybot + 32, "radial cells", { size: 8, fill: C.grey });
+
+  /* annotation panel */
+  const ax = 236;
+  let ay = 46;
+  const head = function (t) { b += T(ax, ay, t, { size: 9.5, weight: "bold" }); ay += 13; };
+  const row = function (a, v, color) {
+    b += '<rect x="' + ax + '" y="' + (ay - 7) + '" width="8" height="8" fill="' + (color || "none") + '" stroke="' + (color ? C.grey : "none") + '" stroke-width="0.5"/>';
+    b += T(ax + 13, ay, a, { size: 9 });
+    b += T(495, ay, v, { size: 9, anchor: "end", fill: C.grey });
+    ay += 13;
+  };
+  head("Radial division, " + M.nr + " cells");
+  row("element", M.nElement + " cells,  0 to " + M.radius.toFixed(3) + " mm", TINT.field);
+  row("purge gap", M.nGap + " cells,  to " + re[M.nElement + M.nGap].toFixed(3) + " mm", TINT.gas);
+  row("wall", M.nWall + " cells,  to " + M.outerRadius.toFixed(3) + " mm", TINT.wall);
+  row("outside air", M.nAir + " cells, graded ×" + M.stretch.toFixed(0) + ",  to " + M.domainRadius.toFixed(3) + " mm", TINT.air);
+  ay += 10;
+  head("Axial division, " + M.nz + " cells, uniform " + (ze[1] - ze[0]).toFixed(3) + " mm");
+  row("upper gas pad", M.nAirZ + " cells");
+  row("element", M.nActiveZ + " cells,  " + M.L.toFixed(2) + " mm");
+  row("lower gas pad", M.nAirZ + " cells");
+  row("domain height", M.domainHeight.toFixed(2) + " mm");
+  ay += 10;
+  head("Boundaries");
+  row("r = 0", "symmetry, no flux");
+  row("r = R_{domain}", "far field,  R_{domain} / R_{wall} = " + M.ratio.toFixed(3));
+  row("z at both ends", "gas pads close the domain");
+  ay += 10;
+  b += '<rect x="' + ax + '" y="' + (ay - 7) + '" width="8" height="8" fill="none" stroke="' + C.gas + '" stroke-width="1.2"/>';
+  b += T(ax + 13, ay, "process gas, in the flow direction", { size: 9, fill: C.gas });
+  ay += 13;
+  b += T(ax, ay, "The solved region is the half-plane shown. No mirrored", { size: 8.5, fill: C.grey });
+  b += T(ax, ay + 11, "counterpart is stored or solved.", { size: 8.5, fill: C.grey });
+
+  return svgDoc(W, H, b);
+}
+
+/* ------------------------------------------------------------------ */
+/* Figure 4. What the assembly writes into the matrix.                 */
+/* ------------------------------------------------------------------ */
+function fig4(DATA) {
+  const ns = "f4", W = 505, H = 396;
+  let b = defs(ns);
+  const rows = [34, 116, 198, 280];
+  const SX = 30, MX = 168, TX = 268;
+
+  b += T(SX, 22, "Cells coupled", { size: 8.5, weight: "bold", fill: C.grey });
+  b += T(MX, 22, "Matrix position", { size: 8.5, weight: "bold", fill: C.grey });
+  b += T(TX, 22, "Term", { size: 8.5, weight: "bold", fill: C.grey });
+  b += line(SX, 26, 495, 26, { stroke: C.ink, sw: 0.9 });
+
+  /* a small 8 x 8 matrix schematic; k lists the entries to fill */
+  const matrix = function (x, y, filled, hollow, color) {
+    const c = 7, n = 8;
+    let o = rect(x, y, c * n, c * n, { stroke: C.grey, fill: "#FFFFFF", sw: 0.7, rx: 0 });
+    for (let i = 1; i < n; i++) {
+      o += line(x, y + i * c, x + n * c, y + i * c, { stroke: "#E6E6E6", sw: 0.3 });
+      o += line(x + i * c, y, x + i * c, y + n * c, { stroke: "#E6E6E6", sw: 0.3 });
+    }
+    filled.forEach(function (p) {
+      o += '<rect x="' + (x + p[1] * c) + '" y="' + (y + p[0] * c) + '" width="' + c + '" height="' + c + '" fill="' + color + '"/>';
+    });
+    (hollow || []).forEach(function (p) {
+      o += '<rect x="' + (x + p[1] * c + 0.6) + '" y="' + (y + p[0] * c + 0.6) + '" width="' + (c - 1.2) + '" height="' + (c - 1.2) + '" fill="none" stroke="' + color + '" stroke-width="0.7" stroke-dasharray="1.5 1.2"/>';
+    });
+    return o;
+  };
+  const cell = function (x, y, w, h, fill, stroke) { return rect(x, y, w, h, { fill: fill, stroke: stroke || C.grey, sw: 0.7, rx: 0 }); };
+
+  /* row 1: adjacent-cell conduction */
+  let y = rows[0];
+  (function () {
+    const x = SX + 20, u = 20;
+    for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
+      const on = (i === 1) !== (j === 1);
+      if (i === 1 && j === 1) b += cell(x + j * u, y + i * u, u, u, TINT.thermal, C.thermal);
+      else if (on) b += cell(x + j * u, y + i * u, u, u, "#FFFFFF", C.grey);
+    }
+    b += T(x + u * 1.5, y + u * 1.5 + 3.2, "P", { size: 9, weight: "bold", anchor: "middle", fill: C.thermal });
+    b += arrow(ns, "M" + (x + u * 1.5) + "," + (y + u - 3) + " L" + (x + u * 1.5) + "," + (y + 3), { color: "thermal", sw: 0.9, start: true });
+    b += arrow(ns, "M" + (x + u * 1.5) + "," + (y + 2 * u + 3) + " L" + (x + u * 1.5) + "," + (y + 3 * u - 3), { color: "thermal", sw: 0.9, start: true });
+    b += arrow(ns, "M" + (x + u - 3) + "," + (y + u * 1.5) + " L" + (x + 3) + "," + (y + u * 1.5), { color: "thermal", sw: 0.9, start: true });
+    b += arrow(ns, "M" + (x + 2 * u + 3) + "," + (y + u * 1.5) + " L" + (x + 3 * u - 3) + "," + (y + u * 1.5), { color: "thermal", sw: 0.9, start: true });
+  })();
+  const bandE = [];
+  for (let i = 0; i < 8; i++) { bandE.push([i, i]); if (i > 0) bandE.push([i, i - 1]); if (i < 7) bandE.push([i, i + 1]); if (i > 2) bandE.push([i, i - 3]); if (i < 5) bandE.push([i, i + 3]); }
+  b += matrix(MX, y + 2, bandE, [], C.thermal);
+  b += T(TX, y + 10, "Adjacent-cell conduction", { size: 9.5, weight: "bold", fill: C.thermal });
+  b += T(TX, y + 23, "Two-point flux across the shared face, with the two", { size: 8.5 });
+  b += T(TX, y + 34, "half-cell resistances in series. Fills the bands next", { size: 8.5 });
+  b += T(TX, y + 45, "to the diagonal, and is symmetric.", { size: 8.5 });
+  b += line(SX, y + 68, 495, y + 68, { stroke: "#E4E4E4", sw: 0.5 });
+
+  /* row 2: boundary convection and radiation */
+  y = rows[1];
+  (function () {
+    const x = SX + 30, u = 20;
+    b += cell(x, y + 20, u, u, TINT.thermal, C.thermal);
+    b += line(x + u + 8, y + 8, x + u + 8, y + 60, { stroke: C.ink, sw: 1.6 });
+    b += arrow(ns, "M" + (x + u + 2) + "," + (y + 30) + " L" + (x + u + 24) + "," + (y + 30), { color: "thermal", sw: 0.9 });
+    b += T(x + u + 12, y + 22, "to ambient", { size: 8, fill: C.grey });
+    b += T(x - 4, y + 56, "boundary cell", { size: 8, fill: C.grey });
+  })();
+  b += matrix(MX, y + 2, [[0, 0], [1, 1], [2, 2], [3, 3], [4, 4], [5, 5], [6, 6], [7, 7]], [], C.thermal);
+  b += T(TX, y + 10, "Boundary convection and radiation", { size: 9.5, weight: "bold", fill: C.thermal });
+  b += T(TX, y + 23, "Adds to the diagonal and to the right-hand side only.", { size: 8.5 });
+  b += T(TX, y + 34, "The radiation coefficient is linearised about the", { size: 8.5 });
+  b += T(TX, y + 45, "current temperature, and is symmetric.", { size: 8.5 });
+  b += line(SX, y + 68, 495, y + 68, { stroke: "#E4E4E4", sw: 0.5 });
+
+  /* row 3: element to wall radiation across the gap */
+  y = rows[2];
+  (function () {
+    const x = SX + 6, u = 20;
+    b += cell(x, y + 20, u, u, TINT.field, C.field);
+    b += '<rect x="' + (x + u) + '" y="' + (y + 20) + '" width="34" height="' + u + '" fill="' + TINT.gas + '" stroke="none"/>';
+    b += cell(x + u + 34, y + 20, u, u, TINT.wall, C.grey);
+    b += arrow(ns, "M" + (x + u + 3) + "," + (y + 30) + " L" + (x + u + 31) + "," + (y + 30), { color: "thermal", sw: 0.9, start: true });
+    b += T(x + u + 17, y + 14, "gap", { size: 8, anchor: "middle", fill: C.gas });
+    b += T(x, y + 56, "element", { size: 8, fill: C.field });
+    b += T(x + u + 34, y + 56, "wall", { size: 8, fill: C.grey });
+  })();
+  b += matrix(MX, y + 2, [[1, 6], [6, 1], [2, 7], [7, 2]], [], C.thermal);
+  b += T(TX, y + 10, "Element-to-wall radiation", { size: 9.5, weight: "bold", fill: C.thermal });
+  b += T(TX, y + 23, "Couples two cells that share no face, across the purge", { size: 8.5 });
+  b += T(TX, y + 34, "gap. The entries sit far from the diagonal, and appear", { size: 8.5 });
+  b += T(TX, y + 45, "in matching pairs, so the operator stays symmetric.", { size: 8.5 });
+  b += line(SX, y + 68, 495, y + 68, { stroke: "#E4E4E4", sw: 0.5 });
+
+  /* row 4: directed gas enthalpy transport */
+  y = rows[3];
+  (function () {
+    const x = SX + 30, u = 20;
+    b += cell(x, y + 34, u, u, TINT.gas, C.gas);
+    b += cell(x, y + 14, u, u, TINT.gas, C.gas);
+    b += arrow(ns, "M" + (x + u + 8) + "," + (y + 54) + " L" + (x + u + 8) + "," + (y + 14), { color: "gas", sw: 1.4 });
+    b += T(x + u + 14, y + 37, "flow", { size: 8, fill: C.gas });
+    b += T(x, y + 66, "upstream cell only", { size: 8, fill: C.grey });
+  })();
+  b += matrix(MX, y + 2, [[3, 2], [4, 3], [5, 4]], [[2, 3], [3, 4], [4, 5]], C.gas);
+  b += T(TX, y + 10, "Directed process-gas enthalpy transport", { size: 9.5, weight: "bold", fill: C.gas });
+  b += T(TX, y + 23, "The cell upstream in the flow direction contributes; the", { size: 8.5 });
+  b += T(TX, y + 34, "cell downstream does not. The matching entry is absent,", { size: 8.5 });
+  b += T(TX, y + 45, "shown dashed, so the operator is not symmetric.", { size: 8.5 });
+
+  b += line(SX, 356, 495, 356, { stroke: C.ink, sw: 0.9 });
+  b += T(SX, 370, "The first three terms preserve matrix symmetry. Directed gas enthalpy transport produces a nonsymmetric", { size: 9 });
+  b += T(SX, 382, "operator and activates BiCGSTAB.", { size: 9 });
+  return svgDoc(W, H, b);
+}
+
+/* ------------------------------------------------------------------ */
+/* Figure 5. One total power, one spatial shape, and where they meet.  */
+/* ------------------------------------------------------------------ */
+function fig5(DATA) {
+  const ns = "f5", W = 505, H = 318;
+  let b = defs(ns);
+  const xs = [20, 142, 264, 386], bw = 108;
+
+  const chain = function (y, color, tint, items) {
+    items.forEach(function (it, i) {
+      const x = xs[i];
+      b += rect(x, y, bw, 28, { stroke: color, fill: tint, sw: 1 });
+      b += T(x + bw / 2, y + 12, it[0], { size: 9.5, weight: "bold", anchor: "middle", fill: color });
+      b += T(x + bw / 2, y + 23, it[1], { size: 8.5, anchor: "middle", fill: C.grey });
+      if (i < 3) b += arrow(ns, "M" + (x + bw) + "," + (y + 14) + " L" + (xs[i + 1] - 2) + "," + (y + 14),
+        { color: Object.keys(C).find(function (k) { return C[k] === color; }), sw: 1 });
+    });
+  };
+
+  b += T(20, 18, "Scalar branch", { size: 10, weight: "bold", fill: C.scalar });
+  b += T(96, 18, "sets how much power the element draws, from the volume-average temperature", { size: 8.5, fill: C.grey });
+  chain(26, C.scalar, TINT.scalar, [
+    ["T_{avg}", "volume average"],
+    ["ρ(T_{avg}),  R_{total}", "series resistance"],
+    ["I", "from the drive setting"],
+    ["P_{bulk} = I² R_{total}", "one number, in watts"]
+  ]);
+
+  b += T(20, 106, "Field branch", { size: 10, weight: "bold", fill: C.field });
+  b += T(90, 106, "sets only where that power lands, from the local temperature field", { size: 8.5, fill: C.grey });
+  chain(114, C.field, TINT.field, [
+    ["T(r,z)", "temperature field"],
+    ["σ(T) = 1 / ρ(T)", "local conductivity"],
+    ["∇·(σ ∇V) = 0", "unit potential"],
+    ["q‴_{unit}(r,z)", "a shape, not a magnitude"]
+  ]);
+
+  /* the join */
+  b += rect(110, 176, 360, 46, { stroke: C.ink, fill: "#FFFFFF", sw: 1.2 });
+  b += T(290, 194, "q‴(r,z)  =  P_{bulk} · q‴_{unit}(r,z) / ∫ q‴_{unit} dV", { size: 10.5, weight: "bold", anchor: "middle" });
+  b += T(290, 210, "the shape is scaled so that its volume integral equals the scalar total", { size: 8.5, anchor: "middle", fill: C.grey });
+  b += arrow(ns, "M494,54 L500,54 L500,199 L472,199", { color: "scalar", sw: 1 });
+  b += arrow(ns, "M440,142 L440,174", { color: "field", sw: 1 });
+
+  b += arrow(ns, "M290,222 L290,238", { color: "ink", sw: 1 });
+  b += rect(170, 240, 240, 30, { stroke: C.thermal, fill: TINT.thermal, sw: 1 });
+  b += T(290, 253, "Assemble and solve the thermal system", { size: 9.5, weight: "bold", anchor: "middle", fill: C.thermal });
+  b += T(290, 264, "q‴ is the source term in every element cell", { size: 8.5, anchor: "middle", fill: C.grey });
+
+  /* the temperature field returns to both branches */
+  b += arrow(ns, "M170,255 L10,255 L10,40 L18,40", { color: "thermal", sw: 1 });
+  b += arrow(ns, "M10,128 L18,128", { color: "thermal", sw: 1 });
+  b += '<text x="6" y="180" font-size="8.5" fill="' + C.thermal + '" text-anchor="middle" transform="rotate(-90 6 180)">T(r,z)</text>';
+
+  b += line(20, 288, 495, 288, { stroke: C.ink, sw: 0.9 });
+  b += T(20, 302, "The field solve redistributes a fixed total power. It does not allow a local hot spot to increase the total", { size: 9 });
+  b += T(20, 314, "electrical power drawn.", { size: 9 });
+  return svgDoc(W, H, b);
+}
+
+
+/* ------------------------------------------------------------------ */
+/* Rendering and export.                                               */
+/* ------------------------------------------------------------------ */
+const FIGS = { f1: fig1, f2: fig2, f3: fig3, f4: fig4, f5: fig5 };
+const SRC = {};
+
+Object.keys(FIGS).forEach(function (id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  let svg;
+  try { svg = FIGS[id](DATA); } catch (e) {
+    el.querySelector(".plate").textContent = "Could not draw this figure: " + e.message;
+    return;
+  }
+  SRC[id] = svg;
+  el.querySelector(".plate").innerHTML = svg;
+  el.querySelector("textarea").value = svg;
+});
+
+function hint(id, msg) {
+  const h = document.getElementById(id).querySelector(".hint");
+  h.textContent = msg;
+}
+
+document.addEventListener("click", function (ev) {
+  const btn = ev.target.closest("button");
+  if (!btn) return;
+
+  const srcId = btn.getAttribute("data-src");
+  if (srcId) {
+    const ta = document.getElementById(srcId).querySelector("textarea");
+    const on = ta.classList.toggle("on");
+    btn.textContent = on ? "Hide SVG source" : "Show SVG source";
+    if (on) { ta.focus(); ta.select(); hint(srcId, "Selected. Copy, then save as a file ending in .svg."); }
+    else hint(srcId, "");
+    return;
+  }
+
+  const copyId = btn.getAttribute("data-copy");
+  if (copyId) {
+    const text = SRC[copyId];
+    if (!text) return;
+    const done = function () { hint(copyId, "Copied. Paste into a file ending in .svg."); };
+    const fail = function () {
+      const ta = document.getElementById(copyId).querySelector("textarea");
+      ta.classList.add("on"); ta.focus(); ta.select();
+      hint(copyId, "The clipboard is not available here. The source is selected below; copy it by hand.");
+    };
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fail);
+      else fail();
+    } catch (e) { fail(); }
+    return;
+  }
+
+  const pngId = btn.getAttribute("data-png");
+  if (pngId) {
+    const fig = document.getElementById(pngId);
+    const cv = fig.querySelector("canvas");
+    const svg = SRC[pngId];
+    const m = svg.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/);
+    const w = parseFloat(m[1]), h = parseFloat(m[2]), k = 600 / 72;
+    const img = new Image();
+    img.onload = function () {
+      cv.width = Math.round(w * k); cv.height = Math.round(h * k);
+      const ctx = cv.getContext("2d");
+      ctx.fillStyle = "#FFFFFF"; ctx.fillRect(0, 0, cv.width, cv.height);
+      ctx.drawImage(img, 0, 0, cv.width, cv.height);
+      cv.classList.add("on");
+      hint(pngId, cv.width + " × " + cv.height + " px, which is 600 dpi at " +
+        (w / 72 * 25.4).toFixed(0) + " mm wide. Right-click the image and choose Save image as.");
+    };
+    img.onerror = function () {
+      hint(pngId, "This browser would not rasterise the figure. Use the SVG source instead; it prints better anyway.");
+    };
+    try {
+      img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+    } catch (e) {
+      hint(pngId, "This browser would not rasterise the figure. Use the SVG source instead.");
+    }
+  }
+});
+</script>
