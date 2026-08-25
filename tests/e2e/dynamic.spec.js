@@ -58,13 +58,27 @@ test("Dynamic tab exposes pulse controls only for a pulse train", async ({ page 
   await expect(page.locator("#dynPeriodField")).toBeVisible();
   await expect(page.locator("#dynDutyField")).toBeVisible();
 
-  // The step note has to warn when the time step cannot resolve the pulse,
-  // which is the easiest way to get a meaningless answer from this tab.
-  await page.fill("#dynPeriod", "1");
+  // Selecting a pulse train sizes the period from the element rather than
+  // leaving a number that suits some other geometry.
+  const suggested = Number(await page.inputValue("#dynPeriod"));
+  expect(suggested).toBeGreaterThan(0);
+  await expect(page.locator("#dynStepNote")).toContainText("relaxation time");
+
+  // Two warnings, and the regime one has to come first: a period well inside
+  // the element's relaxation time is answered by the physics, not by a smaller
+  // step, so the tab has to say so rather than only asking for more steps.
+  await page.fill("#dynPeriod", "0.2");
   await page.fill("#dynDt", "0.5");
-  await expect(page.locator("#dynStepNote")).toContainText("too few per cycle");
+  await expect(page.locator("#dynStepNote")).toContainText("cannot follow a pulse this fast");
+  await expect(page.locator("#dynStepNote")).toContainText("Too few steps per cycle");
+
+  // A period several relaxation times long is a pulse train the element can
+  // follow, and a fine enough step then resolves its shape.
+  await page.fill("#dynPeriod", String(suggested));
+  await page.fill("#dynDt", "0.5");
+  await expect(page.locator("#dynStepNote")).not.toContainText("cannot follow a pulse this fast");
   await page.fill("#dynDt", "0.005");
-  await expect(page.locator("#dynStepNote")).not.toContainText("too few per cycle");
+  await expect(page.locator("#dynStepNote")).not.toContainText("Too few steps per cycle");
   expect(errors, `console/page errors: ${errors.join("; ")}`).toEqual([]);
 });
 

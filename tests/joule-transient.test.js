@@ -8,7 +8,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   MATERIALS, calculate, geometry, propertiesAt,
-  solveTransient2D, solveThermal2D,
+  solveTransient2D, solveThermal2D, elementTimeConstant,
 } from "../apps/joule/solver.js";
 
 const sic = MATERIALS.find((m) => m.name === "SiC");
@@ -194,4 +194,70 @@ test("solveTransient2D() scales the per-cell source with the duty cycle", () => 
   const off = solveTransient2D(x, zeroD, enclosure, sic, { dt: 1, steps: 3, sourceScale: () => 0 });
   assert.ok(off.op.qCell.every((q) => q === 0), "qCell was not scaled to zero with the drive off");
   assert.ok(off.history.every((h) => h.pBulk === 0));
+});
+
+// ---------------------------------------------------------------- pulse drive
+// A duty cycle narrower than the time step is the case that used to fail
+// silently. Sampling the drive at the step's end point steps straight over the
+// on-window, so the source is exactly zero for the whole march and the element
+// sits at ambient: a flat line that reads as "this material does not heat"
+// rather than "this step missed the pulse". Integrating the drive across the
+// step instead delivers the right cycle-averaged energy however coarse it is.
+const PULSE = { period: 1, duty: 0.05 };
+
+function pulsePlan(dt, duration) {
+  const { period, duty } = PULSE;
+  const onBefore = (t) => {
+    const cycles = Math.floor(t / period), into = t - cycles * period;
+    return cycles * duty * period + Math.min(Math.max(into, 0), duty * period);
+  };
+  return {
+    dt, steps: Math.round(duration / dt),
+    sourceScale: (t) => (((t - 1e-9) % period) / period < duty ? 1 : 0),
+    sourceIntegral: (a, b) => (b > a ? (onBefore(b) - onBefore(a)) / (b - a) : 0),
+  };
+}
+
+test("a step wider than the on-window still heats the element", () => {
+  const x = makeInput(ADIABATIC);
+  const zeroD = calculate(x);
+  // dt = 0.25 s against a 0.05 s on-window: every step endpoint lands outside it.
+  const plan = pulsePlan(0.25, 20);
+  const sampled = solveTransient2D(x, zeroD, ADIABATIC, sic,
+    { ...plan, sourceIntegral: undefined });
+  const integrated = solveTransient2D(x, zeroD, ADIABATIC, sic, plan);
+  assert.ok(sampled.avgK - x.ambientK < 1e-6,
+    "the end-point sample is expected to miss the pulse entirely; if it no longer does, this test has stopped testing anything");
+  assert.ok(integrated.avgK - x.ambientK > 1,
+    `integrating the drive must still heat the element, got ${integrated.avgK - x.ambientK} K`);
+});
+
+test("the cycle-averaged energy does not depend on how the pulse is stepped", () => {
+  // Adiabatic, so the temperature rise is exactly the delivered energy over the
+  // heat capacity and any difference between the two marches is the source
+  // treatment alone.
+  const x = makeInput(ADIABATIC);
+  const zeroD = calculate(x);
+  const coarse = solveTransient2D(x, zeroD, ADIABATIC, sic, pulsePlan(0.25, 20));
+  const fine = solveTransient2D(x, zeroD, ADIABATIC, sic, pulsePlan(0.005, 20));
+  const coarseRise = coarse.avgK - x.ambientK, fineRise = fine.avgK - x.ambientK;
+  assert.ok(fineRise > 1, `the fine march should heat the element, got ${fineRise} K`);
+  const relative = Math.abs(coarseRise - fineRise) / fineRise;
+  assert.ok(relative < 0.02,
+    `cycle-averaged rise moved by ${(relative * 100).toFixed(2)}% between a 4-step and a 200-step cycle`);
+});
+
+test("elementTimeConstant separates a chunk from a foil", () => {
+  // The number the Dynamic tab sizes a pulse period from. It only has to be
+  // right to an order of magnitude, but it has to move with the geometry:
+  // thinning the same material at fixed volume raises surface area and drops
+  // the time constant.
+  const chunky = calculate({ ...makeInput(LOSSY), aspectRatio: 1.5 });
+  const slender = calculate({ ...makeInput(LOSSY), aspectRatio: 60 });
+  const tauChunky = elementTimeConstant(chunky), tauSlender = elementTimeConstant(slender);
+  assert.ok(Number.isFinite(tauChunky) && tauChunky > 0, `bad tau ${tauChunky}`);
+  assert.ok(Number.isFinite(tauSlender) && tauSlender > 0, `bad tau ${tauSlender}`);
+  assert.ok(tauSlender < tauChunky,
+    `a slenderer element has more surface per unit mass and must relax faster: ${tauSlender} vs ${tauChunky}`);
+  assert.ok(Number.isNaN(elementTimeConstant({ errors: ["bad input"] })));
 });

@@ -1107,6 +1107,21 @@ export function storageRate2D(T, Tprev, cfg, material, mesh, dt) {
 // back control after each batch, so a page can drive it from an animation
 // frame, draw as it goes, and stop when the user says so. solveTransient2D is
 // then just this loop run to completion.
+// How long the element takes to relax once the drive changes: the lumped
+// C/G of the zero-D screening result. It is what decides whether a pulse
+// train is a pulse train at all. An element driven with a period well below
+// this cannot follow the pulse; it integrates it and responds to the mean,
+// no matter how finely the march is stepped. Approximate by construction,
+// since hEffective is read at the target temperature, but the question it
+// answers is an order-of-magnitude one.
+export function elementTimeConstant(result) {
+  if(!result||!result.g||(result.errors&&result.errors.length)) return NaN;
+  const cp=result.target&&result.target.props?result.target.props.cp:NaN;
+  const conductance=result.hEffective*result.g.surface;
+  if(!finite(cp)||!finite(result.mass)||!finite(conductance)||conductance<=0) return NaN;
+  return result.mass*cp/conductance;
+}
+
 export function createTransientRun(x, zeroD, cfg, material, plan = {}) {
   const configErrors=validate2DConfig(cfg);if(configErrors.length)return{errors:configErrors};
   const dt0=plan.dt,steps=plan.steps;
@@ -1140,6 +1155,16 @@ export function createTransientRun(x, zeroD, cfg, material, plan = {}) {
     startField?startField[j][i]:startK));
   const Tprev=Array.from({length:mesh.nz},()=>new Array(mesh.nr).fill(0));
   const sourceScale=typeof plan.sourceScale==="function"?plan.sourceScale:()=>1;
+  // Sampling the drive at the step's end point drops any on-window the step
+  // steps over: a 5% duty on a 1 s period with dt = 0.25 s is sampled at
+  // 0.25, 0.50, 0.75, 1.00 s and never once inside [0, 0.05), so the source is
+  // exactly zero for the whole march and the element sits at ambient. That
+  // reads as "this material does not heat" rather than "this step missed the
+  // pulse". Integrating the drive across the step instead makes a coarse step
+  // deliver the correct cycle-averaged energy with a smeared shape, which is
+  // also the right physical limit: an element that cannot follow the pulse
+  // responds to its mean.
+  const sourceIntegral=typeof plan.sourceIntegral==="function"?plan.sourceIntegral:null;
   const picardMax=plan.picardMax??20,picardTol=plan.picardTol??(finite(cfg.tolerance)?cfg.tolerance:1e-4);
   const record=Math.max(1,plan.record??1);
   const elementAverage=()=>{let sum=0,vol=0;for(let j=0;j<mesh.nz;j++)for(let i=0;i<mesh.nr;i++)if(mesh.materialAt(i,j)===0){const v=mesh.cellVolume(i,j);sum+=T[j][i]*v;vol+=v;}return sum/vol;};
@@ -1170,7 +1195,7 @@ export function createTransientRun(x, zeroD, cfg, material, plan = {}) {
       const stepDt=uniform?dt0:Math.min(dt,duration-clock);
       const t=uniform?(n+1)*dt0:clock+stepDt;
       for(let j=0;j<mesh.nz;j++)for(let i=0;i<mesh.nr;i++)Tprev[j][i]=T[j][i];
-      const scale=Math.max(0,sourceScale(t));
+      const scale=Math.max(0,sourceIntegral?sourceIntegral(t-stepDt,t):sourceScale(t));
       let pass=0,step=Infinity;
       for(pass=0;pass<picardMax&&step>picardTol;pass++){
         op=scaleSource(withCurrentField(operating2DAt(elementAverage(),x,g,cfg,material)),scale);

@@ -801,6 +801,7 @@
     .t2d-gradient { height:16px; border:1px solid #a9b4bc; border-radius:3px; background:linear-gradient(90deg,#102a43 0%,#2878a5 25%,#58b8b1 50%,#ebbe46 75%,#d33737 100%); }
     .t2d-scale { display:flex; justify-content:space-between; color:var(--muted); font-size:15px; margin-top:5px; }
     .section-kicker[id] { scroll-margin-top:76px; }
+    #dynStepNote { white-space:pre-line; }
     .panel-jump { margin:0 0 22px; color:var(--muted); font-size:15px; }
     .panel-jump a { color:var(--muted); text-decoration:underline; text-underline-offset:3px; }
     .panel-jump a:hover { color:var(--accent, #2f8f83); }
@@ -1698,7 +1699,7 @@
       gapRadiationCoefficient, enclosureHeatLoss, heatLoss, operatingAt, solveSteadyTemperature,
       calculate, allocateSegmentCells, build2DMesh, material2DName, cellK2D, operating2DAt,
       gasFlowCells2D, gasBulkRowTemperature2D, assemble2DSystem, multiply2DSystem, pcg2D,
-      bicgstab2D, boundaryLoss2D, solveThermal2D, createTransientRun,
+      bicgstab2D, boundaryLoss2D, solveThermal2D, createTransientRun, elementTimeConstant,
       equivalentCylinder, surfaceEquivalentDiameter
     } from "./solver.js";
     import { evaluateCrossChecks, thermalComparison, sig4 } from "./crosscheck.js";
@@ -2962,8 +2963,27 @@
        animation frames in small batches rather than in one synchronous call:
        the tab stays responsive, the chart fills in as it goes, and Stop
        actually stops. */
-    let dynRun=null, dynCancel=false, dynBusy=false;
+    let dynRun=null, dynCancel=false, dynBusy=false, dynPeriodEdited=false;
     const finiteNumber=(v)=>typeof v==="number"&&Number.isFinite(v);
+
+    // The shipped 1 s period came from the RPH tool, whose element is a 0.21 mm
+    // foil relaxing in 0.135 s. The bodies this tool meshes are hundreds of
+    // times more massive per unit surface, so the same number lands an order of
+    // magnitude inside their relaxation time and shows a smooth warm-up rather
+    // than a pulse train. Size it from the element in front of us instead, and
+    // stop as soon as the user picks their own.
+    function suggestPulsePeriod() {
+      if(dynPeriodEdited||$("dynDrive").value!=="pulse") return;
+      const zeroD=currentResult();
+      if(!zeroD||zeroD.errors.length) return;
+      const tau=elementTimeConstant(zeroD);
+      if(!Number.isFinite(tau)||tau<=0) return;
+      // Four relaxation times leaves the element most of the off-window to fall
+      // back, which is what makes the swing visible.
+      const raw=4*tau,magnitude=Math.pow(10,Math.floor(Math.log10(raw)));
+      const rounded=Math.max(1e-3,Math.round(raw/magnitude*2)/2*magnitude);
+      $("dynPeriod").value=String(Number(rounded.toPrecision(3)));
+    }
 
     function dynPlanFromInputs() {
       const drive=$("dynDrive").value;
@@ -2983,8 +3003,20 @@
       const sourceScale=drive==="off"?()=>0
         :drive==="pulse"?(t)=>(((t-1e-9)%period)/period<duty?1:0)
         :()=>1;
-      return {drive,period,duty,dt,duration,steps,sourceScale,steady,dtGrowth,maxDt,
-        steadyTol:steady?1e-4:0};
+      // Exact on-time between two instants, so a step wider than the on-window
+      // still carries the right energy instead of missing the pulse entirely.
+      const onBefore=(t)=>{
+        const cycles=Math.floor(t/period),into=t-cycles*period;
+        return cycles*duty*period+Math.min(Math.max(into,0),duty*period);
+      };
+      const sourceIntegral=drive==="pulse"
+        ? (a,b)=>(b>a?(onBefore(b)-onBefore(a))/(b-a):0)
+        : null;
+      // The element's own relaxation time decides whether a pulse train is one.
+      const zeroD=currentResult();
+      const tau=zeroD&&!zeroD.errors.length?elementTimeConstant(zeroD):NaN;
+      return {drive,period,duty,dt,duration,steps,sourceScale,sourceIntegral,
+        steady,dtGrowth,maxDt,steadyTol:steady?1e-4:0,tau};
     }
 
     function syncDynControls() {
@@ -2994,11 +3026,25 @@
       const plan=dynPlanFromInputs();
       $("dynSteadyField").style.display=pulse?"none":"";
       const perCycle=pulse?Math.round(plan.period/plan.dt):null;
-      $("dynStepNote").textContent=(plan.steady
-          ? `Runs until the field settles, at most ${plan.steps.toLocaleString()} steps; Δt starts at ${plan.dt} s and grows to at most ${format(plan.maxDt,3)} s once the transient slows.`
-          : `${plan.steps.toLocaleString()} implicit steps`)
-        +(pulse?` · ${perCycle} per cycle · ${format(plan.duration/plan.period,2)} cycles`:"")
-        +(pulse&&perCycle<20?" — too few per cycle to resolve the pulse; reduce the time step.":"");
+      const base=plan.steady
+        ? `Runs until the field settles, at most ${plan.steps.toLocaleString()} steps; Δt starts at ${plan.dt} s and grows to at most ${format(plan.maxDt,3)} s once the transient slows.`
+        : `${plan.steps.toLocaleString()} implicit steps`;
+      let note=base;
+      if(pulse){
+        note+=` · ${perCycle} per cycle · ${format(plan.duration/plan.period,2)} cycles`;
+        // Whether the element can follow the pulse at all comes before whether
+        // the march resolves it. A period well under the element's relaxation
+        // time is answered by the physics, not by a smaller step: the element
+        // integrates the drive and responds to its mean.
+        if(Number.isFinite(plan.tau)){
+          const ratio=plan.period/plan.tau;
+          note+=`\nElement relaxation time τ ≈ ${format(plan.tau,3)} s, so this period is ${format(ratio,2)}·τ.`;
+          if(ratio<1) note+=" The element cannot follow a pulse this fast; it will integrate the drive and respond to the mean, whatever the time step. Lengthen the period to a few τ to see it swing.";
+          else if(ratio<3) note+=" The element only partly relaxes between pulses, so the swing will be much smaller than the peak-to-ambient difference.";
+        }
+        if(perCycle<20) note+="\nToo few steps per cycle to resolve the pulse shape; the cycle-averaged energy is still right, but reduce the time step to see the waveform.";
+      }
+      $("dynStepNote").textContent=note;
     }
 
     function drawDynChart(history, plan) {
@@ -3072,9 +3118,13 @@
       $("dynSpread").textContent=`${format(result.deltaT,2)} K`;
       $("dynClosure").textContent=`${format(result.worstClosure*100,4)}%`;
       $("dynSteps").textContent=`${result.stepsDone.toLocaleString()} · ${result.linearIterations.toLocaleString()}`;
+      // A pulse train has no single rise: t90 lands inside the first pulse and
+      // the field never stops storing, so both read as answers to a question
+      // that was not asked.
       const t90=result.rise&&result.rise.t90;
-      $("dynT90").textContent=finiteNumber(t90)?`${format(t90,3)} s`:"—";
-      $("dynTss").textContent=result.reachedSteady?`${format(result.tSteady,3)} s`:"not reached";
+      const pulsed=plan.drive==="pulse";
+      $("dynT90").textContent=pulsed?"n/a (pulsed)":finiteNumber(t90)?`${format(t90,3)} s`:"—";
+      $("dynTss").textContent=pulsed?"n/a (pulsed)":result.reachedSteady?`${format(result.tSteady,3)} s`:"not reached";
       $("dynMeshLabel").textContent=`${result.mesh.nr} × ${result.mesh.nz} mesh · `
         +(plan.steady?`Δt ${plan.dt}→${format(plan.maxDt,3)} s`:`Δt = ${plan.dt} s`)
         +` · ${result.stepsDone.toLocaleString()} steps`;
@@ -3106,7 +3156,8 @@
       // for a cylinder this returns the input untouched.
       const eq=axisymmetric(zeroD);
       const run=createTransientRun(eq.x,zeroD,cfg,eq.material,{
-        dt:plan.dt,steps:plan.steps,duration:plan.duration,sourceScale:plan.sourceScale,
+        dt:plan.dt,steps:plan.steps,duration:plan.duration,
+        sourceScale:plan.sourceScale,sourceIntegral:plan.sourceIntegral,
         dtGrowth:plan.dtGrowth,maxDt:plan.maxDt,steadyTol:plan.steadyTol,
         startField,startK:zeroD.input.ambientK,
         record:Math.max(1,Math.round(expected/600)),
@@ -3210,7 +3261,7 @@
         sync2DImported();
         scheduleAutoSolve2D(0);
       }
-      if (name === "dynamic") { syncDynControls(); renderEquivalenceNotes(); }
+      if (name === "dynamic") { suggestPulsePeriod(); syncDynControls(); renderEquivalenceNotes(); }
     }
 
     // The three published-reactor cases live in crosscheck.js so that
@@ -3311,8 +3362,9 @@
       $("cancelDynamic").addEventListener("click",()=>{dynCancel=true;});
       ["dynDrive","dynPeriod","dynDuty","dynDt","dynDuration"].forEach((id)=>
         $(id).addEventListener("input",syncDynControls));
-      $("dynDrive").addEventListener("change",syncDynControls);
+      $("dynDrive").addEventListener("change",()=>{suggestPulsePeriod();syncDynControls();});
       $("dynSteady").addEventListener("change",syncDynControls);
+      $("dynPeriod").addEventListener("input",()=>{dynPeriodEdited=true;});
       $("export2D").addEventListener("click",exportCurrent2D);
       $("thermalMap").addEventListener("mousemove",inspect2DCell);
       $("t2dFieldSelect").addEventListener("change",(event)=>{
