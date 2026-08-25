@@ -502,6 +502,10 @@ export function assemble2DSystem(T, x, g, cfg, material, mesh, op) {
     const emissivity=code===0?x.emissivity:cfg.wallEmissivity;
     addBoundary(p,seriesRadiationConductance(tempK,area,halfDistance,kCell,emissivity),x.ambientK);
   };
+  // Needed inside the assembly loop: the axial end boundaries are skipped on
+  // cells the purge stream flows through, so the flow map has to exist first.
+  const flowRows=Array.from({length:mesh.nz},(_,j)=>gasFlowCells2D(mesh,j));
+  const flowConnected=flowRows.every(cells=>cells.length>0);
   for(let j=0;j<mesh.nz;j++) for(let i=0;i<mesh.nr;i++) {
     const p=idx(i,j),code=mesh.materialAt(i,j),kp=cellK2D(code,T[j][i],material,cfg,x);
     // cfg.verificationSource(r, z) [W/m³] replaces the Joule source over the whole
@@ -536,8 +540,20 @@ export function assemble2DSystem(T, x, g, cfg, material, mesh, op) {
         if((code===0||code===2)&&nextCode===3)addInterfaceRadiation(p,code,T[j][i],area,face-mesh.zCenters[j],kp);
       }
     }
-    if(j===0) addBoundary(p,kp*axialArea(i)/Math.max(mesh.zCenters[j]-mesh.zEdges[j],1e-30),x.ambientK);
-    if(j===mesh.nz-1) addBoundary(p,kp*axialArea(i)/Math.max(mesh.zEdges[j+1]-mesh.zCenters[j],1e-30),x.ambientK);
+    // The two axial end rows sit on an ambient Dirichlet boundary, with a
+    // conductance that scales as 1/(dz/2) and therefore *diverges* under mesh
+    // refinement. On the purge stream's own cells that is wrong twice over. The
+    // inlet row already has its temperature imposed through the advection term
+    // (rhs += capacity * gasK), and the outlet row does not need one at all --
+    // the enthalpy leaves with the flow. Clamping them as well short-circuits
+    // the stream to ambient, ever harder as the grid is refined: the reported
+    // advective cooling halved on every refinement, 0.0377 -> 0.0182 -> 0.0086 W,
+    // heading for zero instead of a physical value. A term of the model that
+    // vanishes as h -> 0 cannot converge, and this one drove the observed order
+    // negative. Leave the flowing cells to the advection scheme.
+    const flowing=flowConnected&&(code===1||code===4);
+    if(j===0&&!flowing) addBoundary(p,kp*axialArea(i)/Math.max(mesh.zCenters[j]-mesh.zEdges[j],1e-30),x.ambientK);
+    if(j===mesh.nz-1&&!flowing) addBoundary(p,kp*axialArea(i)/Math.max(mesh.zEdges[j+1]-mesh.zCenters[j],1e-30),x.ambientK);
   }
 
   if(mesh.nGap>0) {
@@ -559,8 +575,6 @@ export function assemble2DSystem(T, x, g, cfg, material, mesh, op) {
     }
   }
 
-  const flowRows=Array.from({length:mesh.nz},(_,j)=>gasFlowCells2D(mesh,j));
-  const flowConnected=flowRows.every(cells=>cells.length>0);
   if(flowConnected&&HE_CAPACITY_RATE>0) {
     for(let j=mesh.nz-1;j>=0;j--) {
       const cells=flowRows[j],areas=cells.map(axialArea),areaTotal=areas.reduce((sum,value)=>sum+value,0);
