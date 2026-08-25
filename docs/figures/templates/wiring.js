@@ -72,12 +72,12 @@ document.addEventListener("click", function (ev) {
         (w / 72 * 25.4).toFixed(0) + " mm wide. Right-click the image and choose Save image as.");
     };
     img.onerror = function () {
-      hint(pngId, "This browser would not rasterise the figure. Use the SVG source instead; it prints better anyway.");
+      hint(pngId, "This browser would not rasterize the figure. Use the SVG source instead; it prints better anyway.");
     };
     try {
       img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
     } catch (e) {
-      hint(pngId, "This browser would not rasterise the figure. Use the SVG source instead.");
+      hint(pngId, "This browser would not rasterize the figure. Use the SVG source instead.");
     }
   }
 });

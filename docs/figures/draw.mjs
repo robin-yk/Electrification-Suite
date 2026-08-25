@@ -82,7 +82,7 @@ function stage(x, y, w, h, title, sub, color, fill) {
 /* Figure 1. Order of computation.                                     */
 /* ------------------------------------------------------------------ */
 export function fig1(DATA) {
-  const ns = "f1", W = 505, H = 572;
+  const ns = "f1", W = 505, H = 636;
   const sx = 127.5, sw = 250, cx = sx + sw / 2;
   let b = defs(ns);
 
@@ -94,50 +94,68 @@ export function fig1(DATA) {
   b += arrow(ns, "M" + cx + ",124 L" + cx + ",137");
 
   /* the Picard frame */
-  b += rect(26, 138, 453, 188, { stroke: C.ink, fill: TINT.panel, sw: 1.1, dash: "3 2" });
+  b += rect(26, 138, 453, 254, { stroke: C.ink, fill: TINT.panel, sw: 1.1, dash: "3 2" });
   b += T(36, 153, "Outer Picard iteration", { size: 10, weight: "bold" });
   b += T(163, 153, "coefficients re-evaluated from the current temperature field", { size: 8.5, fill: C.grey });
 
   const cols = [
-    { x: 34, c: C.scalar, tint: TINT.scalar, head: "Scalar electrical", role: "returns one number",
-      items: ["T_{avg}   volume average", "ρ(T_{avg})   resistivity", "R_{total} = ρ L / A",
-              "I   from the drive setting", "P_{bulk} = I² R_{total}"] },
-    { x: 186, c: C.field, tint: TINT.field, head: "Local electrical field", role: "returns a shape only",
-      items: ["T(r,z)   temperature field", "σ(T) = 1 / ρ(T)", "∇·(σ ∇V) = 0",
-              "q‴_{unit}(r,z)"] },
-    { x: 338, c: C.thermal, tint: TINT.thermal, head: "Thermal properties", role: "returns matrix coefficients",
-      items: ["k(T)   conduction", "c_{p}(T)   storage", "h_{rad}   radiation"] }
+    { x: 34, c: C.scalar, tint: TINT.scalar, key: "scalar", head: "Scalar electrical", role: "returns one number",
+      items: [{ t: "T_{avg}   volume average" },
+              { t: "ρ(T_{avg})   resistivity" },
+              { t: "R_{bulk} = ρ L / A" },
+              { t: "R_{total} = R_{bulk} + 2R_{c}" },
+              { t: "I   set by R_{total}" },
+              { t: "P_{bulk} = I² R_{bulk}" },
+              { t: "P_{contact} = I² · 2R_{c}", off: true }] },
+    { x: 186, c: C.field, tint: TINT.field, key: "field", head: "Local electrical field", role: "returns a shape only",
+      items: [{ t: "T(r,z)   temperature field" },
+              { t: "σ(T) = 1 / ρ(T)" },
+              { t: "∇·(σ ∇V) = 0" },
+              { t: "q‴_{unit}(r,z)" }] },
+    { x: 338, c: C.thermal, tint: TINT.thermal, key: "thermal", head: "Thermal properties", role: "returns matrix coefficients",
+      items: [{ t: "k(T)   conduction" },
+              { t: "c_{p}(T)   transient only" },
+              { t: "h_{rad}   radiation" }] }
   ];
   cols.forEach(function (col) {
     b += T(col.x, 171, col.head, { size: 9.5, weight: "bold", fill: col.c });
     b += T(col.x, 181, col.role, { size: 8, fill: C.grey });
     col.items.forEach(function (it, i) {
       const y = 186 + i * 25;
+      if (it.off) {
+        b += rect(col.x, y, 137, 17, { stroke: C.grey, fill: "#FFFFFF", sw: 0.8, dash: "2.5 2" });
+        b += T(col.x + 6, y + 11.6, it.t, { size: 9, fill: C.grey });
+        b += T(col.x, y + 27, "reported, and not deposited", { size: 8, fill: C.grey });
+        b += T(col.x, y + 37, "anywhere in the thermal domain", { size: 8, fill: C.grey });
+        return;
+      }
       b += rect(col.x, y, 137, 17, { stroke: col.c, fill: col.tint, sw: 0.8 });
-      b += T(col.x + 6, y + 11.6, it, { size: 9 });
-      if (i < col.items.length - 1) b += arrow(ns, "M" + (col.x + 68.5) + "," + (y + 17) + " L" + (col.x + 68.5) + "," + (y + 25), { color: Object.keys(C).find(function (k) { return C[k] === col.c; }), sw: 0.8 });
+      b += T(col.x + 6, y + 11.6, it.t, { size: 9 });
+      const next = col.items[i + 1];
+      if (next && !next.off) b += arrow(ns, "M" + (col.x + 68.5) + "," + (y + 17) + " L" + (col.x + 68.5) + "," + (y + 25), { color: col.key, sw: 0.8 });
+      if (next && next.off) b += line(col.x + 68.5, y + 17, col.x + 68.5, y + 25, { stroke: C.grey, sw: 0.8, dash: "2 2" });
     });
   });
-  b += T(36, 317, "Each sweep re-evaluates all three branches from the temperature field the previous sweep produced.", { size: 8.5, fill: C.grey });
+  b += T(36, 384, "Each sweep re-evaluates all three branches from the temperature field the previous sweep produced.", { size: 8.5, fill: C.grey });
 
-  b += arrow(ns, "M" + cx + ",326 L" + cx + ",341");
-  b += stage(sx, 342, sw, 28, "Assemble the thermal matrix", "one row per finite-volume cell", C.thermal, TINT.thermal);
-  b += arrow(ns, "M" + cx + ",370 L" + cx + ",383");
-  b += rect(sx, 384, sw, 40, { stroke: C.thermal, fill: TINT.thermal, sw: 1 });
-  b += T(cx, 397, "Preconditioned linear solve", { size: 9.5, weight: "bold", anchor: "middle", fill: C.thermal });
-  b += T(cx, 408, "PCG while the matrix is symmetric,", { size: 8.5, anchor: "middle", fill: C.grey });
-  b += T(cx, 418, "BiCGSTAB once gas transport makes it not", { size: 8.5, anchor: "middle", fill: C.grey });
-  b += arrow(ns, "M" + cx + ",424 L" + cx + ",439");
-  b += stage(sx, 440, sw, 28, "Relax the temperature field", "under-relaxed update", C.thermal, TINT.thermal);
-  b += arrow(ns, "M" + cx + ",468 L" + cx + ",481");
-  b += stage(sx, 482, sw, 30, "Convergence and energy closure", "field change, and the residual power balance", C.ink);
-  b += arrow(ns, "M" + cx + ",512 L" + cx + ",527");
-  b += stage(sx, 528, sw, 28, "Converged fields", "T(r,z), power distribution, loss channels", C.grey);
+  b += arrow(ns, "M" + cx + ",392 L" + cx + ",407");
+  b += stage(sx, 408, sw, 28, "Assemble the thermal matrix", "one row per finite-volume cell", C.thermal, TINT.thermal);
+  b += arrow(ns, "M" + cx + ",436 L" + cx + ",449");
+  b += rect(sx, 450, sw, 40, { stroke: C.thermal, fill: TINT.thermal, sw: 1 });
+  b += T(cx, 463, "Preconditioned linear solve", { size: 9.5, weight: "bold", anchor: "middle", fill: C.thermal });
+  b += T(cx, 474, "PCG while the matrix is symmetric,", { size: 8.5, anchor: "middle", fill: C.grey });
+  b += T(cx, 484, "BiCGSTAB once gas transport makes it not", { size: 8.5, anchor: "middle", fill: C.grey });
+  b += arrow(ns, "M" + cx + ",490 L" + cx + ",505");
+  b += stage(sx, 506, sw, 28, "Relax the temperature field", "under-relaxed update", C.thermal, TINT.thermal);
+  b += arrow(ns, "M" + cx + ",534 L" + cx + ",547");
+  b += stage(sx, 548, sw, 30, "Convergence and energy closure", "field change, and the residual power balance", C.ink);
+  b += arrow(ns, "M" + cx + ",578 L" + cx + ",593");
+  b += stage(sx, 594, sw, 28, "Converged fields", "T(r,z), power distribution, loss channels", C.grey);
 
   /* the return path */
-  b += arrow(ns, "M" + sx + ",497 L14,497 L14,232 L25,232", { color: "ink", sw: 1 });
-  b += '<text x="10" y="370" font-size="8.5" fill="' + C.ink + '" text-anchor="middle" transform="rotate(-90 10 370)">not converged</text>';
-  b += T(sx + 6, 524, "converged", { size: 8.5, fill: C.grey });
+  b += arrow(ns, "M" + sx + ",563 L14,563 L14,232 L25,232", { color: "ink", sw: 1 });
+  b += '<text x="10" y="410" font-size="8.5" fill="' + C.ink + '" text-anchor="middle" transform="rotate(-90 10 410)">not converged</text>';
+  b += T(sx + 6, 590, "converged", { size: 8.5, fill: C.grey });
 
   return svgDoc(W, H, b);
 }
@@ -279,7 +297,7 @@ export function fig3(DATA) {
   b += arrow(ns, "M" + (x0 + 6) + "," + (ytop - 11) + " L" + (x0 + 34) + "," + (ytop - 11), { color: "grey", sw: 0.7 });
   b += T(X(rOut), ytop - 8, "domain radius " + M.domainRadius.toFixed(3) + " mm", { size: 8.5, anchor: "end", fill: C.grey });
 
-  /* flow through the purge gap */
+  /* flow through the gas gap */
   const xg = X((rEl + rGap) / 2);
   b += arrow(ns, "M" + xg + "," + (ybot - 6) + " L" + xg + "," + (ytop + 8), { color: "gas", sw: 1.4 });
 
@@ -308,7 +326,7 @@ export function fig3(DATA) {
   };
   head("Radial division, " + M.nr + " cells");
   row("element", M.nElement + " cells,  0 to " + M.radius.toFixed(3) + " mm", TINT.field);
-  row("purge gap", M.nGap + " cells,  to " + re[M.nElement + M.nGap].toFixed(3) + " mm", TINT.gas);
+  row("gas gap", M.nGap + " cells,  to " + re[M.nElement + M.nGap].toFixed(3) + " mm", TINT.gas);
   row("wall", M.nWall + " cells,  to " + M.outerRadius.toFixed(3) + " mm", TINT.wall);
   row("outside air", M.nAir + " cells, graded ×" + M.stretch.toFixed(0) + ",  to " + M.domainRadius.toFixed(3) + " mm", TINT.air);
   ay += 10;
@@ -396,12 +414,12 @@ export function fig4(DATA) {
     b += line(x + u + 8, y + 8, x + u + 8, y + 60, { stroke: C.ink, sw: 1.6 });
     b += arrow(ns, "M" + (x + u + 2) + "," + (y + 30) + " L" + (x + u + 24) + "," + (y + 30), { color: "thermal", sw: 0.9 });
     b += T(x + u + 12, y + 22, "to ambient", { size: 8, fill: C.grey });
-    b += T(x - 4, y + 56, "boundary cell", { size: 8, fill: C.grey });
+    b += T(x + u, y + 56, "boundary cell", { size: 8, fill: C.grey, anchor: "end" });
   })();
   b += matrix(MX, y + 2, [[0, 0], [1, 1], [2, 2], [3, 3], [4, 4], [5, 5], [6, 6], [7, 7]], [], C.thermal);
   b += T(TX, y + 10, "Boundary convection and radiation", { size: 9.5, weight: "bold", fill: C.thermal });
   b += T(TX, y + 23, "Adds to the diagonal and to the right-hand side only.", { size: 8.5 });
-  b += T(TX, y + 34, "The radiation coefficient is linearised about the", { size: 8.5 });
+  b += T(TX, y + 34, "The radiation coefficient is linearized about the", { size: 8.5 });
   b += T(TX, y + 45, "current temperature, and is symmetric.", { size: 8.5 });
   b += line(SX, y + 68, 495, y + 68, { stroke: "#E4E4E4", sw: 0.5 });
 
@@ -419,7 +437,7 @@ export function fig4(DATA) {
   })();
   b += matrix(MX, y + 2, [[1, 6], [6, 1], [2, 7], [7, 2]], [], C.thermal);
   b += T(TX, y + 10, "Element-to-wall radiation", { size: 9.5, weight: "bold", fill: C.thermal });
-  b += T(TX, y + 23, "Couples two cells that share no face, across the purge", { size: 8.5 });
+  b += T(TX, y + 23, "Couples two cells that share no face, across the gas", { size: 8.5 });
   b += T(TX, y + 34, "gap. The entries sit far from the diagonal, and appear", { size: 8.5 });
   b += T(TX, y + 45, "in matching pairs, so the operator stays symmetric.", { size: 8.5 });
   b += line(SX, y + 68, 495, y + 68, { stroke: "#E4E4E4", sw: 0.5 });
@@ -466,13 +484,17 @@ export function fig5(DATA) {
   };
 
   b += T(20, 18, "Scalar branch", { size: 10, weight: "bold", fill: C.scalar });
-  b += T(96, 18, "sets how much power the element draws, from the volume-average temperature", { size: 8.5, fill: C.grey });
+  b += T(96, 18, "sets how much power the element dissipates, from the volume-average temperature", { size: 8.5, fill: C.grey });
   chain(26, C.scalar, TINT.scalar, [
     ["T_{avg}", "volume average"],
-    ["ρ(T_{avg}),  R_{total}", "series resistance"],
-    ["I", "from the drive setting"],
-    ["P_{bulk} = I² R_{total}", "one number, in watts"]
+    ["ρ(T_{avg}),  R_{bulk}", "R_{total} = R_{bulk} + 2R_{c}"],
+    ["I", "set by R_{total}"],
+    ["P_{bulk} = I² R_{bulk}", "one number, in watts"]
   ]);
+  /* the contact term is computed on the same current and then leaves */
+  b += line(440, 54, 440, 62, { stroke: C.grey, sw: 0.8, dash: "2 2" });
+  b += rect(236, 62, 258, 18, { stroke: C.grey, fill: "#FFFFFF", sw: 0.8, dash: "2.5 2" });
+  b += T(365, 74, "P_{contact} = I² · 2R_{c},  reported and not deposited", { size: 8.5, anchor: "middle", fill: C.grey });
 
   b += T(20, 106, "Field branch", { size: 10, weight: "bold", fill: C.field });
   b += T(90, 106, "sets only where that power lands, from the local temperature field", { size: 8.5, fill: C.grey });

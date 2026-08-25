@@ -119,7 +119,7 @@ footer{margin-top:72px;padding-top:20px;border-top:1px solid var(--rule-strong);
 </header>
 
 <div class="note">
-<b>Getting a plate into Word.</b> Open <i>SVG source</i>, select all, copy, and save the text as a file ending in <code>.svg</code>, then place that file in the manuscript. The vector copy stays sharp at any size and holds the type at a true 8 pt. <i>Render 600 dpi</i> rasterises the same artwork into a canvas; right-click it and choose Save image as to keep a PNG. Neither route can start the download for you, because a published page is not allowed to write to your disk.
+<b>Getting a plate into Word.</b> Open <i>SVG source</i>, select all, copy, and save the text as a file ending in <code>.svg</code>, then place that file in the manuscript. The vector copy stays sharp at any size and holds the type at a true 8 pt. <i>Render 600 dpi</i> rasterizes the same artwork into a canvas; right-click it and choose Save image as to keep a PNG. Neither route can start the download for you, because a published page is not allowed to write to your disk.
 <br><br>
 Captions sit below each plate as text rather than inside the artwork, so they can be pasted in as Word captions and picked up by cross-references and the list of figures.
 </div>
@@ -137,15 +137,15 @@ Captions sit below each plate as text rather than inside the artwork, so they ca
 <div class="plate"></div>
 <div class="tools"><button data-src="f1">Show SVG source</button><button data-png="f1">Render 600 dpi</button><button data-copy="f1">Copy SVG</button><span class="hint"></span></div>
 <textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Figure 1.</b> Order of computation in the coupled solver. A zero-dimensional steady state seeds the temperature field, the axisymmetric mesh is built once and held fixed, and an outer Picard iteration re-evaluates three groups of coefficients from the current field before each linear solve. The scalar electrical branch returns a single total power; the local field branch returns only a spatial distribution; the property branch returns the conductivities, heat capacities and radiation coefficients used to assemble the matrix.</div>
+<div class="cap"><b>Figure 1.</b> Order of computation in the coupled solver. A zero-dimensional steady state seeds the temperature field, the axisymmetric mesh is built once and held fixed, and an outer Picard iteration re-evaluates three groups of coefficients from the current field before each linear solve. The scalar electrical branch returns a single power; the local field branch returns only a spatial distribution; the property branch returns the conductivities, heat capacities and radiation coefficients used to assemble the matrix. The series resistance <i>R</i><sub>total</sub> = <i>R</i><sub>bulk</sub> + 2<i>R</i><sub>c</sub> sets the current, but only the bulk term is deposited: the contact power <i>I</i>&#178;&#183;2<i>R</i><sub>c</sub> is reported and is not added anywhere in the thermal domain. Heat capacity enters through the transient march alone.</div>
 </figure>
 
 <figure id="f2">
-<div class="figbar"><span class="figno">Figure 2</span><span class="figwhere">Supporting Information, cross-check section (near S4 and S7.3)</span><span class="figsize">178 mm</span></div>
+<div class="figbar"><span class="figno">Figure 2</span><span class="figwhere">Supporting Information, S7.3</span><span class="figsize">178 mm</span></div>
 <div class="plate"></div>
 <div class="tools"><button data-src="f2">Show SVG source</button><button data-png="f2">Render 600 dpi</button><button data-copy="f2">Copy SVG</button><span class="hint"></span></div>
 <textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Figure 2.</b> Mapping of a rectangular element onto the cylinder the axisymmetric solver meshes, shown for the 38 × 8 × 0.21 mm carbon-fibre-paper strip. Length, radiating surface, mass and electrical resistance carry across unchanged; the equivalent diameter, effective density and effective resistivity are the three quantities derived to hold them. Geometric volume is not preserved and is larger by a factor of 11.38. Nothing in the energy or electrical balance reads volume except through the four preserved quantities. The zero-dimensional solve uses the rectangular dimensions directly, with the conducting cross-section W&#183;H and the full box surface; the substitution is applied only by the axisymmetric solvers, which cannot mesh a box.</div>
+<div class="cap"><b>Figure 2.</b> Mapping of a rectangular element onto the cylinder the axisymmetric solver meshes, shown for the 38 × 8 × 0.21 mm carbon-fiber-paper strip. Length, radiating surface, mass and electrical resistance carry across unchanged; the equivalent diameter, effective density and effective resistivity are the three quantities derived to hold them. Geometric volume is not preserved and is larger by a factor of 11.38. The mapping preserves the quantities used in the lumped electrical, radiative-loss and thermal-capacitance balances. The resulting 2D temperature field remains an axisymmetric approximation, because the radial geometry and the conduction path differ from those of the original strip. The zero-dimensional solve uses the rectangular dimensions directly, with the conducting cross-section W&#183;H and the full box surface; the substitution is applied only by the axisymmetric solvers, which cannot mesh a box.</div>
 </figure>
 
 <figure id="f3">
@@ -153,7 +153,7 @@ Captions sit below each plate as text rather than inside the artwork, so they ca
 <div class="plate"></div>
 <div class="tools"><button data-src="f3">Show SVG source</button><button data-png="f3">Render 600 dpi</button><button data-copy="f3">Copy SVG</button><span class="hint"></span></div>
 <textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Figure 3.</b> Computational domain at the default 30 × 60 resolution, drawn from the cell edges the mesh builder returns. The domain is the axisymmetric half-plane: the left edge is the symmetry line at r = 0, and no mirrored counterpart is solved. Radial cells are divided between the element, the purge gap, the wall and a graded band of outside air; axial cells are uniform and are divided between the element and the gas pads above and below it. The outer radial boundary is held at the far-field condition.</div>
+<div class="cap"><b>Figure 3.</b> Computational domain at the default 30 × 60 resolution, drawn from the cell edges the mesh builder returns. The domain is the axisymmetric half-plane: the left edge is the symmetry line at r = 0, and no mirrored counterpart is solved. Radial cells are divided between the element, the gas gap, the wall and a graded band of outside air; axial cells are uniform and are divided between the element and the gas pads above and below it. The outer radial boundary is held at the far-field condition.</div>
 </figure>
 
 <figure id="f4">
@@ -169,7 +169,7 @@ Captions sit below each plate as text rather than inside the artwork, so they ca
 <div class="plate"></div>
 <div class="tools"><button data-src="f5">Show SVG source</button><button data-png="f5">Render 600 dpi</button><button data-copy="f5">Copy SVG</button><span class="hint"></span></div>
 <textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Figure 5.</b> The two electrical paths in the model and the point at which they meet. The scalar branch sets the total electrical power from the volume-average temperature and the series resistance. The field branch solves a unit-potential Laplace problem and returns a spatial distribution only. The distribution is renormalised so that its volume integral equals the scalar total, which fixes where the power is deposited without changing how much is drawn.</div>
+<div class="cap"><b>Figure 5.</b> The two electrical paths in the model and the point at which they meet. The scalar branch sets the current from the total series resistance <i>R</i><sub>total</sub> = <i>R</i><sub>bulk</sub> + 2<i>R</i><sub>c</sub>, and the deposited power from the bulk term alone, <i>P</i><sub>bulk</sub> = <i>I</i>&#178;<i>R</i><sub>bulk</sub>. The contact power is reported and is not deposited. The field branch solves a unit-potential Laplace problem and returns a spatial distribution only. The distribution is normalized so that its volume integral equals the scalar total, which fixes where the power is deposited without changing how much is drawn.</div>
 </figure>
 
 <h2>Table S7. Questions the solver answers, and the boundary of each answer</h2>
@@ -177,28 +177,28 @@ Captions sit below each plate as text rather than inside the artwork, so they ca
 <div class="tablewrap"><table>
 <thead><tr><th>Question</th><th>Supported</th><th>Limitation</th></tr></thead>
 <tbody>
-<tr><td class="q">What steady temperature does an element reach at a given current or power?</td><td class="s">Yes</td><td>Grid dependence must be checked. The default 30 × 60 mesh sits 0.60 K below the Richardson-extrapolated average, which is 0.07 % of the temperature rise.</td></tr>
+<tr><td class="q">What steady temperature does an element reach at a given current or power?</td><td class="s">Yes</td><td>Grid dependence must be checked. The 30 × 60 result differs from the finest-grid result by 0.60 K, equivalent to 0.07 % of the temperature rise.</td></tr>
 <tr><td class="q">How does temperature vary along the element and across its radius?</td><td class="s">Yes</td><td>Axisymmetric. Azimuthal variation, and any asymmetry in the enclosure or the flow, is outside the formulation.</td></tr>
-<tr><td class="q">Where in the element is the electrical power deposited?</td><td class="s">Yes</td><td>The field solve returns a distribution only. Its integral is renormalised to the scalar total, so a local hot spot redistributes power but cannot increase the power drawn.</td></tr>
+<tr><td class="q">Where in the element is the electrical power deposited?</td><td class="s">Yes</td><td>The field solve returns a distribution only. Its integral is normalized to the scalar total, so a local hot spot redistributes power but cannot increase the power drawn.</td></tr>
 <tr><td class="q">How quickly does the element heat and cool under a pulsed drive?</td><td class="s">Yes</td><td>Backward Euler, first order in time and unconditionally stable. A step size that is stable is not automatically accurate, so the step must be refined and compared.</td></tr>
-<tr><td class="q">How is the heat lost, between radiation, convection and gas enthalpy?</td><td class="s">Yes</td><td>Element-to-wall exchange is a single grey-body pair. The gas is transparent; no participating-medium radiation is computed.</td></tr>
-<tr><td class="q">What does a rectangular element do?</td><td class="s">Yes</td><td>Solved through a cylinder that preserves length, radiating surface, mass and resistance. Geometric volume is not preserved, so any quantity read directly from volume is not meaningful.</td></tr>
+<tr><td class="q">How is the heat lost, between radiation, convection and gas enthalpy?</td><td class="s">Yes</td><td>Element-to-wall exchange is a single gray-body pair. The gas is transparent; no participating-medium radiation is computed.</td></tr>
+<tr><td class="q">What does a rectangular element do?</td><td class="s">Yes</td><td>Solved through a cylinder that preserves length, radiating surface, mass and resistance. Volume is not preserved, and the radial geometry and conduction path differ from the strip, so the resulting field is an axisymmetric approximation to it.</td></tr>
 <tr><td class="q">How does the design scale to a multi-element reactor?</td><td class="n">In part</td><td>One element in one enclosure. Element-to-element radiation, manifold distribution and electrical balancing across a bank are outside the model.</td></tr>
 <tr><td class="q">What chemistry does the process gas undergo?</td><td class="n">No</td><td>The gas carries sensible enthalpy only. No reaction, no species transport, no heat of reaction.</td></tr>
-<tr><td class="q">What is the flow field in the purge gap?</td><td class="n">No</td><td>A specified mass flow with plug-flow enthalpy transport. Momentum is not solved, and no velocity profile, pressure drop or recirculation is produced.</td></tr>
-<tr><td class="q">Will the element fail, oxidise or drift with age?</td><td class="n">No</td><td>Current density is reported against a stated material limit. There is no damage, oxidation or property-drift model.</td></tr>
+<tr><td class="q">What is the flow field in the gas gap?</td><td class="n">No</td><td>A specified mass flow with plug-flow enthalpy transport. Momentum is not solved, and no velocity profile, pressure drop or recirculation is produced.</td></tr>
+<tr><td class="q">Will the element fail, oxidize or drift with age?</td><td class="n">No</td><td>Current density is reported against a stated material limit. There is no damage, oxidation or property-drift model.</td></tr>
 </tbody>
 </table></div>
 
-<h2>Colour and type conventions</h2>
-<p class="lede">One hue is assigned to one physical role and is used the same way in all five figures. The set is colourblind-safe and stays legible in greyscale because the roles are also distinguished by position and by line style. Type is Arial throughout, no lighter than 8 pt at the printed size, on white with no shadow, gradient or transparency.</p>
+<h2>Color and type conventions</h2>
+<p class="lede">One hue is assigned to one physical role and is used the same way in all five figures. The set is colorblind-safe and stays legible in grayscale because the roles are also distinguished by position and by line style. Type is Arial throughout, no lighter than 8 pt at the printed size, on white with no shadow, gradient or transparency.</p>
 <div class="tablewrap"><table>
 <thead><tr><th>Role</th><th>Hue</th><th>Where it appears</th></tr></thead>
 <tbody>
 <tr><td class="q">Scalar electrical</td><td class="swatch"><i style="background:#0072B2"></i>#0072B2</td><td>The branch that returns one number: volume-average temperature, series resistance, current, total power.</td></tr>
-<tr><td class="q">Local electrical field</td><td class="swatch"><i style="background:#E69F00"></i>#E69F00</td><td>The unit-potential solve and the normalised heating distribution it returns. Also the element region in the mesh.</td></tr>
+<tr><td class="q">Local electrical field</td><td class="swatch"><i style="background:#E69F00"></i>#E69F00</td><td>The unit-potential solve and the normalized heating distribution it returns. Also the element region in the mesh.</td></tr>
 <tr><td class="q">Thermal solve</td><td class="swatch"><i style="background:#D55E00"></i>#D55E00</td><td>Matrix assembly, the linear solve, the temperature update, and every conduction or radiation term.</td></tr>
-<tr><td class="q">Process gas</td><td class="swatch"><i style="background:#009E73"></i>#009E73</td><td>The purge gap, the mass flow, and the directed enthalpy transport term.</td></tr>
+<tr><td class="q">Process gas</td><td class="swatch"><i style="background:#009E73"></i>#009E73</td><td>The gas gap, the mass flow, and the directed enthalpy transport term.</td></tr>
 <tr><td class="q">Boundaries and inactive regions</td><td class="swatch"><i style="background:#6E6E6E"></i>#6E6E6E</td><td>The symmetry line, the outer boundary, the wall, the outside air, and anything held fixed.</td></tr>
 </tbody>
 </table></div>
@@ -293,7 +293,7 @@ function stage(x, y, w, h, title, sub, color, fill) {
 /* Figure 1. Order of computation.                                     */
 /* ------------------------------------------------------------------ */
 function fig1(DATA) {
-  const ns = "f1", W = 505, H = 572;
+  const ns = "f1", W = 505, H = 636;
   const sx = 127.5, sw = 250, cx = sx + sw / 2;
   let b = defs(ns);
 
@@ -305,50 +305,68 @@ function fig1(DATA) {
   b += arrow(ns, "M" + cx + ",124 L" + cx + ",137");
 
   /* the Picard frame */
-  b += rect(26, 138, 453, 188, { stroke: C.ink, fill: TINT.panel, sw: 1.1, dash: "3 2" });
+  b += rect(26, 138, 453, 254, { stroke: C.ink, fill: TINT.panel, sw: 1.1, dash: "3 2" });
   b += T(36, 153, "Outer Picard iteration", { size: 10, weight: "bold" });
   b += T(163, 153, "coefficients re-evaluated from the current temperature field", { size: 8.5, fill: C.grey });
 
   const cols = [
-    { x: 34, c: C.scalar, tint: TINT.scalar, head: "Scalar electrical", role: "returns one number",
-      items: ["T_{avg}   volume average", "ρ(T_{avg})   resistivity", "R_{total} = ρ L / A",
-              "I   from the drive setting", "P_{bulk} = I² R_{total}"] },
-    { x: 186, c: C.field, tint: TINT.field, head: "Local electrical field", role: "returns a shape only",
-      items: ["T(r,z)   temperature field", "σ(T) = 1 / ρ(T)", "∇·(σ ∇V) = 0",
-              "q‴_{unit}(r,z)"] },
-    { x: 338, c: C.thermal, tint: TINT.thermal, head: "Thermal properties", role: "returns matrix coefficients",
-      items: ["k(T)   conduction", "c_{p}(T)   storage", "h_{rad}   radiation"] }
+    { x: 34, c: C.scalar, tint: TINT.scalar, key: "scalar", head: "Scalar electrical", role: "returns one number",
+      items: [{ t: "T_{avg}   volume average" },
+              { t: "ρ(T_{avg})   resistivity" },
+              { t: "R_{bulk} = ρ L / A" },
+              { t: "R_{total} = R_{bulk} + 2R_{c}" },
+              { t: "I   set by R_{total}" },
+              { t: "P_{bulk} = I² R_{bulk}" },
+              { t: "P_{contact} = I² · 2R_{c}", off: true }] },
+    { x: 186, c: C.field, tint: TINT.field, key: "field", head: "Local electrical field", role: "returns a shape only",
+      items: [{ t: "T(r,z)   temperature field" },
+              { t: "σ(T) = 1 / ρ(T)" },
+              { t: "∇·(σ ∇V) = 0" },
+              { t: "q‴_{unit}(r,z)" }] },
+    { x: 338, c: C.thermal, tint: TINT.thermal, key: "thermal", head: "Thermal properties", role: "returns matrix coefficients",
+      items: [{ t: "k(T)   conduction" },
+              { t: "c_{p}(T)   transient only" },
+              { t: "h_{rad}   radiation" }] }
   ];
   cols.forEach(function (col) {
     b += T(col.x, 171, col.head, { size: 9.5, weight: "bold", fill: col.c });
     b += T(col.x, 181, col.role, { size: 8, fill: C.grey });
     col.items.forEach(function (it, i) {
       const y = 186 + i * 25;
+      if (it.off) {
+        b += rect(col.x, y, 137, 17, { stroke: C.grey, fill: "#FFFFFF", sw: 0.8, dash: "2.5 2" });
+        b += T(col.x + 6, y + 11.6, it.t, { size: 9, fill: C.grey });
+        b += T(col.x, y + 27, "reported, and not deposited", { size: 8, fill: C.grey });
+        b += T(col.x, y + 37, "anywhere in the thermal domain", { size: 8, fill: C.grey });
+        return;
+      }
       b += rect(col.x, y, 137, 17, { stroke: col.c, fill: col.tint, sw: 0.8 });
-      b += T(col.x + 6, y + 11.6, it, { size: 9 });
-      if (i < col.items.length - 1) b += arrow(ns, "M" + (col.x + 68.5) + "," + (y + 17) + " L" + (col.x + 68.5) + "," + (y + 25), { color: Object.keys(C).find(function (k) { return C[k] === col.c; }), sw: 0.8 });
+      b += T(col.x + 6, y + 11.6, it.t, { size: 9 });
+      const next = col.items[i + 1];
+      if (next && !next.off) b += arrow(ns, "M" + (col.x + 68.5) + "," + (y + 17) + " L" + (col.x + 68.5) + "," + (y + 25), { color: col.key, sw: 0.8 });
+      if (next && next.off) b += line(col.x + 68.5, y + 17, col.x + 68.5, y + 25, { stroke: C.grey, sw: 0.8, dash: "2 2" });
     });
   });
-  b += T(36, 317, "Each sweep re-evaluates all three branches from the temperature field the previous sweep produced.", { size: 8.5, fill: C.grey });
+  b += T(36, 384, "Each sweep re-evaluates all three branches from the temperature field the previous sweep produced.", { size: 8.5, fill: C.grey });
 
-  b += arrow(ns, "M" + cx + ",326 L" + cx + ",341");
-  b += stage(sx, 342, sw, 28, "Assemble the thermal matrix", "one row per finite-volume cell", C.thermal, TINT.thermal);
-  b += arrow(ns, "M" + cx + ",370 L" + cx + ",383");
-  b += rect(sx, 384, sw, 40, { stroke: C.thermal, fill: TINT.thermal, sw: 1 });
-  b += T(cx, 397, "Preconditioned linear solve", { size: 9.5, weight: "bold", anchor: "middle", fill: C.thermal });
-  b += T(cx, 408, "PCG while the matrix is symmetric,", { size: 8.5, anchor: "middle", fill: C.grey });
-  b += T(cx, 418, "BiCGSTAB once gas transport makes it not", { size: 8.5, anchor: "middle", fill: C.grey });
-  b += arrow(ns, "M" + cx + ",424 L" + cx + ",439");
-  b += stage(sx, 440, sw, 28, "Relax the temperature field", "under-relaxed update", C.thermal, TINT.thermal);
-  b += arrow(ns, "M" + cx + ",468 L" + cx + ",481");
-  b += stage(sx, 482, sw, 30, "Convergence and energy closure", "field change, and the residual power balance", C.ink);
-  b += arrow(ns, "M" + cx + ",512 L" + cx + ",527");
-  b += stage(sx, 528, sw, 28, "Converged fields", "T(r,z), power distribution, loss channels", C.grey);
+  b += arrow(ns, "M" + cx + ",392 L" + cx + ",407");
+  b += stage(sx, 408, sw, 28, "Assemble the thermal matrix", "one row per finite-volume cell", C.thermal, TINT.thermal);
+  b += arrow(ns, "M" + cx + ",436 L" + cx + ",449");
+  b += rect(sx, 450, sw, 40, { stroke: C.thermal, fill: TINT.thermal, sw: 1 });
+  b += T(cx, 463, "Preconditioned linear solve", { size: 9.5, weight: "bold", anchor: "middle", fill: C.thermal });
+  b += T(cx, 474, "PCG while the matrix is symmetric,", { size: 8.5, anchor: "middle", fill: C.grey });
+  b += T(cx, 484, "BiCGSTAB once gas transport makes it not", { size: 8.5, anchor: "middle", fill: C.grey });
+  b += arrow(ns, "M" + cx + ",490 L" + cx + ",505");
+  b += stage(sx, 506, sw, 28, "Relax the temperature field", "under-relaxed update", C.thermal, TINT.thermal);
+  b += arrow(ns, "M" + cx + ",534 L" + cx + ",547");
+  b += stage(sx, 548, sw, 30, "Convergence and energy closure", "field change, and the residual power balance", C.ink);
+  b += arrow(ns, "M" + cx + ",578 L" + cx + ",593");
+  b += stage(sx, 594, sw, 28, "Converged fields", "T(r,z), power distribution, loss channels", C.grey);
 
   /* the return path */
-  b += arrow(ns, "M" + sx + ",497 L14,497 L14,232 L25,232", { color: "ink", sw: 1 });
-  b += '<text x="10" y="370" font-size="8.5" fill="' + C.ink + '" text-anchor="middle" transform="rotate(-90 10 370)">not converged</text>';
-  b += T(sx + 6, 524, "converged", { size: 8.5, fill: C.grey });
+  b += arrow(ns, "M" + sx + ",563 L14,563 L14,232 L25,232", { color: "ink", sw: 1 });
+  b += '<text x="10" y="410" font-size="8.5" fill="' + C.ink + '" text-anchor="middle" transform="rotate(-90 10 410)">not converged</text>';
+  b += T(sx + 6, 590, "converged", { size: 8.5, fill: C.grey });
 
   return svgDoc(W, H, b);
 }
@@ -490,7 +508,7 @@ function fig3(DATA) {
   b += arrow(ns, "M" + (x0 + 6) + "," + (ytop - 11) + " L" + (x0 + 34) + "," + (ytop - 11), { color: "grey", sw: 0.7 });
   b += T(X(rOut), ytop - 8, "domain radius " + M.domainRadius.toFixed(3) + " mm", { size: 8.5, anchor: "end", fill: C.grey });
 
-  /* flow through the purge gap */
+  /* flow through the gas gap */
   const xg = X((rEl + rGap) / 2);
   b += arrow(ns, "M" + xg + "," + (ybot - 6) + " L" + xg + "," + (ytop + 8), { color: "gas", sw: 1.4 });
 
@@ -519,7 +537,7 @@ function fig3(DATA) {
   };
   head("Radial division, " + M.nr + " cells");
   row("element", M.nElement + " cells,  0 to " + M.radius.toFixed(3) + " mm", TINT.field);
-  row("purge gap", M.nGap + " cells,  to " + re[M.nElement + M.nGap].toFixed(3) + " mm", TINT.gas);
+  row("gas gap", M.nGap + " cells,  to " + re[M.nElement + M.nGap].toFixed(3) + " mm", TINT.gas);
   row("wall", M.nWall + " cells,  to " + M.outerRadius.toFixed(3) + " mm", TINT.wall);
   row("outside air", M.nAir + " cells, graded ×" + M.stretch.toFixed(0) + ",  to " + M.domainRadius.toFixed(3) + " mm", TINT.air);
   ay += 10;
@@ -607,12 +625,12 @@ function fig4(DATA) {
     b += line(x + u + 8, y + 8, x + u + 8, y + 60, { stroke: C.ink, sw: 1.6 });
     b += arrow(ns, "M" + (x + u + 2) + "," + (y + 30) + " L" + (x + u + 24) + "," + (y + 30), { color: "thermal", sw: 0.9 });
     b += T(x + u + 12, y + 22, "to ambient", { size: 8, fill: C.grey });
-    b += T(x - 4, y + 56, "boundary cell", { size: 8, fill: C.grey });
+    b += T(x + u, y + 56, "boundary cell", { size: 8, fill: C.grey, anchor: "end" });
   })();
   b += matrix(MX, y + 2, [[0, 0], [1, 1], [2, 2], [3, 3], [4, 4], [5, 5], [6, 6], [7, 7]], [], C.thermal);
   b += T(TX, y + 10, "Boundary convection and radiation", { size: 9.5, weight: "bold", fill: C.thermal });
   b += T(TX, y + 23, "Adds to the diagonal and to the right-hand side only.", { size: 8.5 });
-  b += T(TX, y + 34, "The radiation coefficient is linearised about the", { size: 8.5 });
+  b += T(TX, y + 34, "The radiation coefficient is linearized about the", { size: 8.5 });
   b += T(TX, y + 45, "current temperature, and is symmetric.", { size: 8.5 });
   b += line(SX, y + 68, 495, y + 68, { stroke: "#E4E4E4", sw: 0.5 });
 
@@ -630,7 +648,7 @@ function fig4(DATA) {
   })();
   b += matrix(MX, y + 2, [[1, 6], [6, 1], [2, 7], [7, 2]], [], C.thermal);
   b += T(TX, y + 10, "Element-to-wall radiation", { size: 9.5, weight: "bold", fill: C.thermal });
-  b += T(TX, y + 23, "Couples two cells that share no face, across the purge", { size: 8.5 });
+  b += T(TX, y + 23, "Couples two cells that share no face, across the gas", { size: 8.5 });
   b += T(TX, y + 34, "gap. The entries sit far from the diagonal, and appear", { size: 8.5 });
   b += T(TX, y + 45, "in matching pairs, so the operator stays symmetric.", { size: 8.5 });
   b += line(SX, y + 68, 495, y + 68, { stroke: "#E4E4E4", sw: 0.5 });
@@ -677,13 +695,17 @@ function fig5(DATA) {
   };
 
   b += T(20, 18, "Scalar branch", { size: 10, weight: "bold", fill: C.scalar });
-  b += T(96, 18, "sets how much power the element draws, from the volume-average temperature", { size: 8.5, fill: C.grey });
+  b += T(96, 18, "sets how much power the element dissipates, from the volume-average temperature", { size: 8.5, fill: C.grey });
   chain(26, C.scalar, TINT.scalar, [
     ["T_{avg}", "volume average"],
-    ["ρ(T_{avg}),  R_{total}", "series resistance"],
-    ["I", "from the drive setting"],
-    ["P_{bulk} = I² R_{total}", "one number, in watts"]
+    ["ρ(T_{avg}),  R_{bulk}", "R_{total} = R_{bulk} + 2R_{c}"],
+    ["I", "set by R_{total}"],
+    ["P_{bulk} = I² R_{bulk}", "one number, in watts"]
   ]);
+  /* the contact term is computed on the same current and then leaves */
+  b += line(440, 54, 440, 62, { stroke: C.grey, sw: 0.8, dash: "2 2" });
+  b += rect(236, 62, 258, 18, { stroke: C.grey, fill: "#FFFFFF", sw: 0.8, dash: "2.5 2" });
+  b += T(365, 74, "P_{contact} = I² · 2R_{c},  reported and not deposited", { size: 8.5, anchor: "middle", fill: C.grey });
 
   b += T(20, 106, "Field branch", { size: 10, weight: "bold", fill: C.field });
   b += T(90, 106, "sets only where that power lands, from the local temperature field", { size: 8.5, fill: C.grey });
@@ -791,12 +813,12 @@ document.addEventListener("click", function (ev) {
         (w / 72 * 25.4).toFixed(0) + " mm wide. Right-click the image and choose Save image as.");
     };
     img.onerror = function () {
-      hint(pngId, "This browser would not rasterise the figure. Use the SVG source instead; it prints better anyway.");
+      hint(pngId, "This browser would not rasterize the figure. Use the SVG source instead; it prints better anyway.");
     };
     try {
       img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
     } catch (e) {
-      hint(pngId, "This browser would not rasterise the figure. Use the SVG source instead.");
+      hint(pngId, "This browser would not rasterize the figure. Use the SVG source instead.");
     }
   }
 });

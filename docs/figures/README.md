@@ -40,7 +40,7 @@ floor. Type is Arial, the ground is white, and fills are flat: no shadow, no
 gradient, no transparency.
 
 One hue carries one physical role in all five plates. The set is the
-Okabe-Ito colourblind-safe palette.
+Okabe-Ito colorblind-safe palette.
 
 | Role | Hue |
 |---|---|

@@ -7,7 +7,7 @@
 </header>
 
 <div class="note">
-<b>Getting a plate into Word.</b> Open <i>SVG source</i>, select all, copy, and save the text as a file ending in <code>.svg</code>, then place that file in the manuscript. The vector copy stays sharp at any size and holds the type at a true 8 pt. <i>Render 600 dpi</i> rasterises the same artwork into a canvas; right-click it and choose Save image as to keep a PNG. Neither route can start the download for you, because a published page is not allowed to write to your disk.
+<b>Getting a plate into Word.</b> Open <i>SVG source</i>, select all, copy, and save the text as a file ending in <code>.svg</code>, then place that file in the manuscript. The vector copy stays sharp at any size and holds the type at a true 8 pt. <i>Render 600 dpi</i> rasterizes the same artwork into a canvas; right-click it and choose Save image as to keep a PNG. Neither route can start the download for you, because a published page is not allowed to write to your disk.
 <br><br>
 Captions sit below each plate as text rather than inside the artwork, so they can be pasted in as Word captions and picked up by cross-references and the list of figures.
 </div>
@@ -25,15 +25,15 @@ Captions sit below each plate as text rather than inside the artwork, so they ca
 <div class="plate"></div>
 <div class="tools"><button data-src="f1">Show SVG source</button><button data-png="f1">Render 600 dpi</button><button data-copy="f1">Copy SVG</button><span class="hint"></span></div>
 <textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Figure 1.</b> Order of computation in the coupled solver. A zero-dimensional steady state seeds the temperature field, the axisymmetric mesh is built once and held fixed, and an outer Picard iteration re-evaluates three groups of coefficients from the current field before each linear solve. The scalar electrical branch returns a single total power; the local field branch returns only a spatial distribution; the property branch returns the conductivities, heat capacities and radiation coefficients used to assemble the matrix.</div>
+<div class="cap"><b>Figure 1.</b> Order of computation in the coupled solver. A zero-dimensional steady state seeds the temperature field, the axisymmetric mesh is built once and held fixed, and an outer Picard iteration re-evaluates three groups of coefficients from the current field before each linear solve. The scalar electrical branch returns a single power; the local field branch returns only a spatial distribution; the property branch returns the conductivities, heat capacities and radiation coefficients used to assemble the matrix. The series resistance <i>R</i><sub>total</sub> = <i>R</i><sub>bulk</sub> + 2<i>R</i><sub>c</sub> sets the current, but only the bulk term is deposited: the contact power <i>I</i>&#178;&#183;2<i>R</i><sub>c</sub> is reported and is not added anywhere in the thermal domain. Heat capacity enters through the transient march alone.</div>
 </figure>
 
 <figure id="f2">
-<div class="figbar"><span class="figno">Figure 2</span><span class="figwhere">Supporting Information, cross-check section (near S4 and S7.3)</span><span class="figsize">178 mm</span></div>
+<div class="figbar"><span class="figno">Figure 2</span><span class="figwhere">Supporting Information, S7.3</span><span class="figsize">178 mm</span></div>
 <div class="plate"></div>
 <div class="tools"><button data-src="f2">Show SVG source</button><button data-png="f2">Render 600 dpi</button><button data-copy="f2">Copy SVG</button><span class="hint"></span></div>
 <textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Figure 2.</b> Mapping of a rectangular element onto the cylinder the axisymmetric solver meshes, shown for the 38 × 8 × 0.21 mm carbon-fibre-paper strip. Length, radiating surface, mass and electrical resistance carry across unchanged; the equivalent diameter, effective density and effective resistivity are the three quantities derived to hold them. Geometric volume is not preserved and is larger by a factor of 11.38. Nothing in the energy or electrical balance reads volume except through the four preserved quantities. The zero-dimensional solve uses the rectangular dimensions directly, with the conducting cross-section W&#183;H and the full box surface; the substitution is applied only by the axisymmetric solvers, which cannot mesh a box.</div>
+<div class="cap"><b>Figure 2.</b> Mapping of a rectangular element onto the cylinder the axisymmetric solver meshes, shown for the 38 × 8 × 0.21 mm carbon-fiber-paper strip. Length, radiating surface, mass and electrical resistance carry across unchanged; the equivalent diameter, effective density and effective resistivity are the three quantities derived to hold them. Geometric volume is not preserved and is larger by a factor of 11.38. The mapping preserves the quantities used in the lumped electrical, radiative-loss and thermal-capacitance balances. The resulting 2D temperature field remains an axisymmetric approximation, because the radial geometry and the conduction path differ from those of the original strip. The zero-dimensional solve uses the rectangular dimensions directly, with the conducting cross-section W&#183;H and the full box surface; the substitution is applied only by the axisymmetric solvers, which cannot mesh a box.</div>
 </figure>
 
 <figure id="f3">
@@ -41,7 +41,7 @@ Captions sit below each plate as text rather than inside the artwork, so they ca
 <div class="plate"></div>
 <div class="tools"><button data-src="f3">Show SVG source</button><button data-png="f3">Render 600 dpi</button><button data-copy="f3">Copy SVG</button><span class="hint"></span></div>
 <textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Figure 3.</b> Computational domain at the default 30 × 60 resolution, drawn from the cell edges the mesh builder returns. The domain is the axisymmetric half-plane: the left edge is the symmetry line at r = 0, and no mirrored counterpart is solved. Radial cells are divided between the element, the purge gap, the wall and a graded band of outside air; axial cells are uniform and are divided between the element and the gas pads above and below it. The outer radial boundary is held at the far-field condition.</div>
+<div class="cap"><b>Figure 3.</b> Computational domain at the default 30 × 60 resolution, drawn from the cell edges the mesh builder returns. The domain is the axisymmetric half-plane: the left edge is the symmetry line at r = 0, and no mirrored counterpart is solved. Radial cells are divided between the element, the gas gap, the wall and a graded band of outside air; axial cells are uniform and are divided between the element and the gas pads above and below it. The outer radial boundary is held at the far-field condition.</div>
 </figure>
 
 <figure id="f4">
@@ -57,7 +57,7 @@ Captions sit below each plate as text rather than inside the artwork, so they ca
 <div class="plate"></div>
 <div class="tools"><button data-src="f5">Show SVG source</button><button data-png="f5">Render 600 dpi</button><button data-copy="f5">Copy SVG</button><span class="hint"></span></div>
 <textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Figure 5.</b> The two electrical paths in the model and the point at which they meet. The scalar branch sets the total electrical power from the volume-average temperature and the series resistance. The field branch solves a unit-potential Laplace problem and returns a spatial distribution only. The distribution is renormalised so that its volume integral equals the scalar total, which fixes where the power is deposited without changing how much is drawn.</div>
+<div class="cap"><b>Figure 5.</b> The two electrical paths in the model and the point at which they meet. The scalar branch sets the current from the total series resistance <i>R</i><sub>total</sub> = <i>R</i><sub>bulk</sub> + 2<i>R</i><sub>c</sub>, and the deposited power from the bulk term alone, <i>P</i><sub>bulk</sub> = <i>I</i>&#178;<i>R</i><sub>bulk</sub>. The contact power is reported and is not deposited. The field branch solves a unit-potential Laplace problem and returns a spatial distribution only. The distribution is normalized so that its volume integral equals the scalar total, which fixes where the power is deposited without changing how much is drawn.</div>
 </figure>
 
 <h2>Table S7. Questions the solver answers, and the boundary of each answer</h2>
@@ -65,28 +65,28 @@ Captions sit below each plate as text rather than inside the artwork, so they ca
 <div class="tablewrap"><table>
 <thead><tr><th>Question</th><th>Supported</th><th>Limitation</th></tr></thead>
 <tbody>
-<tr><td class="q">What steady temperature does an element reach at a given current or power?</td><td class="s">Yes</td><td>Grid dependence must be checked. The default 30 × 60 mesh sits 0.60 K below the Richardson-extrapolated average, which is 0.07 % of the temperature rise.</td></tr>
+<tr><td class="q">What steady temperature does an element reach at a given current or power?</td><td class="s">Yes</td><td>Grid dependence must be checked. The 30 × 60 result differs from the finest-grid result by 0.60 K, equivalent to 0.07 % of the temperature rise.</td></tr>
 <tr><td class="q">How does temperature vary along the element and across its radius?</td><td class="s">Yes</td><td>Axisymmetric. Azimuthal variation, and any asymmetry in the enclosure or the flow, is outside the formulation.</td></tr>
-<tr><td class="q">Where in the element is the electrical power deposited?</td><td class="s">Yes</td><td>The field solve returns a distribution only. Its integral is renormalised to the scalar total, so a local hot spot redistributes power but cannot increase the power drawn.</td></tr>
+<tr><td class="q">Where in the element is the electrical power deposited?</td><td class="s">Yes</td><td>The field solve returns a distribution only. Its integral is normalized to the scalar total, so a local hot spot redistributes power but cannot increase the power drawn.</td></tr>
 <tr><td class="q">How quickly does the element heat and cool under a pulsed drive?</td><td class="s">Yes</td><td>Backward Euler, first order in time and unconditionally stable. A step size that is stable is not automatically accurate, so the step must be refined and compared.</td></tr>
-<tr><td class="q">How is the heat lost, between radiation, convection and gas enthalpy?</td><td class="s">Yes</td><td>Element-to-wall exchange is a single grey-body pair. The gas is transparent; no participating-medium radiation is computed.</td></tr>
-<tr><td class="q">What does a rectangular element do?</td><td class="s">Yes</td><td>Solved through a cylinder that preserves length, radiating surface, mass and resistance. Geometric volume is not preserved, so any quantity read directly from volume is not meaningful.</td></tr>
+<tr><td class="q">How is the heat lost, between radiation, convection and gas enthalpy?</td><td class="s">Yes</td><td>Element-to-wall exchange is a single gray-body pair. The gas is transparent; no participating-medium radiation is computed.</td></tr>
+<tr><td class="q">What does a rectangular element do?</td><td class="s">Yes</td><td>Solved through a cylinder that preserves length, radiating surface, mass and resistance. Volume is not preserved, and the radial geometry and conduction path differ from the strip, so the resulting field is an axisymmetric approximation to it.</td></tr>
 <tr><td class="q">How does the design scale to a multi-element reactor?</td><td class="n">In part</td><td>One element in one enclosure. Element-to-element radiation, manifold distribution and electrical balancing across a bank are outside the model.</td></tr>
 <tr><td class="q">What chemistry does the process gas undergo?</td><td class="n">No</td><td>The gas carries sensible enthalpy only. No reaction, no species transport, no heat of reaction.</td></tr>
-<tr><td class="q">What is the flow field in the purge gap?</td><td class="n">No</td><td>A specified mass flow with plug-flow enthalpy transport. Momentum is not solved, and no velocity profile, pressure drop or recirculation is produced.</td></tr>
-<tr><td class="q">Will the element fail, oxidise or drift with age?</td><td class="n">No</td><td>Current density is reported against a stated material limit. There is no damage, oxidation or property-drift model.</td></tr>
+<tr><td class="q">What is the flow field in the gas gap?</td><td class="n">No</td><td>A specified mass flow with plug-flow enthalpy transport. Momentum is not solved, and no velocity profile, pressure drop or recirculation is produced.</td></tr>
+<tr><td class="q">Will the element fail, oxidize or drift with age?</td><td class="n">No</td><td>Current density is reported against a stated material limit. There is no damage, oxidation or property-drift model.</td></tr>
 </tbody>
 </table></div>
 
-<h2>Colour and type conventions</h2>
-<p class="lede">One hue is assigned to one physical role and is used the same way in all five figures. The set is colourblind-safe and stays legible in greyscale because the roles are also distinguished by position and by line style. Type is Arial throughout, no lighter than 8 pt at the printed size, on white with no shadow, gradient or transparency.</p>
+<h2>Color and type conventions</h2>
+<p class="lede">One hue is assigned to one physical role and is used the same way in all five figures. The set is colorblind-safe and stays legible in grayscale because the roles are also distinguished by position and by line style. Type is Arial throughout, no lighter than 8 pt at the printed size, on white with no shadow, gradient or transparency.</p>
 <div class="tablewrap"><table>
 <thead><tr><th>Role</th><th>Hue</th><th>Where it appears</th></tr></thead>
 <tbody>
 <tr><td class="q">Scalar electrical</td><td class="swatch"><i style="background:#0072B2"></i>#0072B2</td><td>The branch that returns one number: volume-average temperature, series resistance, current, total power.</td></tr>
-<tr><td class="q">Local electrical field</td><td class="swatch"><i style="background:#E69F00"></i>#E69F00</td><td>The unit-potential solve and the normalised heating distribution it returns. Also the element region in the mesh.</td></tr>
+<tr><td class="q">Local electrical field</td><td class="swatch"><i style="background:#E69F00"></i>#E69F00</td><td>The unit-potential solve and the normalized heating distribution it returns. Also the element region in the mesh.</td></tr>
 <tr><td class="q">Thermal solve</td><td class="swatch"><i style="background:#D55E00"></i>#D55E00</td><td>Matrix assembly, the linear solve, the temperature update, and every conduction or radiation term.</td></tr>
-<tr><td class="q">Process gas</td><td class="swatch"><i style="background:#009E73"></i>#009E73</td><td>The purge gap, the mass flow, and the directed enthalpy transport term.</td></tr>
+<tr><td class="q">Process gas</td><td class="swatch"><i style="background:#009E73"></i>#009E73</td><td>The gas gap, the mass flow, and the directed enthalpy transport term.</td></tr>
 <tr><td class="q">Boundaries and inactive regions</td><td class="swatch"><i style="background:#6E6E6E"></i>#6E6E6E</td><td>The symmetry line, the outer boundary, the wall, the outside air, and anything held fixed.</td></tr>
 </tbody>
 </table></div>
