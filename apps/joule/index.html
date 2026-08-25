@@ -797,6 +797,11 @@
     .t2d-colorbar { width:min(100%,420px); margin:10px auto 0; }
     .t2d-gradient { height:16px; border:1px solid #a9b4bc; border-radius:3px; background:linear-gradient(90deg,#102a43 0%,#2878a5 25%,#58b8b1 50%,#ebbe46 75%,#d33737 100%); }
     .t2d-scale { display:flex; justify-content:space-between; color:var(--muted); font-size:15px; margin-top:5px; }
+    .section-kicker[id] { scroll-margin-top:76px; }
+    .panel-jump { margin:0 0 22px; color:var(--muted); font-size:15px; }
+    .panel-jump a { color:var(--muted); text-decoration:underline; text-underline-offset:3px; }
+    .panel-jump a:hover { color:var(--accent, #2f8f83); }
+    .panel-divider { border:0; border-top:1px solid var(--line, #dfe5ea); margin:46px 0 38px; }
     .t2d-field-pick { display:flex; align-items:center; gap:7px; color:var(--muted); font-size:15px; }
     .t2d-field-pick select { font:inherit; color:var(--navy); padding:3px 6px; border:1px solid #a9b4bc; border-radius:4px; background:#fff; }
     .t2d-hover { min-height:28px; margin-top:10px; color:var(--navy); font-size:15px; font-weight:700; text-align:center; }
@@ -904,10 +909,8 @@
       <button class="tab active" data-tab="calculator" role="tab" aria-selected="true">Single Design</button>
       <button class="tab" data-tab="thermal2d" role="tab" aria-selected="false">2D Thermal Field</button>
       <button class="tab" data-tab="dynamic" role="tab" aria-selected="false">Dynamic</button>
-      <button class="tab" data-tab="compare" role="tab" aria-selected="false">Material Compare</button>
-      <button class="tab" data-tab="sweep" role="tab" aria-selected="false">Resistivity &amp; Geometry Sweep</button>
-      <button class="tab" data-tab="calculations" role="tab" aria-selected="false">Calculations</button>
-      <button class="tab" data-tab="cite" role="tab" aria-selected="false">How to Cite</button>
+      <button class="tab" data-tab="screening" role="tab" aria-selected="false">Screening</button>
+      <button class="tab" data-tab="reference" role="tab" aria-selected="false">Reference</button>
     </div>
   </nav>
 
@@ -1370,8 +1373,9 @@
       </div>
     </section>
 
-    <section id="compare" class="panel" role="tabpanel">
-      <p class="section-kicker">Same hardware, different materials</p>
+    <section id="screening" class="panel" role="tabpanel">
+      <p class="panel-jump"><a href="#jumpCompare">Material comparison</a> · <a href="#jumpSweep">Resistivity and geometry sweep</a></p>
+      <p class="section-kicker" id="jumpCompare">Same hardware, different materials</p>
       <h2 class="section-title">Material comparison</h2>
       <p class="section-lede">Each material is recalculated with the current geometry, power-supply limits, and heat-loss conditions from Single Design. Supply mode: auto (each material runs at its own first limit).</p>
       <div class="card toolbar">
@@ -1414,10 +1418,10 @@
           <tbody id="compareBody"></tbody>
         </table>
       </div>
-    </section>
 
-    <section id="sweep" class="panel" role="tabpanel">
-      <p class="section-kicker">Electrical design window</p>
+      <hr class="panel-divider">
+
+      <p class="section-kicker" id="jumpSweep">Electrical design window</p>
       <h2 class="section-title">Resistivity and geometry sweep</h2>
       <p class="section-lede">At fixed solid volume and heat capacity, initial ramp rate follows electrical power. The peak occurs where the current-limited rising branch meets the voltage-limited falling branch. Supply mode: auto.</p>
       <div class="card toolbar">
@@ -1467,8 +1471,9 @@
       </div>
     </section>
 
-    <section id="calculations" class="panel" role="tabpanel">
-      <p class="section-kicker">Transparent model documentation</p>
+    <section id="reference" class="panel" role="tabpanel">
+      <p class="panel-jump"><a href="#jumpCalc">Calculations</a> · <a href="#jumpCite">How to cite</a></p>
+      <p class="section-kicker" id="jumpCalc">Transparent model documentation</p>
       <h2 class="section-title">Calculations &amp; implementation</h2>
       <p class="section-lede">Every equation used by the model is listed below in execution order. All internal calculations use SI units and absolute temperature.</p>
       <div class="calc-note"><strong>Model scope:</strong> zero-dimensional screening plus a steady axisymmetric finite-volume temperature field for a porous cylindrical envelope, optional gas gap, and enclosing wall. Preset ρ(T), Cp(T), and k(T) use piecewise-linear source data where available; marked fallback properties remain constant.</div>
@@ -1639,10 +1644,10 @@
           what the melting-point check on the Single Design tab is reading past: that check runs on the 0D T<sub>ss</sub>.
         </p>
       </details>
-    </section>
 
-    <section id="cite" class="panel" role="tabpanel">
-      <p class="section-kicker">Companion paper</p>
+      <hr class="panel-divider">
+
+      <p class="section-kicker" id="jumpCite">Companion paper</p>
       <h2 class="section-title">How to Cite</h2>
       <p class="section-lede">If this tool's approach is useful in your work, please cite the paper it's based on. Note that the tool is under active development; its results may change and should not be taken as ground truth.</p>
       <div class="cite-box">
@@ -3008,8 +3013,11 @@
         tab.setAttribute("aria-selected", String(active));
       });
       document.querySelectorAll(".panel").forEach((panel) => panel.classList.toggle("active", panel.id === name));
-      if (name === "compare") renderComparison();
-      if (name === "sweep") renderSweep();
+      // Panels are long enough now that a scroll position carried over from the
+      // previous tab lands the reader in the middle of a section they did not
+      // ask for. Start every tab at its own top.
+      window.scrollTo({ top: 0, behavior: "auto" });
+      if (name === "screening") { renderComparison(); renderSweep(); }
       if (name === "thermal2d") {
         sync2DImported();
         scheduleAutoSolve2D(0);
