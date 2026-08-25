@@ -127,6 +127,58 @@ export function elementK(material, tempK, x, cfg) {
   return Math.max(1e-6, maxwellEucken(kSolid, kGas, 1 - solidFraction));
 }
 
+// Radial variation of the solid fraction about its own mean.
+//
+// elementK() above explains why this repo refuses to reinterpret solidFraction
+// as a porosity by default: the parameter is overloaded, and feeding it to a
+// dispersed-pore closure moved the Wismann tube's 2D peak from 818 to 852 C
+// against an 800 C measurement. That objection is about the *mean*. It says
+// nothing about how the solid is distributed within the envelope, which is a
+// separate question and the one a current-density model needs answered: a
+// packed or foamed element is denser in some places than others, and current
+// crowds into the dense paths.
+//
+// So this knob is deliberately built to leave the mean alone. The shape
+//
+//   s(r) = 1 + c (2 (r/R)^2 - 1)
+//
+// integrates to exactly 1 over a cylinder, and it is divided by its own
+// discrete volume average as well, so the volume-averaged solid fraction is
+// identical to x.solidFraction on every mesh and the total solid volume, the
+// zero-D resistance and the injected power are all untouched. Only the
+// distribution changes. c > 0 puts the solid in the skin, c < 0 in the core.
+//
+// Because the profile is normalized about the mean, the ratio phi(r)/phi_mean
+// does not contain x.solidFraction at all: the contrast is an independent
+// input, not a reinterpretation of an overloaded one. It defaults to zero,
+// where every multiplier below is exactly 1 and the solver reproduces its
+// present behaviour bit for bit.
+//
+// Setting c != 0 is itself the assertion that the element is a genuine porous
+// body, so the same factor is applied to the thermal conductivity as to the
+// electrical conductivity; letting current redistribute while heat could not
+// would be the inconsistent choice. The exponent is Bruggeman's 3/2 for a
+// percolating solid phase, overridable through cfg.porosityExponent.
+export function porosityFactor2D(mesh, cfg) {
+  const count=mesh.nr*mesh.nz,fraction=new Float64Array(count).fill(1),multiplier=new Float64Array(count).fill(1);
+  const contrast=finite(cfg&&cfg.porosityContrast)?clamp(cfg.porosityContrast,-0.95,0.95):0;
+  const exponent=finite(cfg&&cfg.porosityExponent)?Math.max(0,cfg.porosityExponent):1.5;
+  if(contrast===0) return {fraction,multiplier,contrast,exponent,min:1,max:1};
+  const shape=(r)=>1+contrast*(2*(r/Math.max(mesh.radius,1e-30))**2-1);
+  let weighted=0,volume=0;
+  for(let j=mesh.activeStart;j<mesh.activeEnd;j++) for(let i=0;i<mesh.nElement;i++) {
+    const v=mesh.cellVolume(i,j);weighted+=shape(mesh.centers[i])*v;volume+=v;
+  }
+  const mean=weighted/Math.max(volume,1e-30);
+  let min=Infinity,max=-Infinity;
+  for(let j=mesh.activeStart;j<mesh.activeEnd;j++) for(let i=0;i<mesh.nElement;i++) {
+    const p=j*mesh.nr+i,ratio=Math.max(1e-6,shape(mesh.centers[i])/mean);
+    fraction[p]=ratio;multiplier[p]=Math.pow(ratio,exponent);
+    min=Math.min(min,ratio);max=Math.max(max,ratio);
+  }
+  return {fraction,multiplier,contrast,exponent,min,max};
+}
+
 export function validate2DConfig(cfg) {
   const errors = [];
   [["Wall conductivity",cfg.wallK],["Wall thickness",cfg.wallThickness],["Gap conductivity",cfg.gapK],["Maximum iterations",cfg.maxIter],["Temperature tolerance",cfg.tolerance]].forEach(([label,value]) => {
@@ -534,11 +586,13 @@ export function cellSigma2D(tempK, material) {
 //
 // Cells outside the element still occupy a slot in the flat index space so the
 // shared solver can run unchanged; they are given an identity row (V = 0).
-export function assembleElectrical2D(T, material, mesh) {
+export function assembleElectrical2D(T, material, mesh, porosity) {
   const count=mesh.nr*mesh.nz,diag=new Float64Array(count),rhs=new Float64Array(count),edges=[],faces=[],electrodes=[];
   const idx=(i,j)=>j*mesh.nr+i;
   const axialArea=(i)=>Math.PI*(mesh.edges[i+1]*mesh.edges[i+1]-mesh.edges[i]*mesh.edges[i]);
-  const sigmaAt=(i,j)=>cellSigma2D(T[j][i],material);
+  // The porosity multiplier is 1 everywhere unless cfg.porosityContrast is set.
+  const multiplier=porosity?porosity.multiplier:null;
+  const sigmaAt=(i,j)=>cellSigma2D(T[j][i],material)*(multiplier?multiplier[j*mesh.nr+i]:1);
   const pairG=(area,d1,s1,d2,s2)=>area/Math.max(d1/s1+d2/s2,1e-30);
   for(let j=mesh.activeStart;j<mesh.activeEnd;j++) for(let i=0;i<mesh.nElement;i++) {
     const p=idx(i,j),sp=sigmaAt(i,j);
@@ -576,8 +630,8 @@ export function assembleElectrical2D(T, material, mesh) {
 // injected power identical to what the rest of the solver already accounts for
 // (energy closure, supply limits, contact losses), so this change redistributes
 // heat without moving the energy budget: only the *shape* of the source is new.
-export function solveElectrical2D(T, material, mesh, targetCurrent, targetPower) {
-  const system=assembleElectrical2D(T,material,mesh),count=mesh.nr*mesh.nz;
+export function solveElectrical2D(T, material, mesh, targetCurrent, targetPower, porosity) {
+  const system=assembleElectrical2D(T,material,mesh,porosity),count=mesh.nr*mesh.nz;
   const zLo=mesh.zEdges[mesh.activeStart],zSpan=Math.max(mesh.zEdges[mesh.activeEnd]-zLo,1e-30);
   const guess=new Float64Array(count);
   for(let j=mesh.activeStart;j<mesh.activeEnd;j++) for(let i=0;i<mesh.nElement;i++) guess[j*mesh.nr+i]=(mesh.zCenters[j]-zLo)/zSpan;
@@ -635,6 +689,9 @@ export function assemble2DSystem(T, x, g, cfg, material, mesh, op) {
   const idx=(i,j)=>j*mesh.nr+i;
   const axialArea=(i)=>Math.PI*(mesh.edges[i+1]*mesh.edges[i+1]-mesh.edges[i]*mesh.edges[i]);
   const qVol=op.pBulk/g.envelopeVolume;
+  // Same radial solid-fraction multiplier the electrical solve uses; all ones
+  // unless cfg.porosityContrast is set, so this is a no-op by default.
+  const porosity=porosityFactor2D(mesh,cfg),kAt=(i,j,code)=>cellK2D(code,T[j][i],material,cfg,x)*porosity.multiplier[j*mesh.nr+i];
   const addFace=(p,q,G)=>{diag[p]+=G;diag[q]+=G;edges.push([p,q,G]);};
   const addBoundary=(p,G,Tb)=>{if(G<=0)return;diag[p]+=G;rhs[p]+=G*Tb;boundaryTerms.push([p,G,Tb]);};
   const pairConductance=(area,d1,k1,d2,k2,code1,code2)=>{
@@ -674,7 +731,7 @@ export function assemble2DSystem(T, x, g, cfg, material, mesh, op) {
   const flowRows=Array.from({length:mesh.nz},(_,j)=>gasFlowCells2D(mesh,j));
   const flowConnected=flowRows.every(cells=>cells.length>0);
   for(let j=0;j<mesh.nz;j++) for(let i=0;i<mesh.nr;i++) {
-    const p=idx(i,j),code=mesh.materialAt(i,j),kp=cellK2D(code,T[j][i],material,cfg,x);
+    const p=idx(i,j),code=mesh.materialAt(i,j),kp=kAt(i,j,code);
     // cfg.verificationSource(r, z) [W/m³] replaces the Joule source over the whole
     // domain. Only for code verification (manufactured solutions); the page never
     // sets it, and energy-closure reporting assumes the ordinary Joule source.
@@ -683,7 +740,7 @@ export function assemble2DSystem(T, x, g, cfg, material, mesh, op) {
     // electrical field solve; it already sums to op.pBulk.
     else if(code===0) rhs[p]+=op.qCell?op.qCell[p]:qVol*mesh.cellVolume(i,j);
     if(i<mesh.nr-1) {
-      const q=idx(i+1,j),face=mesh.edges[i+1],area=2*Math.PI*face*(mesh.zEdges[j+1]-mesh.zEdges[j]),nextCode=mesh.materialAt(i+1,j),kn=cellK2D(nextCode,T[j][i+1],material,cfg,x);
+      const q=idx(i+1,j),face=mesh.edges[i+1],area=2*Math.PI*face*(mesh.zEdges[j+1]-mesh.zEdges[j]),nextCode=mesh.materialAt(i+1,j),kn=kAt(i+1,j,nextCode);
       const G=pairConductance(area,face-mesh.centers[i],kp,mesh.centers[i+1]-face,kn,code,nextCode);
       addFace(p,q,G);
       if(code===3&&nextCode===2)addInterfaceRadiation(q,nextCode,T[j][i+1],area,mesh.centers[i+1]-face,kn);
@@ -693,7 +750,7 @@ export function assemble2DSystem(T, x, g, cfg, material, mesh, op) {
       addBoundary(p,kp*area/Math.max(mesh.edges[mesh.nr]-mesh.centers[i],1e-30),x.ambientK);
     }
     if(j<mesh.nz-1) {
-      const q=idx(i,j+1),area=axialArea(i),face=mesh.zEdges[j+1],nextCode=mesh.materialAt(i,j+1),kn=cellK2D(nextCode,T[j+1][i],material,cfg,x),elementGas=(code===0&&nextCode===4)||(code===4&&nextCode===0);
+      const q=idx(i,j+1),area=axialArea(i),face=mesh.zEdges[j+1],nextCode=mesh.materialAt(i,j+1),kn=kAt(i,j+1,nextCode),elementGas=(code===0&&nextCode===4)||(code===4&&nextCode===0);
       if(elementGas&&cfg.endMode==="electrode") {
         const elementP=code===0?p:q;
         addBoundary(elementP,cfg.endH*area,cfg.endK);
@@ -738,7 +795,7 @@ export function assemble2DSystem(T, x, g, cfg, material, mesh, op) {
     const elementHalf=Math.max(elementRadius-mesh.centers[iElement],0),wallHalf=Math.max(mesh.centers[iWall]-wallRadius,0);
     for(let j=mesh.activeStart;j<mesh.activeEnd;j++) {
       const p=idx(iElement,j),q=idx(iWall,j),hGapRad=gapRadiationCoefficient(T[j][iElement],T[j][iWall],x.emissivity,cfg.wallEmissivity,elementRadius,wallRadius);
-      const kElement=cellK2D(0,T[j][iElement],material,cfg,x),kWall=cellK2D(2,T[j][iWall],material,cfg,x);
+      const kElement=kAt(iElement,j,0),kWall=kAt(iWall,j,2);
       const resistance=elementHalf/Math.max(kElement,1e-30)+1/Math.max(hGapRad,1e-30)+wallHalf/Math.max(kWall,1e-30);
       addFace(p,q,areaPerRow/Math.max(resistance,1e-30));
     }
@@ -843,9 +900,10 @@ export function solveThermal2D(x, zeroD, cfg, material) {
   // a solved potential field. Off by default, so the page's numbers only change
   // once it is switched on.
   let electrical=null;
+  const porosity=porosityFactor2D(mesh,cfg);
   const withCurrentField=(point)=>{
     if(!cfg.currentField) return point;
-    electrical=solveElectrical2D(T,material,mesh,point.current,point.pBulk);
+    electrical=solveElectrical2D(T,material,mesh,point.current,point.pBulk,porosity);
     return {...point,qCell:electrical.qCell};
   };
   let maxStep=Infinity,outer=0,totalLinear=0,linearResidual=Infinity,op=withCurrentField(operating2DAt(ambientK,x,g,cfg,material));
@@ -881,5 +939,5 @@ export function solveThermal2D(x, zeroD, cfg, material) {
   const tMin=Math.min(...element),tMax=Math.max(...element),mid=mesh.activeStart+Math.floor(mesh.nActiveZ/2),bottomRow=mesh.activeStart,topRow=mesh.activeEnd-1,loss=boundaryLoss2D(T,x,g,cfg,material,mesh,op),boundaryLoss=loss.total;
   const closure=Math.abs(op.pBulk-boundaryLoss)/Math.max(op.pBulk,1e-12),representedVolumeError=Math.abs(mesh.elementVolume-g.envelopeVolume)/g.envelopeVolume;
   const heCoolingUpper=Math.max(0,HE_CAPACITY_RATE*(avgK-x.gasK));
-  return{errors:[],x,zeroD,cfg,material,g,mesh,T,op,avgK,tMin,tMax,deltaT:tMax-tMin,center:T[mid][0],side:T[mid][mesh.nElement-1],bottom:T[bottomRow][0],top:T[topRow][0],wallInner:T[mid][mesh.nElement+mesh.nGap],wallOuter:T[mid][mesh.nElement+mesh.nGap+mesh.nWall-1],boundaryLoss,staticBoundaryLoss:loss.staticLoss,closure,representedVolumeError,heCapacityRate:HE_CAPACITY_RATE,heCooling:loss.gasAdvective,heCoolingUpper,heOutletK:loss.gasOutletK,heFlowConnected:loss.flowConnected,iterations:outer,linearIterations:totalLinear,linearResidual,residual:maxStep,converged:maxStep<=cfg.tolerance,targetReached:avgK>=x.targetK,qVol:op.pBulk/g.envelopeVolume,electrical};
+  return{errors:[],x,zeroD,cfg,material,g,mesh,T,op,avgK,tMin,tMax,deltaT:tMax-tMin,center:T[mid][0],side:T[mid][mesh.nElement-1],bottom:T[bottomRow][0],top:T[topRow][0],wallInner:T[mid][mesh.nElement+mesh.nGap],wallOuter:T[mid][mesh.nElement+mesh.nGap+mesh.nWall-1],boundaryLoss,staticBoundaryLoss:loss.staticLoss,closure,representedVolumeError,heCapacityRate:HE_CAPACITY_RATE,heCooling:loss.gasAdvective,heCoolingUpper,heOutletK:loss.gasOutletK,heFlowConnected:loss.flowConnected,iterations:outer,linearIterations:totalLinear,linearResidual,residual:maxStep,converged:maxStep<=cfg.tolerance,targetReached:avgK>=x.targetK,qVol:op.pBulk/g.envelopeVolume,electrical,porosity};
 }

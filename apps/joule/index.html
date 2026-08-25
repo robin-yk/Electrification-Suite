@@ -797,6 +797,8 @@
     .t2d-colorbar { width:min(100%,420px); margin:10px auto 0; }
     .t2d-gradient { height:16px; border:1px solid #a9b4bc; border-radius:3px; background:linear-gradient(90deg,#102a43 0%,#2878a5 25%,#58b8b1 50%,#ebbe46 75%,#d33737 100%); }
     .t2d-scale { display:flex; justify-content:space-between; color:var(--muted); font-size:15px; margin-top:5px; }
+    .t2d-field-pick { display:flex; align-items:center; gap:7px; color:var(--muted); font-size:15px; }
+    .t2d-field-pick select { font:inherit; color:var(--navy); padding:3px 6px; border:1px solid #a9b4bc; border-radius:4px; background:#fff; }
     .t2d-hover { min-height:28px; margin-top:10px; color:var(--navy); font-size:15px; font-weight:700; text-align:center; }
     .t2d-material-key { display:flex; gap:14px; flex-wrap:wrap; justify-content:center; color:var(--muted); font-size:14px; margin-top:10px; }
     .t2d-material-key i { display:inline-block; width:13px; height:13px; border:2px solid currentColor; vertical-align:-2px; margin-right:4px; }
@@ -1194,9 +1196,9 @@
         <div class="t2d-results">
           <div class="t2d-map-grid">
             <article class="card t2d-canvas-shell">
-              <div class="card-header"><h3 id="t2dMapTitle">Temperature Field</h3><span id="t2dMeshLabel" class="context-note">Fixed 60 × 60 mesh · solve to update</span></div>
+              <div class="card-header"><h3 id="t2dMapTitle">Temperature Field</h3><div class="t2d-field-pick"><label for="t2dFieldSelect">Show</label><select id="t2dFieldSelect"><option value="temperature" selected>Temperature</option><option value="current">Current density |J|</option><option value="heating">Volumetric heating q‴</option></select></div><span id="t2dMeshLabel" class="context-note">Fixed 60 × 60 mesh · solve to update</span></div>
               <canvas id="thermalMap" width="600" height="600" aria-label="Axisymmetric element, full-height reactor wall, helium, and surrounding-air temperature field"></canvas>
-              <div class="t2d-colorbar"><div class="t2d-gradient"></div><div class="t2d-scale"><span id="t2dScaleMin">—</span><span>Temperature (°C)</span><span id="t2dScaleMax">—</span></div></div>
+              <div class="t2d-colorbar"><div class="t2d-gradient"></div><div class="t2d-scale"><span id="t2dScaleMin">—</span><span id="t2dScaleLabel">Temperature (°C)</span><span id="t2dScaleMax">—</span></div></div>
               <div id="t2dHover" class="t2d-hover">He flows from top to bottom at 50 sccm. Move over a cell to inspect x, z, material, and temperature.</div>
               <div class="t2d-material-key"><span style="color:#102a43"><i></i>Element boundary</span><span style="color:#b46714"><i></i>Gap boundary</span><span style="color:#64717d"><i></i>Full-height wall</span><span style="color:#2878a5"><i></i>He process gas</span><span style="color:#8bb9cf"><i></i>Surrounding air</span></div>
             </article>
@@ -1289,6 +1291,8 @@
               <div class="field"><label for="t2dEndH">End heat-transfer coefficient</label><div class="control-row"><input id="t2dEndH" type="number" min="0" step="any" value="250"><span class="unit">W/m²·K</span></div></div>
               <div class="field full"><label for="t2dContactRho">Electrical contact resistivity, ρ<sub>c</sub></label><div class="control-row"><input id="t2dContactRho" type="number" min="0" step="any" value="0"><span class="unit">Ω·m² per end</span></div></div>
               <div class="field full"><span class="context-note">R<sub>c</sub> = ρ<sub>c</sub>/A<sub>eff</sub>. Contact power is reported separately and is excluded from the element heat source.</span></div>
+              <div class="field full"><label for="t2dPorosityContrast">Radial solid-fraction contrast, c</label><div class="control-row"><input id="t2dPorosityContrast" type="number" min="-0.95" max="0.95" step="any" value="0"><span class="unit">−0.95 … 0.95</span></div></div>
+              <div class="field full"><span class="context-note">Redistributes the solid radially without changing its mean: φ(r) ∝ 1 + c[2(r/R)²−1], renormalized so the volume-averaged solid fraction stays exactly the value set above. c &gt; 0 packs the solid into the skin, c &lt; 0 into the core; both σ and k follow it with a Bruggeman 3/2 exponent. At c = 0 the solve is unchanged. Set this only when the element really is a porous body: the mean solid fraction is deliberately <em>not</em> reinterpreted as a porosity elsewhere in this model.</span></div>
             </div>
           </article>
 
@@ -1711,6 +1715,11 @@
         endK: kelvin(num("t2dEndC")),
         endH: num("t2dEndH"),
         contactRho: num("t2dContactRho"),
+        porosityContrast: clamp(num("t2dPorosityContrast"), -0.95, 0.95),
+        // The potential solve costs about 3% of the run and reproduces the
+        // uniform source exactly when sigma is uniform, so it is always on:
+        // the current-density and heating maps are then always available.
+        currentField: true,
         maxIter: clamp(Math.round(num("t2dMaxIter")), 10, 500),
         tolerance: num("t2dTolerance")
       };
@@ -1752,6 +1761,33 @@
       return `rgb(${r},${g},${b})`;
     }
 
+    // The 2D map can show any cell-centered field. Temperature covers the whole
+    // domain; the electrical fields exist only inside the element, so their
+    // cells are the only ones colored and the rest is drawn in a neutral tone
+    // that still lets the geometry read.
+    const MAP_FIELDS={
+      temperature:{
+        title:"Temperature Field", scale:"Temperature (°C)", elementOnly:false,
+        valueAt:(r,i,j)=>celsius(r.T[j][i]),
+        text:(v)=>`${format(v,1)} °C`,
+        describe:(lo,hi,r)=>`${r.material.name} axisymmetric temperature field with a full-height reactor wall and helium flowing from top to bottom, from ${format(lo,1)} to ${format(hi,1)} degrees Celsius.`
+      },
+      current:{
+        title:"Current-Density Field", scale:"Current density (A/cm²)", elementOnly:true,
+        valueAt:(r,i,j)=>r.electrical?r.electrical.jMag[j*r.mesh.nr+i]/1e4:0,
+        text:(v)=>`${format(v,4)} A/cm²`,
+        describe:(lo,hi,r)=>`${r.material.name} current-density magnitude inside the element, from ${format(lo,4)} to ${format(hi,4)} amperes per square centimetre.`
+      },
+      heating:{
+        title:"Volumetric Heating Field", scale:"Volumetric heating (MW/m³)", elementOnly:true,
+        valueAt:(r,i,j)=>r.electrical?r.electrical.qCell[j*r.mesh.nr+i]/r.mesh.cellVolume(i,j)/1e6:0,
+        text:(v)=>`${format(v,4)} MW/m³`,
+        describe:(lo,hi,r)=>`${r.material.name} volumetric Joule heating inside the element, from ${format(lo,4)} to ${format(hi,4)} megawatts per cubic metre.`
+      }
+    };
+    let current2DField="temperature";
+    function activeMapField() { return MAP_FIELDS[current2DField]||MAP_FIELDS.temperature; }
+
     function draw2D(result) {
       const canvas=$("thermalMap"),nr=result.mesh.nr,nz=result.mesh.nz,physicalWidth=2*result.mesh.domainRadius,physicalHeight=result.mesh.domainHeight;
       // Equal x-z scale keeps the geometry undistorted, but a long, thin element (high L/D)
@@ -1772,10 +1808,21 @@
       canvas.style.height=`${Math.round(canvas.height*displayScale)}px`;
       const ctx=canvas.getContext("2d"),cx=canvas.width/2,oy=(canvas.height-plotHeight)/2,ch=result.mesh.dz*scale;
       canvas._physicalMap={scale,cx,oy,plotHeight};
-      const all=result.T.flat(),lo=Math.min(...all),hi=Math.max(...all),span=Math.max(1e-9,hi-lo);
+      const spec=activeMapField(),shown=(i,j)=>!spec.elementOnly||result.mesh.materialAt(i,j)===0;
+      let lo=Infinity,hi=-Infinity;
+      for(let j=0;j<nz;j++) for(let i=0;i<nr;i++) {
+        if(!shown(i,j))continue;
+        const v=spec.valueAt(result,i,j);lo=Math.min(lo,v);hi=Math.max(hi,v);
+      }
+      if(!Number.isFinite(lo)){lo=0;hi=0;}
+      // A genuinely uniform field (constant resistivity, no porosity contrast)
+      // has a range at the level of round-off. Stretching the palette across it
+      // paints pure noise, so detect that case and draw one flat mid-tone.
+      const uniform=(hi-lo)<=1e-9*Math.max(Math.abs(hi),Math.abs(lo),1e-30);
+      const span=Math.max(1e-30,hi-lo);
       ctx.clearRect(0,0,canvas.width,canvas.height);
       for(let j=0;j<nz;j++) for(let i=0;i<nr;i++) {
-        const fill=thermalColor((result.T[j][i]-lo)/span),inner=result.mesh.edges[i]*scale,outer=result.mesh.edges[i+1]*scale,y=oy+(nz-1-j)*ch;
+        const fill=shown(i,j)?thermalColor(uniform?0.5:(spec.valueAt(result,i,j)-lo)/span):"#dfe5ea",inner=result.mesh.edges[i]*scale,outer=result.mesh.edges[i+1]*scale,y=oy+(nz-1-j)*ch;
         ctx.fillStyle=fill;
         ctx.fillRect(cx-outer,y,outer-inner+0.3,ch+0.3);
         ctx.fillRect(cx+inner,y,outer-inner+0.3,ch+0.3);
@@ -1793,9 +1840,11 @@
       ctx.strokeStyle="rgba(255,255,255,.78)";ctx.lineWidth=1.4;ctx.setLineDash([7,6]);ctx.beginPath();ctx.moveTo(cx,oy);ctx.lineTo(cx,oy+plotHeight);ctx.stroke();ctx.setLineDash([]);
       const elementTopY=oy+(physicalHeight/2-result.g.L/2)*scale,flowX=cx,flowTop=oy+1.2*ch,flowBottom=Math.max(flowTop+28,elementTopY-1.2*ch);
       ctx.save();ctx.lineCap="round";ctx.strokeStyle="rgba(255,255,255,.92)";ctx.lineWidth=8;ctx.beginPath();ctx.moveTo(flowX,flowTop);ctx.lineTo(flowX,flowBottom);ctx.stroke();ctx.strokeStyle="#102a43";ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(flowX,flowTop);ctx.lineTo(flowX,flowBottom);ctx.stroke();ctx.fillStyle="#102a43";ctx.beginPath();ctx.moveTo(flowX,flowBottom+12);ctx.lineTo(flowX-9,flowBottom-3);ctx.lineTo(flowX+9,flowBottom-3);ctx.closePath();ctx.fill();ctx.font="500 17px Roboto, Arial";ctx.textAlign="left";ctx.fillText("He 50 sccm",flowX+15,flowTop+21);ctx.font="15px Roboto, Arial";ctx.fillText("top → bottom",flowX+15,flowTop+42);ctx.restore();
-      $("t2dScaleMin").textContent=`${format(celsius(lo),1)} °C`;
-      $("t2dScaleMax").textContent=`${format(celsius(hi),1)} °C`;
-      canvas.setAttribute("aria-label",`${result.material.name} axisymmetric temperature field with a full-height reactor wall and helium flowing from top to bottom, from ${format(celsius(lo),1)} to ${format(celsius(hi),1)} degrees Celsius.`);
+      $("t2dMapTitle").textContent=spec.title;
+      $("t2dScaleLabel").textContent=spec.scale;
+      $("t2dScaleMin").textContent=uniform?"uniform":spec.text(lo);
+      $("t2dScaleMax").textContent=spec.text(uniform?(lo+hi)/2:hi);
+      canvas.setAttribute("aria-label",spec.describe(lo,hi,result));
     }
 
     function render2DEquations(result) {
@@ -1932,7 +1981,9 @@
       for(let index=0;index<r.mesh.nr;index++)if(radial<r.mesh.edges[index+1] || index===r.mesh.nr-1){i=index;break;}
       const j=clamp(Math.floor((pointerZ+r.mesh.domainHeight/2)/r.mesh.dz),0,r.mesh.nz-1);
       const x=(pointerX<0?-1:1)*r.mesh.centers[i],z=r.mesh.zCenters[j],code=r.mesh.materialAt(i,j);
-      $("t2dHover").textContent=`x = ${format(x*1000,3)} mm · z = ${format(z*1000,3)} mm · ${material2DName(code,r)} · ${fmtTemp(r.T[j][i])}`;
+      const spec=activeMapField();
+      const extra=spec.elementOnly?(code===0?` · ${spec.text(spec.valueAt(r,i,j))}`:" · outside the element"):"";
+      $("t2dHover").textContent=`x = ${format(x*1000,3)} mm · z = ${format(z*1000,3)} mm · ${material2DName(code,r)} · ${fmtTemp(r.T[j][i])}${extra}`;
     }
 
     function drawEmpty2D() {
@@ -2804,11 +2855,16 @@
         }
         updateAll();
       });
-      ["t2dWallK","t2dWallThickness","t2dWallEps","t2dGap","t2dGapK","t2dEndMode","t2dEndC","t2dEndH","t2dContactRho","t2dMaxIter","t2dTolerance"]
+      ["t2dWallK","t2dWallThickness","t2dWallEps","t2dGap","t2dGapK","t2dEndMode","t2dEndC","t2dEndH","t2dContactRho","t2dPorosityContrast","t2dMaxIter","t2dTolerance"]
         .forEach((id)=>$(id).addEventListener("input",updateAll));
       $("solve2D").addEventListener("click",()=>solveSelected2D(false));
       $("export2D").addEventListener("click",exportCurrent2D);
       $("thermalMap").addEventListener("mousemove",inspect2DCell);
+      $("t2dFieldSelect").addEventListener("change",(event)=>{
+        current2DField=event.target.value;
+        // Purely a view change: the fields are already in the solved result.
+        if(current2DResult)draw2D(current2DResult);
+      });
       $("material").selectedIndex = 1;
       loadMaterial(1);
       updateAll();

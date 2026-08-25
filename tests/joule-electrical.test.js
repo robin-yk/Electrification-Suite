@@ -163,3 +163,67 @@ test("cfg.currentField is off by default and does not move the answer when sigma
   assert.ok(Math.abs(withField.avgK - plain.avgK) < 1e-6,
     `uniform sigma changed the answer: ${plain.avgK} -> ${withField.avgK}`);
 });
+
+// ---------------------------------------------------------------- porosity
+// cfg.porosityContrast redistributes the solid fraction radially without
+// touching its mean. The mean is what elementK() deliberately refuses to
+// reinterpret, so these tests pin the two properties that keep the two
+// decisions independent: contrast 0 changes nothing at all, and any contrast
+// preserves the volume-averaged solid fraction exactly.
+import { porosityFactor2D } from "../apps/joule/solver.js";
+
+test("porosityContrast = 0 leaves every multiplier exactly one", () => {
+  const x = makeInput("SiSiC (Si-infiltrated SiC)");
+  const mesh = build2DMesh(geometry(x), x.enclosure);
+  for (const cfg of [x.enclosure, { ...x.enclosure, porosityContrast: 0 }]) {
+    const porosity = porosityFactor2D(mesh, cfg);
+    for (let n = 0; n < porosity.multiplier.length; n++) {
+      assert.equal(porosity.multiplier[n], 1);
+      assert.equal(porosity.fraction[n], 1);
+    }
+  }
+});
+
+test("a radial contrast preserves the volume-averaged solid fraction", () => {
+  const x = makeInput("SiSiC (Si-infiltrated SiC)");
+  const mesh = build2DMesh(geometry(x), x.enclosure);
+  for (const contrast of [-0.6, -0.25, 0.25, 0.6]) {
+    const porosity = porosityFactor2D(mesh, { ...x.enclosure, porosityContrast: contrast });
+    let weighted = 0, volume = 0;
+    for (let j = mesh.activeStart; j < mesh.activeEnd; j++) {
+      for (let i = 0; i < mesh.nElement; i++) {
+        const v = mesh.cellVolume(i, j);
+        weighted += porosity.fraction[j * mesh.nr + i] * v;
+        volume += v;
+      }
+    }
+    const mean = weighted / volume;
+    assert.ok(Math.abs(mean - 1) < 1e-12, `contrast ${contrast} moved the mean solid fraction to ${mean}`);
+    assert.ok(porosity.max > porosity.min, "a non-zero contrast must actually vary the profile");
+  }
+});
+
+test("contrast 0 reproduces the plain solve bit for bit", () => {
+  const x = makeInput("SiSiC (Si-infiltrated SiC)");
+  const plainCfg = { ...x.enclosure, currentField: true };
+  const zeroCfg = { ...x.enclosure, currentField: true, porosityContrast: 0 };
+  const plain = solveThermal2D(x, calculate({ ...x, enclosure: plainCfg }), plainCfg, x.material);
+  const zero = solveThermal2D(x, calculate({ ...x, enclosure: zeroCfg }), zeroCfg, x.material);
+  assert.equal(zero.avgK, plain.avgK);
+  assert.equal(zero.tMax, plain.tMax);
+});
+
+test("solid packed into the skin pulls the current out of the core", () => {
+  const x = makeInput("SiSiC (Si-infiltrated SiC)");
+  const mesh = build2DMesh(geometry(x), x.enclosure);
+  const T = uniformField(mesh, 1200); // uniform sigma, so only the porosity varies
+  const jMid = mesh.activeStart + Math.floor(mesh.nActiveZ / 2);
+  const ratioFor = (contrast) => {
+    const porosity = porosityFactor2D(mesh, { ...x.enclosure, porosityContrast: contrast });
+    const field = solveElectrical2D(T, x.material, mesh, 12, 500, porosity);
+    return field.jMag[jMid * mesh.nr + mesh.nElement - 1] / field.jMag[jMid * mesh.nr];
+  };
+  assert.ok(Math.abs(ratioFor(0) - 1) < 1e-10, "uniform porosity must give uniform current");
+  assert.ok(ratioFor(0.5) > 1.5, `skin-dense element should crowd current into the skin, got ${ratioFor(0.5)}`);
+  assert.ok(ratioFor(-0.5) < 0.7, `core-dense element should crowd current into the core, got ${ratioFor(-0.5)}`);
+});
