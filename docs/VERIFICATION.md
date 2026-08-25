@@ -167,6 +167,121 @@ differs from the 120×240 grid by 22.2 K at the bed center (2.9% of the rise),
 temperature, which is what the experimental calibration constrains, is
 grid-insensitive.
 
+## When the 0D screening model can be trusted (`tools/verification/zerod-*.mjs`)
+
+A model-reduction study, not verification and not validation: it measures when
+the lumped 0D temperature agrees with the resolved field, so it inherits the 2D
+solver's credibility and has to establish an anchor before it sweeps. Run with
+`npm run verify:zerod-limit` and `npm run verify:zerod-sweep`.
+
+### The gap is two quantities, not one
+
+Driving Bi_R to 2.3e-6 by scaling conductivity 1000x leaves the element
+isothermal — spread 0.05 K — while the 2D mean still sits **28.72 K above** the
+0D steady temperature. An offset that outlives the isothermal limit is not a
+lumping error, so the difference between the models separates:
+
+| component | definition | scales with Bi_R |
+| --- | --- | --- |
+| offset | `T_avg(2D) − T_ss(0D)` | no |
+| spread | `T_max(2D) − T_avg(2D)` | yes |
+
+Interrogating both loss models at the *same* temperature divides out the
+operating point and names the channel. At the isothermal limit the 0D network
+claims 554.28 W where the resolved field carries 532.23 W (4.14%):
+
+| path | 0D | 2D |
+| --- | --- | --- |
+| side | 505.03 W | — |
+| end | 47.90 W | — |
+| static total | 552.93 W | 532.12 W |
+| He advective | 1.352 W | 0.114 W |
+
+94% of the discrepancy is the static path. The 0D end term is the suspect: in 2D
+the element ends reach ambient through the He region, a series resistance the
+lumped network has no equivalent for. The advective terms differ twelvefold but
+are too small to matter at this operating point.
+
+**Consequence.** A criterion fitted to `peak − 0D` inherits a ~29 K floor and
+would report the lumped model as unsafe at Bi_R = 0, which says nothing about
+lumping. The criterion below is stated on the spread; the floor is a separate
+finding that has to be quoted beside it.
+
+### Control: the closed form is reproduced exactly
+
+For a cylinder of radius R with uniform volumetric generation — which is what the
+solver applies, since `qVol = pBulk / envelopeVolume` carries no local ρ(T)
+coupling — the hand derivation gives
+
+    centre-to-surface / surface-to-ambient  =  h R / (2k)  =  Bi_R / 2
+
+Scanning k over 32× returns a measured ratio that is a **constant 0.93333** of
+that. The constancy is the tell: cell-centred unknowns are sampled h/2 inside
+each boundary, which shortens the drop by exactly `1 − 1/N`, and N = 15 here.
+
+| test | raw | corrected for `1 − 1/N` |
+| --- | --- | --- |
+| parabola, `(centre−surface) / (qR²/4k)` | 0.93260 | **0.99921** |
+| ratio, through-origin slope on Bi_R/2 | 0.93333 | **0.99999** |
+
+The apparent 7% deficit is where the unknowns sit, not solver error.
+
+### The sweep
+
+Bi_R is scanned one factor at a time — k, emissivity and drive current
+separately — with Bi_R computed from the 2D solve's own side loss and surface
+temperature so both sides of the ratio refer to the same operating point.
+
+| stage | what varies | slope on Bi_R/2 | R² | n | Bi_R range |
+| --- | --- | --- | --- | --- | --- |
+| 3a | k, ε, current (SiC, L/D 30) | 0.9374 | 1.0000 | 48 | 2.9e-4 … 5.8e-2 |
+| 3b | 4 materials, power-matched | 0.9374 | 1.0000 | 12 | 2.6e-3 … 3.5e-2 |
+
+Both land on the same 0.937 the control explained, across a 200× range of Bi_R
+and materials whose conductivity spans 11 to 174 W/m·K. **Corrected for
+sampling, `spread / rise = Bi_R / 2` holds exactly and is material-free.**
+
+### Aspect ratio is a second group
+
+The hypothesis that Bi_R alone predicts is **rejected**. Holding Bi_R by
+construction and sweeping L/D:
+
+| L/D | 1.5 | 4 | 10 | 30 | 60 |
+| --- | --- | --- | --- | --- | --- |
+| f(L/D) | 0.649 | 0.799 | 0.939 | 1.000 | 0.9995 |
+
+f rises monotonically and saturates near L/D ≈ 20 — a factor of 1.54 across the
+range. Short elements shed heat axially, which relieves the radial gradient the
+lumped model cannot see. So the law carries a correction:
+
+    spread / rise  =  (Bi_R / 2) · f(L/D)
+
+Because f ≤ 1 everywhere swept, **Bi_R/2 remains a conservative upper bound**,
+which is the form worth applying:
+
+    Bi_R  ≤  2 ΔT_allowed / (T_avg − T_ambient)
+
+At a 2000 K rise, holding the unseen spread under 25 K needs Bi_R < 0.025. The
+textbook Bi < 0.1 rule — derived for transient cooling of an initially uniform
+body, not for steady internal generation — admits 5% of the rise, i.e. 100 K at
+that same operating point, and is **four times too permissive here**.
+
+### What this does not license
+
+Across the sweep the offset is frequently *larger* than the spread: 39.9 K
+against 5.2 K at Bi_R = 3.9e-4, and it changes sign (−35.6 K) at low emissivity
+with a high drive. In the low-Bi regime where lumping is safe, the residual 0D
+error is dominated by the loss-model difference, not by lumping. **A Biot
+criterion is necessary and not sufficient**, and must be quoted with the offset.
+
+Two reporting defects were found and fixed inside this study, both of the same
+shape — a summary statistic agreeing with the hypothesis while the rows
+underneath disagreed. A single fit through every aspect ratio averaged the f
+trend away and printed a pass; and `MATERIALS.find(m => m.name === "Kanthal
+A-1")` missed an entry reading `"Kanthal A-1 (FeCrAl)"` and dropped a material in
+silence, the fit returning n = 9 instead of 12 with nothing said. Both stages now
+print every point and name every drop.
+
 ## Continuous guards
 
 `tests/verification.test.js` (run by `npm test` and CI) keeps the headline

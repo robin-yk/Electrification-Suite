@@ -105,12 +105,16 @@ export function stage3a({ quick = false } = {}) {
 // carried information. Match the dissipated power instead, solving I = sqrt(P/R)
 // from each material's own resistance at the target.
 export function stage3b({ quick = false, watts = 400 } = {}) {
+  // Matched on a prefix, and a miss is reported rather than skipped. Spelling
+  // one of these "Kanthal A-1" against a table entry reading "Kanthal A-1
+  // (FeCrAl)" dropped that material from the study in silence -- the fit simply
+  // came back with n = 9 instead of 12 and nothing said why.
   const names = ["SiC", "Molybdenum", "Kanthal A-1", "Tungsten"];
   const emissivities = quick ? [0.8] : [0.3, 0.6, 0.9];
   const rows = [];
   for (const name of names) {
-    const material = MATERIALS.find((m) => m.name === name);
-    if (!material) continue;
+    const material = MATERIALS.find((m) => m.name === name || m.name.startsWith(`${name} `));
+    if (!material) { rows.push({ label: name, failed: `no material named "${name}" in MATERIALS` }); continue; }
     for (const emissivity of emissivities) {
       const probe = calculate(input({ material, emissivity }));
       if (probe.errors.length) { rows.push({ label: `${name} ε${emissivity}`, failed: probe.errors.join("; ") }); continue; }
