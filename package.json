@@ -27,6 +27,7 @@
     "test": "node --test tests/joule-solver.test.js tests/microwave-solver.test.js tests/rphcjh-solver.test.js tests/verification.test.js",
     "test:e2e": "playwright test",
     "verify:joule": "node tools/verification/joule.mjs",
+    "verify:crosscheck": "node tools/verification/crosscheck.mjs",
     "verify:microwave": "node tools/verification/microwave.mjs"
   },
   "devDependencies": {

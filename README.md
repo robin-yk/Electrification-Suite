@@ -44,6 +44,8 @@ Both run in CI on every push, together with a build that verifies every page's f
 
 Numerical verification of the 2D solvers (manufactured solutions, analytic benchmarks, and grid-convergence studies) is documented in [`docs/VERIFICATION.md`](docs/VERIFICATION.md) and reproducible via `npm run verify:joule` / `npm run verify:microwave`.
 
+Physical validation against published reactors is separate from that code verification: `npm run verify:crosscheck` regenerates every number in the Joule tool's cross-check tables headlessly, including the 0D / 2D / experiment comparison. Add `-- --write` to refresh `apps/joule/data/crosscheck-2d.json`, the precomputed 2D field solves the page loads instead of solving live.
+
 ## Offline pipelines and work in progress
 
 `tools/` holds Python and Node pipelines that run offline or in CI, never in the browser. The site only ever ships their committed output.

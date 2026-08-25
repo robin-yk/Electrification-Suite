@@ -1,0 +1,49 @@
+{
+  "generatedBy": "tools/verification/crosscheck.mjs",
+  "enclosure": {
+    "wallMaterial": "quartz",
+    "wallK": 1.4,
+    "wallThickness": 0.001,
+    "wallEmissivity": 0.93,
+    "gap": 0.0005,
+    "gapK": 0.03,
+    "endMode": "ambient",
+    "endK": 293.15,
+    "endH": 250,
+    "contactRho": 0,
+    "maxIter": 160,
+    "tolerance": 0.0001
+  },
+  "cases": {
+    "wismann": {
+      "point": "main",
+      "avgC": 811.6616316816879,
+      "maxC": 818.1444166171724,
+      "minC": 766.0432454658786,
+      "deltaT": 52.101171151293784,
+      "closure": 5.882308512014956e-8,
+      "converged": true,
+      "grid": "30x60"
+    },
+    "zheng": {
+      "point": "v1410",
+      "avgC": 776.9721107751722,
+      "maxC": 792.7415657931793,
+      "minC": 749.6545760753484,
+      "deltaT": 43.08698971783099,
+      "closure": 1.935831063862108e-8,
+      "converged": true,
+      "grid": "30x60"
+    },
+    "kwak": {
+      "point": "v20",
+      "avgC": 1303.6784162137537,
+      "maxC": 1375.5807037510208,
+      "minC": 1140.2779781799604,
+      "deltaT": 235.30272557106036,
+      "closure": 2.2118042138236217e-8,
+      "converged": true,
+      "grid": "30x60"
+    }
+  }
+}
