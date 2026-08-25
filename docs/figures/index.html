@@ -112,9 +112,9 @@ footer{margin-top:72px;padding-top:20px;border-top:1px solid var(--rule-strong);
 </style>
 <div class="wrap">
 <header>
-<p class="eyebrow">Proof sheet · commit abd2509</p>
+<p class="eyebrow">Proof sheet · solver 2d93fad</p>
 <h1>Figures for the Joule heating solver</h1>
-<p class="sub">Five publication plates and one scope table for the Application Note, drawn to print size from a single frozen data object. Every dimension, cell count, region allocation and equivalent-cylinder property on this page came out of the solver at the audited commit. No number is typed in twice.</p>
+<p class="sub">Five publication plates and one scope table for the Application Note, drawn to print size from a single frozen data object. Every dimension, cell count, region allocation and equivalent-cylinder property on this page came out of the solver at the commit stamped above. No number is typed in twice.</p>
 <p class="stamp"><span><b>Solver</b> apps/joule/solver.js</span><span><b>Body width</b> 178 mm / 505 pt</span><span><b>Type</b> Arial, 8 pt floor</span><span><b>Ground</b> white, flat fills only</span></p>
 </header>
 
@@ -173,7 +173,7 @@ Captions sit below each plate as text rather than inside the artwork, so they ca
 </figure>
 
 <h2>Table S7. Questions the solver answers, and the boundary of each answer</h2>
-<p class="lede">Intended as Supporting Information Table S7. Every limitation below is a property of the model as implemented at commit abd2509, not a statement about what a Joule-heated reactor does.</p>
+<p class="lede">Intended as Supporting Information Table S7. Every limitation below is a property of the model as implemented at solver commit 2d93fad, not a statement about what a Joule-heated reactor does.</p>
 <div class="tablewrap"><table>
 <thead><tr><th>Question</th><th>Supported</th><th>Limitation</th></tr></thead>
 <tbody>
@@ -204,11 +204,11 @@ Captions sit below each plate as text rather than inside the artwork, so they ca
 </table></div>
 
 <footer>
-Artwork generated from apps/joule/solver.js at commit abd2509. The page does not run the solver; the values were computed from that commit and frozen into one data object, so a figure and the manuscript text cannot drift apart. Regenerating after a solver change means re-running the extraction and republishing this page.
+Artwork generated from apps/joule/solver.js at commit 2d93fad by docs/figures/make-figures.mjs. The page does not run the solver; the values were computed from that commit and frozen into one data object, so a figure and the manuscript text cannot drift apart. Regenerating after a solver change means re-running the extraction and republishing this page.
 </footer>
 </div>
 <script>
-const DATA = Object.freeze({"commit":"abd2509","strip":{"L":38,"W":8,"H":0.21,"area":1.68,"surface":6.273,"surface2f":6.08,"edgePct":3.08,"volume":0.06384,"mass":28.8,"rho":0.01871,"density":451.1,"R":4.232},"cyl":{"D":4.934,"L":38,"area":19.12,"surface":6.273,"volume":0.7267,"mass":28.8,"rho":0.213,"density":39.63,"R":4.232,"areaRatio":11.38,"densityScale":0.08785,"volumeRatio":11.38},"mesh":{"nr":30,"nz":60,"nElement":19,"nGap":2,"nWall":4,"nAir":5,"nAirZ":8,"nActiveZ":44,"radius":5.003,"outerRadius":6.503,"domainRadius":8.867,"ratio":1.364,"L":15.01,"domainHeight":20.47,"stretch":8,"redges":[0,0.2633,0.5266,0.7899,1.0532,1.3165,1.5798,1.8431,2.1064,2.3697,2.633,2.8963,3.1596,3.4229,3.6862,3.9495,4.2128,4.4761,4.7394,5.0027,5.2527,5.5027,5.7527,6.0027,6.2527,6.5027,6.6321,6.8498,7.216,7.8317,8.8673],"zedges":[-10.2328,-9.8917,-9.5506,-9.2095,-8.8684,-8.5273,-8.1862,-7.8451,-7.504,-7.1629,-6.8219,-6.4808,-6.1397,-5.7986,-5.4575,-5.1164,-4.7753,-4.4342,-4.0931,-3.752,-3.4109,-3.0698,-2.7287,-2.3876,-2.0466,-1.7055,-1.3644,-1.0233,-0.6822,-0.3411,0,0.3411,0.6822,1.0233,1.3644,1.7055,2.0466,2.3876,2.7287,3.0698,3.4109,3.752,4.0931,4.4342,4.7753,5.1164,5.4575,5.7986,6.1397,6.4808,6.8219,7.1629,7.504,7.8451,8.1862,8.5273,8.8684,9.2095,9.5506,9.8917,10.2328]}});
+const DATA = Object.freeze({"commit":"2d93fad","strip":{"L":38,"W":8,"H":0.21,"area":1.68,"surface":6.273,"surface2f":6.08,"edgePct":3.08,"volume":0.06384,"mass":28.8,"rho":0.01871,"density":451.1,"R":4.232},"cyl":{"D":4.934,"L":38,"area":19.12,"surface":6.273,"volume":0.7267,"mass":28.8,"rho":0.213,"density":39.63,"R":4.232,"areaRatio":11.38,"densityScale":0.08785,"volumeRatio":11.38},"mesh":{"nr":30,"nz":60,"nElement":19,"nGap":2,"nWall":4,"nAir":5,"nAirZ":8,"nActiveZ":44,"radius":5.003,"outerRadius":6.503,"domainRadius":8.867,"ratio":1.364,"L":15.01,"domainHeight":20.47,"stretch":8,"redges":[0,0.2633,0.5266,0.7899,1.0532,1.3165,1.5798,1.8431,2.1064,2.3697,2.633,2.8963,3.1596,3.4229,3.6862,3.9495,4.2128,4.4761,4.7394,5.0027,5.2527,5.5027,5.7527,6.0027,6.2527,6.5027,6.6321,6.8498,7.216,7.8317,8.8673],"zedges":[-10.2328,-9.8917,-9.5506,-9.2095,-8.8684,-8.5273,-8.1862,-7.8451,-7.504,-7.1629,-6.8219,-6.4808,-6.1397,-5.7986,-5.4575,-5.1164,-4.7753,-4.4342,-4.0931,-3.752,-3.4109,-3.0698,-2.7287,-2.3876,-2.0466,-1.7055,-1.3644,-1.0233,-0.6822,-0.3411,0,0.3411,0.6822,1.0233,1.3644,1.7055,2.0466,2.3876,2.7287,3.0698,3.4109,3.752,4.0931,4.4342,4.7753,5.1164,5.4575,5.7986,6.1397,6.4808,6.8219,7.1629,7.504,7.8451,8.1862,8.5273,8.8684,9.2095,9.5506,9.8917,10.2328]}});
 // Artwork for the Application Note figures. Authored in points, so a viewBox
 // unit is a printed point and font-size 9 is 9 pt on the page. Every function
 // takes the data object make-figures.mjs builds from apps/joule/solver.js;

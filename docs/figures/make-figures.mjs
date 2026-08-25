@@ -11,6 +11,7 @@
 // apps/joule/solver.js is picked up by re-running this one command, and a
 // figure cannot drift away from the manuscript text that quotes it.
 import { readFileSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { geometry, equivalentCylinder, build2DMesh } from "../../apps/joule/solver.js";
@@ -19,6 +20,19 @@ import { fig1, fig2, fig3, fig4, fig5 } from "./draw.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const p = (x, n = 4) => Number(x.toPrecision(n));
+
+// The stamp is the commit that last touched the solver, read from git rather
+// than typed, so the page cannot claim a revision it was not built from.
+function solverCommit() {
+  try {
+    const sha = execFileSync("git", ["log", "-1", "--format=%h", "--", "apps/joule/solver.js"],
+      { cwd: join(here, "..", ".."), encoding: "utf8" }).trim();
+    const dirty = execFileSync("git", ["status", "--porcelain", "--", "apps/joule/solver.js"],
+      { cwd: join(here, "..", ".."), encoding: "utf8" }).trim();
+    return sha ? sha + (dirty ? " + uncommitted changes" : "") : "unknown revision";
+  } catch { return "unknown revision"; }
+}
+const COMMIT = solverCommit();
 
 // ---- the rectangular element the pulsed cross-check uses, and the cylinder
 // the axisymmetric solver meshes in its place. The resistivity is the one that
@@ -42,7 +56,7 @@ const airWidths = [];
 for (let i = airStart; i < mesh.nr; i++) airWidths.push(mesh.edges[i + 1] - mesh.edges[i]);
 
 const DATA = {
-  commit: "abd2509",
+  commit: COMMIT,
   strip: {
     L: p(gb.L * 1e3), W: p(gb.W * 1e3), H: p(gb.H * 1e3),
     area: p(gb.area * 1e6),
@@ -82,12 +96,12 @@ writeFileSync(join(here, "figure-data.json"), JSON.stringify(DATA, null, 1) + "\
 // ---- assemble the page that publishes them
 const read = (f) => readFileSync(join(here, f), "utf8");
 const draw = read("draw.mjs").replace(/^export function /gm, "function ");
-const page = read("templates/head.html") + read("templates/body.html") +
+const page = (read("templates/head.html") + read("templates/body.html")).replaceAll("{{COMMIT}}", COMMIT) +
   "<script>\nconst DATA = Object.freeze(" + JSON.stringify(DATA) + ");\n" +
   draw + read("templates/wiring.js") + "</" + "script>\n";
 writeFileSync(join(here, "index.html"), page);
 
-console.log("wrote fig1-fig5.svg, figure-data.json and index.html");
+console.log("wrote fig1-fig5.svg, figure-data.json and index.html at solver commit " + COMMIT);
 console.log("  strip surface  " + DATA.strip.surface + " cm2 full box, " + DATA.strip.surface2f + " cm2 two faces");
 console.log("  equivalent D   " + DATA.cyl.D + " mm, resistance " + DATA.strip.R + " = " + DATA.cyl.R + " ohm");
 console.log("  default mesh   " + DATA.mesh.nr + " x " + DATA.mesh.nz +

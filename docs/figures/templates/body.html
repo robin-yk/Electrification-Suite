@@ -1,8 +1,8 @@
 <div class="wrap">
 <header>
-<p class="eyebrow">Proof sheet · commit abd2509</p>
+<p class="eyebrow">Proof sheet · solver {{COMMIT}}</p>
 <h1>Figures for the Joule heating solver</h1>
-<p class="sub">Five publication plates and one scope table for the Application Note, drawn to print size from a single frozen data object. Every dimension, cell count, region allocation and equivalent-cylinder property on this page came out of the solver at the audited commit. No number is typed in twice.</p>
+<p class="sub">Five publication plates and one scope table for the Application Note, drawn to print size from a single frozen data object. Every dimension, cell count, region allocation and equivalent-cylinder property on this page came out of the solver at the commit stamped above. No number is typed in twice.</p>
 <p class="stamp"><span><b>Solver</b> apps/joule/solver.js</span><span><b>Body width</b> 178 mm / 505 pt</span><span><b>Type</b> Arial, 8 pt floor</span><span><b>Ground</b> white, flat fills only</span></p>
 </header>
 
@@ -61,7 +61,7 @@ Captions sit below each plate as text rather than inside the artwork, so they ca
 </figure>
 
 <h2>Table S7. Questions the solver answers, and the boundary of each answer</h2>
-<p class="lede">Intended as Supporting Information Table S7. Every limitation below is a property of the model as implemented at commit abd2509, not a statement about what a Joule-heated reactor does.</p>
+<p class="lede">Intended as Supporting Information Table S7. Every limitation below is a property of the model as implemented at solver commit {{COMMIT}}, not a statement about what a Joule-heated reactor does.</p>
 <div class="tablewrap"><table>
 <thead><tr><th>Question</th><th>Supported</th><th>Limitation</th></tr></thead>
 <tbody>
@@ -92,6 +92,6 @@ Captions sit below each plate as text rather than inside the artwork, so they ca
 </table></div>
 
 <footer>
-Artwork generated from apps/joule/solver.js at commit abd2509. The page does not run the solver; the values were computed from that commit and frozen into one data object, so a figure and the manuscript text cannot drift apart. Regenerating after a solver change means re-running the extraction and republishing this page.
+Artwork generated from apps/joule/solver.js at commit {{COMMIT}} by docs/figures/make-figures.mjs. The page does not run the solver; the values were computed from that commit and frozen into one data object, so a figure and the manuscript text cannot drift apart. Regenerating after a solver change means re-running the extraction and republishing this page.
 </footer>
 </div>

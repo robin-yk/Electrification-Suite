@@ -27,6 +27,11 @@ is picked up by re-running the command, so a figure cannot drift away from the
 manuscript text that quotes it. The build fails rather than emits if any drawn
 value comes out as `NaN` or `undefined`.
 
+The revision stamped on the page is read from git — the commit that last
+touched `apps/joule/solver.js` — rather than typed, so the page cannot claim a
+revision it was not built from. It carries a `+ uncommitted changes` marker
+when the working tree is dirty.
+
 ## Conventions
 
 Artwork is authored in points, so a viewBox unit is a printed point and
