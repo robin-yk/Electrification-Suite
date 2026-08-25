@@ -334,7 +334,7 @@ Captions sit below each plate as text rather than inside the artwork, so they ca
 </table></div>
 
 <h2>Color and type conventions</h2>
-<p class="lede">One hue is assigned to one physical role and is used the same way in all five figures. The set is colorblind-safe and stays legible in grayscale because the roles are also distinguished by position and by line style. Type is Arial throughout, no lighter than 8 pt at the printed size, on white with no shadow, gradient or transparency.</p>
+<p class="lede">One hue is assigned to one physical role and is used the same way in every plate. Each role carries three values derived from that hue: the hue itself for lines and data, a 14 % tint of it for fills, and a darkened shade for type, which amber and green need in order to hold contrast at 8 pt. Structure is not coloured: box outlines and connectors are a neutral grey, so a hue appears only where it names something. Where a panel shows two series of one role, as the two error norms and the two element temperatures in Fig. 3 do, they share the hue and are separated by marker. Figs. S7 and S8 carry no physical quantity, one being percentage deviations and the other a software structure, and so use the neutral and the ink alone. The set is colorblind-safe and stays legible in grayscale because the roles are also distinguished by position, by marker and by line style. Type is Arial throughout, no lighter than 8 pt at the printed size, on white with no shadow, gradient or transparency.</p>
 <div class="tablewrap"><table>
 <thead><tr><th>Role</th><th>Hue</th><th>Where it appears</th></tr></thead>
 <tbody>
@@ -364,10 +364,21 @@ const DATA = Object.freeze({"commit":"2d93fad","strip":{"L":38,"W":8,"H":0.21,"a
 /* Drawing helpers. Every figure is authored in points, so a viewBox   */
 /* unit is a printed point and a font-size of 9 is 9 pt on the page.   */
 /* ------------------------------------------------------------------ */
+/* Five role hues, unchanged, plus two derivations of each so a diagram can
+   be built out of one family instead of five saturated outlines: TINT is the
+   hue mixed 14 % into white and is the only fill a box gets, SHADE is the hue
+   darkened for type, which amber and green need to hold contrast at 8 pt.
+   Structure, meaning borders and connectors, is neutral: colour is reserved
+   for the thing being named. */
 const C = { scalar:"#0072B2", field:"#E69F00", thermal:"#D55E00", gas:"#009E73",
-            grey:"#6E6E6E", ink:"#111111", rule:"#BBBBBB", faint:"#8A8A8A" };
-const TINT = { field:"#FCF0DC", gas:"#E4F5EF", wall:"#E8E8E8", air:"#F7F7F7",
-               scalar:"#E6F1F8", thermal:"#FBE9DF", panel:"#FBFBFB" };
+            grey:"#6E6E6E", ink:"#111111", rule:"#BBBBBB", faint:"#8A8A8A",
+            hair:"#AEB6BD", edge:"#C9CFD5" };
+const TINT = { scalar:"#DBEBF4", field:"#FCF2DB", thermal:"#F9E9DB", gas:"#DBF1EB",
+               grey:"#EDEFF1", wall:"#E8E8E8", air:"#F7F7F7", panel:"#FBFBFB" };
+const SHADE = { scalar:"#005B8F", field:"#9A6C00", thermal:"#A84A00", gas:"#00785A",
+                grey:"#4A5058", ink:"#111111" };
+const shadeOf = (hue) => SHADE[Object.keys(C).find((k) => C[k] === hue)] || hue;
+const tintOf = (hue) => TINT[Object.keys(C).find((k) => C[k] === hue)] || "#FFFFFF";
 const ZWS = "​";
 
 const esc = (s) => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
@@ -427,8 +438,8 @@ function svgDoc(w, h, body) {
 }
 /* A titled stage box with an explanatory second line. */
 function stage(x, y, w, h, title, sub, color, fill) {
-  return rect(x, y, w, h, { stroke: color, fill: fill || "#FFFFFF", sw: 1 }) +
-    T(x + w / 2, y + (sub ? 13 : h / 2 + 3.2), title, { size: 9.5, weight: "bold", anchor: "middle", fill: color }) +
+  return rect(x, y, w, h, { stroke: C.edge, fill: fill || tintOf(color), sw: 0.8 }) +
+    T(x + w / 2, y + (sub ? 13 : h / 2 + 3.2), title, { size: 9.5, weight: "bold", anchor: "middle", fill: shadeOf(color) }) +
     (sub ? T(x + w / 2, y + 24, sub, { size: 8.5, anchor: "middle", fill: C.grey }) : "");
 }
 
@@ -448,7 +459,7 @@ function solverLoop(DATA) {
   b += arrow(ns, "M" + cx + ",124 L" + cx + ",137");
 
   /* the Picard frame */
-  b += rect(26, 138, 453, 254, { stroke: C.ink, fill: TINT.panel, sw: 1.1, dash: "3 2" });
+  b += rect(26, 138, 453, 254, { stroke: C.hair, fill: TINT.panel, sw: 1, dash: "3 2" });
   b += T(36, 153, "Outer Picard iteration", { size: 10, weight: "bold" });
   b += T(163, 153, "coefficients re-evaluated from the current temperature field", { size: 8.5, fill: C.grey });
 
@@ -472,18 +483,18 @@ function solverLoop(DATA) {
               { t: "h_{rad}   radiation" }] }
   ];
   cols.forEach(function (col) {
-    b += T(col.x, 171, col.head, { size: 9.5, weight: "bold", fill: col.c });
+    b += T(col.x, 171, col.head, { size: 9.5, weight: "bold", fill: shadeOf(col.c) });
     b += T(col.x, 181, col.role, { size: 8, fill: C.grey });
     col.items.forEach(function (it, i) {
       const y = 186 + i * 25;
       if (it.off) {
-        b += rect(col.x, y, 137, 17, { stroke: C.grey, fill: "#FFFFFF", sw: 0.8, dash: "2.5 2" });
+        b += rect(col.x, y, 137, 17, { stroke: C.hair, fill: "#FFFFFF", sw: 0.7, dash: "2.5 2" });
         b += T(col.x + 6, y + 11.6, it.t, { size: 9, fill: C.grey });
         b += T(col.x, y + 27, "reported; not deposited in", { size: 8, fill: C.grey });
         b += T(col.x, y + 37, "the thermal domain", { size: 8, fill: C.grey });
         return;
       }
-      b += rect(col.x, y, 137, 17, { stroke: col.c, fill: col.tint, sw: 0.8 });
+      b += rect(col.x, y, 137, 17, { stroke: C.edge, fill: col.tint, sw: 0.7 });
       b += T(col.x + 6, y + 11.6, it.t, { size: 9 });
       const next = col.items[i + 1];
       if (next && !next.off) b += arrow(ns, "M" + (col.x + 68.5) + "," + (y + 17) + " L" + (col.x + 68.5) + "," + (y + 25), { color: col.key, sw: 0.8 });
@@ -818,15 +829,15 @@ function coupling(DATA) {
   const chain = function (y, color, tint, items) {
     items.forEach(function (it, i) {
       const x = xs[i];
-      b += rect(x, y, bw, 28, { stroke: color, fill: tint, sw: 1 });
-      b += T(x + bw / 2, y + 12, it[0], { size: 9.5, weight: "bold", anchor: "middle", fill: color });
+      b += rect(x, y, bw, 28, { stroke: C.edge, fill: tint, sw: 0.8 });
+      b += T(x + bw / 2, y + 12, it[0], { size: 9.5, weight: "bold", anchor: "middle", fill: shadeOf(color) });
       b += T(x + bw / 2, y + 23, it[1], { size: 8.5, anchor: "middle", fill: C.grey });
       if (i < 3) b += arrow(ns, "M" + (x + bw) + "," + (y + 14) + " L" + (xs[i + 1] - 2) + "," + (y + 14),
         { color: Object.keys(C).find(function (k) { return C[k] === color; }), sw: 1 });
     });
   };
 
-  b += T(20, 18, "Scalar branch", { size: 10, weight: "bold", fill: C.scalar });
+  b += T(20, 18, "Scalar branch", { size: 10, weight: "bold", fill: SHADE.scalar });
   b += T(96, 18, "total power dissipated, from the volume-average temperature", { size: 8.5, fill: C.grey });
   chain(26, C.scalar, TINT.scalar, [
     ["T_{avg}", "volume average"],
@@ -839,7 +850,7 @@ function coupling(DATA) {
   b += rect(236, 62, 258, 18, { stroke: C.grey, fill: "#FFFFFF", sw: 0.8, dash: "2.5 2" });
   b += T(365, 74, "P_{contact} = I² · 2R_{c},  reported; not deposited", { size: 8.5, anchor: "middle", fill: C.grey });
 
-  b += T(20, 106, "Field branch", { size: 10, weight: "bold", fill: C.field });
+  b += T(20, 106, "Field branch", { size: 10, weight: "bold", fill: SHADE.field });
   b += T(90, 106, "spatial distribution only, from the local temperature field", { size: 8.5, fill: C.grey });
   chain(114, C.field, TINT.field, [
     ["T(r,z)", "temperature field"],
@@ -856,8 +867,8 @@ function coupling(DATA) {
   b += arrow(ns, "M440,142 L440,174", { color: "field", sw: 1 });
 
   b += arrow(ns, "M290,222 L290,238", { color: "ink", sw: 1 });
-  b += rect(170, 240, 240, 30, { stroke: C.thermal, fill: TINT.thermal, sw: 1 });
-  b += T(290, 253, "Assemble and solve the thermal system", { size: 9.5, weight: "bold", anchor: "middle", fill: C.thermal });
+  b += rect(170, 240, 240, 30, { stroke: C.edge, fill: TINT.thermal, sw: 0.8 });
+  b += T(290, 253, "Assemble and solve the thermal system", { size: 9.5, weight: "bold", anchor: "middle", fill: SHADE.thermal });
   b += T(290, 264, "q‴ is the source term in every element cell", { size: 8.5, anchor: "middle", fill: C.grey });
 
   /* the temperature field returns to both branches */
@@ -894,10 +905,10 @@ function workflow(DATA) {
 
   stages.forEach(function (st, i) {
     const x = xs[i];
-    b += rect(x, py, pw, ph, { stroke: st.c, fill: "#FFFFFF", sw: 1 });
+    b += rect(x, py, pw, ph, { stroke: C.edge, fill: "#FFFFFF", sw: 0.8 });
     b += '<rect x="' + x + '" y="' + py + '" width="' + pw + '" height="22" fill="' + st.tint + '"/>';
     b += line(x, py + 22, x + pw, py + 22, { stroke: st.c, sw: 1 });
-    b += T(x + pw / 2, py + 15, st.tab, { size: 10, weight: "bold", anchor: "middle", fill: st.c });
+    b += T(x + pw / 2, py + 15, st.tab, { size: 10, weight: "bold", anchor: "middle", fill: shadeOf(st.c) });
     b += T(x + 8, py + 38, "INPUTS", { size: 8, weight: "bold", fill: C.grey });
     st.set.forEach(function (t, k) { if (t) b += T(x + 8, py + 50 + k * 11, t, { size: 8.5 }); });
     b += line(x + 8, py + 111, x + pw - 8, py + 111, { stroke: C.rule, sw: 0.5 });
@@ -912,7 +923,7 @@ function workflow(DATA) {
   });
 
   /* the tabs that support the three calculation stages rather than extend them */
-  b += rect(18, 226, 469, 46, { stroke: C.grey, fill: TINT.panel, sw: 0.8, dash: "3 2" });
+  b += rect(18, 226, 469, 46, { stroke: C.hair, fill: TINT.panel, sw: 0.8, dash: "3 2" });
   b += T(28, 240, "SUPPORTING TABS", { size: 8, weight: "bold", fill: C.grey });
   [["How to Use", "orientation and a worked path"],
    ["Screening", "material and geometry sweeps"],
@@ -989,8 +1000,16 @@ function verification(DATA) {
     o += T(x0 + pw / 2, pbot + 24, cfg.xLabel, { size: 8.5, anchor: "middle" });
     o += '<text x="' + (x0 - 30) + '" y="' + ((ptop + pbot) / 2) + '" font-size="8.5" text-anchor="middle" transform="rotate(-90 ' + (x0 - 30) + ' ' + ((ptop + pbot) / 2) + ')">' + cfg.yLabel + '</text>';
     (cfg.legend || []).forEach(function (l, k) {
-      o += T(x0 + (l.right ? pw - 6 : 6), ptop + 14 + k * 11, l.label,
-        { size: 8.5, weight: "bold", fill: l.color, anchor: l.right ? "end" : "start" });
+      const ly = ptop + 14 + k * 11;
+      if (l.marker) {
+        const mx = x0 + (l.right ? pw - 10 : 10);
+        o += marker(l.marker, mx, ly - 3, l.color);
+        o += T(mx + (l.right ? -8 : 8), ly, l.label,
+          { size: 8.5, weight: "bold", fill: l.color, anchor: l.right ? "end" : "start" });
+      } else {
+        o += T(x0 + (l.right ? pw - 6 : 6), ly, l.label,
+          { size: 8.5, weight: "bold", fill: l.color, anchor: l.right ? "end" : "start" });
+      }
     });
     (cfg.foot || []).forEach(function (t, k) { o += T(x0, pbot + 36 + k * 10, t, { size: 8, fill: C.grey }); });
     b += o;
@@ -1002,22 +1021,23 @@ function verification(DATA) {
 
   plot({ col: 0, row: 0, xs: V.parabola.map((q) => q.ld), xPad: 1.18, xLabel: "cylinder L/D",
     yLabel: "mismatch vs analytic profile", decades: [-5, -2],
-    series: [{ vals: V.parabola.map((q) => q.worstRelative), color: C.scalar, marker: "circle" }],
+    series: [{ vals: V.parabola.map((q) => q.worstRelative), color: C.thermal, marker: "circle" }],
     foot: [sci1(V.parabola[0].worstRelative) + " at L/D " + V.parabola[0].ld,
            sci1(V.parabola[2].worstRelative) + " at L/D " + V.parabola[2].ld] });
 
   plot({ col: 1, row: 0, xs: V.annulus.map((a) => a.ld), xPad: 1.18, xLabel: "cylinder L/D",
     yLabel: "worst layer error vs theory", decades: [-2, 0],
-    series: [{ vals: V.annulus.map((a) => a.worst), color: C.scalar, marker: "circle" }],
+    series: [{ vals: V.annulus.map((a) => a.worst), color: C.thermal, marker: "circle" }],
     foot: [(100 * V.annulus[0].worst).toFixed(1) + " % at L/D " + V.annulus[0].ld,
            (100 * V.annulus[2].worst).toFixed(2) + " % at L/D " + V.annulus[2].ld] });
 
   plot({ col: 2, row: 0, xs: V.mms.map((r) => Number(r.grid.split("\u00d7")[0])), xPad: 1.22,
     xLabel: "radial cells", yLabel: "error vs manufactured solution (K)",
     decades: [-2, 1], guide: [32, 78, 8.0, 2],
-    series: [{ vals: V.mms.map((r) => r.linf), color: C.field, marker: "square" },
-             { vals: V.mms.map((r) => r.l2), color: C.scalar, marker: "circle" }],
-    legend: [{ label: "L\u221e", color: C.field }, { label: "L2", color: C.scalar }],
+    series: [{ vals: V.mms.map((r) => r.linf), color: C.thermal, marker: "square" },
+             { vals: V.mms.map((r) => r.l2), color: C.thermal, marker: "circle" }],
+    legend: [{ label: "L\u221e", color: C.thermal, marker: "square" },
+             { label: "L2", color: C.thermal, marker: "circle" }],
     foot: ["order  " + V.mms.slice(1).map((r) => r.orderL2.toFixed(2)).join(", ") + "  (L2)",
            "order  " + V.mms.slice(1).map((r) => r.orderLinf.toFixed(2)).join(", ") + "  (L\u221e)"] });
 
@@ -1043,9 +1063,10 @@ function verification(DATA) {
       xLabel: "radial cells", yLabel: "element temperature (\u00b0C)",
       range: [Math.min.apply(null, all) - 0.45, Math.max.apply(null, all) + 0.35],
       rule: [ex, "extrapolated " + ex.toFixed(2)],
-      series: [{ vals: rows.map((r) => r.maxC), color: C.field, marker: "square" },
-               { vals: rows.map((r) => r.avgC), color: C.scalar, marker: "circle" }],
-      legend: [{ label: "maximum", color: C.field, right: true }, { label: "average", color: C.scalar, right: true }],
+      series: [{ vals: rows.map((r) => r.maxC), color: C.thermal, marker: "square" },
+               { vals: rows.map((r) => r.avgC), color: C.thermal, marker: "circle" }],
+      legend: [{ label: "maximum", color: C.thermal, marker: "square", right: true },
+               { label: "average", color: C.thermal, marker: "circle", right: true }],
       foot: ["order  " + V.physical.order.avg.toFixed(2) + "  average",
              "order  " + V.physical.order.max.toFixed(2) + "  maximum"] });
   })();
@@ -1126,16 +1147,21 @@ function defaultCase(DATA) {
   const total = chans.reduce(function (a, c) { return a + c[1]; }, 0);
   const barX = px - 4, barW = 250, barY = 52, barH = 22;
   let acc = 0;
-  const HUE = [C.thermal, C.grey, C.field, C.scalar, C.gas];
+  /* Colour by what the channel is, not by how large it happens to be. The two
+     radiation terms take the thermal hue and the two boundary terms the grey,
+     separated within the hue by lightness, so the bar survives greyscale and
+     the assignment does not move when the ranking does. */
+  const HUE = { wallRadiation: C.thermal, elementEndRadiation: "#E8A673",
+                axialAmbient: C.grey, outerRadial: "#A9A9A9", gasEnthalpy: C.gas };
   chans.forEach(function (c, i) {
     const w = barW * c[1] / total;
-    b += '<rect x="' + (barX + acc) + '" y="' + barY + '" width="' + w + '" height="' + barH + '" fill="' + HUE[i % HUE.length] + '" fill-opacity="0.85"/>';
+    b += '<rect x="' + (barX + acc) + '" y="' + barY + '" width="' + w + '" height="' + barH + '" fill="' + HUE[c[0]] + '" fill-opacity="0.85"/>';
     acc += w;
   });
   b += rect(barX, barY, barW, barH, { stroke: C.ink, fill: "none", sw: 0.8, rx: 0 });
   chans.forEach(function (c, i) {
     const y = barY + barH + 16 + i * 12;
-    b += '<rect x="' + barX + '" y="' + (y - 7) + '" width="9" height="9" fill="' + HUE[i % HUE.length] + '" fill-opacity="0.85"/>';
+    b += '<rect x="' + barX + '" y="' + (y - 7) + '" width="9" height="9" fill="' + HUE[c[0]] + '" fill-opacity="0.85"/>';
     b += T(barX + 14, y, NAMES[c[0]] || c[0], { size: 8.5 });
     b += T(barX + barW, y, c[1].toFixed(2) + " W", { size: 8.5, anchor: "end", fill: C.grey });
     b += T(barX + barW - 46, y, (100 * c[1] / total).toFixed(1) + " %", { size: 8.5, anchor: "end", fill: C.grey });
@@ -1275,7 +1301,7 @@ function screening(DATA) {
     const X = (v) => lin(lg(v), xLo, xHi, x0 + 12, x0 + pw - 12);
     let o = "";
     if (firstV > 0) o += '<rect x="' + X(S.sweep[firstV].ld) + '" y="' + ptop + '" width="' +
-      (x0 + pw - X(S.sweep[firstV].ld)) + '" height="' + ph + '" fill="' + TINT.field + '"/>';
+      (x0 + pw - X(S.sweep[firstV].ld)) + '" height="' + ph + '" fill="#F0F0F0"/>';
     o += rect(x0, ptop, pw, ph, { stroke: C.grey, fill: "none", sw: 0.8, rx: 0 });
     o += T(x0 - 36, ptop - 8, letter, { size: 11, weight: "bold" });
     [0.5, 4, 32, 256].forEach(function (v) { o += T(X(v), pbot + 12, String(v), { size: 8, anchor: "middle" }); });
@@ -1324,7 +1350,7 @@ function screening(DATA) {
     S.sweep.forEach(function (q, k) { d2 += (k ? " L" : "M") + P.X(q.ld) + "," + Y(q.tssC); });
     o += '<path d="' + d2 + '" fill="none" stroke="' + C.thermal + '" stroke-width="1.5"/>';
     if (S.window) o += T(291, pbot - 3, "met between L/D " + S.window.lo.toFixed(1) + " and " + S.window.hi.toFixed(0), { size: 8, fill: C.thermal });
-    o += T(287 + pw - 4, ptop + 12, "voltage limited", { size: 8, weight: "bold", anchor: "end", fill: C.field });
+    o += T(287 + pw - 4, ptop + 12, "voltage limited", { size: 8, weight: "bold", anchor: "end", fill: C.grey });
     o += T(291, ptop + 12, "current limited", { size: 8, weight: "bold", fill: C.scalar });
     b += o;
   })();
@@ -1429,54 +1455,54 @@ function architecture(DATA) {
   /* ---- a. the gate a revision has to pass ---- */
   b += T(18, 22, "a", { size: 11, weight: "bold" });
   const boxA = (x, y, w, h, label, sub, colour, tint) =>
-    rect(x, y, w, h, { stroke: colour, fill: tint || "#FFFFFF", sw: 1 }) +
-    T(x + w / 2, y + (sub ? 14 : h / 2 + 3.2), label, { size: 9, weight: "bold", anchor: "middle", fill: colour }) +
+    rect(x, y, w, h, { stroke: C.edge, fill: tint || TINT.grey, sw: 0.8 }) +
+    T(x + w / 2, y + (sub ? 14 : h / 2 + 3.2), label, { size: 9, weight: "bold", anchor: "middle", fill: colour || SHADE.grey }) +
     (sub ? T(x + w / 2, y + 25, sub, { size: 8, anchor: "middle", fill: C.grey }) : "");
 
   const ay = 34, ah = 34;
-  b += boxA(18, ay, 104, ah, "Physical specification", "and its assumptions", C.scalar, TINT.scalar);
-  b += arrow(ns, "M122," + (ay + ah / 2) + " L136," + (ay + ah / 2), { color: "scalar" });
-  b += boxA(137, ay, 82, ah, "Implementation", "assisted", C.grey);
-  b += arrow(ns, "M219," + (ay + ah / 2) + " L233," + (ay + ah / 2));
-  b += boxA(234, ay, 96, ah, "Independent review", "a second model", C.grey);
-  b += arrow(ns, "M330," + (ay + ah / 2) + " L344," + (ay + ah / 2));
-  b += rect(345, ay - 4, 82, ah + 8, { stroke: C.ink, fill: "#FFFFFF", sw: 1.2 });
-  b += T(386, ay + 11, "Verification", { size: 9, weight: "bold", anchor: "middle" });
-  b += T(386, ay + 22, "gates", { size: 9, weight: "bold", anchor: "middle" });
-  b += arrow(ns, "M427," + (ay + ah / 2) + " L441," + (ay + ah / 2), { color: "gas" });
-  b += rect(442, ay, 45, ah, { stroke: C.gas, fill: TINT.gas, sw: 1 });
-  b += T(464.5, ay + 14, "Release", { size: 9, weight: "bold", anchor: "middle", fill: C.gas });
+  b += boxA(18, ay, 104, ah, "Physical specification", "and its assumptions", SHADE.ink);
+  b += arrow(ns, "M122," + (ay + ah / 2) + " L136," + (ay + ah / 2), { color: "hair" });
+  b += boxA(137, ay, 82, ah, "Implementation", "assisted", SHADE.grey);
+  b += arrow(ns, "M219," + (ay + ah / 2) + " L233," + (ay + ah / 2), { color: "hair" });
+  b += boxA(234, ay, 96, ah, "Independent review", "a second model", SHADE.grey);
+  b += arrow(ns, "M330," + (ay + ah / 2) + " L344," + (ay + ah / 2), { color: "hair" });
+  b += rect(345, ay, 82, ah, { stroke: C.ink, fill: "#FFFFFF", sw: 1.1 });
+  b += T(386, ay + 14, "Verification", { size: 9, weight: "bold", anchor: "middle" });
+  b += T(386, ay + 25, "gates", { size: 9, weight: "bold", anchor: "middle" });
+  b += arrow(ns, "M427," + (ay + ah / 2) + " L441," + (ay + ah / 2), { color: "hair" });
+  b += rect(442, ay, 45, ah, { stroke: C.edge, fill: TINT.grey, sw: 0.8 });
+  b += T(464.5, ay + 14, "Release", { size: 9, weight: "bold", anchor: "middle", fill: SHADE.ink });
   b += T(464.5, ay + 25, "versioned", { size: 8, anchor: "middle", fill: C.grey });
-  b += T(434, ay - 8, "pass", { size: 8, fill: C.gas });
+  b += T(434, ay - 8, "pass", { size: 8, fill: C.grey });
 
   /* the failure path returns to implementation, which is the whole point */
-  b += arrow(ns, "M386," + (ay + ah + 4) + " L386,96 L178,96 L178," + (ay + ah + 1), { color: "thermal", sw: 1 });
-  b += T(282, 93, "fail", { size: 8, anchor: "middle", fill: C.thermal });
+  b += arrow(ns, "M386," + (ay + ah + 2) + " L386,96 L178,96 L178," + (ay + ah + 1), { color: "hair", sw: 1, dash: "3 2" });
+  b += T(282, 93, "fail", { size: 8, anchor: "middle", fill: C.grey });
   /* ---- b. what attaches to the core, and what the core does not know ---- */
   b += T(18, 128, "b", { size: 11, weight: "bold" });
   const cx = 232, cy = 172, cw = 118, ch = 40;
-  b += rect(cx, cy, cw, ch, { stroke: C.thermal, fill: TINT.thermal, sw: 1.2 });
-  b += T(cx + cw / 2, cy + 17, "solver.js", { size: 10, weight: "bold", anchor: "middle", fill: C.thermal });
+  b += rect(cx, cy, cw, ch, { stroke: C.ink, fill: "#FFFFFF", sw: 1.1 });
+  b += T(cx + cw / 2, cy + 17, "solver.js", { size: 10, weight: "bold", anchor: "middle", fill: SHADE.ink });
   b += T(cx + cw / 2, cy + 29, "DOM-free numerical core", { size: 8, anchor: "middle", fill: C.grey });
 
   const feeds = [
-    { y: 140, label: "Material presets", note: "temperature-dependent properties", c: C.scalar },
-    { y: 172, label: "Geometry, wall, gas", note: "the boundary-condition configuration", c: C.field },
-    { y: 204, label: "Browser interface", note: "inputs and outputs only", c: C.grey }
+    { y: 140, label: "Material presets", note: "temperature-dependent properties", c: SHADE.grey },
+    { y: 172, label: "Geometry, wall, gas", note: "the boundary-condition configuration", c: SHADE.grey },
+    { y: 204, label: "Browser interface", note: "inputs and outputs only", c: SHADE.grey }
   ];
   feeds.forEach(function (f) {
-    b += rect(18, f.y, 168, 24, { stroke: f.c, fill: "#FFFFFF", sw: 0.9 });
+    b += rect(18, f.y, 168, 24, { stroke: C.edge, fill: TINT.grey, sw: 0.8 });
     b += T(26, f.y + 10, f.label, { size: 8.5, weight: "bold", fill: f.c });
     b += T(26, f.y + 20, f.note, { size: 8, fill: C.grey });
-    b += arrow(ns, "M186," + (f.y + 12) + " L" + (cx - 2) + "," + (cy + ch / 2), { color: "grey", sw: 0.8 });
+    b += arrow(ns, "M186," + (f.y + 12) + " L" + (cx - 2) + "," + (cy + ch / 2), { color: "hair", sw: 0.8 });
   });
-  b += rect(18, 236, 168, 24, { stroke: C.gas, fill: "#FFFFFF", sw: 0.9, dash: "3 2" });
-  b += T(26, 246, "Verification suite", { size: 8.5, weight: "bold", fill: C.gas });
+  b += rect(18, 236, 168, 24, { stroke: C.edge, fill: "#FFFFFF", sw: 0.8, dash: "3 2" });
+  b += T(26, 246, "Verification suite", { size: 8.5, weight: "bold", fill: SHADE.grey });
   b += T(26, 256, "regression, conservation, benchmarks", { size: 8, fill: C.grey });
-  b += arrow(ns, "M186,248 L" + (cx - 2) + "," + (cy + ch - 4), { color: "gas", sw: 0.8 });
+  b += arrow(ns, "M186,248 L" + (cx - 2) + "," + (cy + ch - 4), { color: "hair", sw: 0.8, dash: "3 2" });
 
-  b += arrow(ns, "M" + (cx + cw) + "," + (cy + ch / 2) + " L" + (cx + cw + 14) + "," + (cy + ch / 2), { color: "thermal" });
-  b += rect(cx + cw + 15, cy - 6, 108, ch + 12, { stroke: C.grey, fill: "#FFFFFF", sw: 0.9 });
+  b += arrow(ns, "M" + (cx + cw) + "," + (cy + ch / 2) + " L" + (cx + cw + 14) + "," + (cy + ch / 2), { color: "hair" });
+  b += rect(cx + cw + 15, cy - 6, 108, ch + 12, { stroke: C.edge, fill: "#FFFFFF", sw: 0.8 });
   ["2D field and diagnostics", "loss partition, closure", "CSV export", "these figures"].forEach(function (t, i) {
     b += T(cx + cw + 23, cy + 6 + i * 11, t, { size: 8, fill: i === 0 ? C.ink : C.grey });
   });

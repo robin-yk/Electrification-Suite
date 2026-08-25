@@ -128,6 +128,29 @@ from the solver rather than drawn.
 
 ### Changed
 
+- Palette. The five role hues are unchanged, but each now carries three values
+  derived from it: the hue for lines and data, a 14 % tint for fills, and a
+  darkened shade for type, which amber and green need to hold contrast at 8 pt.
+  The tints were previously five unrelated pastels mixed at different strengths,
+  which is why they read as five separate decisions rather than one family.
+  Structure is no longer coloured: box outlines and connectors are neutral, so a
+  hue appears only where it names something.
+- Colour assignments that carried no meaning. Fig. 4b handed the five loss
+  channels their colours by rank after sorting on magnitude, so the colour a
+  channel wore depended on how large it happened to be that run; it is now keyed
+  by channel, the two radiation terms sharing the thermal hue and the two
+  boundary terms the grey, separated within the hue by lightness. Fig. 3 used
+  the scalar and field hues to tell two series apart in panels c and f, where
+  both series are thermal quantities; both now take the thermal hue and are
+  separated by marker, with the marker carried into the legend. Panels a and b
+  measure thermal profiles and were blue. Fig. S6 marked the voltage-limited
+  region in the field hue, which belongs to the unit-potential solve; it is grey,
+  the role for a quantity held fixed.
+- Fig. S8 borrowed four role hues for a software diagram: green for release and
+  verification, orange for the core and for the failure path, amber for the box
+  labelled "Geometry, wall, gas" whose contents are grey and green in every other
+  plate. A software structure has no physical role, so it now has no role hue:
+  neutral throughout, the gate and the core in ink, pass and fail by line style.
 - Prose moved out of the artwork and into the captions, which is where a
   journal in this family puts it. Fig. S8 carried a two-line paragraph about
   the verification gates and a five-row table of what a change touches, both
