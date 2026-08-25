@@ -353,16 +353,16 @@ export function meshDomain(DATA) {
 /* Figure 4. What the assembly writes into the matrix.                 */
 /* ------------------------------------------------------------------ */
 export function matrixClasses(DATA) {
-  const ns = "s2", W = 505, H = 352;
+  const ns = "s2", W = 505, H = 366;
   let b = defs(ns);
-  const rows = [34, 116, 198, 280];
+  const rows = [48, 130, 212, 294];
   const SX = 30, MX = 168, TX = 268;
 
   b += T(SX, 22, "Cells coupled", { size: 8.5, weight: "bold", fill: C.grey });
   b += T(MX, 22, "Matrix position", { size: 8.5, weight: "bold", fill: C.grey });
-  b += T(MX, 32, "schematic; the 30 × 60 mesh has 1800 unknowns", { size: 8, fill: C.faint });
+  b += T(MX, 33, "schematic; the 30 × 60 mesh has 1800 unknowns", { size: 8, fill: C.faint });
   b += T(TX, 22, "Term", { size: 8.5, weight: "bold", fill: C.grey });
-  b += line(SX, 26, 495, 26, { stroke: C.ink, sw: 0.9 });
+  b += line(SX, 38, 495, 38, { stroke: C.ink, sw: 0.9 });
 
   /* a small 8 x 8 matrix schematic; k lists the entries to fill */
   const matrix = function (x, y, filled, hollow, color) {
@@ -517,7 +517,7 @@ export function coupling(DATA) {
   /* the temperature field returns to both branches */
   b += arrow(ns, "M170,255 L10,255 L10,40 L18,40", { color: "thermal", sw: 1 });
   b += arrow(ns, "M10,128 L18,128", { color: "thermal", sw: 1 });
-  b += '<text x="6" y="180" font-size="8.5" fill="' + C.thermal + '" text-anchor="middle" transform="rotate(-90 6 180)">T(r,z)</text>';
+  b += '<text x="9" y="180" font-size="8.5" fill="' + C.thermal + '" text-anchor="middle" transform="rotate(-90 9 180)">T(r,z)</text>';
 
   return svgDoc(W, H, b);
   return svgDoc(W, H, b);
@@ -680,7 +680,7 @@ export function verification(DATA) {
   plot({ col: 1, row: 1, xs: V.transient.rows.map((r) => r.dt), xPad: 1.35,
     xLabels: V.transient.rows.map((r) => r.dt.toFixed(2)),
     xLabel: "time step (s)", yLabel: "error vs reference step (K)",
-    decades: [-1, 1], guide: [6.0, 1.2, 1.4, -1, "first order"],
+    decades: [-1, 1], guide: [6.0, 1.3, 3.4, -1, "first order"],
     series: [{ vals: V.transient.rows.map((r) => r.error), color: C.thermal, marker: "circle" }],
     foot: ["order  " + V.transient.rows.slice(1).map((r) => r.order.toFixed(2)).join(", "),
            "backward Euler, t = " + V.transient.tEnd + " s"] });
@@ -820,7 +820,7 @@ export function transient(DATA) {
   const K = DATA.transient;
   let b = defs(ns);
   const pw = 128, ph = 160, ptop = 26, pbot = 26 + 160;
-  const COL = [52, 215, 378];
+  const COL = [50, 213, 376];
   const lin = (v, lo, hi, a, c) => a + (v - lo) / (hi - lo) * (c - a);
 
   function frame(col, series, xLabel, letter, yHiHint) {
@@ -876,7 +876,7 @@ export function transient(DATA) {
     }
     o += line(F.x0, strip + 7, F.x0 + pw, strip + 7, { stroke: C.scalar, sw: 0.6 });
     o += line(F.x0, F.Y(K.contSteadyC), F.x0 + pw, F.Y(K.contSteadyC), { stroke: C.grey, sw: 0.9, dash: "3 2" });
-    o += T(F.x0 + 6, F.Y(K.contSteadyC) + 11, "continuous " + K.contSteadyC.toFixed(0) + " °C", { size: 8, fill: C.grey });
+    o += T(F.x0 + pw - 6, F.Y(K.contSteadyC) + 11, "continuous " + K.contSteadyC.toFixed(0) + " °C", { size: 8, anchor: "end", fill: C.grey });
     o += trace(F, K.pulse, C.thermal, 1.2);
     o += T(F.x0 + pw - 6, pbot - 58, "peak " + K.peakC.toFixed(0) + " °C", { size: 8.5, weight: "bold", anchor: "end", fill: C.thermal });
     o += T(F.x0 + pw - 6, pbot - 47, "mean " + K.cycleMeanC.toFixed(0) + " °C, swing " + K.swingK.toFixed(0) + " K", { size: 8.5, anchor: "end", fill: C.grey });
@@ -893,10 +893,10 @@ export function transient(DATA) {
     o += T(F.x0 + 6, F.Y(K.sicSteadyC) - 5, "steady " + K.sicSteadyC.toFixed(0) + " °C", { size: 8, fill: C.grey });
     const tx = F.X(K.sicTau);
     o += line(tx, ptop + 10, tx, pbot - 10, { stroke: C.scalar, sw: 0.8, dash: "2 2" });
-    o += T(tx + 4, ptop + 22, "τ = " + K.sicTau.toFixed(0) + " s", { size: 8, fill: C.scalar });
+    o += T(tx + 5, ptop + 96, "τ = " + K.sicTau.toFixed(0) + " s", { size: 8, fill: C.scalar });
     o += trace(F, K.sic, C.thermal, 1.5);
-    o += T(F.x0 + 6, pbot - 30, K.sicLabel + ", switched on", { size: 8.5, weight: "bold", fill: C.thermal });
-    o += T(F.x0 + 6, pbot - 19, "τ is " + (K.sicTau / K.period).toFixed(0) + "× the pulse period", { size: 8, fill: C.grey });
+    o += T(F.x0 + pw - 6, pbot - 30, K.sicLabel + ", switched on", { size: 8.5, weight: "bold", anchor: "end", fill: C.thermal });
+    o += T(F.x0 + pw - 6, pbot - 19, "τ is " + (K.sicTau / K.period).toFixed(0) + "× the pulse period", { size: 8, anchor: "end", fill: C.grey });
     b += o;
   })();
   return svgDoc(W, H, b);
@@ -1016,5 +1016,133 @@ export function screening(DATA) {
       rows[0].rho.toExponential(1).replace("e-", "×10^{−") + "} to " +
       rows[rows.length - 1].rho.toExponential(1).replace("e-", "×10^{−") + "} Ω·cm", { size: 7.6, fill: C.grey });
   })();
+  return svgDoc(W, H, b);
+}
+
+/* ------------------------------------------------------------------ */
+/* Fig. S7. The three published reactors, as signed differences.        */
+/* ------------------------------------------------------------------ */
+export function crosscheck(DATA) {
+  const ns = "s7", W = 505, H = 236;
+  const G = DATA.crosscheck;
+  let b = defs(ns);
+  const LX = 22, RX = 222, MX = 282, BX = 316, BW = 172, CX = BX + BW / 2;
+  const SPAN = 10;                     /* the bar axis runs to ±10 % */
+  const X = (pct) => CX + (pct / SPAN) * (BW / 2);
+
+  b += T(LX, 22, "QUANTITY", { size: 8, weight: "bold", fill: C.grey });
+  b += T(RX, 22, "REPORTED", { size: 8, weight: "bold", anchor: "end", fill: C.grey });
+  b += T(MX, 22, "MODEL", { size: 8, weight: "bold", anchor: "end", fill: C.grey });
+  b += T(CX, 22, "SIGNED DIFFERENCE", { size: 8, weight: "bold", anchor: "middle", fill: C.grey });
+  b += line(LX, 27, 488, 27, { stroke: C.ink, sw: 0.9 });
+
+  let y = 42;
+  G.forEach(function (grp, gi) {
+    b += T(LX, y, grp.source, { size: 9, weight: "bold" });
+    b += T(RX, y, grp.detail, { size: 7.8, fill: C.faint });
+    y += 13;
+    grp.rows.forEach(function (r) {
+      const diff = 100 * (r.model - r.reported) / r.reported;
+      const w = Math.abs(X(diff) - CX);
+      b += T(LX + 8, y, r.q, { size: 8.5 });
+      b += T(RX, y, r.reported + (r.unit ? " " + r.unit : ""), { size: 8.5, anchor: "end", fill: C.grey });
+      b += T(MX, y, r.model + (r.unit ? " " + r.unit : ""), { size: 8.5, anchor: "end" });
+      b += '<rect x="' + (diff < 0 ? CX - w : CX) + '" y="' + (y - 6.5) + '" width="' + Math.max(w, 0.6) +
+        '" height="8" fill="' + (Math.abs(diff) > 5 ? C.field : C.thermal) + '" fill-opacity="0.85"/>';
+      b += T(diff < 0 ? CX - w - 4 : CX + w + 4, y, (diff > 0 ? "+" : "−") + Math.abs(diff).toFixed(2) + " %",
+        { size: 8, anchor: diff < 0 ? "end" : "start", fill: C.grey });
+      y += 15;
+    });
+    if (gi < G.length - 1) { b += line(LX, y - 6, 488, y - 6, { stroke: "#EAEAEA", sw: 0.5 }); y += 6; }
+  });
+
+  /* the difference axis, drawn under the bars it scales */
+  const ay = y + 2;
+  [-10, -5, 0, 5, 10].forEach(function (t) {
+    b += line(X(t), 34, X(t), ay, { stroke: t === 0 ? C.ink : "#DDDDDD", sw: t === 0 ? 0.9 : 0.5, dash: t === 0 ? "" : "2 2" });
+    b += T(X(t), ay + 11, (t > 0 ? "+" : t < 0 ? "−" : "") + Math.abs(t) + " %", { size: 8, anchor: "middle", fill: C.grey });
+  });
+  b += line(X(-SPAN), ay, X(SPAN), ay, { stroke: C.grey, sw: 0.7 });
+  b += T(LX, ay + 11, "orange beyond ±5 %", { size: 7.8, fill: C.grey });
+  return svgDoc(W, H, b);
+}
+
+/* ------------------------------------------------------------------ */
+/* Fig. S8. How a change gets in, and what has to be touched to make    */
+/* one. No tool or model is named: they date, the structure does not.   */
+/* ------------------------------------------------------------------ */
+export function architecture(DATA) {
+  const ns = "s8", W = 505, H = 388;
+  let b = defs(ns);
+
+  /* ---- a. the gate a revision has to pass ---- */
+  b += T(18, 22, "a", { size: 11, weight: "bold" });
+  const boxA = (x, y, w, h, label, sub, colour, tint) =>
+    rect(x, y, w, h, { stroke: colour, fill: tint || "#FFFFFF", sw: 1 }) +
+    T(x + w / 2, y + (sub ? 14 : h / 2 + 3.2), label, { size: 9, weight: "bold", anchor: "middle", fill: colour }) +
+    (sub ? T(x + w / 2, y + 25, sub, { size: 8, anchor: "middle", fill: C.grey }) : "");
+
+  const ay = 34, ah = 34;
+  b += boxA(18, ay, 104, ah, "Physical specification", "and its assumptions", C.scalar, TINT.scalar);
+  b += arrow(ns, "M122," + (ay + ah / 2) + " L136," + (ay + ah / 2), { color: "scalar" });
+  b += boxA(137, ay, 82, ah, "Implementation", "assisted", C.grey);
+  b += arrow(ns, "M219," + (ay + ah / 2) + " L233," + (ay + ah / 2));
+  b += boxA(234, ay, 96, ah, "Independent review", "a second model", C.grey);
+  b += arrow(ns, "M330," + (ay + ah / 2) + " L344," + (ay + ah / 2));
+  b += rect(345, ay - 4, 82, ah + 8, { stroke: C.ink, fill: "#FFFFFF", sw: 1.2 });
+  b += T(386, ay + 11, "Verification", { size: 9, weight: "bold", anchor: "middle" });
+  b += T(386, ay + 22, "gates", { size: 9, weight: "bold", anchor: "middle" });
+  b += arrow(ns, "M427," + (ay + ah / 2) + " L441," + (ay + ah / 2), { color: "gas" });
+  b += rect(442, ay, 45, ah, { stroke: C.gas, fill: TINT.gas, sw: 1 });
+  b += T(464.5, ay + 14, "Release", { size: 9, weight: "bold", anchor: "middle", fill: C.gas });
+  b += T(464.5, ay + 25, "versioned", { size: 8, anchor: "middle", fill: C.grey });
+  b += T(434, ay - 8, "pass", { size: 8, fill: C.gas });
+
+  /* the failure path returns to implementation, which is the whole point */
+  b += arrow(ns, "M386," + (ay + ah + 4) + " L386,96 L178,96 L178," + (ay + ah + 1), { color: "thermal", sw: 1 });
+  b += T(282, 93, "fail", { size: 8, anchor: "middle", fill: C.thermal });
+  b += T(18, 112, "The gates are the repository's own: regression tests, energy closure, the analytic and manufactured-solution", { size: 8.5, fill: C.grey });
+  b += T(18, 123, "benchmarks, and grid convergence. Every physical and numerical decision is adjudicated by the human author.", { size: 8.5, fill: C.grey });
+
+  /* ---- b. what a change actually touches ---- */
+  b += T(18, 152, "b", { size: 11, weight: "bold" });
+  const cx = 232, cy = 196, cw = 118, ch = 40;
+  b += rect(cx, cy, cw, ch, { stroke: C.thermal, fill: TINT.thermal, sw: 1.2 });
+  b += T(cx + cw / 2, cy + 17, "solver.js", { size: 10, weight: "bold", anchor: "middle", fill: C.thermal });
+  b += T(cx + cw / 2, cy + 29, "DOM-free numerical core", { size: 8, anchor: "middle", fill: C.grey });
+
+  const feeds = [
+    { y: 164, label: "Material presets", note: "temperature-dependent properties", c: C.scalar },
+    { y: 196, label: "Geometry, wall, gas", note: "the boundary-condition configuration", c: C.field },
+    { y: 228, label: "Browser interface", note: "inputs and outputs only", c: C.grey }
+  ];
+  feeds.forEach(function (f) {
+    b += rect(18, f.y, 150, 24, { stroke: f.c, fill: "#FFFFFF", sw: 0.9 });
+    b += T(26, f.y + 10, f.label, { size: 8.5, weight: "bold", fill: f.c });
+    b += T(26, f.y + 20, f.note, { size: 7.6, fill: C.grey });
+    b += arrow(ns, "M168," + (f.y + 12) + " L" + (cx - 2) + "," + (cy + ch / 2), { color: "grey", sw: 0.8 });
+  });
+  b += rect(18, 260, 150, 24, { stroke: C.gas, fill: "#FFFFFF", sw: 0.9, dash: "3 2" });
+  b += T(26, 270, "Verification suite", { size: 8.5, weight: "bold", fill: C.gas });
+  b += T(26, 280, "regression, conservation, benchmarks", { size: 7.2, fill: C.grey });
+  b += arrow(ns, "M168,272 L" + (cx - 2) + "," + (cy + ch - 4), { color: "gas", sw: 0.8 });
+
+  b += arrow(ns, "M" + (cx + cw) + "," + (cy + ch / 2) + " L" + (cx + cw + 14) + "," + (cy + ch / 2), { color: "thermal" });
+  b += rect(cx + cw + 15, cy - 6, 108, ch + 12, { stroke: C.grey, fill: "#FFFFFF", sw: 0.9 });
+  ["2D field and diagnostics", "loss partition, closure", "CSV export", "these figures"].forEach(function (t, i) {
+    b += T(cx + cw + 23, cy + 6 + i * 11, t, { size: 8, fill: i === 0 ? C.ink : C.grey });
+  });
+
+  b += line(18, 302, 487, 302, { stroke: C.ink, sw: 0.9 });
+  b += T(18, 316, "WHAT A CHANGE TOUCHES", { size: 8, weight: "bold", fill: C.grey });
+  [["add a material", "the preset and its property functions; nothing else"],
+   ["change the shape, wall or gas", "the boundary-condition configuration"],
+   ["change the interface", "the input and output layer; the core is untouched"],
+   ["change the calculation", "solver.js, and the verification scripts that check it"],
+   ["any of the above", "rerun the same regression and conservation tests"]].forEach(function (r, i) {
+    const y = 330 + i * 12;
+    b += T(26, y, r[0], { size: 8.5 });
+    b += T(178, y, r[1], { size: 8.5, fill: C.grey });
+  });
   return svgDoc(W, H, b);
 }

@@ -18,7 +18,8 @@ import { geometry, equivalentCylinder, build2DMesh, calculate, solveThermal2D, s
          elementTimeConstant, MATERIALS } from "../../apps/joule/solver.js";
 import { defaultInput } from "../../tools/verification/joule.mjs";
 import { cfpMaterial, cfpEnclosure, cfpInputs } from "../../tools/verification/joule-rphcjh.mjs";
-import { workflow, coupling, verification, defaultCase, transient, screening,
+import { run as crossCheckRun } from "../../tools/verification/crosscheck.mjs";
+import { workflow, coupling, verification, defaultCase, transient, screening, crosscheck, architecture,
          meshDomain, matrixClasses, solverLoop, cylinderMapping } from "./draw.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -289,6 +290,34 @@ DATA.screening = { sweep, best, byMaterial, targetC: TARGET_C, ldHi: LD_HI,
                    imax: x.imax, vmax: x.vmax, volumeCm3: x.volumeCm3,
                    limitC: x.material.meltC, limitKind: x.material.meltKind, materialName: x.material.name };
 
+// Published-reactor cross-checks. The model side is computed; the reported
+// side is read from the papers and is the only place in this build where a
+// number is typed, because there is nowhere else it could come from. Each
+// carries its citation.
+const cc = crossCheckRun();
+const pick = (id) => cc.evaluated.find((e) => e.id === id).results;
+const wis = pick("wismann").main, zh = pick("zheng"), kw = pick("kwak");
+const expo = (a2, b2) => Math.log((b2.tss - 273.15) / (a2.tss - 273.15)) /
+                         Math.log(b2.steadyLoss.total / a2.steadyLoss.total);
+DATA.crosscheck = [
+  { source: "Wismann et al. 2019", detail: "FeCrAl tube, 500 × 6.0 × 0.35 mm",
+    rows: [
+      { q: "resistance", unit: "Ω", reported: 0.117, model: p(wis.resistance, 4) },
+      { q: "power at 65 A", unit: "W", reported: 495, model: p(wis.steadyLoss.total, 4) },
+      { q: "maximum temperature", unit: "°C", reported: 800, model: p(wis.tss - 273.15, 4) }
+    ] },
+  { source: "Zheng et al. 2023", detail: "SiSiC foam, 99 × 32 mm, φ = 0.88",
+    rows: [
+      { q: "current at 13.04 V", unit: "A", reported: 30.26, model: p(zh.v1304.operatingCurrent, 4) },
+      { q: "current at 14.10 V", unit: "A", reported: 34.70, model: p(zh.v1410.operatingCurrent, 4) },
+      { q: "power at 14.10 V", unit: "W", reported: 489.3, model: p(zh.v1410.steadyLoss.total, 4) }
+    ] },
+  { source: "Kwak et al. 2025", detail: "carbon-fibre strip, 38 × 8 × 0.21 mm",
+    rows: [
+      { q: "T–P exponent", unit: "", reported: 0.3525, model: p(expo(kw.v16, kw.v31), 3) }
+    ] }
+];
+
 // The verification study is expensive, so it is measured by
 // make-verification-data.mjs and read back here. Its absence is fatal rather
 // than silently skipped: a missing measurement must not become a missing plate.
@@ -307,6 +336,8 @@ const PLATES = [
   { id: "fig4",  label: "Fig. 4",  draw: defaultCase },
   { id: "figS5", label: "Fig. S5", draw: transient },
   { id: "figS6", label: "Fig. S6", draw: screening },
+  { id: "figS7", label: "Fig. S7", draw: crosscheck },
+  { id: "figS8", label: "Fig. S8", draw: architecture },
   { id: "figS1", label: "Fig. S1", draw: meshDomain },
   { id: "figS2", label: "Fig. S2", draw: matrixClasses },
   { id: "figS3", label: "Fig. S3", draw: solverLoop },
