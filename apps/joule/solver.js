@@ -278,7 +278,28 @@ export function enclosureHeatLoss(T, x, g, cfg=x.enclosure) {
     const radiationThroughWall=1/(1/Math.max(radiation,1e-30)+wallRadialResistance);
     return conduction+radiationThroughWall;
   };
-  const wallLossConductance=(wallK)=>outsideConduction+radiationCoefficient(wallK,x.ambientK,cfg.wallEmissivity)*wallOutsideArea+wallEndConductance;
+  // The wall does not sit at one temperature over the whole domain height. It is
+  // heated across the element's length and cools away from it, so charging the
+  // full 2*pi*r*domainHeight to the near-element temperature over-counts hot
+  // radiating area. Channel-resolved 2D loss puts the size of that error at 20.5
+  // of the 22 W by which this network used to over-predict the total, all of it
+  // on the side path (2D: wall radiation 440.29 + outer radial 39.77 + axial
+  // 4.43 = 484.49 W against 505.03 W here), while the end paths agreed to 0.3 W.
+  //
+  // Treat the overhang as a radiating fin instead: a strip of wall of section
+  // wallAnnulusArea and perimeter 2*pi*r_out, losing heat at the local radiation
+  // coefficient, contributes tanh(m*margin)/m of effective length per side with
+  // m = sqrt(h P / (k A)). The fin parameter is evaluated at the current wall
+  // temperature inside the bisection, so the two stay consistent. Radiation
+  // dominates the outer loss by an order of magnitude, so it alone sets m.
+  const wallPerimeter=2*Math.PI*wallOuterRadius;
+  const wallRadiatingArea=(wallK)=>{
+    const hRad=radiationCoefficient(wallK,x.ambientK,cfg.wallEmissivity);
+    const m=Math.sqrt(Math.max(hRad,1e-30)*wallPerimeter/Math.max(cfg.wallK*wallAnnulusArea,1e-30));
+    const finLength=m>1e-30?Math.tanh(m*axialMargin)/m:axialMargin;
+    return wallPerimeter*Math.min(g.L+2*finLength,domainHeight);
+  };
+  const wallLossConductance=(wallK)=>outsideConduction+radiationCoefficient(wallK,x.ambientK,cfg.wallEmissivity)*wallRadiatingArea(wallK)+wallEndConductance;
   let lo=Math.min(T,x.ambientK),hi=Math.max(T,x.ambientK);
   for(let iteration=0;iteration<70;iteration++) {
     const wallK=(lo+hi)/2,qFromElement=gapConductance(wallK)*(T-wallK),qFromWall=wallLossConductance(wallK)*(wallK-x.ambientK);
@@ -729,7 +750,11 @@ export function assemble2DSystem(T, x, g, cfg, material, mesh, op, transient = n
   // unless cfg.porosityContrast is set, so this is a no-op by default.
   const porosity=porosityFactor2D(mesh,cfg),kAt=(i,j,code)=>cellK2D(code,T[j][i],material,cfg,x)*porosity.multiplier[j*mesh.nr+i];
   const addFace=(p,q,G)=>{diag[p]+=G;diag[q]+=G;edges.push([p,q,G]);};
-  const addBoundary=(p,G,Tb)=>{if(G<=0)return;diag[p]+=G;rhs[p]+=G*Tb;boundaryTerms.push([p,G,Tb]);};
+  // Every boundary term carries the path it belongs to. Without it the 2D
+  // reports one lumped static loss while the 0D network reports side/end/He
+  // separately, so a disagreement between the two totals cannot be traced to a
+  // path -- which is exactly where the lumped-limit study stalled.
+  const addBoundary=(p,G,Tb,channel)=>{if(G<=0)return;diag[p]+=G;rhs[p]+=G*Tb;boundaryTerms.push([p,G,Tb,channel||"other"]);};
   const addStorage=(p,G,Tb)=>{if(G<=0)return;diag[p]+=G;rhs[p]+=G*Tb;};
   const pairConductance=(area,d1,k1,d2,k2,code1,code2)=>{
     let resistance=d1/k1+d2/k2;
@@ -758,10 +783,10 @@ export function assemble2DSystem(T, x, g, cfg, material, mesh, op, transient = n
     const rRad=1/Math.max(radiationCoefficient(faceK,x.ambientK,emissivity),1e-30);
     return area/Math.max(rCond+rRad,1e-30);
   };
-  const addInterfaceRadiation=(p,code,tempK,area,halfDistance,kCell)=>{
+  const addInterfaceRadiation=(p,code,tempK,area,halfDistance,kCell,channel)=>{
     if(code!==0&&code!==2)return;
     const emissivity=code===0?x.emissivity:cfg.wallEmissivity;
-    addBoundary(p,seriesRadiationConductance(tempK,area,halfDistance,kCell,emissivity),x.ambientK);
+    addBoundary(p,seriesRadiationConductance(tempK,area,halfDistance,kCell,emissivity),x.ambientK,channel||(code===0?"elementRadiation":"wallRadiation"));
   };
   // Needed inside the assembly loop: the axial end boundaries are skipped on
   // cells the purge stream flows through, so the flow map has to exist first.
@@ -797,20 +822,20 @@ export function assemble2DSystem(T, x, g, cfg, material, mesh, op, transient = n
       if(code===2&&nextCode===3)addInterfaceRadiation(p,code,T[j][i],area,face-mesh.centers[i],kp);
     } else {
       const area=2*Math.PI*mesh.edges[mesh.nr]*(mesh.zEdges[j+1]-mesh.zEdges[j]);
-      addBoundary(p,kp*area/Math.max(mesh.edges[mesh.nr]-mesh.centers[i],1e-30),x.ambientK);
+      addBoundary(p,kp*area/Math.max(mesh.edges[mesh.nr]-mesh.centers[i],1e-30),x.ambientK,"outerRadial");
     }
     if(j<mesh.nz-1) {
       const q=idx(i,j+1),area=axialArea(i),face=mesh.zEdges[j+1],nextCode=mesh.materialAt(i,j+1),kn=kAt(i,j+1,nextCode),elementGas=(code===0&&nextCode===4)||(code===4&&nextCode===0);
       if(elementGas&&cfg.endMode==="electrode") {
         const elementP=code===0?p:q;
-        addBoundary(elementP,cfg.endH*area,cfg.endK);
+        addBoundary(elementP,cfg.endH*area,cfg.endK,"electrode");
       } else if(!(elementGas&&cfg.endMode==="adiabatic")) {
         const G=pairConductance(area,face-mesh.zCenters[j],kp,mesh.zCenters[j+1]-face,kn,code,nextCode);
         addFace(p,q,G);
         if(elementGas&&cfg.endMode==="ambient") {
           const elementP=code===0?p:q,elementTemp=code===0?T[j][i]:T[j+1][i];
           const elementHalf=code===0?face-mesh.zCenters[j]:mesh.zCenters[j+1]-face,elementK=code===0?kp:kn;
-          addInterfaceRadiation(elementP,0,elementTemp,area,elementHalf,elementK);
+          addInterfaceRadiation(elementP,0,elementTemp,area,elementHalf,elementK,"elementEndRadiation");
         }
         if(code===3&&(nextCode===0||nextCode===2))addInterfaceRadiation(q,nextCode,T[j+1][i],area,mesh.zCenters[j+1]-face,kn);
         if((code===0||code===2)&&nextCode===3)addInterfaceRadiation(p,code,T[j][i],area,face-mesh.zCenters[j],kp);
@@ -828,8 +853,8 @@ export function assemble2DSystem(T, x, g, cfg, material, mesh, op, transient = n
     // vanishes as h -> 0 cannot converge, and this one drove the observed order
     // negative. Leave the flowing cells to the advection scheme.
     const flowing=flowConnected&&(code===1||code===4);
-    if(j===0&&!flowing) addBoundary(p,kp*axialArea(i)/Math.max(mesh.zCenters[j]-mesh.zEdges[j],1e-30),x.ambientK);
-    if(j===mesh.nz-1&&!flowing) addBoundary(p,kp*axialArea(i)/Math.max(mesh.zEdges[j+1]-mesh.zCenters[j],1e-30),x.ambientK);
+    if(j===0&&!flowing) addBoundary(p,kp*axialArea(i)/Math.max(mesh.zCenters[j]-mesh.zEdges[j],1e-30),x.ambientK,"axialAmbient");
+    if(j===mesh.nz-1&&!flowing) addBoundary(p,kp*axialArea(i)/Math.max(mesh.zEdges[j+1]-mesh.zCenters[j],1e-30),x.ambientK,"axialAmbient");
   }
 
   if(mesh.nGap>0) {
@@ -951,10 +976,15 @@ export function bicgstab2D(system, initial, maxIterations=1800, tolerance=1e-11)
 
 export function boundaryLoss2D(T,x,g,cfg,material,mesh,op) {
   const system=assemble2DSystem(T,x,g,cfg,material,mesh,op),flat=T.flat();
-  const staticLoss=system.boundaryTerms.reduce((loss,[p,G,Tb])=>loss+G*(flat[p]-Tb),0);
+  const byChannel={};
+  const staticLoss=system.boundaryTerms.reduce((loss,[p,G,Tb,channel])=>{
+    const q=G*(flat[p]-Tb);
+    byChannel[channel]=(byChannel[channel]||0)+q;
+    return loss+q;
+  },0);
   const gasOutletK=system.gasFlow.connected?gasBulkRowTemperature2D(T,mesh,0):x.gasK;
   const gasAdvective=system.gasFlow.capacityRate*(gasOutletK-x.gasK);
-  return {total:staticLoss+gasAdvective,staticLoss,gasAdvective,gasOutletK,flowConnected:system.gasFlow.connected};
+  return {total:staticLoss+gasAdvective,staticLoss,gasAdvective,gasOutletK,byChannel,flowConnected:system.gasFlow.connected};
 }
 
 // Total internal energy of the domain above a reference temperature, J.
@@ -1124,5 +1154,5 @@ export function solveThermal2D(x, zeroD, cfg, material) {
   const tMin=Math.min(...element),tMax=Math.max(...element),mid=mesh.activeStart+Math.floor(mesh.nActiveZ/2),bottomRow=mesh.activeStart,topRow=mesh.activeEnd-1,loss=boundaryLoss2D(T,x,g,cfg,material,mesh,op),boundaryLoss=loss.total;
   const closure=Math.abs(op.pBulk-boundaryLoss)/Math.max(op.pBulk,1e-12),representedVolumeError=Math.abs(mesh.elementVolume-g.envelopeVolume)/g.envelopeVolume;
   const heCoolingUpper=Math.max(0,HE_CAPACITY_RATE*(avgK-x.gasK));
-  return{errors:[],x,zeroD,cfg,material,g,mesh,T,op,avgK,tMin,tMax,deltaT:tMax-tMin,center:T[mid][0],side:T[mid][mesh.nElement-1],bottom:T[bottomRow][0],top:T[topRow][0],wallInner:T[mid][mesh.nElement+mesh.nGap],wallOuter:T[mid][mesh.nElement+mesh.nGap+mesh.nWall-1],boundaryLoss,staticBoundaryLoss:loss.staticLoss,closure,representedVolumeError,heCapacityRate:HE_CAPACITY_RATE,heCooling:loss.gasAdvective,heCoolingUpper,heOutletK:loss.gasOutletK,heFlowConnected:loss.flowConnected,iterations:outer,linearIterations:totalLinear,linearResidual,residual:maxStep,converged:maxStep<=cfg.tolerance,targetReached:avgK>=x.targetK,qVol:op.pBulk/g.envelopeVolume,electrical,porosity};
+  return{errors:[],x,zeroD,cfg,material,g,mesh,T,op,avgK,tMin,tMax,deltaT:tMax-tMin,center:T[mid][0],side:T[mid][mesh.nElement-1],bottom:T[bottomRow][0],top:T[topRow][0],wallInner:T[mid][mesh.nElement+mesh.nGap],wallOuter:T[mid][mesh.nElement+mesh.nGap+mesh.nWall-1],boundaryLoss,staticBoundaryLoss:loss.staticLoss,lossByChannel:loss.byChannel,closure,representedVolumeError,heCapacityRate:HE_CAPACITY_RATE,heCooling:loss.gasAdvective,heCoolingUpper,heOutletK:loss.gasOutletK,heFlowConnected:loss.flowConnected,iterations:outer,linearIterations:totalLinear,linearResidual,residual:maxStep,converged:maxStep<=cfg.tolerance,targetReached:avgK>=x.targetK,qVol:op.pBulk/g.envelopeVolume,electrical,porosity};
 }

@@ -219,7 +219,7 @@ solver's credibility and has to establish an anchor before it sweeps. Run with
 ### The gap is two quantities, not one
 
 Driving Bi_R to 2.3e-6 by scaling conductivity 1000x leaves the element
-isothermal — spread 0.05 K — while the 2D mean still sits **28.72 K above** the
+isothermal — spread 0.05 K — while the 2D mean still sat **28.72 K above** the
 0D steady temperature. An offset that outlives the isothermal limit is not a
 lumping error, so the difference between the models separates:
 
@@ -239,15 +239,52 @@ claims 554.28 W where the resolved field carries 532.23 W (4.14%):
 | static total | 552.93 W | 532.12 W |
 | He advective | 1.352 W | 0.114 W |
 
-94% of the discrepancy is the static path. The 0D end term is the suspect: in 2D
-the element ends reach ambient through the He region, a series resistance the
-lumped network has no equivalent for. The advective terms differ twelvefold but
-are too small to matter at this operating point.
+94% of the discrepancy is the static path. Splitting the 2D boundary terms by
+channel — the instrumentation this study added — located it precisely, and it was
+not the end path at all:
 
-**Consequence.** A criterion fitted to `peak − 0D` inherits a ~29 K floor and
-would report the lumped model as unsafe at Bi_R = 0, which says nothing about
-lumping. The criterion below is stated on the spread; the floor is a separate
-finding that has to be quoted beside it.
+| path | 0D | 2D |
+| --- | --- | --- |
+| wall radiation + outer radial + axial | 505.03 W (`side`) | 484.49 W |
+| element end radiation | 47.90 W (`end`) | 47.63 W |
+
+The end paths agree to 0.3 W. All 20.5 W sits on the side, and the cause is that
+the 0D network charged `2 pi r_out * domainHeight` of radiating area to the
+near-element wall temperature. The wall is not isothermal over the domain: it is
+heated across the element's length and cools away from it, so the overhang was
+being counted as hot radiating area.
+
+**Fixed** by treating the overhang as a radiating fin, contributing
+`tanh(m*margin)/m` of effective length per side with `m = sqrt(hP/kA)` evaluated
+at the current wall temperature inside the existing bisection. The isothermal
+limit then reads:
+
+| | before | after |
+| --- | --- | --- |
+| offset at Bi_R = 2e-6 | +28.72 K | **−8.90 K** |
+| loss agreement | +4.14% | **−1.23%** |
+
+The correction slightly overshoots, leaving the 0D 1.2% *under* the resolved
+field. Two residuals remain and are named rather than tuned away: the side path
+is now 8.1 W low, and the He advective terms still differ twelvefold (1.352 W
+against 0.114 W) because the 0D carries downstream cooling on the element end
+area alone, where the resolved exit region loses heat radially over the full
+annulus.
+
+It was derived purely from 0D-versus-2D consistency, with no reference to
+measurement — and it moved the 0D **toward** the experiment, which is
+independent support for it:
+
+| case | 0D before | 0D after | measured |
+| --- | --- | --- | --- |
+| Wismann | 761.9 °C (−4.8%) | **787.4 °C (−1.6%)** | 800 °C |
+| Zheng | 736.0 °C | 757.3 °C | not tabulated |
+| Kwak | 1270.7 °C | 1276.5 °C | 1094 °C |
+
+**Consequence for the earlier cross-check claim.** The 0D-to-2D gap on Wismann
+was 49.8 K and is now 24.3 K. Roughly half of what had been reported as the 2D
+resolving something the lumped model could not was this network's own
+over-prediction of wall radiating area.
 
 ### Control: the closed form is reproduced exactly
 
@@ -310,11 +347,16 @@ that same operating point, and is **four times too permissive here**.
 
 ### What this does not license
 
-Across the sweep the offset is frequently *larger* than the spread: 39.9 K
-against 5.2 K at Bi_R = 3.9e-4, and it changes sign (−35.6 K) at low emissivity
-with a high drive. In the low-Bi regime where lumping is safe, the residual 0D
-error is dominated by the loss-model difference, not by lumping. **A Biot
-criterion is necessary and not sufficient**, and must be quoted with the offset.
+The sweep figures quoted here predate the fin correction: with the old network
+the offset was frequently *larger* than the spread (39.9 K against 5.2 K at
+Bi_R = 3.9e-4) and changed sign at low emissivity with a high drive. The
+correction cuts the isothermal-limit offset by 3.2x, so the offset is no longer
+the dominant term in most of the sweep — but it does not reach zero, and it still
+does not scale with Bi_R. **A Biot criterion remains necessary and not
+sufficient**, and must be quoted with the residual offset. The spread-side
+results above are unaffected: the fix touches only the 0D network, so every 2D
+quantity, and therefore every slope, R² and f(L/D) in this section, is
+unchanged.
 
 Two reporting defects were found and fixed inside this study, both of the same
 shape — a summary statistic agreeing with the hypothesis while the rows
