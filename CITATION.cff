@@ -26,8 +26,8 @@ keywords:
   - reactor engineering
   - dimensionless analysis
 license: MIT
-version: 0.1.0
-date-released: "2026-08-08"
+version: 0.2.0
+date-released: "2026-08-25"
 references:
   - type: article
     title: "Tandem Nonoxidative Coupling of Methane and Carbon Dioxide Reduction via Pulsed Joule Thermochemistry"

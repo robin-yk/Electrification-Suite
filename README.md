@@ -62,7 +62,7 @@ Physical validation against published reactors is separate from that code verifi
   title   = {{Electrification Suite: Interactive Models of Chemical Process Electrification}},
   year    = {2026},
   url     = {https://github.com/robin-yk/Electrification-Suite},
-  version = {0.1.0}
+  version = {0.2.0}
 }
 ```
 

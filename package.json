@@ -1,6 +1,6 @@
 {
   "name": "electrification",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Browser-based physics models of electrified catalytic reactors: microwave heating, Joule heating, and rapid-pulsed vs. continuous heating, each built on a dependency-free ES-module solver.",
   "license": "MIT",
   "type": "module",
