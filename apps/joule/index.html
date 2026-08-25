@@ -1095,7 +1095,7 @@
           <div class="top-visual-grid">
             <article class="card top-visual-card">
               <div class="geometry-visual-head">
-                <strong>Calculated Cylinder Geometry</strong>
+                <strong id="geometryCardTitle">Calculated Cylinder Geometry</strong>
                 <span>Fill color tracks the computed element temperature.</span>
               </div>
               <div class="geometry-visual-body">
@@ -2430,9 +2430,110 @@
       if (marker) marker.setAttribute("title", `${tssFinite ? "Tss" : "Target"} ${format(celsius(refK), 0)} °C`);
     }
 
+    // A rectangular element is drawn as the slab it is. Showing the
+    // surface-equivalent cylinder here would put back exactly the confusion the
+    // shape option removes: the 0D balance runs on L, W and H, and the cylinder
+    // belongs to the axisymmetric tabs, which say so themselves.
+    function renderBoxVisual(r, svg) {
+      const W = 680, H = 320;
+      const Lmm = r.g.L*1000, Wmm = r.g.W*1000, Hmm = r.g.H*1000;
+      // True proportions where they are legible, floored where they are not: a
+      // 0.21 mm foil against a 38 mm length is 180:1 and would draw as a line.
+      const s = 300/Math.max(Lmm, 1e-9);
+      const fw = 300;
+      const fh = clamp(Hmm*s, 11, 150);
+      const dp = clamp(Wmm*s, 26, 140);
+      const dx = dp*0.55, dy = dp*0.42;
+      const x0 = (W - fw - dx)/2, x1 = x0 + fw;
+      const cy = 168, y0 = cy - fh/2, y1 = cy + fh/2;
+      const edge = "#102a43";
+      const poreFill = "#eef4f8", poreEdge = "#b9cddb";
+
+      const ambientK = r.input.ambientK;
+      const refK = finite(r.tss) ? r.tss : (finite(r.input.targetK) ? r.input.targetK : ambientK + 2000);
+      const colorMax = Math.max(ambientK + 500, refK * 1.15);
+      const heatU = clamp((refK - ambientK) / Math.max(1e-6, colorMax - ambientK), 0, 1);
+      const mix = (c, t, a) => c.map((v, i) => Math.round(v + (t[i] - v) * a));
+      const toRgb = (c) => `rgb(${c[0]},${c[1]},${c[2]})`;
+      const base = thermalColorRGB(heatU);
+      const front = toRgb(mix(base, [255,255,255], 0.30));
+      const top = toRgb(mix(base, [255,255,255], 0.52));
+      const side = toRgb(mix(base, [0,0,0], 0.30));
+      updateGeometryColorbar(heatU, ambientK, colorMax, refK, finite(r.tss));
+
+      const defs = svgEl("defs");
+      const blur = svgEl("filter", { id:"boxGroundBlur", x:"-60%", y:"-60%", width:"220%", height:"260%" });
+      blur.append(svgEl("feGaussianBlur", { stdDeviation:5 }));
+      const clip = svgEl("clipPath", { id:"boxPoreClip" });
+      clip.append(svgEl("rect", { x:x0, y:y0, width:fw, height:fh }));
+      defs.append(blur, clip);
+      svg.append(defs);
+
+      svg.append(svgEl("ellipse", { cx:x0+fw/2+dx/2, cy:y1+10, rx:fw*0.47, ry:7,
+        fill:"#0b1f33", opacity:0.18, filter:"url(#boxGroundBlur)" }));
+
+      const poly = (pts, fill) => svgEl("polygon", { points:pts, fill, stroke:edge, "stroke-width":1.75, "stroke-linejoin":"round" });
+      svg.append(poly(`${x0},${y0} ${x0+dx},${y0-dy} ${x1+dx},${y0-dy} ${x1},${y0}`, top));
+      svg.append(poly(`${x1},${y0} ${x1+dx},${y0-dy} ${x1+dx},${y1-dy} ${x1},${y1}`, side));
+      svg.append(poly(`${x0},${y0} ${x1},${y0} ${x1},${y1} ${x0},${y1}`, front));
+
+      // Same equal-area pore mosaic the cylinder uses, on the front face.
+      const cols = 20, rows = clamp(Math.round(fh/14), 2, 8);
+      const cellW = fw/cols, cellH = fh/rows, cells = [];
+      for (let row = 0; row < rows; row++) for (let col = 0; col < cols; col++)
+        cells.push({ row, col, hash:((col*83 + row*157 + col*row*43 + col*col*17 + row*row*29) % 997)/997 });
+      cells.sort((a,b) => a.hash-b.hash);
+      const voids = new Set(cells.slice(0, Math.round(r.g.porosity*cells.length)).map((d) => `${d.row}-${d.col}`));
+      const poreLayer = svgEl("g", { "clip-path":"url(#boxPoreClip)" });
+      const pr = Math.max(1, Math.min(cellW, cellH)*0.34);
+      for (let row = 0; row < rows; row++) for (let col = 0; col < cols; col++) {
+        if (!voids.has(`${row}-${col}`)) continue;
+        poreLayer.append(svgEl("circle", { cx:x0+col*cellW+cellW/2, cy:y0+row*cellH+cellH/2, r:pr,
+          fill:poreFill, stroke:poreEdge, "stroke-width":0.8 }));
+      }
+      svg.append(poreLayer);
+
+      const dimColor = "#982929";
+      const arrow = (tipX, tipY, ddx, ddy, size=7, half=2.6) => {
+        const bx = tipX - ddx*size, by = tipY - ddy*size, px = -ddy*half, py = ddx*half;
+        return svgEl("polygon", { points:`${tipX},${tipY} ${bx+px},${by+py} ${bx-px},${by-py}`, fill:dimColor });
+      };
+      const label = (x, y, text, anchor="middle") => svgEl("text",
+        { x, y, "text-anchor":anchor, fill:dimColor, "font-size":17, "font-weight":500, "font-family":"Roboto, Arial" }, text);
+
+      // length, under the front face
+      const dimY = y1 + 34;
+      svg.append(svgEl("line", { x1:x0, x2:x0, y1:y1+4, y2:dimY+5, stroke:"#c9b3b3", "stroke-width":1 }));
+      svg.append(svgEl("line", { x1:x1, x2:x1, y1:y1+4, y2:dimY+5, stroke:"#c9b3b3", "stroke-width":1 }));
+      svg.append(svgEl("line", { x1:x0, x2:x1, y1:dimY, y2:dimY, stroke:dimColor, "stroke-width":1.5 }));
+      svg.append(arrow(x0, dimY, 1, 0), arrow(x1, dimY, -1, 0));
+      svg.append(label((x0+x1)/2, dimY+19, `L = ${format(Lmm, 3)} mm`));
+
+      // thickness, at the left edge
+      const dimX = x0 - 30;
+      svg.append(svgEl("line", { x1:dimX-5, x2:x0-4, y1:y0, y2:y0, stroke:"#c9b3b3", "stroke-width":1 }));
+      svg.append(svgEl("line", { x1:dimX-5, x2:x0-4, y1:y1, y2:y1, stroke:"#c9b3b3", "stroke-width":1 }));
+      svg.append(svgEl("line", { x1:dimX, x2:dimX, y1:y0, y2:y1, stroke:dimColor, "stroke-width":1.5 }));
+      svg.append(arrow(dimX, y0, 0, 1), arrow(dimX, y1, 0, -1));
+      svg.append(label(dimX - 9, cy + 5, `H = ${format(Hmm, 3)} mm`, "end"));
+
+      // width, along the depth direction
+      const wx = x1 + 14, wy = y1 + 2;
+      svg.append(svgEl("line", { x1:wx, x2:wx+dx, y1:wy, y2:wy-dy, stroke:dimColor, "stroke-width":1.5 }));
+      svg.append(arrow(wx, wy, 0.79, -0.61), arrow(wx+dx, wy-dy, -0.79, 0.61));
+      svg.append(label(wx + dx + 16, wy - dy - 4, `W = ${format(Wmm, 3)} mm`, "start"));
+
+      svg.append(svgEl("text", { x:20, y:29, fill:"#102a43", "font-size":21, "font-weight":500, "font-family":"Roboto, Arial" },
+        `φ = ${format(r.g.porosity, 3)}  (${format(r.g.porosity*100, 1)}% void)`));
+      svg.append(svgEl("text", { x:20, y:55, fill:"#64717d", "font-size":16, "font-family":"Roboto, Arial" },
+        `f_solid = ${format(r.g.solidFraction, 3)} · Vol = ${format(r.g.envelopeVolume*1e6, 3)} cm³ · surface = ${format(r.g.surface*1e4, 3)} cm²`));
+      svg.setAttribute("aria-label", `Rectangular element: length ${format(Lmm,3)}, width ${format(Wmm,3)}, thickness ${format(Hmm,3)} millimeters, porosity ${format(r.g.porosity*100,1)} percent.`);
+    }
+
     function renderGeometryVisual(r) {
       const svg = $("geometryVisual");
       svg.replaceChildren();
+      if (r.g.shape === "box") { renderBoxVisual(r, svg); return; }
       const W = 680, H = 320;
       // True-to-scale: body width/height keep the real L/D ratio (a 1:1 rod draws as an
       // actual square profile, not a fixed 5:3 box). Only the true extremes of the allowed
@@ -2581,7 +2682,9 @@
       const q = (label, equation) => `<div class="equation"><strong>${label}</strong><br>${equation}</div>`;
       const equations = [
         q("Resistivity conversion", `ρe = ${format(r.material.rhoOhmCm, 7)} Ω·cm × 0.01 = ${format(r.rhoE, 7)} Ω·m`),
-        q("Porous geometry", `fs = 1−φ = ${format(r.g.solidFraction, 4)}; Venv = Vsolid/fs = ${format(r.g.envelopeVolume, 8)} m³; Aeff = fsπD²/4 = ${format(r.g.area, 7)} m²; L/D = ${format(r.g.aspectRatio, 4)}`),
+        r.g.shape === "box"
+          ? q("Rectangular geometry", `fs = 1−φ = ${format(r.g.solidFraction, 4)}; Venv = L·W·H = ${format(r.g.envelopeVolume, 8)} m³; Aeff = fs·W·H = ${format(r.g.area, 7)} m²; As = 2(LW+LH+WH) = ${format(r.g.surface, 7)} m²`)
+          : q("Porous geometry", `fs = 1−φ = ${format(r.g.solidFraction, 4)}; Venv = Vsolid/fs = ${format(r.g.envelopeVolume, 8)} m³; Aeff = fsπD²/4 = ${format(r.g.area, 7)} m²; L/D = ${format(r.g.aspectRatio, 4)}`),
         q("Resistance", `R = ρeL/A = (${format(r.rhoE, 7)})(${format(r.g.L, 7)})/${format(r.g.area, 7)} = ${format(r.resistance, 7)} Ω`),
         q("Allowed current", `min[${Object.entries(r.candidates).map(([k,v]) => `${k}: ${format(v, 4)} A`).join("; ")}] = ${format(r.operatingCurrent, 4)} A`),
         q("Power", `P = I²R = (${format(r.operatingCurrent, 4)})²(${format(r.resistance, 7)}) = ${format(r.power, 4)} W`),
@@ -3053,6 +3156,7 @@
       const shape=$("shape").value;
       document.body.dataset.shape=shape;
       $("shapeBadge").textContent=shape==="box"?"Rectangular":"Cylinder";
+      $("geometryCardTitle").textContent=shape==="box"?"Element Geometry":"Calculated Cylinder Geometry";
       $("shapeNote").innerHTML=shape==="box"
         ? "The three dimensions are used as they are: A = W·H carries the current, and the surface is the full 2(LW + LH + WH). The 2D and Dynamic tabs mesh an equivalent cylinder, shown there, because they are axisymmetric."
         : "Nominal volume sets the L × D envelope directly. Solid material is V<sub>solid</sub> = (1−φ)·V<sub>nominal</sub>, so higher φ means less conducting solid in the same envelope.";
