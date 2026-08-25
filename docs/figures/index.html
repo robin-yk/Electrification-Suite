@@ -121,7 +121,7 @@ footer{margin-top:72px;padding-top:20px;border-top:1px solid var(--rule-strong);
 <div class="note">
 <b>Getting a plate into Word.</b> Open <i>SVG source</i>, select all, copy, and save the text as a file ending in <code>.svg</code>, then place that file in the manuscript. The vector copy stays sharp at any size and holds the type at a true 8 pt. <i>Render 600 dpi</i> rasterizes the same artwork into a canvas; right-click it and choose Save image as to keep a PNG. Neither route can start the download for you, because a published page is not allowed to write to your disk.
 <br><br>
-Captions sit below each plate as text rather than inside the artwork, so they can be pasted in as Word captions and picked up by cross-references and the list of figures.
+Captions sit below each plate as text rather than inside the artwork, so they can be pasted in as Word captions and picked up by cross-references and the list of figures. Every symbol and every numerical method the plates name is defined in the two tables below them, so a plate can be read without the paper and without the code.
 </div>
 
 <div class="key">
@@ -197,6 +197,31 @@ Captions sit below each plate as text rather than inside the artwork, so they ca
 <tr><td class="q"><i>c</i><sub>p</sub>(<i>T</i>)</td><td>specific heat capacity, read only by the transient march</td><td>J/(kg&#183;K)</td></tr>
 <tr><td class="q"><i>h</i><sub>rad</sub></td><td>radiation coefficient, &#949;&#963;<sub>SB</sub>(<i>T</i>+<i>T</i><sub>s</sub>)(<i>T</i>&#178;+<i>T</i><sub>s</sub>&#178;), linearized about the current temperature. &#949; is emissivity, &#963;<sub>SB</sub> the Stefan&#8211;Boltzmann constant, and <i>T</i><sub>s</sub> the temperature of the surface being exchanged with</td><td>W/(m&#178;&#183;K)</td></tr>
 <tr><td class="q"><i>D</i></td><td>diameter of the equivalent cylinder, chosen so its surface matches the strip</td><td>m</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2>Methods named in the figures</h2>
+<p class="lede">Every numerical term that appears in a plate, in plain language. Nothing here assumes prior knowledge of finite-volume or Krylov methods.</p>
+<div class="tablewrap">
+<table>
+<thead><tr><th>Term</th><th>What it is</th><th>Where it appears</th></tr></thead>
+<tbody>
+<tr><td class="q">Finite volume</td><td>The domain is cut into cells and an energy balance is written for each one, so whatever leaves a cell enters its neighbor exactly. There is one unknown temperature per cell.</td><td>Fig. 3, Fig. 4</td></tr>
+<tr><td class="q">Axisymmetric</td><td>Solved on an <i>r</i>&#8211;<i>z</i> half-plane and taken to be identical at every angle around the axis. Far cheaper than three dimensions, and unable to represent anything that varies with angle.</td><td>Fig. 1, Fig. 2, Fig. 3</td></tr>
+<tr><td class="q">Picard iteration</td><td>The material properties depend on temperature and the temperature depends on the properties. Guess a field, compute the coefficients from that guess, solve, then use the answer as the next guess. Repeat until the field stops moving. It replaces one nonlinear problem with a sequence of linear ones.</td><td>Fig. 1</td></tr>
+<tr><td class="q">Under-relaxation</td><td>Move only part of the way toward what the linear solve proposes, 0.62 of it here, so a strongly nonlinear case walks in rather than oscillating. The convergence test measures the full step, not the relaxed one.</td><td>Fig. 1</td></tr>
+<tr><td class="q">Preconditioning</td><td>Rescale the system before solving it so the iterative solver converges in far fewer steps. Here each row is divided by its own diagonal entry, which is the Jacobi, or diagonal, preconditioner: the cheapest one there is.</td><td>Fig. 1</td></tr>
+<tr><td class="q">PCG</td><td>Preconditioned conjugate gradient. An iterative solver for a <i>symmetric</i> system that stores a handful of vectors and never forms the matrix. Run to a relative residual of 1&#215;10<sup>&#8722;11</sup>.</td><td>Fig. 1, Fig. 4</td></tr>
+<tr><td class="q">BiCGSTAB</td><td>Biconjugate gradient stabilized. Does the same job when the matrix is <i>not</i> symmetric, at more work per iteration. The code selects it only when one-sided entries are present and falls back to PCG when they are not, so the extra cost is paid only when it is needed.</td><td>Fig. 1, Fig. 4</td></tr>
+<tr><td class="q">Symmetric operator</td><td>Entry (<i>i</i>,<i>j</i>) equals entry (<i>j</i>,<i>i</i>): if cell <i>i</i> acts on cell <i>j</i>, cell <i>j</i> acts back identically. Conduction and radiation are symmetric. A flow term that reads only the upstream cell is not, which is what forces the switch of solver.</td><td>Fig. 4</td></tr>
+<tr><td class="q">Two-point flux</td><td>The heat crossing a face is computed from the two cell-center temperatures alone, with the two half-cell resistances in series.</td><td>Fig. 4</td></tr>
+<tr><td class="q">Backward Euler</td><td>The transient step writes the balance at the end of the step rather than the start. Stable at any step size and first-order accurate, so a step that is stable is not automatically a step that is accurate.</td><td>Table S7</td></tr>
+<tr><td class="q">Unit-potential solve</td><td>The current-flow problem solved with one volt across the element. The distribution that comes out has the right shape and a meaningless magnitude, which is then fixed by scaling it to the known total power.</td><td>Fig. 1, Fig. 5</td></tr>
+<tr><td class="q">Energy closure</td><td>The residual check on a converged solution: power in, minus power out, minus what went into storage, divided by the largest of the three. A correct solve returns a number near zero.</td><td>Fig. 1</td></tr>
+<tr><td class="q">Gray-body pair</td><td>Radiation between two surfaces whose emissivity does not vary with wavelength, with nothing absorbing in between. It is the simplest exchange model that conserves energy.</td><td>Table S7</td></tr>
+<tr><td class="q">Plug flow</td><td>The gas moves at a single bulk velocity with no velocity profile across the gap. Only the enthalpy it carries is tracked; momentum is not solved.</td><td>Fig. 4, Table S7</td></tr>
+<tr><td class="q">Far-field boundary</td><td>The outer edge is held at a fixed condition and placed far enough out that moving it further does not change the answer.</td><td>Fig. 3</td></tr>
 </tbody>
 </table>
 </div>
