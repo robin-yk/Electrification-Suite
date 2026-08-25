@@ -802,6 +802,15 @@
     .t2d-scale { display:flex; justify-content:space-between; color:var(--muted); font-size:15px; margin-top:5px; }
     .section-kicker[id] { scroll-margin-top:76px; }
     #dynStepNote { white-space:pre-line; }
+    .limit-list { display:grid; gap:0; border-top:1px solid var(--line, #dfe5ea); }
+    .limit-list details { border-bottom:1px solid var(--line, #dfe5ea); }
+    .limit-list summary { cursor:pointer; padding:14px 4px; font-weight:700; color:var(--navy, #102a43); list-style:none; }
+    .limit-list summary::-webkit-details-marker { display:none; }
+    .limit-list summary::before { content:"+"; display:inline-block; width:18px; color:var(--muted); font-weight:400; }
+    .limit-list details[open] summary::before { content:"−"; }
+    .limit-list details[open] summary { color:var(--accent, #2f8f83); }
+    .limit-list p { margin:0 0 12px 22px; max-width:78ch; color:var(--muted); }
+    .limit-list p:last-child { padding-bottom:6px; }
     .panel-jump { margin:0 0 22px; color:var(--muted); font-size:15px; }
     .panel-jump a { color:var(--muted); text-decoration:underline; text-underline-offset:3px; }
     .panel-jump a:hover { color:var(--accent, #2f8f83); }
@@ -1497,7 +1506,7 @@
     </section>
 
     <section id="reference" class="panel" role="tabpanel">
-      <p class="panel-jump"><a href="#jumpCalc">Calculations</a> · <a href="#jumpCite">How to cite</a></p>
+      <p class="panel-jump"><a href="#jumpCalc">Calculations</a> · <a href="#jumpLimits">Limits</a> · <a href="#jumpCite">How to cite</a></p>
       <p class="section-kicker" id="jumpCalc">Transparent model documentation</p>
       <h2 class="section-title">Calculations &amp; implementation</h2>
       <p class="section-lede">Every equation used by the model is listed below in execution order. All internal calculations use SI units and absolute temperature.</p>
@@ -1673,6 +1682,65 @@
       </details>
 
       <hr class="panel-divider">
+
+      <p class="section-kicker" id="jumpLimits">Where this model stops</p>
+      <h2 class="section-title">Limits</h2>
+      <p class="section-lede">Every model is wrong somewhere; the useful distinction is whether its author knows where. Each item below states the modelling choice and the case where trusting it would be a mistake. Numbers are measured, not estimated. The full version, covering all three tools, is <a href="https://github.com/robin-yk/Electrification-Suite/blob/main/docs/LIMITS.md" target="_blank" rel="noopener">docs/LIMITS.md</a>.</p>
+
+      <div class="limit-list">
+        <details>
+          <summary>The material data is a bigger error than the mesh</summary>
+          <p>The 2D field on the shipped default sits 0.60 K from a grid four times finer in each direction, 0.07% of the temperature rise. The resistivity it is computed from is labelled in the source as a constant grade proxy, and commercial SiC elements vary between grades by far more than that. Several other presets say the same about themselves: the SiSiC room-temperature branch is a commercial-element proxy, and the Mittal Table 1 entries are single room-temperature values.</p>
+          <p><strong>Do not</strong> quote an absolute temperature against a measurement without substituting a datasheet property first. These tools compare designs, where a shared property error largely cancels; they do not predict one design in isolation.</p>
+        </details>
+
+        <details>
+          <summary>Grid convergence is bounded, not eliminated</summary>
+          <p>Observed order 1.45, stable across two overlapping grid triplets, extrapolating to 846.12 °C. Between first and second order because the case mixes both: conduction and surface radiation are second order, the helium purge enthalpy balance is first-order upwind.</p>
+          <p><strong>Do not</strong> read more than about 0.6 K of significance into a temperature on the default grid, or separate two cases by less than that without refining both.</p>
+        </details>
+
+        <details>
+          <summary>The purge stream is a mixing cup, not a flow field</summary>
+          <p>The 50 sccm helium is a one-dimensional upwind enthalpy balance at fixed total capacity rate. No velocity profile, no boundary layer, no buoyancy. Where the flow cross-section changes at the ends of the element annulus, the stream is treated as fully mixed across the row.</p>
+          <p><strong>Do not</strong> ask it anything about the gas itself: local gas temperature, residence time, or a convective coefficient. It exists so the element has somewhere to lose heat.</p>
+        </details>
+
+        <details>
+          <summary>Porosity is a mean, not a structure</summary>
+          <p>The mean solid fraction is deliberately not treated as a porosity in the conductivity closure, and no shipped material opts in. Feeding it to a dispersed-pore model moved the Wismann tube's 2D peak from 818 to 852 °C against an 800 °C measurement, away from the experiment. The radial contrast knob varies the solid about that mean without changing it, and defaults to zero.</p>
+          <p><strong>Do not</strong> expect pore-scale current or heat concentration. The contrast is a reactor-scale caricature of a dense skin or core, not homogenization from a pore geometry.</p>
+        </details>
+
+        <details>
+          <summary>A rectangular element is solved as an equivalent cylinder</summary>
+          <p>The substitution preserves surface area, mass, length and electrical resistance, so every lumped quantity survives: the operating point and the steady mean temperature are meaningful. What it does not preserve is the conduction path to the surface. A slab loses heat across its half-thickness and the equivalent cylinder across a radius, which for a thin strip differ by a lot.</p>
+          <p><strong>Do not</strong> read the internal spread, the peak-to-mean difference, or a foil's through-thickness gradient from a box case.</p>
+        </details>
+
+        <details>
+          <summary>The transient is first order in time</summary>
+          <p>Backward Euler, observed order 1.01 to 1.09 across four halvings of the step. First order is the intended trade: unconditional stability is what makes a browser-affordable step possible against a stiff radiation boundary. A coarse step carries the right cycle-averaged energy but not the waveform.</p>
+          <p><strong>Do not</strong> read a pulse peak or shape from a march with fewer than about twenty steps per cycle. The tab warns when there are fewer; the cycle average is still right.</p>
+        </details>
+
+        <details>
+          <summary>A pulse train needs a period the element can follow</summary>
+          <p>The element's lumped relaxation time is about 7.6 s for the shipped default geometry. A period well under that is integrated by the element, which then responds to the mean: at 0.13 τ the swing was 2.9 K on a 42 K rise, and no time step changes that.</p>
+          <p><strong>Do not</strong> expect rapid pulsed heating on a thin foil here. The companion paper's RPH element is a 38 × 8 × 0.21 mm strip relaxing in 0.135 s, eighteen times more surface per unit volume than the bodies this mesh is built for; the RPH vs CJH tool's lumped integration is the right instrument for that regime.</p>
+        </details>
+
+        <details>
+          <summary>Contact resistance is lumped, and its heat leaves the field</summary>
+          <p>ρ<sub>c</sub> contributes to the operating point and is reported separately, but its power is deposited outside the 2D element rather than at the electrode faces.</p>
+          <p><strong>Do not</strong> use this tool to study electrode contact heating or its local thermal effect.</p>
+        </details>
+
+        <details>
+          <summary>What this model does not contain at all</summary>
+          <p>Chemistry coupled to the thermal field: no reaction heat and no conversion feeding back on temperature. Mechanical stress, thermal expansion or failure. Buoyancy or forced convection inside the element. Electrode, lead and bus-bar behaviour. Any claim about a specific commercial product.</p>
+        </details>
+      </div>
 
       <p class="section-kicker" id="jumpCite">Companion paper</p>
       <h2 class="section-title">How to Cite</h2>
