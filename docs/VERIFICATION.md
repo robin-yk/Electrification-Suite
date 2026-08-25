@@ -428,6 +428,74 @@ bed conductivities fitted against a 43%-too-peaked source were absorbing that
 error, so refitting them against the solved field is what makes those numbers
 mean what they claim.
 
+## Microwave grid convergence, and the gas-exchange term that breaks it
+
+With the Krylov solve in place the grid sequence can be measured honestly. On the
+reduced-rutile default case it does not converge:
+
+| grid | centre (°C) | avg bed (°C) | gas outlet (°C) | energy closure |
+| --- | --- | --- | --- | --- |
+| 30×60 | 811.16 | 622.75 | 520.39 | 4.25e-7 |
+| 60×120 | 804.56 | 621.76 | 514.61 | 1.31e-7 |
+| 120×240 | 788.80 | 618.05 | 509.19 | 8.07e-8 |
+
+Centre differences **grow**, −6.60 then −15.76, and the gas outlet drifts by a
+near-constant 5.8 K then 5.4 K rather than halving. Energy closure is excellent
+throughout, so nothing is being lost — the answer simply keeps moving.
+
+Switching the bed-to-gas exchange off isolates it completely:
+
+| grid | centre (°C), no gas exchange |
+| --- | --- |
+| 30×60 | 1061.28 |
+| 60×120 | 1066.61 (+5.34) |
+| 120×240 | 1069.30 (+2.68) |
+
+Monotone, ratio 1.99, **first order**. The rest of the solver converges cleanly.
+
+### Why
+
+The bed-to-gas march gives each bed row a finite-effectiveness stage,
+
+    eff = 1 − exp( −(UA_total / rowCount) / C_gas )
+
+and `rowCount` is the number of bed rows, which is the grid. Refining the mesh
+therefore changes the number of stages in the exchanger, so it is not one model
+being solved more accurately, it is a different model on every grid. The total UA
+is preserved, but a cascade of N finite stages is not the same object as the
+continuous exchanger it is standing in for, and the temperature field feeds back
+into each stage's driving difference, so the drift does not settle at the O(1/N)
+a decoupled cascade would give. This is the same species of defect as the He
+purge stream in the Joule solver, whose ambient clamp scaled as 1/(dz/2) and
+drove that solver's observed order negative.
+
+### What it does and does not invalidate
+
+The defect bites hardest where axial gas transport competes with radial
+conduction. Reduced rutile has a bed conductivity of 0.6–1.7 W/m·K and is
+dominated by it; SiC at 4–18 W/m·K is nearly isothermal across the bed and is
+not, which is why the SiC sequence used for the recalibration converges cleanly
+(473.56 → 476.04 → 477.03, differences +2.48 then +0.99, p ≈ 1.3) with a 30×60
+grid error near 3.5 K, under the 5.5 K residual being fitted.
+
+So the SiC refit stands, and **the reduced-rutile profile must not be recalibrated
+until the exchange term is made grid-independent.**
+
+### Refinement has a floor, and it is material-specific
+
+`bedHomogenization()` is now evaluated on every solve and the grid study refuses
+levels that cross it. The mesh cell must stay coarser than the packing unit cell,
+or the grid resolves structure the continuum model does not carry:
+
+| grid | SiC, d_p = 194 µm | TiO₂, d_p = 50 µm |
+| --- | --- | --- |
+| 30×60 | h/d_p = 2.58 | 10.0 |
+| 60×120 | 1.29 | 5.0 |
+| 120×240 | **0.64 — below** | 2.5 |
+
+A SiC grid study may reach 60×120 and no further. The sequences above are the
+TiO₂ profile, which has room at 120×240.
+
 ## Microwave calibration is fitting mesh error (`tools/verification/microwave-calibrate.mjs`)
 
 The page fits four numbers -- the bed conductivity anchors k200, k500, k800 and
