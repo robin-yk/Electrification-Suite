@@ -366,6 +366,68 @@ A-1")` missed an entry reading `"Kanthal A-1 (FeCrAl)"` and dropped a material i
 silence, the fit returning n = 9 instead of 12 with nothing said. Both stages now
 print every point and name every drop.
 
+## Microwave field solve (`apps/microwave/solver.js`, `solveField2D`)
+
+Opt-in through `p.fieldMode = "helmholtz"`; the shipped default still uses the
+fitted source, because switching over changes every number the page reports and
+the bed conductivities on the Calibration tab were fitted against the old shape.
+
+### Why a field solve is tractable here
+
+At 2.404 GHz the free-space wavelength is 124.7 mm, and SiC at eps' = 7.96 brings
+it to 44.2 mm inside the bed. A 10 mm bed therefore spans **D/lambda = 0.23**, so
+the load supports no internal cavity mode and nothing outside it needs meshing,
+and the existing 0.5 mm cells already give **88 per wavelength**. What is solved
+is the scalar Helmholtz problem for an axial E,
+
+    (1/r) d/dr ( r dE/dr ) + d2E/dz2 + k0^2 eps(T,r,z) E = 0
+
+on the temperature mesh, as a complex system in real 2N block form with an exact
+per-cell 2x2 Jacobi preconditioner. Stated limits: the scalar form is exact for
+eps varying with r alone and drops a grad(eps) coupling; the incident field is
+taken uniform and imposed on the domain boundary; and the absolute coupling
+efficiency is still not predicted, so the total is renormalised to the absorbed
+power exactly as the fitted shape was.
+
+### Control
+
+An infinite lossy dielectric cylinder in a uniform axial field has a closed form,
+`E(r)/E(R) = J0(kr)/J0(kR)` with `k = k0 sqrt(eps)` and J0 of a complex argument.
+At |kR| = 0.711 the solved profile reproduces it and converges cleanly:
+
+| grid | axis \|E\|/\|E(R)\| | exact | error |
+| --- | --- | --- | --- |
+| 15x30 | 1.109556 | 1.109332 | 2.02e-4 |
+| 30x60 | 1.124257 | 1.124193 | **5.67e-5** |
+| 60x120 | 1.131765 | 1.131749 | 1.47e-5 |
+
+Error falls by 3.6x then 3.9x per halving — second order.
+
+### What it changes, and a correction
+
+Power density on the axis relative to the bed edge:
+
+| | axis / edge |
+| --- | --- |
+| exact (refraction) | 1.264 |
+| shipped fitted source | 1.809 — **43% too peaked** |
+| its Beer-Lambert skin alone | 0.969 |
+
+The centre peaking is real physics: refraction into a subwavelength load. An
+earlier reading of this comparison quoted the skin factor alone, concluded the
+shipped source was edge-peaked and therefore had the sign wrong, and was mistaken
+— the fitted Gaussian in front of it dominates and peaks the source hard on the
+axis. The skin term does have the sign backwards, but at delta = 140 mm against a
+5 mm radius it moves the source by 3.2% and nothing rests on it.
+
+The real finding is that the shipped model obtains a genuine physical effect from
+a **fitted width** rather than from the field, and overshoots it by half again.
+The temperature consequence is modest — centre 473.8 -> 469.6 C, spread 35.7 ->
+29.7 K on the SiC default — but `fieldWr` stops being a free parameter, and the
+bed conductivities fitted against a 43%-too-peaked source were absorbing that
+error, so refitting them against the solved field is what makes those numbers
+mean what they claim.
+
 ## Continuous guards
 
 `tests/verification.test.js` (run by `npm test` and CI) keeps the headline
