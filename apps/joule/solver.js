@@ -729,7 +729,11 @@ export function assemble2DSystem(T, x, g, cfg, material, mesh, op) {
   // Needed inside the assembly loop: the axial end boundaries are skipped on
   // cells the purge stream flows through, so the flow map has to exist first.
   const flowRows=Array.from({length:mesh.nz},(_,j)=>gasFlowCells2D(mesh,j));
-  const flowConnected=flowRows.every(cells=>cells.length>0);
+  // cfg.purge === false removes the 50 sccm He stream while leaving the
+  // geometry alone. Needed to separate the gap's conduction path from the
+  // advection that runs through it; without it the only way to switch the
+  // stream off is to delete the gap, which changes the mesh at the same time.
+  const flowConnected=cfg.purge!==false&&flowRows.every(cells=>cells.length>0);
   for(let j=0;j<mesh.nz;j++) for(let i=0;i<mesh.nr;i++) {
     const p=idx(i,j),code=mesh.materialAt(i,j),kp=kAt(i,j,code);
     // cfg.verificationSource(r, z) [W/m³] replaces the Joule source over the whole
@@ -805,14 +809,31 @@ export function assemble2DSystem(T, x, g, cfg, material, mesh, op) {
     for(let j=mesh.nz-1;j>=0;j--) {
       const cells=flowRows[j],areas=cells.map(axialArea),areaTotal=areas.reduce((sum,value)=>sum+value,0);
       const weights=areas.map(value=>value/Math.max(areaTotal,1e-30));
+      // Where the flow cross-section does not change from one row to the next,
+      // each cell draws its inflow from the cell directly upstream of it. Taking
+      // the area-weighted mean of the whole upstream row instead — as this did
+      // for every row — homogenizes the stream radially once per cell, so the
+      // mixing length is the mesh spacing and the mixing rate per unit length
+      // diverges under refinement. That is not a discretization of anything, and
+      // because the purge cells are also conduction cells the artifact lands in
+      // the element-to-wall gap resistance: measured across 30x60 / 60x120 /
+      // 120x240 it moved the gap drop by 906 -> 803 -> 672 K and drove the
+      // observed order of the default case negative.
+      //
+      // The mean is still the right inflow where the stream actually contracts
+      // or expands (entering and leaving the element annulus), so it is kept for
+      // exactly those rows. Both branches conserve enthalpy: matched rows share
+      // the same cell set and therefore the same area weights, so the capacity
+      // leaving a cell equals the capacity arriving at its neighbour.
+      const upstream=j<mesh.nz-1?flowRows[j+1]:null;
+      const matched=upstream&&upstream.length===cells.length&&cells.every((cell,n)=>upstream[n]===cell);
+      const upstreamAreas=upstream?upstream.map(axialArea):[],upstreamTotal=upstreamAreas.reduce((sum,value)=>sum+value,0);
       for(let n=0;n<cells.length;n++) {
         const p=idx(cells[n],j),capacity=HE_CAPACITY_RATE*weights[n];
         diag[p]+=capacity;
         if(j===mesh.nz-1) rhs[p]+=capacity*x.gasK;
-        else {
-          const upstream=flowRows[j+1],upstreamAreas=upstream.map(axialArea),upstreamTotal=upstreamAreas.reduce((sum,value)=>sum+value,0);
-          for(let m=0;m<upstream.length;m++)directed.push([p,idx(upstream[m],j+1),capacity*upstreamAreas[m]/Math.max(upstreamTotal,1e-30)]);
-        }
+        else if(matched) directed.push([p,idx(cells[n],j+1),capacity]);
+        else for(let m=0;m<upstream.length;m++)directed.push([p,idx(upstream[m],j+1),capacity*upstreamAreas[m]/Math.max(upstreamTotal,1e-30)]);
       }
     }
   }
