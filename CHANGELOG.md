@@ -6,6 +6,118 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+Thirty-three commits since 0.2.0. The Joule tool gained a transient march and
+a browser tab to drive it, rectangular elements are now solved as rectangles,
+the microwave solver gained a field solve and a Krylov linear solver and was
+recalibrated against both, and the Application Note figures are now generated
+from the solver rather than drawn.
+
+### Added
+
+- Backward-Euler transient march for the Joule 2D solver. `createTransientRun()`
+  hands control back after each batch of steps so a page can drive it from an
+  animation frame and stop when the user says so; `solveTransient2D()` is that
+  loop run to completion. Storage uses the midpoint of the step for rho*cp, so
+  energy closure holds for a material whose heat capacity moves sharply with
+  temperature. `internalEnergy2D()` and `storageRate2D()` reproduce the
+  assembly exactly, which is what makes the closure check meaningful.
+- Dynamic tab: 0D seed to 2D steady field to a transient march, in the browser.
+  It marches to steady state rather than to a duration the user has to guess,
+  since nobody knows the right duration before running; the shipped SiC case
+  reaches half its rise at 34 s and stops storing energy near 336 s, so the old
+  60 s default cut the curve at two thirds of the way up. `plan.steadyTol`,
+  `plan.duration` and `plan.tolerance` are all optional, so a plan carrying
+  only `dt` and `steps` takes the original path.
+- Rectangular elements as a first-class shape. `geometry()` takes a shape; a
+  box carries its three real dimensions, so the conducting area is W*H, the
+  surface is the full 2(LW + LH + WH), and the volume is LWH. Nothing is
+  approximated and the 0D balance runs on the geometry that exists.
+- `equivalentCylinder()` for the axisymmetric solvers, which cannot mesh a box.
+  It preserves length, radiating surface, mass and electrical resistance, and
+  deliberately does not preserve volume; the interface states all four rather
+  than substituting silently. `surfaceEquivalentDiameter()` solves
+  pi*D*L + pi*D^2/2 = S for D.
+- `elementTimeConstant()`: the lumped C/G of the 0D result, which decides
+  whether a pulse train is a pulse train at all. An element driven well below
+  this cannot follow the pulse and responds to the mean, however finely the
+  march is stepped.
+- Frequency-domain field solve for the microwave tool, opt-in through
+  `p.fieldMode = "helmholtz"`. At 2.404 GHz a 10 mm SiC bed spans D/lambda =
+  0.23, so the load supports no internal cavity mode and the existing 0.5 mm
+  cells already give 88 per wavelength. Checked against the infinite lossy
+  cylinder in a uniform axial field, J0 of a complex argument: 5.67e-5 on the
+  default grid, falling 3.6x then 3.9x per halving.
+- Preconditioned conjugate gradients for the microwave solver, replacing
+  Gauss-Seidel relaxation. It reproduces the relaxation answer to 0.2 K and
+  turns the outer loop into a Picard iteration of tens of steps rather than
+  thousands of sweeps: 30x60 now costs about a second, 120x240 about twenty.
+- `homogenizationValidity()` is now computed on every microwave solve and
+  reported beside the transport numbers. It had been in the solver since the
+  porous-continuum closures were added, with tests, and nothing ever called it.
+  It also carries a third ratio the original did not, the mesh cell against the
+  particle, because refinement has a floor as well as a ceiling.
+- Loss channels on Joule boundary terms, so a disagreement in totals can be
+  attributed to a path rather than guessed at.
+- Supplementary note for the microwave dielectric-redox manuscript
+  (`docs/si/microwave-thermal-note.md`), with a reproduction script that
+  regenerates every table from the shipped solver.
+- Generated figure set for the Joule Application Note (`docs/figures/`). Eight
+  plates in manuscript order, drawn at print size in points from values the
+  solver produces. `make-verification-data.mjs` runs the repository's own
+  verification studies and freezes the result; `make-figures.mjs` reads that,
+  computes the geometric and electrical values itself, and refuses to build if
+  the measurement is missing or if any drawn value comes out NaN.
+
+### Changed
+
+- The Joule tool's eight tabs became six. Material Compare and Resistivity &
+  Geometry Sweep became Screening; Calculations and How to Cite became
+  Reference. Each half keeps its own kicker, title and lede.
+- How to Use and Reference now document the model that ships: rectangular
+  geometry, the transient term, and the Dynamic step.
+- Microwave `fieldMode` travels on the material profile rather than as a global
+  default, because a source model and the conductivities fitted against it are
+  one calibration and must not be mixed.
+- SiC microwave profile recalibrated against the solved field: k200 4.000 to
+  2.879, k500 18.00 to 11.569, k800 18.00 to 13.929, radArea 6.000 to 5.802.
+  Combined RMSE on the report mesh falls from 8.85 to 5.50 C.
+- The Dynamic tab sizes its default pulse to the element it is pulsing, and
+  integrates the drive across each step rather than sampling its end point, so
+  a coarse step delivers the correct cycle-averaged energy instead of stepping
+  over the on-window entirely.
+
+### Fixed
+
+- 0D wall radiation was charged to the whole domain height rather than to a fin
+  length, leaving a 28.72 K gap against the 2D mean at Bi_R = 2e-6, where the
+  element is isothermal and lumping cannot be the cause.
+- Transient energy closure with a strongly temperature-dependent heat capacity.
+  Evaluating rho*cp at the end of the step gave 2.7e-1 closure for carbon fibre
+  paper, whose heat capacity triples over the range; the midpoint gives 7.6e-8.
+- Transient closure under a duty-cycled drive, which has zero bulk power on
+  most steps. Normalising against the largest of bulk power, boundary loss and
+  storage rate replaces a division by zero that reported 8.1e6.
+- A rectangular element was drawn as its equivalent cylinder under a heading
+  that said so, while the panel of equations showed the cylinder's area and the
+  solve used W*H.
+- `git archive` produced a site whose landing page fails on load, because the
+  microwave export-ignore left a dead card and a broken image on the integrated
+  root page.
+- Runtimes quoted in the microwave note's reproduction script were guessed and
+  had the ordering inverted: the grid study is the most expensive mode, not the
+  cheapest. They are now measured from the job timestamps.
+
+### Known issues
+
+- `docs/VERIFICATION.md` studies 1 to 3 predate the change that let
+  `build2DMesh` state its domain reach directly, and were never regenerated.
+  Running `npm run verify:joule` today gives 6.4e-3 rather than 5.8e-3 for the
+  radial parabola at L/D = 20, 1.95% rather than 0.8% for the annulus at
+  L/D = 100, and manufactured-solution orders of 2.05 and 2.06 in L2 and 1.77
+  and 1.90 in Linf. Study 4 was regenerated and is correct. The numbers in
+  `docs/figures/verification-data.json` are the measured ones.
+
+
 ## [0.2.0] - 2026-08-25
 
 ### Added
