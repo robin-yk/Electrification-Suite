@@ -218,7 +218,11 @@ export function validateInput(x) {
     ["Maximum power", x.pmax],
     ["Biot limit", x.biLimit]
   ];
-  positive.push(["Solid volume", x.volumeCm3], ["Aspect ratio", x.aspectRatio]);
+  if (x.shape === "box") {
+    positive.push(["Length", x.lengthMm], ["Width", x.widthMm], ["Thickness", x.heightMm]);
+  } else {
+    positive.push(["Solid volume", x.volumeCm3], ["Aspect ratio", x.aspectRatio]);
+  }
   positive.forEach(([label, value]) => {
     if (!finite(value) || value <= 0) errors.push(`${label} must be greater than zero.`);
   });
@@ -230,7 +234,37 @@ export function validateInput(x) {
   return errors;
 }
 
+// Diameter of the cylinder that has the same length and the same total
+// surface as a given area: pi D L + pi D^2 / 2 = S. Surface is the invariant
+// to hold because it is what sets the loss rate for a radiating element;
+// volume is not preserved and does not need to be, since nothing reads it
+// except through mass, which equivalentCylinder() fixes separately.
+export function surfaceEquivalentDiameter(surface, length) {
+  const L = Math.max(length, 0);
+  return (-Math.PI * L + Math.sqrt(Math.PI * Math.PI * L * L + 2 * Math.PI * Math.max(surface, 0))) / Math.PI;
+}
+
+// x.shape === "box" takes the three real dimensions of a slab, strip or
+// ribbon and reports its true area, surface and volume, so the 0D balance
+// runs on the geometry that exists rather than on a cylinder standing in for
+// it. `D` is still returned, because the axisymmetric solvers need one, but
+// for a box it is explicitly the surface-equivalent diameter and the caller
+// is expected to go through equivalentCylinder() rather than use it raw.
 export function geometry(x) {
+  if (x.shape === "box") {
+    const L = Math.max(x.lengthMm, 0) * 1e-3;
+    const W = Math.max(x.widthMm, 0) * 1e-3;
+    const H = Math.max(x.heightMm, 0) * 1e-3;
+    const envelopeVolume = L * W * H;
+    const solidVolume = envelopeVolume * x.solidFraction;
+    const grossArea = W * H;
+    const area = grossArea * x.solidFraction;
+    const surface = 2 * (L * W + L * H + W * H);
+    const D = surfaceEquivalentDiameter(surface, L);
+    return { shape:"box", L, W, H, D, area, grossArea, surface, volume:solidVolume, solidVolume,
+      envelopeVolume, lc:envelopeVolume / Math.max(surface, 1e-30), aspectRatio:L / Math.max(D, 1e-30),
+      solidFraction:x.solidFraction, porosity:1-x.solidFraction };
+  }
   const solidVolume = x.volumeCm3 * 1e-6;
   const envelopeVolume = solidVolume / x.solidFraction;
   const D = Math.cbrt((4 * envelopeVolume) / (Math.PI * x.aspectRatio));
@@ -238,7 +272,46 @@ export function geometry(x) {
   const grossArea = Math.PI * D * D / 4;
   const area = grossArea * x.solidFraction;
   const surface = Math.PI * D * L + Math.PI * D * D / 2;
-  return { L, D, area, grossArea, surface, volume:solidVolume, solidVolume, envelopeVolume, lc:envelopeVolume / surface, aspectRatio:L / D, solidFraction:x.solidFraction, porosity:1-x.solidFraction };
+  return { shape:"cylinder", L, D, area, grossArea, surface, volume:solidVolume, solidVolume, envelopeVolume, lc:envelopeVolume / surface, aspectRatio:L / D, solidFraction:x.solidFraction, porosity:1-x.solidFraction };
+}
+
+// Turn a box into the cylinder the axisymmetric solvers can mesh, without
+// changing any balance. Three invariants are held and one is deliberately
+// not:
+//
+//   surface     the equivalent diameter is chosen for it, so the loss rate
+//               and every radiation coefficient are unchanged
+//   mass        the effective density absorbs the volume change, so thermal
+//               capacity and the transient time constant are unchanged
+//   resistance  the effective resistivity absorbs the cross-section change,
+//               so R, the current the supply allows, and the power are
+//               unchanged
+//   volume      NOT preserved, and for a strip it is out by an order of
+//               magnitude. Nothing reads volume except through the three
+//               above, so this costs nothing -- but it is why calling the
+//               result an "equal-volume cylinder" would be wrong.
+//
+// Returns the substituted input and material plus the factors used, so a UI
+// can show the reader exactly what was swapped in.
+export function equivalentCylinder(x, material) {
+  const g = geometry(x);
+  if (g.shape !== "box") return { x, material, g, substituted:false };
+  const cylinderArea = Math.PI * g.D * g.D / 4;
+  const cylinderVolume = cylinderArea * g.L;
+  const areaRatio = cylinderArea / Math.max(g.grossArea, 1e-30);
+  const densityScale = g.envelopeVolume / Math.max(cylinderVolume, 1e-30);
+  const scaleRho = (v) => v * areaRatio;
+  const cylMaterial = { ...material,
+    density: material.density * densityScale,
+    rhoOhmCm: material.rhoOhmCm * areaRatio,
+  };
+  if (material.rhoTable) cylMaterial.rhoTable = material.rhoTable.map(([T, v]) => [T, scaleRho(v)]);
+  const cylX = { ...x, shape:"cylinder", material:cylMaterial,
+    volumeCm3: cylinderVolume * x.solidFraction * 1e6,
+    aspectRatio: g.L / g.D };
+  return { x:cylX, material:cylMaterial, g, substituted:true,
+    D:g.D, areaRatio, densityScale,
+    preserved:{ surface:g.surface, mass:material.density * g.solidVolume, length:g.L } };
 }
 
 export function directSurfaceHeatLoss(T, x, g) {

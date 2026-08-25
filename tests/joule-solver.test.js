@@ -3,7 +3,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  MATERIALS, geometry, calculate, build2DMesh, solveThermal2D, maxwellEucken, elementK
+  MATERIALS, geometry, calculate, build2DMesh, solveThermal2D, maxwellEucken, elementK, equivalentCylinder
 } from "../apps/joule/solver.js";
 
 const DEFAULT_ENCLOSURE = {
@@ -276,5 +276,90 @@ test("elementK() homogenizes only for a material that declares a skeleton k", ()
 test("no shipped material declares kIsSkeleton, so 2D conductivity is the table value", () => {
   for (const material of MATERIALS) {
     assert.ok(!material.kIsSkeleton, `${material.name} would silently re-homogenize`);
+  }
+});
+
+// ---------------------------------------------------------------- shape
+// A rectangular element is solved with its real dimensions in 0D. The
+// axisymmetric solvers cannot mesh one, so equivalentCylinder() substitutes a
+// cylinder that holds surface, mass and resistance — and not volume.
+
+test("geometry() reports a box's true area, surface and volume", () => {
+  const x = { shape: "box", lengthMm: 38, widthMm: 8, heightMm: 0.21, solidFraction: 1 };
+  const g = geometry(x);
+  assert.equal(g.shape, "box");
+  assert.ok(Math.abs(g.area - 8e-3 * 0.21e-3) < 1e-12, "conducting area is W·H");
+  assert.ok(Math.abs(g.surface - 2 * (0.038 * 0.008 + 0.038 * 0.00021 + 0.008 * 0.00021)) < 1e-12);
+  assert.ok(Math.abs(g.volume - 0.038 * 0.008 * 0.00021) < 1e-15);
+});
+
+test("equivalentCylinder() holds surface, mass and resistance, and not volume", () => {
+  const material = { name: "probe", rhoOhmCm: 0.02, density: 451, cp: 900, k: 400, jmax: 1e9 };
+  const x = {
+    shape: "box", lengthMm: 38, widthMm: 8, heightMm: 0.21, solidFraction: 1,
+    material, imax: 20, vmax: 75, pmax: 1500, supplyMode: "auto",
+    ambientK: 293.15, targetK: 1473.15, emissivity: 0.57, convection: false, h: 0,
+    gasK: 293.15, biLimit: 0.01,
+  };
+  const box = geometry(x);
+  const eq = equivalentCylinder(x, material);
+  assert.ok(eq.substituted);
+  const cyl = geometry(eq.x);
+
+  assert.equal(cyl.shape, "cylinder");
+  assert.ok(Math.abs(cyl.surface - box.surface) / box.surface < 1e-9, "surface must be held");
+
+  const boxMass = material.density * box.volume;
+  const cylMass = eq.material.density * cyl.volume;
+  assert.ok(Math.abs(cylMass - boxMass) / boxMass < 1e-9, "mass must be held");
+
+  const boxR = material.rhoOhmCm * 0.01 * box.L / box.area;
+  const cylR = eq.material.rhoOhmCm * 0.01 * cyl.L / cyl.area;
+  assert.ok(Math.abs(cylR - boxR) / boxR < 1e-9, "resistance must be held");
+
+  // Volume is deliberately not held, and for a strip it is out by an order of
+  // magnitude — this is the assertion that documents why "equal-volume" is the
+  // wrong name for this mapping.
+  assert.ok(cyl.volume / box.volume > 10, `volume ratio ${cyl.volume / box.volume} should be large`);
+
+  // Length is physical and must survive untouched.
+  assert.ok(Math.abs(cyl.L - box.L) < 1e-12);
+});
+
+test("equivalentCylinder() leaves a cylinder alone", () => {
+  const x = makeInput("SiC", 4);
+  const eq = equivalentCylinder(x, x.material);
+  assert.equal(eq.substituted, false);
+  assert.equal(eq.x, x);
+});
+
+test("calculate() solves a box on its real geometry, not a stand-in", () => {
+  const material = { name: "probe", rhoOhmCm: 0.02, density: 451, cp: 900, k: 400, jmax: 1e9 };
+  const x = {
+    shape: "box", lengthMm: 38, widthMm: 8, heightMm: 0.21, solidFraction: 1,
+    material, imax: 20, vmax: 75, pmax: 1500, supplyMode: "cv", vset: 31, iset: 20,
+    ambientK: 293.15, targetK: 1473.15, emissivity: 0.57, convection: false, h: 0,
+    gasK: 293.15, biLimit: 0.01,
+  };
+  const r = calculate(x);
+  assert.equal(r.errors.length, 0);
+  assert.equal(r.g.shape, "box");
+  assert.ok(Number.isFinite(r.tss) && r.tss > x.ambientK);
+  // R = rho L / (W H), straight from the dimensions entered.
+  const expected = material.rhoOhmCm * 0.01 * 0.038 / (8e-3 * 0.21e-3);
+  assert.ok(Math.abs(r.resistance - expected) / expected < 1e-9);
+});
+
+test("calculate() rejects a box with a missing or zero dimension", () => {
+  const material = { name: "probe", rhoOhmCm: 0.02, density: 451, cp: 900, k: 400, jmax: 1e9 };
+  const base = {
+    shape: "box", lengthMm: 38, widthMm: 8, heightMm: 0.21, solidFraction: 1,
+    material, imax: 20, vmax: 75, pmax: 1500, supplyMode: "auto",
+    ambientK: 293.15, targetK: 1473.15, emissivity: 0.57, convection: false, h: 0,
+    gasK: 293.15, biLimit: 0.01,
+  };
+  for (const bad of [{ lengthMm: 0 }, { widthMm: -1 }, { heightMm: NaN }]) {
+    const r = calculate({ ...base, ...bad });
+    assert.ok(r.errors.length > 0, `${JSON.stringify(bad)} should have been rejected`);
   }
 });

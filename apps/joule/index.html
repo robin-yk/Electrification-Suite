@@ -792,6 +792,9 @@
     .t2d-kpi .kpi-label { font-size:13px; }
     .t2d-kpi .kpi-value { font-size:21px; margin-top:6px; }
     .t2d-map-grid { display:grid; grid-template-columns:minmax(280px,1fr) 420px; gap:14px; align-items:start; }
+    body[data-shape="cylinder"] .shape-box { display:none; }
+    body[data-shape="box"] .shape-cylinder { display:none; }
+    .equiv-note { margin-top:10px; }
     .t2d-canvas-shell { padding:14px; }
     #thermalMap { display:block; max-width:min(100%,420px); max-height:52vh; margin:0 auto; border:1px solid #9aa8b3; background:#f3f6f8; image-rendering:pixelated; cursor:crosshair; }
     .t2d-colorbar { width:min(100%,420px); margin:10px auto 0; }
@@ -975,21 +978,40 @@
           </div>
 
           <div class="card input-card">
-            <div class="card-header"><h2>Geometry</h2><span class="status good">Cylinder</span></div>
+            <div class="card-header"><h2>Geometry</h2><span class="status good" id="shapeBadge">Cylinder</span></div>
             <div class="card-body fields">
-              <div class="field">
+              <div class="field full">
+                <label for="shape">Element shape</label>
+                <div class="control-row"><select id="shape">
+                  <option value="cylinder" selected>Cylinder — rod, tube, pellet</option>
+                  <option value="box">Rectangular — strip, ribbon, plate</option>
+                </select></div>
+              </div>
+              <div class="field shape-cylinder">
                 <label for="nominalVolume">Nominal volume</label>
                 <div class="control-row"><input id="nominalVolume" type="number" min="0" step="any" value="1.18"><span class="unit">cm³</span></div>
               </div>
-              <div class="field">
+              <div class="field shape-cylinder">
                 <label for="aspectRatio">Aspect ratio, L/D</label>
                 <input id="aspectRatio" type="number" min="0" step="any" value="1.5">
               </div>
+              <div class="field shape-box">
+                <label for="boxLength">Length (current path)</label>
+                <div class="control-row"><input id="boxLength" type="number" min="0" step="any" value="38"><span class="unit">mm</span></div>
+              </div>
+              <div class="field shape-box">
+                <label for="boxWidth">Width</label>
+                <div class="control-row"><input id="boxWidth" type="number" min="0" step="any" value="8"><span class="unit">mm</span></div>
+              </div>
+              <div class="field shape-box">
+                <label for="boxHeight">Thickness</label>
+                <div class="control-row"><input id="boxHeight" type="number" min="0" step="any" value="0.21"><span class="unit">mm</span></div>
+              </div>
               <div class="field full">
                 <label for="voidFraction">Void fraction, φ</label>
-                <div class="control-row"><input id="voidFraction" type="number" min="0" max="0.99" step="0.01" value="0"><span class="unit">0 = solid rod</span></div>
+                <div class="control-row"><input id="voidFraction" type="number" min="0" max="0.99" step="0.01" value="0"><span class="unit">0 = solid</span></div>
               </div>
-              <div class="field full"><span class="context-note">Nominal volume sets the L × D envelope directly. Solid material is V<sub>solid</sub> = (1−φ)·V<sub>nominal</sub>, so higher φ means less conducting solid in the same envelope.</span></div>
+              <div class="field full"><span class="context-note" id="shapeNote">Nominal volume sets the L × D envelope directly. Solid material is V<sub>solid</sub> = (1−φ)·V<sub>nominal</sub>, so higher φ means less conducting solid in the same envelope.</span></div>
             </div>
           </div>
 
@@ -1237,6 +1259,7 @@
             <article class="t2d-kpi"><div class="kpi-label">Energy closure</div><div class="kpi-value" id="t2dClosure">—</div><div class="kpi-sub">|P − Q<sub>boundary</sub>|/P</div></article>
           </div>
 
+          <div class="t2d-assumption equiv-note" id="t2dEquivNote" style="display:none"></div>
           <div class="t2d-assumption" style="margin-top:14px"><strong>Resolved physics:</strong> temperature-dependent element resistivity and conductivity, radial/axial conduction, element-to-wall gap radiation, full-height wall conduction, surrounding-air conduction, wall/air convection and radiation, end heat transfer, electrical contact loss, and top-to-bottom He enthalpy transport at 50 sccm.</div>
 
           <details class="audit" style="margin-top:14px">
@@ -1343,6 +1366,7 @@
 
           <div class="t2d-assumption" style="margin-top:14px"><strong>What this adds to the steady field:</strong> a backward-Euler march over the same operator, mesh, and current-density path as the 2D tab. It is unconditionally stable, so the time step follows the time scale you want to see rather than a stability limit, and it is first-order accurate in time. Storage is <span class="nowrap">ρc<sub>p</sub>V/Δt</span> per cell, with ρc<sub>p</sub> taken at the midpoint of the step so that a temperature-dependent heat capacity still balances energy.</div>
 
+          <div class="t2d-assumption equiv-note" id="dynEquivNote" style="display:none"></div>
           <div class="t2d-assumption" style="margin-top:10px" id="dynProgress">Set a drive and press Run.</div>
         </div>
 
@@ -1672,7 +1696,8 @@
       gapRadiationCoefficient, enclosureHeatLoss, heatLoss, operatingAt, solveSteadyTemperature,
       calculate, allocateSegmentCells, build2DMesh, material2DName, cellK2D, operating2DAt,
       gasFlowCells2D, gasBulkRowTemperature2D, assemble2DSystem, multiply2DSystem, pcg2D,
-      bicgstab2D, boundaryLoss2D, solveThermal2D, createTransientRun
+      bicgstab2D, boundaryLoss2D, solveThermal2D, createTransientRun,
+      equivalentCylinder, surfaceEquivalentDiameter
     } from "./solver.js";
     import { evaluateCrossChecks, thermalComparison, sig4 } from "./crosscheck.js";
   (() => {
@@ -1750,6 +1775,12 @@
         material: materialFromInputs(),
         solidFraction: 1 - num("voidFraction"),
         porosity: num("voidFraction"),
+        shape: $("shape").value,
+        // A box carries its three real dimensions; the cylinder fields are
+        // still sent so switching shape back does not lose them.
+        lengthMm: num("boxLength"),
+        widthMm: num("boxWidth"),
+        heightMm: num("boxHeight"),
         volumeCm3: num("nominalVolume") * (1 - num("voidFraction")),
         aspectRatio: num("aspectRatio"),
         imax: num("imax"),
@@ -2010,7 +2041,9 @@
       button.disabled=true;button.textContent="Solving…";
       try{
         await new Promise(resolve=>requestAnimationFrame(()=>setTimeout(resolve,0)));
-        const result=solveThermal2D(zeroD.input,zeroD,cfg,zeroD.material);
+        const eq=axisymmetric(zeroD);
+        const result=solveThermal2D(eq.x,zeroD,cfg,eq.material);
+        result.equivalence=eq;
         result.signature=signature2D(zeroD.input,zeroD.material);
         render2D(result);
         $("t2dProgress").textContent=`Solved ${result.material.name}: ${result.iterations.toLocaleString()} nonlinear + ${result.linearIterations.toLocaleString()} linear iterations, ${sig4(result.residual)} K residual, ${format(result.closure*100,3)}% energy closure.`;
@@ -2588,6 +2621,7 @@
       if (!result.errors.length && applySetpointBounds(result)) result = currentResult();
       renderCalculator(result);
       sync2DImported(result);
+      renderEquivalenceNotes();
       if (!result.errors.length) {
         renderComparison();
         renderSweep();
@@ -2963,7 +2997,10 @@
       // a couple of thousand, so recording every step still leaves a chart the
       // canvas can draw.
       const expected=plan.steady?Math.min(plan.steps,600):plan.steps;
-      const run=createTransientRun(zeroD.input,zeroD,cfg,zeroD.material,{
+      // A rectangular element is meshed as its surface-equivalent cylinder;
+      // for a cylinder this returns the input untouched.
+      const eq=axisymmetric(zeroD);
+      const run=createTransientRun(eq.x,zeroD,cfg,eq.material,{
         dt:plan.dt,steps:plan.steps,duration:plan.duration,sourceScale:plan.sourceScale,
         dtGrowth:plan.dtGrowth,maxDt:plan.maxDt,steadyTol:plan.steadyTol,
         startField,startK:zeroD.input.ambientK,
@@ -3006,6 +3043,50 @@
       }
     }
 
+
+    /* ------------------------------------------------------------------ shape
+       A box is solved exactly in 0D. The axisymmetric solvers cannot mesh one,
+       so they run on the cylinder equivalentCylinder() builds -- which holds
+       surface, mass and resistance and does NOT hold volume. Everything that
+       substitution changes is put on screen rather than left implicit. */
+    function syncShape() {
+      const shape=$("shape").value;
+      document.body.dataset.shape=shape;
+      $("shapeBadge").textContent=shape==="box"?"Rectangular":"Cylinder";
+      $("shapeNote").innerHTML=shape==="box"
+        ? "The three dimensions are used as they are: A = W·H carries the current, and the surface is the full 2(LW + LH + WH). The 2D and Dynamic tabs mesh an equivalent cylinder, shown there, because they are axisymmetric."
+        : "Nominal volume sets the L × D envelope directly. Solid material is V<sub>solid</sub> = (1−φ)·V<sub>nominal</sub>, so higher φ means less conducting solid in the same envelope.";
+      renderEquivalenceNotes();
+    }
+
+    // updateAll() re-solves 0D on every input change; the equivalence note has
+    // to follow it, since a dimension change moves the equivalent cylinder.
+    function axisymmetric(zeroD) {
+      return equivalentCylinder(zeroD.input, zeroD.material);
+    }
+
+    function equivalenceText(eq) {
+      if(!eq||!eq.substituted) return "";
+      const g=eq.g;
+      return `Meshed as an equivalent cylinder: D = ${format(eq.D*1000,3)} mm at the same `
+        +`${format(g.L*1000,2)} mm length. Preserved — surface ${format(g.surface*1e4,3)} cm², `
+        +`mass ${format(eq.preserved.mass*1e6,3)} mg, and resistance (effective ρ × ${format(eq.areaRatio,3)}, `
+        +`effective density × ${format(eq.densityScale,4)}). Not preserved — volume, which is `
+        +`${format(1/eq.densityScale,2)}× the slab's. Volume enters no balance here except through `
+        +`mass, which is held.`;
+    }
+
+    function renderEquivalenceNotes() {
+      const zeroD=currentResult();
+      const text=zeroD&&!zeroD.errors.length?equivalenceText(axisymmetric(zeroD)):"";
+      for(const id of ["t2dEquivNote","dynEquivNote"]){
+        const el=$(id);
+        if(!el) continue;
+        el.textContent=text;
+        el.style.display=text?"":"none";
+      }
+    }
+
     function activateTab(name) {
       document.querySelectorAll(".tab").forEach((tab) => {
         const active = tab.dataset.tab === name;
@@ -3019,10 +3100,11 @@
       window.scrollTo({ top: 0, behavior: "auto" });
       if (name === "screening") { renderComparison(); renderSweep(); }
       if (name === "thermal2d") {
+        renderEquivalenceNotes();
         sync2DImported();
         scheduleAutoSolve2D(0);
       }
-      if (name === "dynamic") syncDynControls();
+      if (name === "dynamic") { syncDynControls(); renderEquivalenceNotes(); }
     }
 
     // The three published-reactor cases live in crosscheck.js so that
@@ -3117,6 +3199,8 @@
       ["t2dWallK","t2dWallThickness","t2dWallEps","t2dGap","t2dGapK","t2dEndMode","t2dEndC","t2dEndH","t2dContactRho","t2dPorosityContrast","t2dMaxIter","t2dTolerance"]
         .forEach((id)=>$(id).addEventListener("input",updateAll));
       $("solve2D").addEventListener("click",()=>solveSelected2D(false));
+      $("shape").addEventListener("change",()=>{syncShape();updateAll();});
+      ["boxLength","boxWidth","boxHeight"].forEach((id)=>$(id).addEventListener("input",updateAll));
       $("runDynamic").addEventListener("click",runDynamic);
       $("cancelDynamic").addEventListener("click",()=>{dynCancel=true;});
       ["dynDrive","dynPeriod","dynDuty","dynDt","dynDuration"].forEach((id)=>
@@ -3132,6 +3216,7 @@
       });
       $("material").selectedIndex = 1;
       loadMaterial(1);
+      syncShape();
       updateAll();
       renderPropertyTable();
       renderCrossCheck();
