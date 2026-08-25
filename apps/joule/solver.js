@@ -449,10 +449,31 @@ export function assemble2DSystem(T, x, g, cfg, material, mesh, op) {
     if(solidAir&&x.convection&&x.h>0)resistance+=1/x.h;
     return area/Math.max(resistance,1e-30);
   };
-  const addInterfaceRadiation=(p,code,tempK,area)=>{
+  // Surface radiation leaves from the *face*, but the unknown lives at the cell
+  // center, so the heat must first conduct through the half cell in between.
+  // Charging the cell-center temperature directly to the radiation law drops
+  // that half-cell resistance, which is a first-order error of size q̇·d/(2k) —
+  // the term that keeps the full nonlinear case out of the asymptotic range
+  // (docs/VERIFICATION.md §4). Put the two resistances in series instead, the
+  // same way pairConductance already treats interior faces, and evaluate the
+  // radiation coefficient at the resulting face temperature rather than at the
+  // cell center. Two fixed-point passes are enough: h_rad varies as T³ while
+  // the face correction itself is small, so the second pass moves the answer by
+  // well under the outer-loop tolerance.
+  const seriesRadiationConductance=(tempK,area,halfDistance,kCell,emissivity)=>{
+    const rCond=Math.max(halfDistance,0)/Math.max(kCell,1e-30);
+    let faceK=tempK;
+    for(let pass=0;pass<2;pass++){
+      const rRad=1/Math.max(radiationCoefficient(faceK,x.ambientK,emissivity),1e-30);
+      faceK=x.ambientK+(tempK-x.ambientK)*rRad/(rCond+rRad);
+    }
+    const rRad=1/Math.max(radiationCoefficient(faceK,x.ambientK,emissivity),1e-30);
+    return area/Math.max(rCond+rRad,1e-30);
+  };
+  const addInterfaceRadiation=(p,code,tempK,area,halfDistance,kCell)=>{
     if(code!==0&&code!==2)return;
     const emissivity=code===0?x.emissivity:cfg.wallEmissivity;
-    addBoundary(p,radiationCoefficient(tempK,x.ambientK,emissivity)*area,x.ambientK);
+    addBoundary(p,seriesRadiationConductance(tempK,area,halfDistance,kCell,emissivity),x.ambientK);
   };
   for(let j=0;j<mesh.nz;j++) for(let i=0;i<mesh.nr;i++) {
     const p=idx(i,j),code=mesh.materialAt(i,j),kp=cellK2D(code,T[j][i],material,cfg,x);
@@ -465,8 +486,8 @@ export function assemble2DSystem(T, x, g, cfg, material, mesh, op) {
       const q=idx(i+1,j),face=mesh.edges[i+1],area=2*Math.PI*face*(mesh.zEdges[j+1]-mesh.zEdges[j]),nextCode=mesh.materialAt(i+1,j),kn=cellK2D(nextCode,T[j][i+1],material,cfg,x);
       const G=pairConductance(area,face-mesh.centers[i],kp,mesh.centers[i+1]-face,kn,code,nextCode);
       addFace(p,q,G);
-      if(code===3&&nextCode===2)addInterfaceRadiation(q,nextCode,T[j][i+1],area);
-      if(code===2&&nextCode===3)addInterfaceRadiation(p,code,T[j][i],area);
+      if(code===3&&nextCode===2)addInterfaceRadiation(q,nextCode,T[j][i+1],area,mesh.centers[i+1]-face,kn);
+      if(code===2&&nextCode===3)addInterfaceRadiation(p,code,T[j][i],area,face-mesh.centers[i],kp);
     } else {
       const area=2*Math.PI*mesh.edges[mesh.nr]*(mesh.zEdges[j+1]-mesh.zEdges[j]);
       addBoundary(p,kp*area/Math.max(mesh.edges[mesh.nr]-mesh.centers[i],1e-30),x.ambientK);
@@ -481,10 +502,11 @@ export function assemble2DSystem(T, x, g, cfg, material, mesh, op) {
         addFace(p,q,G);
         if(elementGas&&cfg.endMode==="ambient") {
           const elementP=code===0?p:q,elementTemp=code===0?T[j][i]:T[j+1][i];
-          addInterfaceRadiation(elementP,0,elementTemp,area);
+          const elementHalf=code===0?face-mesh.zCenters[j]:mesh.zCenters[j+1]-face,elementK=code===0?kp:kn;
+          addInterfaceRadiation(elementP,0,elementTemp,area,elementHalf,elementK);
         }
-        if(code===3&&(nextCode===0||nextCode===2))addInterfaceRadiation(q,nextCode,T[j+1][i],area);
-        if((code===0||code===2)&&nextCode===3)addInterfaceRadiation(p,code,T[j][i],area);
+        if(code===3&&(nextCode===0||nextCode===2))addInterfaceRadiation(q,nextCode,T[j+1][i],area,mesh.zCenters[j+1]-face,kn);
+        if((code===0||code===2)&&nextCode===3)addInterfaceRadiation(p,code,T[j][i],area,face-mesh.zCenters[j],kp);
       }
     }
     if(j===0) addBoundary(p,kp*axialArea(i)/Math.max(mesh.zCenters[j]-mesh.zEdges[j],1e-30),x.ambientK);
@@ -493,9 +515,20 @@ export function assemble2DSystem(T, x, g, cfg, material, mesh, op) {
 
   if(mesh.nGap>0) {
     const iElement=mesh.nElement-1,iWall=mesh.nElement+mesh.nGap,elementRadius=mesh.radius,wallRadius=mesh.edges[iWall],areaPerRow=2*Math.PI*elementRadius*mesh.dz;
+    // Same half-cell correction as seriesRadiationConductance, applied to the
+    // element→wall gap exchange: the radiating surfaces sit on the cell faces,
+    // not at the two cell centers this face couples. On the shipped enclosure
+    // this is the element's dominant loss path (gapK = 0.03 W/m·K conducts
+    // almost nothing), so it carries most of the grid sensitivity. The half-cell
+    // resistances also appear on the parallel conduction branch through the gap
+    // cells; treating each branch as its own series chain slightly overcounts
+    // them, which is far smaller than dropping them from the radiation branch.
+    const elementHalf=Math.max(elementRadius-mesh.centers[iElement],0),wallHalf=Math.max(mesh.centers[iWall]-wallRadius,0);
     for(let j=mesh.activeStart;j<mesh.activeEnd;j++) {
       const p=idx(iElement,j),q=idx(iWall,j),hGapRad=gapRadiationCoefficient(T[j][iElement],T[j][iWall],x.emissivity,cfg.wallEmissivity,elementRadius,wallRadius);
-      addFace(p,q,hGapRad*areaPerRow);
+      const kElement=cellK2D(0,T[j][iElement],material,cfg,x),kWall=cellK2D(2,T[j][iWall],material,cfg,x);
+      const resistance=elementHalf/Math.max(kElement,1e-30)+1/Math.max(hGapRad,1e-30)+wallHalf/Math.max(kWall,1e-30);
+      addFace(p,q,areaPerRow/Math.max(resistance,1e-30));
     }
   }
 
