@@ -130,8 +130,11 @@ DATA.transient = {
 // Design screening: what the tool was built to answer. Stretching the element
 // at a fixed envelope volume raises its resistance, which raises the power a
 // current-limited supply delivers, until the supply runs out of voltage.
+// The range has to reach past the optimum, or the sweep reports its own edge
+// as an answer. A low-resistivity metal never turns over inside it at all.
+const LD_LO = 0.5, LD_HI = 512, LD_N = 60;
 const LDS = [];
-for (let e = Math.log10(0.5); e <= Math.log10(64) + 1e-9; e += (Math.log10(64) - Math.log10(0.5)) / 39) LDS.push(Math.pow(10, e));
+for (let k = 0; k <= LD_N; k++) LDS.push(Math.pow(10, Math.log10(LD_LO) + k * (Math.log10(LD_HI) - Math.log10(LD_LO)) / LD_N));
 const sweep = LDS.map((ld) => {
   const r = calculate({ ...x, aspectRatio: ld });
   return { ld: Number(ld.toFixed(3)), R: p(r.resistance, 5), tssC: p(r.tss - 273.15, 5),
@@ -139,20 +142,79 @@ const sweep = LDS.map((ld) => {
 }).filter((r) => Number.isFinite(r.tssC));
 const best = sweep.reduce((a, c) => (c.tssC > a.tssC ? c : a), sweep[0]);
 const PICKS = ["CFP", "SiC", "SiSiC (Si-infiltrated SiC)", "MoSi₂", "Kanthal A-1 (FeCrAl)", "Molybdenum"];
+// The design question is not "how hot can this get" -- that answer sits above
+// the material's own limit at an absurd aspect ratio. It is "what does it take
+// to reach the temperature I need", so the sweep is read against a target.
+const TARGET_C = 1200;
+
+// Cross a monotonic sweep at the target and interpolate the crossing.
+function crossing(values, evaluate) {
+  let prev = null;
+  for (const v of values) {
+    const r = evaluate(v);
+    if (!Number.isFinite(r.tssC)) continue;
+    if (prev && ((prev.tssC - TARGET_C) * (r.tssC - TARGET_C) <= 0)) {
+      const f = (TARGET_C - prev.tssC) / (r.tssC - prev.tssC);
+      const at = prev.v + f * (v - prev.v);
+      return { at, ...evaluate(at) };
+    }
+    prev = { v, ...r };
+  }
+  return null;
+}
+const span = (lo, hi, n) => Array.from({ length: n + 1 }, (_, k) => lo + k * (hi - lo) / n);
+const readout = (r) => ({
+  tssC: r.tss - 273.15, R: r.resistance, current: r.target.current,
+  voltage: r.target.voltage, power: r.target.power, constraint: r.constraint,
+  D: r.g.D * 1e3, L: r.g.L * 1e3
+});
+
+// Three shapes that reach the target, with the dimensions each one needs.
+const rod = crossing(LDS, (ld) => readout(calculate({ ...x, aspectRatio: ld })));
+const tube = crossing(LDS, (ld) => readout(calculate({ ...x, aspectRatio: ld, solidFraction: 0.22 })));
+const strip = crossing(span(80, 4, 80), (w) =>
+  readout(calculate({ ...x, shape: "box", lengthMm: 38, widthMm: w, heightMm: 1, solidFraction: 1 })));
+const wall = tube ? tube.D / 2 * (1 - Math.sqrt(1 - 0.22)) : 0;
+DATA.forms = [
+  { form: "solid rod", vary: "L/D " + rod.at.toFixed(2),
+    dims: "D " + rod.D.toFixed(1) + " mm, L " + rod.L.toFixed(1) + " mm",
+    R: p(rod.R, 3), current: p(rod.current, 3), voltage: p(rod.voltage, 3),
+    power: p(rod.power, 4), constraint: rod.constraint },
+  { form: "tube, 22 % solid", vary: "L/D " + tube.at.toFixed(2),
+    dims: "OD " + tube.D.toFixed(1) + " mm, L " + tube.L.toFixed(1) + " mm, wall " + wall.toFixed(2) + " mm",
+    R: p(tube.R, 3), current: p(tube.current, 3), voltage: p(tube.voltage, 3),
+    power: p(tube.power, 4), constraint: tube.constraint },
+  { form: "flat strip", vary: "width " + strip.at.toFixed(1) + " mm",
+    dims: "38 × " + strip.at.toFixed(1) + " × 1.0 mm",
+    R: p(strip.R, 3), current: p(strip.current, 3), voltage: p(strip.voltage, 3),
+    power: p(strip.power, 4), constraint: strip.constraint }
+];
+
+function reachTarget(material) {
+  const curve = LDS.map((ld) => {
+    const r = calculate({ ...x, material, aspectRatio: ld });
+    return Number.isFinite(r.tss)
+      ? { ld, tssC: r.tss - 273.15, R: r.resistance, constraint: r.constraint }
+      : null;
+  }).filter(Boolean);
+  const peak = curve.reduce((a, c) => (c.tssC > a.tssC ? c : a), curve[0]);
+  const hit = curve.find((c) => c.tssC >= TARGET_C) || null;
+  return { peak, hit };
+}
 const byMaterial = PICKS.map((name) => {
   const m = MATERIALS.find((q) => q.name === name);
-  let top = null;
-  for (const ld of LDS) {
-    const r = calculate({ ...x, material: m, aspectRatio: ld });
-    if (!Number.isFinite(r.tss)) continue;
-    if (!top || r.tss > top.tss) top = { tss: r.tss, ld, R: r.resistance, constraint: r.constraint };
-  }
+  const { peak, hit } = reachTarget(m);
   return { name: name.replace(" (Si-infiltrated SiC)", "").replace(" (FeCrAl)", ""),
-           rho: p(m.rhoOhmCm, 3), tssC: p(top.tss - 273.15, 5), ld: p(top.ld, 3),
-           R: p(top.R, 4), constraint: top.constraint,
-           limitC: m.meltC, limitKind: m.meltKind };
-}).sort((a, c) => c.tssC - a.tssC);
-DATA.screening = { sweep, best, byMaterial, imax: x.imax, vmax: x.vmax, volumeCm3: x.volumeCm3,
+           rho: p(m.rhoOhmCm, 3), reaches: Boolean(hit),
+           ld: hit ? p(hit.ld, 3) : null, R: hit ? p(hit.R, 3) : null,
+           constraint: hit ? hit.constraint : peak.constraint,
+           peakC: p(peak.tssC, 5), limitC: m.meltC };
+}).sort((a, c) => (Number(c.reaches) - Number(a.reaches)) || ((a.ld ?? 1e9) - (c.ld ?? 1e9)));
+
+const meets = sweep.filter((q) => q.tssC >= TARGET_C);
+DATA.screening = { sweep, best, byMaterial, targetC: TARGET_C, ldHi: LD_HI,
+                   window: meets.length ? { lo: p(meets[0].ld, 3), hi: p(meets[meets.length - 1].ld, 3) } : null,
+                   imax: x.imax, vmax: x.vmax, volumeCm3: x.volumeCm3,
                    limitC: x.material.meltC, limitKind: x.material.meltKind, materialName: x.material.name };
 
 // The verification study is expensive, so it is measured by

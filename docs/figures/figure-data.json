@@ -4663,6 +4663,38 @@
   "swingK": 61.26,
   "cycleMeanC": 467.57
  },
+ "forms": [
+  {
+   "form": "solid rod",
+   "vary": "L/D 3.04",
+   "dims": "D 7.9 mm, L 24.1 mm",
+   "R": 0.272,
+   "current": 20,
+   "voltage": 5.45,
+   "power": 109,
+   "constraint": "Current"
+  },
+  {
+   "form": "tube, 22 % solid",
+   "vary": "L/D 2.83",
+   "dims": "OD 13.4 mm, L 38.0 mm, wall 0.78 mm",
+   "R": 0.679,
+   "current": 20,
+   "voltage": 13.6,
+   "power": 271.7,
+   "constraint": "Current"
+  },
+  {
+   "form": "flat strip",
+   "vary": "width 26.9 mm",
+   "dims": "38 × 26.9 × 1.0 mm",
+   "R": 0.785,
+   "current": 20,
+   "voltage": 15.7,
+   "power": 313.9,
+   "constraint": "Current"
+  }
+ ],
  "screening": {
   "sweep": [
    {
@@ -4673,87 +4705,94 @@
     "constraint": "Current"
    },
    {
-    "ld": 0.566,
-    "R": 0.028932,
-    "tssC": 375.66,
-    "power": 11.573,
+    "ld": 0.561,
+    "R": 0.028591,
+    "tssC": 371.95,
+    "power": 11.436,
     "constraint": "Current"
    },
    {
-    "ld": 0.641,
-    "R": 0.034152,
-    "tssC": 429.32,
-    "power": 13.661,
+    "ld": 0.63,
+    "R": 0.033352,
+    "tssC": 421.47,
+    "power": 13.341,
     "constraint": "Current"
    },
    {
-    "ld": 0.726,
-    "R": 0.040314,
-    "tssC": 485.76,
-    "power": 16.126,
+    "ld": 0.707,
+    "R": 0.038906,
+    "tssC": 473.47,
+    "power": 15.563,
     "constraint": "Current"
    },
    {
-    "ld": 0.822,
-    "R": 0.047588,
-    "tssC": 544.35,
-    "power": 19.035,
+    "ld": 0.794,
+    "R": 0.045385,
+    "tssC": 527.43,
+    "power": 18.154,
     "constraint": "Current"
    },
    {
-    "ld": 0.931,
-    "R": 0.056175,
-    "tssC": 604.39,
-    "power": 22.47,
+    "ld": 0.891,
+    "R": 0.052943,
+    "tssC": 582.82,
+    "power": 21.177,
     "constraint": "Current"
    },
    {
-    "ld": 1.055,
-    "R": 0.06631,
-    "tssC": 665.26,
-    "power": 26.524,
+    "ld": 1,
+    "R": 0.06176,
+    "tssC": 639.11,
+    "power": 24.704,
     "constraint": "Current"
    },
    {
-    "ld": 1.195,
-    "R": 0.078275,
-    "tssC": 726.51,
-    "power": 31.31,
+    "ld": 1.122,
+    "R": 0.072045,
+    "tssC": 695.86,
+    "power": 28.818,
     "constraint": "Current"
    },
    {
-    "ld": 1.353,
-    "R": 0.092398,
-    "tssC": 787.89,
-    "power": 36.959,
+    "ld": 1.26,
+    "R": 0.084042,
+    "tssC": 752.8,
+    "power": 33.617,
     "constraint": "Current"
    },
    {
-    "ld": 1.532,
-    "R": 0.10907,
-    "tssC": 849.4,
-    "power": 43.628,
+    "ld": 1.414,
+    "R": 0.098038,
+    "tssC": 809.84,
+    "power": 39.215,
     "constraint": "Current"
    },
    {
-    "ld": 1.735,
-    "R": 0.12875,
-    "tssC": 911.18,
-    "power": 51.5,
+    "ld": 1.587,
+    "R": 0.11436,
+    "tssC": 867.01,
+    "power": 45.746,
     "constraint": "Current"
    },
    {
-    "ld": 1.965,
-    "R": 0.15198,
-    "tssC": 973.46,
-    "power": 60.792,
+    "ld": 1.782,
+    "R": 0.13341,
+    "tssC": 924.47,
+    "power": 53.364,
     "constraint": "Current"
    },
    {
-    "ld": 2.225,
-    "R": 0.1794,
-    "tssC": 1036.5,
-    "power": 71.761,
+    "ld": 2,
+    "R": 0.15563,
+    "tssC": 982.41,
+    "power": 62.25,
+    "constraint": "Current"
+   },
+   {
+    "ld": 2.245,
+    "R": 0.18154,
+    "tssC": 1041.1,
+    "power": 72.617,
     "constraint": "Current"
    },
    {
@@ -4764,87 +4803,94 @@
     "constraint": "Current"
    },
    {
-    "ld": 2.854,
-    "R": 0.24998,
-    "tssC": 1166.2,
-    "power": 99.994,
+    "ld": 2.828,
+    "R": 0.24704,
+    "tssC": 1161.4,
+    "power": 98.816,
     "constraint": "Current"
    },
    {
-    "ld": 3.232,
-    "R": 0.29509,
-    "tssC": 1233.3,
-    "power": 118.04,
+    "ld": 3.175,
+    "R": 0.28818,
+    "tssC": 1223.6,
+    "power": 115.27,
     "constraint": "Current"
    },
    {
-    "ld": 3.66,
-    "R": 0.34833,
-    "tssC": 1302.3,
-    "power": 139.33,
+    "ld": 3.564,
+    "R": 0.33617,
+    "tssC": 1287.3,
+    "power": 134.47,
     "constraint": "Current"
    },
    {
-    "ld": 4.145,
-    "R": 0.41118,
-    "tssC": 1373.4,
-    "power": 164.47,
+    "ld": 4,
+    "R": 0.39215,
+    "tssC": 1352.8,
+    "power": 156.86,
     "constraint": "Current"
    },
    {
-    "ld": 4.694,
-    "R": 0.48538,
-    "tssC": 1446.7,
-    "power": 194.15,
+    "ld": 4.49,
+    "R": 0.45746,
+    "tssC": 1420.3,
+    "power": 182.98,
     "constraint": "Current"
    },
    {
-    "ld": 5.316,
-    "R": 0.57295,
-    "tssC": 1522.6,
-    "power": 229.18,
+    "ld": 5.04,
+    "R": 0.53364,
+    "tssC": 1489.7,
+    "power": 213.45,
     "constraint": "Current"
    },
    {
-    "ld": 6.02,
-    "R": 0.67633,
-    "tssC": 1601,
-    "power": 270.53,
+    "ld": 5.657,
+    "R": 0.6225,
+    "tssC": 1561.5,
+    "power": 249,
     "constraint": "Current"
    },
    {
-    "ld": 6.817,
-    "R": 0.79837,
-    "tssC": 1682.4,
-    "power": 319.35,
+    "ld": 6.35,
+    "R": 0.72617,
+    "tssC": 1635.5,
+    "power": 290.47,
     "constraint": "Current"
    },
    {
-    "ld": 7.721,
-    "R": 0.94242,
-    "tssC": 1766.8,
-    "power": 376.97,
+    "ld": 7.127,
+    "R": 0.84709,
+    "tssC": 1712.2,
+    "power": 338.84,
     "constraint": "Current"
    },
    {
-    "ld": 8.743,
-    "R": 1.1125,
-    "tssC": 1854.7,
-    "power": 444.98,
+    "ld": 8,
+    "R": 0.98816,
+    "tssC": 1791.6,
+    "power": 395.26,
     "constraint": "Current"
    },
    {
-    "ld": 9.902,
-    "R": 1.3132,
-    "tssC": 1946.3,
-    "power": 525.27,
+    "ld": 8.98,
+    "R": 1.1527,
+    "tssC": 1874,
+    "power": 461.09,
     "constraint": "Current"
    },
    {
-    "ld": 11.214,
-    "R": 1.5501,
-    "tssC": 2041.9,
-    "power": 620.05,
+    "ld": 10.079,
+    "R": 1.3447,
+    "tssC": 1959.7,
+    "power": 537.87,
+    "constraint": "Current"
+   },
+   {
+    "ld": 11.314,
+    "R": 1.5686,
+    "tssC": 2048.9,
+    "power": 627.44,
     "constraint": "Current"
    },
    {
@@ -4855,87 +4901,94 @@
     "constraint": "Current"
    },
    {
-    "ld": 14.382,
-    "R": 2.16,
-    "tssC": 2247.2,
-    "power": 863.99,
+    "ld": 14.254,
+    "R": 2.1345,
+    "tssC": 2239.5,
+    "power": 853.82,
     "constraint": "Current"
    },
    {
-    "ld": 16.287,
-    "R": 2.5497,
-    "tssC": 2357.7,
-    "power": 1019.9,
+    "ld": 16,
+    "R": 2.49,
+    "tssC": 2341.5,
+    "power": 996,
     "constraint": "Current"
    },
    {
-    "ld": 18.445,
-    "R": 3.0098,
-    "tssC": 2474.1,
-    "power": 1203.9,
+    "ld": 17.959,
+    "R": 2.9047,
+    "tssC": 2448.6,
+    "power": 1161.9,
     "constraint": "Current"
    },
    {
-    "ld": 20.888,
-    "R": 3.5528,
-    "tssC": 2597.1,
-    "power": 1421.1,
+    "ld": 20.159,
+    "R": 3.3884,
+    "tssC": 2561.2,
+    "power": 1355.4,
     "constraint": "Current"
    },
    {
-    "ld": 23.655,
-    "R": 4.1939,
-    "tssC": 2727.2,
-    "power": 1677.6,
+    "ld": 22.627,
+    "R": 3.9526,
+    "tssC": 2679.9,
+    "power": 1581.1,
     "constraint": "Current"
    },
    {
-    "ld": 26.789,
-    "R": 4.9506,
-    "tssC": 2865.3,
-    "power": 1980.2,
+    "ld": 25.398,
+    "R": 4.6109,
+    "tssC": 2805.1,
+    "power": 1844.3,
     "constraint": "Current"
    },
    {
-    "ld": 30.338,
-    "R": 5.8438,
-    "tssC": 2652.4,
-    "power": 1711.2,
+    "ld": 28.509,
+    "R": 5.3787,
+    "tssC": 2767.3,
+    "power": 1859.2,
     "constraint": "Voltage"
    },
    {
-    "ld": 34.358,
-    "R": 6.8983,
-    "tssC": 2440.5,
-    "power": 1449.6,
+    "ld": 32,
+    "R": 6.2744,
+    "tssC": 2558.8,
+    "power": 1593.8,
     "constraint": "Voltage"
    },
    {
-    "ld": 38.91,
-    "R": 8.1429,
-    "tssC": 2249.7,
-    "power": 1228.1,
+    "ld": 35.919,
+    "R": 7.3193,
+    "tssC": 2370.1,
+    "power": 1366.3,
     "constraint": "Voltage"
    },
    {
-    "ld": 44.064,
-    "R": 9.6122,
-    "tssC": 2077.2,
-    "power": 1040.3,
+    "ld": 40.317,
+    "R": 8.5382,
+    "tssC": 2198.7,
+    "power": 1171.2,
     "constraint": "Voltage"
    },
    {
-    "ld": 49.902,
-    "R": 11.347,
-    "tssC": 1920.4,
-    "power": 881.32,
+    "ld": 45.255,
+    "R": 9.96,
+    "tssC": 2042.4,
+    "power": 1004,
     "constraint": "Voltage"
    },
    {
-    "ld": 56.513,
-    "R": 13.394,
-    "tssC": 1777.1,
-    "power": 746.61,
+    "ld": 50.797,
+    "R": 11.619,
+    "tssC": 1899.2,
+    "power": 860.68,
+    "constraint": "Voltage"
+   },
+   {
+    "ld": 57.018,
+    "R": 13.554,
+    "tssC": 1767.4,
+    "power": 737.82,
     "constraint": "Voltage"
    },
    {
@@ -4944,77 +4997,209 @@
     "tssC": 1645.4,
     "power": 632.49,
     "constraint": "Voltage"
+   },
+   {
+    "ld": 71.838,
+    "R": 18.443,
+    "tssC": 1532.1,
+    "power": 542.2,
+    "constraint": "Voltage"
+   },
+   {
+    "ld": 80.635,
+    "R": 21.515,
+    "tssC": 1426.2,
+    "power": 464.8,
+    "constraint": "Voltage"
+   },
+   {
+    "ld": 90.51,
+    "R": 25.098,
+    "tssC": 1326.9,
+    "power": 398.44,
+    "constraint": "Voltage"
+   },
+   {
+    "ld": 101.594,
+    "R": 29.277,
+    "tssC": 1233.4,
+    "power": 341.56,
+    "constraint": "Voltage"
+   },
+   {
+    "ld": 114.035,
+    "R": 34.153,
+    "tssC": 1145,
+    "power": 292.8,
+    "constraint": "Voltage"
+   },
+   {
+    "ld": 128,
+    "R": 39.84,
+    "tssC": 1061,
+    "power": 251,
+    "constraint": "Voltage"
+   },
+   {
+    "ld": 143.675,
+    "R": 46.475,
+    "tssC": 980.99,
+    "power": 215.17,
+    "constraint": "Voltage"
+   },
+   {
+    "ld": 161.27,
+    "R": 54.214,
+    "tssC": 904.5,
+    "power": 184.45,
+    "constraint": "Voltage"
+   },
+   {
+    "ld": 181.019,
+    "R": 63.242,
+    "tssC": 831.15,
+    "power": 158.12,
+    "constraint": "Voltage"
+   },
+   {
+    "ld": 203.187,
+    "R": 73.774,
+    "tssC": 760.67,
+    "power": 135.55,
+    "constraint": "Voltage"
+   },
+   {
+    "ld": 228.07,
+    "R": 86.059,
+    "tssC": 692.84,
+    "power": 116.2,
+    "constraint": "Voltage"
+   },
+   {
+    "ld": 256,
+    "R": 100.39,
+    "tssC": 627.56,
+    "power": 99.611,
+    "constraint": "Voltage"
+   },
+   {
+    "ld": 287.35,
+    "R": 117.11,
+    "tssC": 564.83,
+    "power": 85.391,
+    "constraint": "Voltage"
+   },
+   {
+    "ld": 322.54,
+    "R": 136.61,
+    "tssC": 504.78,
+    "power": 73.201,
+    "constraint": "Voltage"
+   },
+   {
+    "ld": 362.039,
+    "R": 159.36,
+    "tssC": 447.65,
+    "power": 62.751,
+    "constraint": "Voltage"
+   },
+   {
+    "ld": 406.375,
+    "R": 185.9,
+    "tssC": 393.8,
+    "power": 53.793,
+    "constraint": "Voltage"
+   },
+   {
+    "ld": 456.14,
+    "R": 216.86,
+    "tssC": 343.63,
+    "power": 46.114,
+    "constraint": "Voltage"
+   },
+   {
+    "ld": 512,
+    "R": 252.97,
+    "tssC": 297.55,
+    "power": 39.531,
+    "constraint": "Voltage"
    }
   ],
   "best": {
-   "ld": 26.789,
-   "R": 4.9506,
-   "tssC": 2865.3,
-   "power": 1980.2,
+   "ld": 25.398,
+   "R": 4.6109,
+   "tssC": 2805.1,
+   "power": 1844.3,
    "constraint": "Current"
   },
   "byMaterial": [
    {
     "name": "SiC",
     "rho": 0.0556,
-    "tssC": 2865.3,
-    "ld": 26.8,
-    "R": 4.951,
+    "reaches": true,
+    "ld": 3.17,
+    "R": 0.288,
     "constraint": "Current",
-    "limitC": 2700,
-    "limitKind": "decomposition"
+    "peakC": 2805.1,
+    "limitC": 2700
    },
    {
     "name": "CFP",
     "rho": 0.05,
-    "tssC": 2767,
-    "ld": 30.3,
-    "R": 5.259,
-    "constraint": "Voltage",
-    "limitC": 3600,
-    "limitKind": "sublimation"
+    "reaches": true,
+    "ld": 3.56,
+    "R": 0.303,
+    "constraint": "Current",
+    "peakC": 2813.3,
+    "limitC": 3600
    },
    {
     "name": "SiSiC",
     "rho": 0.08,
-    "tssC": 2368.3,
-    "ld": 64,
-    "R": 4.411,
+    "reaches": true,
+    "ld": 10.1,
+    "R": 0.375,
     "constraint": "Current",
-    "limitC": 1414,
-    "limitKind": "melting"
-   },
-   {
-    "name": "Kanthal A-1",
-    "rho": 0.000145,
-    "tssC": 311.62,
-    "ld": 64,
-    "R": 0.04292,
-    "constraint": "Current",
-    "limitC": 1500,
-    "limitKind": "melting"
+    "peakC": 2468.1,
+    "limitC": 1414
    },
    {
     "name": "MoSi₂",
     "rho": 0.000025,
-    "tssC": 151.82,
-    "ld": 64,
-    "R": 0.06546,
+    "reaches": false,
+    "ld": null,
+    "R": null,
     "constraint": "Current density",
-    "limitC": 2030,
-    "limitKind": "melting"
+    "peakC": 151.82,
+    "limitC": 2030
+   },
+   {
+    "name": "Kanthal A-1",
+    "rho": 0.000145,
+    "reaches": false,
+    "ld": null,
+    "R": null,
+    "constraint": "Current",
+    "peakC": 756.3,
+    "limitC": 1500
    },
    {
     "name": "Molybdenum",
     "rho": 0.00000534,
-    "tssC": 20.345,
-    "ld": 3.23,
-    "R": 0.0001562,
+    "reaches": false,
+    "ld": null,
+    "R": null,
     "constraint": "Current density",
-    "limitC": 2623,
-    "limitKind": "melting"
+    "peakC": 20.345,
+    "limitC": 2623
    }
   ],
+  "targetC": 1200,
+  "ldHi": 512,
+  "window": {
+   "lo": 3.17,
+   "hi": 102
+  },
   "imax": 20,
   "vmax": 100,
   "volumeCm3": 1.18,

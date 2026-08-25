@@ -621,7 +621,8 @@ export function verification(DATA) {
       const ga = cfg.guide[0], gb = cfg.guide[1], gv = cfg.guide[2], gp = cfg.guide[3];
       o += '<path d="M' + X(ga) + ',' + Y(gv) + ' L' + X(gb) + ',' + Y(gv * Math.pow(ga / gb, gp)) +
         '" fill="none" stroke="' + C.grey + '" stroke-width="0.8" stroke-dasharray="3 2"/>';
-      o += T(X(gb) + 3, Y(gv * Math.pow(ga / gb, gp)) + 3, cfg.guide[4] || ("slope \u2212" + gp), { size: 8, fill: C.grey });
+      const gmx = (X(ga) + X(gb)) / 2, gmy = (Y(gv) + Y(gv * Math.pow(ga / gb, gp))) / 2;
+      o += T(gmx + 4, gmy - 4, cfg.guide[4] || ("slope \u2212" + gp), { size: 8, fill: C.grey });
     }
     if (cfg.rule) {
       o += line(x0, Y(cfg.rule[0]), x0 + pw, Y(cfg.rule[0]), { stroke: C.grey, sw: 0.9, dash: "3 2" });
@@ -883,14 +884,14 @@ export function transient(DATA) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Fig. S6. Design screening: geometry and material against what the   */
-/* supply, and then the material, will allow.                           */
+/* Fig. S6. What it takes to reach a target temperature: the geometry   */
+/* the supply allows, the shape that carries it, and the material.      */
 /* ------------------------------------------------------------------ */
 export function screening(DATA) {
-  const ns = "s6", W = 505, H = 262;
-  const S = DATA.screening;
+  const ns = "s6", W = 505, H = 416;
+  const S = DATA.screening, F = DATA.forms;
   let b = defs(ns);
-  const pw = 128, ph = 168, ptop = 30, pbot = 30 + 168;
+  const pw = 175, ph = 150, ptop = 34, pbot = 34 + 150;
   const lin = (v, lo, hi, a, c) => a + (v - lo) / (hi - lo) * (c - a);
   const lg = (v) => Math.log10(v);
   const lds = S.sweep.map((q) => q.ld);
@@ -898,15 +899,15 @@ export function screening(DATA) {
   const firstV = S.sweep.findIndex((q) => q.constraint !== S.sweep[0].constraint);
 
   function frame(x0, letter, yLabel) {
-    const X = (v) => lin(lg(v), xLo, xHi, x0 + 10, x0 + pw - 10);
+    const X = (v) => lin(lg(v), xLo, xHi, x0 + 12, x0 + pw - 12);
     let o = "";
     if (firstV > 0) o += '<rect x="' + X(S.sweep[firstV].ld) + '" y="' + ptop + '" width="' +
       (x0 + pw - X(S.sweep[firstV].ld)) + '" height="' + ph + '" fill="' + TINT.field + '"/>';
     o += rect(x0, ptop, pw, ph, { stroke: C.grey, fill: "none", sw: 0.8, rx: 0 });
-    o += T(x0 - 34, ptop - 8, letter, { size: 11, weight: "bold" });
-    [0.5, 2, 8, 32].forEach(function (v) { o += T(X(v), pbot + 12, String(v), { size: 8, anchor: "middle" }); });
+    o += T(x0 - 36, ptop - 8, letter, { size: 11, weight: "bold" });
+    [0.5, 4, 32, 256].forEach(function (v) { o += T(X(v), pbot + 12, String(v), { size: 8, anchor: "middle" }); });
     o += T(x0 + pw / 2, pbot + 24, "aspect ratio L/D", { size: 8.5, anchor: "middle" });
-    o += '<text x="' + (x0 - 30) + '" y="' + ((ptop + pbot) / 2) + '" font-size="8.5" text-anchor="middle" transform="rotate(-90 ' + (x0 - 30) + ' ' + ((ptop + pbot) / 2) + ')">' + yLabel + '</text>';
+    o += '<text x="' + (x0 - 32) + '" y="' + ((ptop + pbot) / 2) + '" font-size="8.5" text-anchor="middle" transform="rotate(-90 ' + (x0 - 32) + ' ' + ((ptop + pbot) / 2) + ')">' + yLabel + '</text>';
     return { o, X };
   }
 
@@ -915,67 +916,82 @@ export function screening(DATA) {
     const Rs = S.sweep.map((q) => q.R);
     const dLo = Math.floor(lg(Math.min.apply(null, Rs))), dHi = Math.ceil(lg(Math.max.apply(null, Rs)));
     const Y = (v) => lin(lg(v), dHi, dLo, ptop + 10, pbot - 10);
-    const F = frame(50, "a", "resistance (Ω)");
-    let o = F.o;
-    for (let d = dLo; d <= dHi; d++) {
-      o += line(50, Y(Math.pow(10, d)), 50 + pw, Y(Math.pow(10, d)), { stroke: "#EAEAEA", sw: 0.4 });
-      o += T(46, Y(Math.pow(10, d)) + 3, "10^{" + String(d).replace("-", "\u2212") + "}", { size: 8, anchor: "end", fill: C.grey });
+    const P = frame(52, "a", "resistance (Ω)");
+    let o = P.o;
+    for (let d = dLo; d <= dHi; d += 1) {
+      o += line(52, Y(Math.pow(10, d)), 52 + pw, Y(Math.pow(10, d)), { stroke: "#EAEAEA", sw: 0.4 });
+      o += T(48, Y(Math.pow(10, d)) + 3, "10^{" + String(d).replace("-", "\u2212") + "}", { size: 8, anchor: "end", fill: C.grey });
     }
     let d2 = "";
-    S.sweep.forEach(function (q, k) { d2 += (k ? " L" : "M") + F.X(q.ld) + "," + Y(q.R); });
+    S.sweep.forEach(function (q, k) { d2 += (k ? " L" : "M") + P.X(q.ld) + "," + Y(q.R); });
     o += '<path d="' + d2 + '" fill="none" stroke="' + C.scalar + '" stroke-width="1.5"/>';
     b += o;
   })();
 
-  /* b. the temperature that follows, and the two ceilings it meets */
+  /* b. the temperature that follows, read against a target */
   (function () {
     const Ts = S.sweep.map((q) => q.tssC);
     const hi = Math.ceil(Math.max.apply(null, Ts.concat([S.limitC])) / 500) * 500;
     const Y = (v) => lin(v, 0, hi, pbot - 10, ptop + 10);
-    const F = frame(213, "b", "steady temperature (°C)");
-    let o = F.o;
+    const P = frame(287, "b", "steady temperature (°C)");
+    let o = P.o;
     for (let t = 0; t <= hi; t += hi / 4) {
-      o += line(213, Y(t), 213 + pw, Y(t), { stroke: "#EAEAEA", sw: 0.4 });
-      o += T(209, Y(t) + 3, String(Math.round(t)), { size: 8, anchor: "end", fill: C.grey });
+      o += line(287, Y(t), 287 + pw, Y(t), { stroke: "#EAEAEA", sw: 0.4 });
+      o += T(283, Y(t) + 3, String(Math.round(t)), { size: 8, anchor: "end", fill: C.grey });
     }
-    o += line(213, Y(S.limitC), 213 + pw, Y(S.limitC), { stroke: C.ink, sw: 1, dash: "4 2" });
-    o += T(217, Y(S.limitC) - 4, S.materialName + " " + S.limitKind + ", " + S.limitC + " °C", { size: 8 });
+    if (S.window) {
+      o += '<rect x="' + P.X(S.window.lo) + '" y="' + Y(S.targetC) + '" width="' + (P.X(S.window.hi) - P.X(S.window.lo)) +
+        '" height="' + (pbot - 10 - Y(S.targetC)) + '" fill="' + TINT.thermal + '" fill-opacity="0.7"/>';
+    }
+    o += line(287, Y(S.limitC), 287 + pw, Y(S.limitC), { stroke: C.ink, sw: 1, dash: "4 2" });
+    o += T(287 + pw - 4, Y(S.limitC) + 10, S.materialName + " " + S.limitKind + ", " + S.limitC + " °C", { size: 8, anchor: "end" });
+    o += line(287, Y(S.targetC), 287 + pw, Y(S.targetC), { stroke: C.thermal, sw: 1, dash: "4 2" });
+    o += T(291, Y(S.targetC) - 4, "target " + S.targetC + " °C", { size: 8, weight: "bold", fill: C.thermal });
     let d2 = "";
-    S.sweep.forEach(function (q, k) { d2 += (k ? " L" : "M") + F.X(q.ld) + "," + Y(q.tssC); });
+    S.sweep.forEach(function (q, k) { d2 += (k ? " L" : "M") + P.X(q.ld) + "," + Y(q.tssC); });
     o += '<path d="' + d2 + '" fill="none" stroke="' + C.thermal + '" stroke-width="1.5"/>';
-    o += '<circle cx="' + F.X(S.best.ld) + '" cy="' + Y(S.best.tssC) + '" r="3.2" fill="#FFFFFF" stroke="' + C.thermal + '" stroke-width="1.4"/>';
-    o += T(213 + pw - 4, Y(S.best.tssC) + 26, S.best.tssC.toFixed(0) + " °C at L/D " + S.best.ld.toFixed(0), { size: 8, anchor: "end", fill: C.thermal });
-    o += T(217, pbot - 8, S.imax + " A, " + S.vmax + " V supply", { size: 8, fill: C.grey });
-    o += T(217, ptop + 12, "current limited", { size: 8, weight: "bold", fill: C.scalar });
-    o += T(213 + pw - 4, ptop + 12, "voltage limited", { size: 8, weight: "bold", anchor: "end", fill: C.field });
+    if (S.window) o += T(291, pbot - 8, "met between L/D " + S.window.lo.toFixed(1) + " and " + S.window.hi.toFixed(0), { size: 8, fill: C.thermal });
+    o += T(287 + pw - 4, ptop + 12, "voltage limited", { size: 8, weight: "bold", anchor: "end", fill: C.field });
+    o += T(291, ptop + 12, "current limited", { size: 8, weight: "bold", fill: C.scalar });
     b += o;
   })();
 
-  /* c. the same question asked of the material */
+  /* c. the same target, asked of three shapes */
   (function () {
-    const x0 = 372, rows = S.byMaterial;
-    const hi = Math.ceil(Math.max.apply(null, rows.map((r) => r.tssC)) / 500) * 500;
-    const barW = 60, bx = x0;
-    b += T(x0 - 10, ptop - 8, "c", { size: 11, weight: "bold" });
-    b += T(x0 + 6, ptop - 8, "best over the same L/D sweep", { size: 8, fill: C.grey });
-    rows.forEach(function (r, i) {
-      const y = ptop + 14 + i * 26;
-      b += T(x0, y, r.name, { size: 8.5 });
-      b += T(x0 + barW + 68, y, r.rho.toExponential(1).replace("e-", "×10^{−") + "} Ω·cm", { size: 7.6, anchor: "end", fill: C.faint });
-      const w = Math.max(0.6, barW * r.tssC / hi), wLim = Math.min(w, barW * r.limitC / hi);
-      b += '<rect x="' + bx + '" y="' + (y + 4) + '" width="' + wLim + '" height="9" fill="' + C.thermal + '" fill-opacity="0.85"/>';
-      if (w > wLim) b += '<rect x="' + (bx + wLim) + '" y="' + (y + 4) + '" width="' + (w - wLim) +
-        '" height="9" fill="none" stroke="' + C.thermal + '" stroke-width="0.7" stroke-dasharray="1.6 1.4"/>';
-      if (r.limitC <= hi) b += line(bx + barW * r.limitC / hi, y + 2, bx + barW * r.limitC / hi, y + 15, { stroke: C.ink, sw: 0.9 });
-      b += T(bx + barW + 6, y + 12, r.tssC.toFixed(0) + " °C", { size: 8 });
-      b += T(bx + barW + 68, y + 12, "L/D " + r.ld.toFixed(1), { size: 7.6, anchor: "end", fill: C.faint });
+    const x0 = 52, y0 = 254;
+    b += T(x0 - 36, y0 - 12, "c", { size: 11, weight: "bold" });
+    b += T(x0, y0 - 12, "shapes that reach " + S.targetC + " °C, with " + S.materialName, { size: 8.5, weight: "bold" });
+    b += line(x0, y0 - 6, x0 + 200, y0 - 6, { stroke: C.ink, sw: 0.8 });
+    F.forEach(function (f, i) {
+      const y = y0 + 12 + i * 34;
+      b += T(x0, y, f.form, { size: 9, weight: "bold", fill: C.thermal });
+      b += T(x0 + 200, y, f.constraint.toLowerCase() + " limited", { size: 7.6, anchor: "end", fill: C.faint });
+      b += T(x0, y + 11, f.dims, { size: 8.5 });
+      b += T(x0, y + 22, f.R.toFixed(2) + " Ω · " + f.current.toFixed(1) + " A · " +
+        f.voltage.toFixed(1) + " V · " + f.power.toFixed(0) + " W", { size: 8, fill: C.grey });
+      if (i < F.length - 1) b += line(x0, y + 27, x0 + 200, y + 27, { stroke: "#E8E8E8", sw: 0.5 });
     });
-    const yb = ptop + 14 + rows.length * 26 - 6;
-    b += line(bx, yb, bx + barW, yb, { stroke: C.grey, sw: 0.6 });
-    b += T(bx, yb + 10, "0", { size: 8, anchor: "middle", fill: C.grey });
-    b += T(bx + barW, yb + 10, String(hi) + " °C", { size: 8, anchor: "middle", fill: C.grey });
-    b += line(bx + 3, yb + 22, bx + 3, yb + 30, { stroke: C.ink, sw: 0.9 });
-    b += T(bx + 9, yb + 29, "material limit; dashed beyond it", { size: 7.6, fill: C.grey });
+  })();
+
+  /* d. and of six materials */
+  (function () {
+    const x0 = 287, y0 = 254, rows = S.byMaterial;
+    b += T(x0 - 36, y0 - 12, "d", { size: 11, weight: "bold" });
+    b += T(x0, y0 - 12, "materials that reach it, on the same sweep", { size: 8.5, weight: "bold" });
+    b += line(x0, y0 - 6, x0 + 200, y0 - 6, { stroke: C.ink, sw: 0.8 });
+    rows.forEach(function (r, i) {
+      const y = y0 + 11 + i * 16;
+      const on = r.reaches;
+      b += '<rect x="' + x0 + '" y="' + (y - 6.5) + '" width="7" height="7" fill="' +
+        (on ? C.thermal : "#FFFFFF") + '" stroke="' + (on ? C.thermal : C.faint) + '" stroke-width="0.8"/>';
+      b += T(x0 + 12, y, r.name, { size: 8.5, fill: on ? C.ink : C.faint });
+      b += T(x0 + 200, y, on ? "L/D " + r.ld.toFixed(1) + ",  " + r.R.toFixed(2) + " Ω"
+                             : "cannot: peaks at " + r.peakC.toFixed(0) + " °C",
+        { size: 8, anchor: "end", fill: on ? C.grey : C.faint });
+    });
+    b += T(x0, y0 + 11 + rows.length * 16 + 6, "resistivity spans " +
+      rows[0].rho.toExponential(1).replace("e-", "×10^{−") + "} to " +
+      rows[rows.length - 1].rho.toExponential(1).replace("e-", "×10^{−") + "} Ω·cm", { size: 7.6, fill: C.grey });
   })();
   return svgDoc(W, H, b);
 }
