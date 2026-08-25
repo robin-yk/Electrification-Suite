@@ -332,12 +332,19 @@ export function allocateSegmentCells(segments, total) {
 
 export function build2DMesh(g, cfg) {
   const nr=cfg.nr||30,nz=cfg.nz||60,radius=g.D/2,hasGap=cfg.gap>1e-12,outerRadius=radius+cfg.gap+cfg.wallThickness;
-  const nAir=cfg.nAir||8,activeRadialCells=nr-nAir;
+  // domainRadius/domainHeight below are set by the *ratio* nr/(nr-nAir), so a
+  // fixed nAir would shrink the surrounding-air blanket every time the grid is
+  // refined — a refinement study would then move the far-field boundary instead
+  // of holding the problem fixed. Default nAir/nAirZ proportionally to nr/nz so
+  // the physical domain is grid-independent. The 8/30 and 8/60 ratios reproduce
+  // the historical defaults exactly at 30×60, and reproduce 8<<level at the
+  // doubled grids used by tools/verification/joule.mjs.
+  const nAir=cfg.nAir??Math.max(4,Math.round(nr*8/30)),activeRadialCells=nr-nAir;
   const segments=[{key:"element",length:radius,min:8}];
   if(hasGap) segments.push({key:"gap",length:cfg.gap,min:1});
   segments.push({key:"wall",length:cfg.wallThickness,min:2});
   const counts=allocateSegmentCells(segments,activeRadialCells),byKey=Object.fromEntries(segments.map((segment,index)=>[segment.key,counts[index]]));
-  const nElement=byKey.element,nGap=byKey.gap||0,nWall=byKey.wall,nAirZ=cfg.nAirZ||8,nActiveZ=nz-2*nAirZ;
+  const nElement=byKey.element,nGap=byKey.gap||0,nWall=byKey.wall,nAirZ=cfg.nAirZ??Math.max(4,Math.round(nz*8/60)),nActiveZ=nz-2*nAirZ;
   const domainRadius=outerRadius*nr/activeRadialCells,domainHeight=g.L*nz/nActiveZ,dz=domainHeight/nz;
   const edges=[0];
   const addSegment=(start,end,count)=>{for(let i=1;i<=count;i++)edges.push(start+(end-start)*i/count);};
