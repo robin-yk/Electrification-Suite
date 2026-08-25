@@ -30,6 +30,10 @@ export const DEFAULT_ENCLOSURE = {
   contactRho: 0, maxIter: 160, tolerance: 1e-4,
 };
 
+// k = 40 is a bed-scale value for the phi = 0.88 foam, not the SiSiC skeleton
+// (~130 W/m-K dense), which is why kIsSkeleton is absent: solver.elementK() must
+// not re-homogenize a number that already carries the porosity. Swapping in a
+// skeleton value here means setting kIsSkeleton: true at the same time.
 const FOAM = { name: "SiSiC foam (effective)", rhoOhmCm: 0.0419, density: 3050, cp: 680, k: 40, jmax: 1e7, emissivity: 0.9 };
 
 const CFP_D = 4.93e-3, CFP_L = 0.038, CFP_A = Math.PI / 4 * CFP_D * CFP_D;
@@ -62,6 +66,10 @@ export function crossCheckCases(enclosure = DEFAULT_ENCLOSURE) {
       id: "wismann",
       inputs: () => ({
         main: {
+          // solidFraction here is the area fraction of the 0.35 mm annulus in the
+          // 6 mm envelope, not a porosity: the wall is continuous dense metal, so
+          // the table conductivity applies as-is and no porous closure belongs on
+          // this case. The field is named for the foam usage it shares with Zheng.
           material: wismannMaterial, solidFraction: 0.2198, porosity: 0.7802,
           volumeCm3: 14.137 * 0.2198, aspectRatio: 83.3,
           imax: 65, vmax: 100, pmax: 2000, supplyMode: "auto", iset: 65, vset: 100,

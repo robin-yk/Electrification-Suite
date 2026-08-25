@@ -95,6 +95,103 @@ export function propertiesAt(material, tempK) {
   };
 }
 
+// Maxwell-Eucken effective conductivity for a continuous solid skeleton holding
+// dispersed gas-filled pores. Exact at both limits (phi = 0 returns the solid,
+// phi = 1 returns the gas), and the same closure the microwave solver uses for
+// its packed bed, so the two apps homogenize by one method rather than two.
+export function maxwellEucken(kSolid, kGas, voidFraction) {
+  const phi = clamp(voidFraction, 0, 1);
+  return kSolid * (2*kSolid + kGas - 2*phi*(kSolid - kGas)) / (2*kSolid + kGas + phi*(kSolid - kGas));
+}
+
+// Conductivity of the element treated as a continuum.
+//
+// Homogenizing here is OPT-IN, gated on material.kIsSkeleton, and that gate is
+// the whole point. The geometry already dilutes the electrical path by the solid
+// fraction (geometry(): area = grossArea * solidFraction) and the 2D source by
+// the envelope volume, so it looks as though the conductivity is the one term
+// left un-diluted. Applying a porous closure to solidFraction unconditionally is
+// wrong twice over on the cases this repo actually ships:
+//
+//   * solidFraction is overloaded. For the Wismann tube it is the area fraction
+//     of a 0.35 mm annulus in a 6 mm envelope, not a porosity -- the metal there
+//     is a continuous dense wall and the table value is already correct. Feeding
+//     0.2198 to a dispersed-pore model moved that case's 2D peak from 818 to
+//     852 C against an 800 C measurement, away from the experiment.
+//   * the shipped porous entries already carry homogenized values. "SiSiC foam
+//     (effective)" at k = 40 against ~130 for dense SiSiC, and "CFP H23
+//     (effective)" at k = 5, are bed-scale numbers. Re-mixing them double counts
+//     the porosity.
+//
+// So this path activates only for a material that declares its k to be a
+// skeleton (dense-phase) value AND an input whose solidFraction is a genuine
+// porosity. No shipped material sets the flag; it exists so that adding one is a
+// deliberate act with a stated basis, the way the microwave solver back-solves a
+// skeleton value from a reference measurement before re-mixing.
+//
+// The pore gas is the process gas, so it shares cfg.gapK with the gap and purge
+// regions instead of introducing a second gas model.
+export function elementK(material, tempK, x, cfg) {
+  const kSolid = Math.max(1e-6, propertiesAt(material, tempK).k);
+  if (!material || !material.kIsSkeleton) return kSolid;
+  const solidFraction = finite(x && x.solidFraction) ? clamp(x.solidFraction, 1e-6, 1) : 1;
+  if (solidFraction >= 1) return kSolid;
+  const kGas = Math.max(1e-9, finite(cfg && cfg.gapK) ? cfg.gapK : OUTSIDE_AIR_K);
+  return Math.max(1e-6, maxwellEucken(kSolid, kGas, 1 - solidFraction));
+}
+
+// Radial variation of the solid fraction about its own mean.
+//
+// elementK() above explains why this repo refuses to reinterpret solidFraction
+// as a porosity by default: the parameter is overloaded, and feeding it to a
+// dispersed-pore closure moved the Wismann tube's 2D peak from 818 to 852 C
+// against an 800 C measurement. That objection is about the *mean*. It says
+// nothing about how the solid is distributed within the envelope, which is a
+// separate question and the one a current-density model needs answered: a
+// packed or foamed element is denser in some places than others, and current
+// crowds into the dense paths.
+//
+// So this knob is deliberately built to leave the mean alone. The shape
+//
+//   s(r) = 1 + c (2 (r/R)^2 - 1)
+//
+// integrates to exactly 1 over a cylinder, and it is divided by its own
+// discrete volume average as well, so the volume-averaged solid fraction is
+// identical to x.solidFraction on every mesh and the total solid volume, the
+// zero-D resistance and the injected power are all untouched. Only the
+// distribution changes. c > 0 puts the solid in the skin, c < 0 in the core.
+//
+// Because the profile is normalized about the mean, the ratio phi(r)/phi_mean
+// does not contain x.solidFraction at all: the contrast is an independent
+// input, not a reinterpretation of an overloaded one. It defaults to zero,
+// where every multiplier below is exactly 1 and the solver reproduces its
+// present behaviour bit for bit.
+//
+// Setting c != 0 is itself the assertion that the element is a genuine porous
+// body, so the same factor is applied to the thermal conductivity as to the
+// electrical conductivity; letting current redistribute while heat could not
+// would be the inconsistent choice. The exponent is Bruggeman's 3/2 for a
+// percolating solid phase, overridable through cfg.porosityExponent.
+export function porosityFactor2D(mesh, cfg) {
+  const count=mesh.nr*mesh.nz,fraction=new Float64Array(count).fill(1),multiplier=new Float64Array(count).fill(1);
+  const contrast=finite(cfg&&cfg.porosityContrast)?clamp(cfg.porosityContrast,-0.95,0.95):0;
+  const exponent=finite(cfg&&cfg.porosityExponent)?Math.max(0,cfg.porosityExponent):1.5;
+  if(contrast===0) return {fraction,multiplier,contrast,exponent,min:1,max:1};
+  const shape=(r)=>1+contrast*(2*(r/Math.max(mesh.radius,1e-30))**2-1);
+  let weighted=0,volume=0;
+  for(let j=mesh.activeStart;j<mesh.activeEnd;j++) for(let i=0;i<mesh.nElement;i++) {
+    const v=mesh.cellVolume(i,j);weighted+=shape(mesh.centers[i])*v;volume+=v;
+  }
+  const mean=weighted/Math.max(volume,1e-30);
+  let min=Infinity,max=-Infinity;
+  for(let j=mesh.activeStart;j<mesh.activeEnd;j++) for(let i=0;i<mesh.nElement;i++) {
+    const p=j*mesh.nr+i,ratio=Math.max(1e-6,shape(mesh.centers[i])/mean);
+    fraction[p]=ratio;multiplier[p]=Math.pow(ratio,exponent);
+    min=Math.min(min,ratio);max=Math.max(max,ratio);
+  }
+  return {fraction,multiplier,contrast,exponent,min,max};
+}
+
 export function validate2DConfig(cfg) {
   const errors = [];
   [["Wall conductivity",cfg.wallK],["Wall thickness",cfg.wallThickness],["Gap conductivity",cfg.gapK],["Maximum iterations",cfg.maxIter],["Temperature tolerance",cfg.tolerance]].forEach(([label,value]) => {
@@ -312,7 +409,7 @@ export function calculate(x) {
   const deltaT = Math.max(0, x.targetK - x.ambientK);
   const adiabaticTime = deltaT / rampRate;
   const hEffective = deltaT>0?requiredPower/Math.max(g.surface*deltaT,1e-30):0;
-  const bi = hEffective * g.lc / target.props.k;
+  const bi = hEffective * g.lc / elementK(m, x.targetK, x, x.enclosure);
   const kcrit = hEffective * g.lc / x.biLimit;
   const uniform = bi <= x.biLimit;
   const maxMaterialRamp = m.jmax * m.jmax * rhoE / (m.density * target.props.cp);
@@ -418,7 +515,7 @@ export function material2DName(code, result) {
 }
 
 export function cellK2D(code, tempK, material, cfg, x) {
-  if (code === 0) return Math.max(1e-6, propertiesAt(material,tempK).k);
+  if (code === 0) return elementK(material, tempK, x, cfg);
   if (code === 1 || code === 4) return Math.max(1e-6, cfg.gapK);
   if (code === 2) return Math.max(1e-6, cfg.wallK);
   return OUTSIDE_AIR_K;
@@ -492,10 +589,134 @@ export function gasBulkRowTemperature2D(T, mesh, j) {
   return weighted/Math.max(areaTotal,1e-30);
 }
 
+// ------------------------------------------------------------- electrical field
+// The thermal assembly treats the Joule source as uniform over the element:
+// every element cell gets op.pBulk/envelopeVolume. That is exact only when the
+// electrical conductivity is uniform. For a material with rho(T) it is not: the
+// hot core conducts differently from the cooler skin, current redistributes, and
+// the dissipation follows it. Solving del.(sigma grad V) = 0 on the element and
+// deriving the source from the resulting field is what turns "uniform heating"
+// into a current-density model.
+//
+// No new discretization is needed. A two-point-flux conductance is the same
+// operator whether the coefficient is k or sigma, and pcg2D/multiply2DSystem
+// only read {diag, rhs, edges}, so the existing machinery is reused as is.
+
+export function cellSigma2D(tempK, material) {
+  // propertiesAt returns resistivity in ohm.cm; 0.01 converts to ohm.m.
+  return 1 / Math.max(propertiesAt(material, tempK).rhoOhmCm * 0.01, 1e-30);
+}
+
+// Potential problem on the element only. The gap, wall and surrounding air are
+// insulators, so no face is built into them and the element's curved surface
+// becomes a natural zero-current boundary. The two axial ends are the
+// electrodes, held at 0 and 1 V here; the physical drive level is applied
+// afterwards by scaling, since the system is linear in V at fixed sigma.
+//
+// Cells outside the element still occupy a slot in the flat index space so the
+// shared solver can run unchanged; they are given an identity row (V = 0).
+export function assembleElectrical2D(T, material, mesh, porosity) {
+  const count=mesh.nr*mesh.nz,diag=new Float64Array(count),rhs=new Float64Array(count),edges=[],faces=[],electrodes=[];
+  const idx=(i,j)=>j*mesh.nr+i;
+  const axialArea=(i)=>Math.PI*(mesh.edges[i+1]*mesh.edges[i+1]-mesh.edges[i]*mesh.edges[i]);
+  // The porosity multiplier is 1 everywhere unless cfg.porosityContrast is set.
+  const multiplier=porosity?porosity.multiplier:null;
+  const sigmaAt=(i,j)=>cellSigma2D(T[j][i],material)*(multiplier?multiplier[j*mesh.nr+i]:1);
+  const pairG=(area,d1,s1,d2,s2)=>area/Math.max(d1/s1+d2/s2,1e-30);
+  for(let j=mesh.activeStart;j<mesh.activeEnd;j++) for(let i=0;i<mesh.nElement;i++) {
+    const p=idx(i,j),sp=sigmaAt(i,j);
+    if(i+1<mesh.nElement) {
+      const q=idx(i+1,j),face=mesh.edges[i+1],area=2*Math.PI*face*(mesh.zEdges[j+1]-mesh.zEdges[j]);
+      const G=pairG(area,face-mesh.centers[i],sp,mesh.centers[i+1]-face,sigmaAt(i+1,j));
+      diag[p]+=G;diag[q]+=G;edges.push([p,q,G]);faces.push([p,q,G,"r"]);
+    }
+    if(j+1<mesh.activeEnd) {
+      const q=idx(i,j+1),face=mesh.zEdges[j+1],area=axialArea(i);
+      const G=pairG(area,face-mesh.zCenters[j],sp,mesh.zCenters[j+1]-face,sigmaAt(i,j+1));
+      diag[p]+=G;diag[q]+=G;edges.push([p,q,G]);faces.push([p,q,G,"z"]);
+    }
+    // Electrode half-cell conductances. Only the driven end contributes to rhs.
+    if(j===mesh.activeStart) {
+      const G=sp*axialArea(i)/Math.max(mesh.zCenters[j]-mesh.zEdges[j],1e-30);
+      diag[p]+=G;electrodes.push([p,G,0,i]);
+    }
+    if(j===mesh.activeEnd-1) {
+      const G=sp*axialArea(i)/Math.max(mesh.zEdges[j+1]-mesh.zCenters[j],1e-30);
+      diag[p]+=G;rhs[p]+=G;electrodes.push([p,G,1,i]);
+    }
+  }
+  for(let n=0;n<count;n++) if(diag[n]===0) diag[n]=1;
+  return {diag,rhs,edges,faces,electrodes};
+}
+
+// Solve the unit-potential problem, rescale to the operating current, and turn
+// the face currents into a per-cell dissipation.
+//
+// The returned qCell is renormalized so that it sums to targetPower (op.pBulk).
+// The 2D element spans the *envelope* radius while the zero-D bulk resistance
+// uses the solid cross-section g.area = grossArea x solidFraction, so the two
+// resistances differ whenever solidFraction < 1. Renormalizing keeps the total
+// injected power identical to what the rest of the solver already accounts for
+// (energy closure, supply limits, contact losses), so this change redistributes
+// heat without moving the energy budget: only the *shape* of the source is new.
+export function solveElectrical2D(T, material, mesh, targetCurrent, targetPower, porosity) {
+  const system=assembleElectrical2D(T,material,mesh,porosity),count=mesh.nr*mesh.nz;
+  const zLo=mesh.zEdges[mesh.activeStart],zSpan=Math.max(mesh.zEdges[mesh.activeEnd]-zLo,1e-30);
+  const guess=new Float64Array(count);
+  for(let j=mesh.activeStart;j<mesh.activeEnd;j++) for(let i=0;i<mesh.nElement;i++) guess[j*mesh.nr+i]=(mesh.zCenters[j]-zLo)/zSpan;
+  const solved=pcg2D(system,guess),V=solved.x;
+  // Current drawn at the driven electrode when 1 V is applied across the element.
+  let unitCurrent=0;
+  for(const [p,G,end] of system.electrodes) if(end===1) unitCurrent+=G*(1-V[p]);
+  const resistance=unitCurrent>1e-30?1/unitCurrent:Infinity;
+  const scale=unitCurrent>1e-30?targetCurrent/unitCurrent:0;
+
+  const qCell=new Float64Array(count),jr=new Float64Array(count),jz=new Float64Array(count);
+  const axialArea=(i)=>Math.PI*(mesh.edges[i+1]*mesh.edges[i+1]-mesh.edges[i]*mesh.edges[i]);
+  const nr2=new Float64Array(count),nz2=new Float64Array(count);
+  for(const [p,q,G,axis] of system.faces) {
+    const drop=V[p]-V[q],dissipation=G*drop*drop/2;
+    qCell[p]+=dissipation;qCell[q]+=dissipation;
+    // Face current density [A/m2] at the drive level, averaged onto the two
+    // cells the face separates. Each cell keeps a separate count per axis, so a
+    // cell on the element edge is not diluted by the faces it does not have.
+    const i=p%mesh.nr,j=(p-i)/mesh.nr;
+    const area=axis==="z"?axialArea(i):2*Math.PI*mesh.edges[i+1]*(mesh.zEdges[j+1]-mesh.zEdges[j]);
+    const density=scale*G*drop/Math.max(area,1e-30);
+    if(axis==="z"){jz[p]+=density;jz[q]+=density;nz2[p]++;nz2[q]++;}
+    else{jr[p]+=density;jr[q]+=density;nr2[p]++;nr2[q]++;}
+  }
+  // The electrode half-face carries the same current as the cell it feeds, so
+  // it counts toward that cell's axial average like any other face. Signs
+  // follow the interior convention: the face current is G times the potential
+  // drop taken from the -z side to the +z side, so the driven end at the top
+  // reads (V_cell - V_applied) and the grounded end at the bottom reads
+  // (V_applied - V_cell). Both are negative when current flows downward.
+  for(const [p,G,end] of system.electrodes) {
+    const applied=end===1?1:0,drop=applied-V[p];
+    qCell[p]+=G*drop*drop;
+    const i=p%mesh.nr,signed=end===1?V[p]-applied:applied-V[p];
+    jz[p]+=scale*G*signed/Math.max(axialArea(i),1e-30);
+    nz2[p]++;
+  }
+  let total=0;for(let n=0;n<count;n++) total+=qCell[n];
+  const norm=total>1e-30?targetPower/total:0;
+  const jMag=new Float64Array(count);
+  for(let n=0;n<count;n++) {
+    qCell[n]*=norm;
+    if(nr2[n]>0) jr[n]/=nr2[n];
+    if(nz2[n]>0) jz[n]/=nz2[n];
+    jMag[n]=Math.hypot(jr[n],jz[n]);
+  }
+  for(let n=0;n<count;n++) V[n]*=scale;
+  return {V,qCell,jr,jz,jMag,resistance,unitCurrent,current:targetCurrent,
+    iterations:solved.iterations,relativeResidual:solved.relativeResidual};
+}
+
 // `transient`, when present, is {dt, Tprev}: a backward-Euler storage term.
-// Its shape is exactly the Robin boundary term already used throughout —
+// Its shape is exactly the Robin boundary term already used throughout --
 // rho*cp*V/dt onto the diagonal and the same coefficient times the previous
-// temperature onto the right-hand side — so it needs no new machinery and
+// temperature onto the right-hand side -- so it needs no new machinery and
 // leaves the operator symmetric. It is kept out of `boundaryTerms` on purpose:
 // that list is what boundaryLoss2D sums as heat leaving the domain, and stored
 // energy is not a loss.
@@ -504,6 +725,9 @@ export function assemble2DSystem(T, x, g, cfg, material, mesh, op, transient = n
   const idx=(i,j)=>j*mesh.nr+i;
   const axialArea=(i)=>Math.PI*(mesh.edges[i+1]*mesh.edges[i+1]-mesh.edges[i]*mesh.edges[i]);
   const qVol=op.pBulk/g.envelopeVolume;
+  // Same radial solid-fraction multiplier the electrical solve uses; all ones
+  // unless cfg.porosityContrast is set, so this is a no-op by default.
+  const porosity=porosityFactor2D(mesh,cfg),kAt=(i,j,code)=>cellK2D(code,T[j][i],material,cfg,x)*porosity.multiplier[j*mesh.nr+i];
   const addFace=(p,q,G)=>{diag[p]+=G;diag[q]+=G;edges.push([p,q,G]);};
   const addBoundary=(p,G,Tb)=>{if(G<=0)return;diag[p]+=G;rhs[p]+=G*Tb;boundaryTerms.push([p,G,Tb]);};
   const addStorage=(p,G,Tb)=>{if(G<=0)return;diag[p]+=G;rhs[p]+=G*Tb;};
@@ -539,13 +763,23 @@ export function assemble2DSystem(T, x, g, cfg, material, mesh, op, transient = n
     const emissivity=code===0?x.emissivity:cfg.wallEmissivity;
     addBoundary(p,seriesRadiationConductance(tempK,area,halfDistance,kCell,emissivity),x.ambientK);
   };
+  // Needed inside the assembly loop: the axial end boundaries are skipped on
+  // cells the purge stream flows through, so the flow map has to exist first.
+  const flowRows=Array.from({length:mesh.nz},(_,j)=>gasFlowCells2D(mesh,j));
+  // cfg.purge === false removes the 50 sccm He stream while leaving the
+  // geometry alone. Needed to separate the gap's conduction path from the
+  // advection that runs through it; without it the only way to switch the
+  // stream off is to delete the gap, which changes the mesh at the same time.
+  const flowConnected=cfg.purge!==false&&flowRows.every(cells=>cells.length>0);
   for(let j=0;j<mesh.nz;j++) for(let i=0;i<mesh.nr;i++) {
-    const p=idx(i,j),code=mesh.materialAt(i,j),kp=cellK2D(code,T[j][i],material,cfg,x);
+    const p=idx(i,j),code=mesh.materialAt(i,j),kp=kAt(i,j,code);
     // cfg.verificationSource(r, z) [W/m³] replaces the Joule source over the whole
     // domain. Only for code verification (manufactured solutions); the page never
     // sets it, and energy-closure reporting assumes the ordinary Joule source.
     if(cfg.verificationSource) rhs[p]+=cfg.verificationSource(mesh.centers[i],mesh.zCenters[j])*mesh.cellVolume(i,j);
-    else if(code===0) rhs[p]+=qVol*mesh.cellVolume(i,j);
+    // op.qCell, when present, is the per-cell dissipation [W] from the
+    // electrical field solve; it already sums to op.pBulk.
+    else if(code===0) rhs[p]+=op.qCell?op.qCell[p]:qVol*mesh.cellVolume(i,j);
     // rho*cp is evaluated at the mean of the old and current temperatures, not
     // at the current one. For a material whose cp is strongly temperature
     // dependent -- carbon paper triples over this range -- the two differ
@@ -556,7 +790,7 @@ export function assemble2DSystem(T, x, g, cfg, material, mesh, op, transient = n
     // storageRate2D reproduce it exactly rather than approximately.
     if(transient) addStorage(p,rhoCp2D(code,0.5*(T[j][i]+transient.Tprev[j][i]),material,cfg)*mesh.cellVolume(i,j)/transient.dt,transient.Tprev[j][i]);
     if(i<mesh.nr-1) {
-      const q=idx(i+1,j),face=mesh.edges[i+1],area=2*Math.PI*face*(mesh.zEdges[j+1]-mesh.zEdges[j]),nextCode=mesh.materialAt(i+1,j),kn=cellK2D(nextCode,T[j][i+1],material,cfg,x);
+      const q=idx(i+1,j),face=mesh.edges[i+1],area=2*Math.PI*face*(mesh.zEdges[j+1]-mesh.zEdges[j]),nextCode=mesh.materialAt(i+1,j),kn=kAt(i+1,j,nextCode);
       const G=pairConductance(area,face-mesh.centers[i],kp,mesh.centers[i+1]-face,kn,code,nextCode);
       addFace(p,q,G);
       if(code===3&&nextCode===2)addInterfaceRadiation(q,nextCode,T[j][i+1],area,mesh.centers[i+1]-face,kn);
@@ -566,7 +800,7 @@ export function assemble2DSystem(T, x, g, cfg, material, mesh, op, transient = n
       addBoundary(p,kp*area/Math.max(mesh.edges[mesh.nr]-mesh.centers[i],1e-30),x.ambientK);
     }
     if(j<mesh.nz-1) {
-      const q=idx(i,j+1),area=axialArea(i),face=mesh.zEdges[j+1],nextCode=mesh.materialAt(i,j+1),kn=cellK2D(nextCode,T[j+1][i],material,cfg,x),elementGas=(code===0&&nextCode===4)||(code===4&&nextCode===0);
+      const q=idx(i,j+1),area=axialArea(i),face=mesh.zEdges[j+1],nextCode=mesh.materialAt(i,j+1),kn=kAt(i,j+1,nextCode),elementGas=(code===0&&nextCode===4)||(code===4&&nextCode===0);
       if(elementGas&&cfg.endMode==="electrode") {
         const elementP=code===0?p:q;
         addBoundary(elementP,cfg.endH*area,cfg.endK);
@@ -582,8 +816,20 @@ export function assemble2DSystem(T, x, g, cfg, material, mesh, op, transient = n
         if((code===0||code===2)&&nextCode===3)addInterfaceRadiation(p,code,T[j][i],area,face-mesh.zCenters[j],kp);
       }
     }
-    if(j===0) addBoundary(p,kp*axialArea(i)/Math.max(mesh.zCenters[j]-mesh.zEdges[j],1e-30),x.ambientK);
-    if(j===mesh.nz-1) addBoundary(p,kp*axialArea(i)/Math.max(mesh.zEdges[j+1]-mesh.zCenters[j],1e-30),x.ambientK);
+    // The two axial end rows sit on an ambient Dirichlet boundary, with a
+    // conductance that scales as 1/(dz/2) and therefore *diverges* under mesh
+    // refinement. On the purge stream's own cells that is wrong twice over. The
+    // inlet row already has its temperature imposed through the advection term
+    // (rhs += capacity * gasK), and the outlet row does not need one at all --
+    // the enthalpy leaves with the flow. Clamping them as well short-circuits
+    // the stream to ambient, ever harder as the grid is refined: the reported
+    // advective cooling halved on every refinement, 0.0377 -> 0.0182 -> 0.0086 W,
+    // heading for zero instead of a physical value. A term of the model that
+    // vanishes as h -> 0 cannot converge, and this one drove the observed order
+    // negative. Leave the flowing cells to the advection scheme.
+    const flowing=flowConnected&&(code===1||code===4);
+    if(j===0&&!flowing) addBoundary(p,kp*axialArea(i)/Math.max(mesh.zCenters[j]-mesh.zEdges[j],1e-30),x.ambientK);
+    if(j===mesh.nz-1&&!flowing) addBoundary(p,kp*axialArea(i)/Math.max(mesh.zEdges[j+1]-mesh.zCenters[j],1e-30),x.ambientK);
   }
 
   if(mesh.nGap>0) {
@@ -599,26 +845,41 @@ export function assemble2DSystem(T, x, g, cfg, material, mesh, op, transient = n
     const elementHalf=Math.max(elementRadius-mesh.centers[iElement],0),wallHalf=Math.max(mesh.centers[iWall]-wallRadius,0);
     for(let j=mesh.activeStart;j<mesh.activeEnd;j++) {
       const p=idx(iElement,j),q=idx(iWall,j),hGapRad=gapRadiationCoefficient(T[j][iElement],T[j][iWall],x.emissivity,cfg.wallEmissivity,elementRadius,wallRadius);
-      const kElement=cellK2D(0,T[j][iElement],material,cfg,x),kWall=cellK2D(2,T[j][iWall],material,cfg,x);
+      const kElement=kAt(iElement,j,0),kWall=kAt(iWall,j,2);
       const resistance=elementHalf/Math.max(kElement,1e-30)+1/Math.max(hGapRad,1e-30)+wallHalf/Math.max(kWall,1e-30);
       addFace(p,q,areaPerRow/Math.max(resistance,1e-30));
     }
   }
 
-  const flowRows=Array.from({length:mesh.nz},(_,j)=>gasFlowCells2D(mesh,j));
-  const flowConnected=flowRows.every(cells=>cells.length>0);
   if(flowConnected&&HE_CAPACITY_RATE>0) {
     for(let j=mesh.nz-1;j>=0;j--) {
       const cells=flowRows[j],areas=cells.map(axialArea),areaTotal=areas.reduce((sum,value)=>sum+value,0);
       const weights=areas.map(value=>value/Math.max(areaTotal,1e-30));
+      // Where the flow cross-section does not change from one row to the next,
+      // each cell draws its inflow from the cell directly upstream of it. Taking
+      // the area-weighted mean of the whole upstream row instead — as this did
+      // for every row — homogenizes the stream radially once per cell, so the
+      // mixing length is the mesh spacing and the mixing rate per unit length
+      // diverges under refinement. That is not a discretization of anything, and
+      // because the purge cells are also conduction cells the artifact lands in
+      // the element-to-wall gap resistance: measured across 30x60 / 60x120 /
+      // 120x240 it moved the gap drop by 906 -> 803 -> 672 K and drove the
+      // observed order of the default case negative.
+      //
+      // The mean is still the right inflow where the stream actually contracts
+      // or expands (entering and leaving the element annulus), so it is kept for
+      // exactly those rows. Both branches conserve enthalpy: matched rows share
+      // the same cell set and therefore the same area weights, so the capacity
+      // leaving a cell equals the capacity arriving at its neighbour.
+      const upstream=j<mesh.nz-1?flowRows[j+1]:null;
+      const matched=upstream&&upstream.length===cells.length&&cells.every((cell,n)=>upstream[n]===cell);
+      const upstreamAreas=upstream?upstream.map(axialArea):[],upstreamTotal=upstreamAreas.reduce((sum,value)=>sum+value,0);
       for(let n=0;n<cells.length;n++) {
         const p=idx(cells[n],j),capacity=HE_CAPACITY_RATE*weights[n];
         diag[p]+=capacity;
         if(j===mesh.nz-1) rhs[p]+=capacity*x.gasK;
-        else {
-          const upstream=flowRows[j+1],upstreamAreas=upstream.map(axialArea),upstreamTotal=upstreamAreas.reduce((sum,value)=>sum+value,0);
-          for(let m=0;m<upstream.length;m++)directed.push([p,idx(upstream[m],j+1),capacity*upstreamAreas[m]/Math.max(upstreamTotal,1e-30)]);
-        }
+        else if(matched) directed.push([p,idx(cells[n],j+1),capacity]);
+        else for(let m=0;m<upstream.length;m++)directed.push([p,idx(upstream[m],j+1),capacity*upstreamAreas[m]/Math.max(upstreamTotal,1e-30)]);
       }
     }
   }
@@ -697,7 +958,6 @@ export function boundaryLoss2D(T,x,g,cfg,material,mesh,op) {
 }
 
 // Total internal energy of the domain above a reference temperature, J.
-// Used only as a transient diagnostic: the storage term the closure needs.
 export function internalEnergy2D(T, cfg, material, mesh, refK) {
   let sum=0;
   for(let j=0;j<mesh.nz;j++)for(let i=0;i<mesh.nr;i++){
@@ -721,10 +981,12 @@ export function storageRate2D(T, Tprev, cfg, material, mesh, dt) {
 }
 
 // Backward-Euler time march of the same operator solveThermal2D solves at
-// steady state. Unconditionally stable, so dt is chosen by the time scale of
-// interest rather than by a stability limit, and first-order accurate in
-// time — a deliberate trade for a screening tool, since Crank-Nicolson rings
-// on the stiff radiation boundary at the step sizes a browser can afford.
+// steady state, and through the same cfg.currentField path, so a transient
+// inherits the solved current density rather than being stuck with the
+// uniform source. Unconditionally stable, so dt follows the time scale of
+// interest rather than a stability limit, and first-order accurate in time --
+// a deliberate trade for a screening tool, since Crank-Nicolson rings on the
+// stiff radiation boundary at the step sizes a browser can afford.
 //
 // No under-relaxation here: the storage term puts rho*cp*V/dt on every
 // diagonal, which for any dt short enough to be interesting dominates the
@@ -749,19 +1011,33 @@ export function solveTransient2D(x, zeroD, cfg, material, plan = {}) {
   const record=Math.max(1,plan.record??1);
   const elementAverage=()=>{let sum=0,vol=0;for(let j=0;j<mesh.nz;j++)for(let i=0;i<mesh.nr;i++)if(mesh.materialAt(i,j)===0){const v=mesh.cellVolume(i,j);sum+=T[j][i]*v;vol+=v;}return sum/vol;};
   const elementExtrema=()=>{let lo=Infinity,hi=-Infinity;for(let j=0;j<mesh.nz;j++)for(let i=0;i<mesh.nr;i++)if(mesh.materialAt(i,j)===0){lo=Math.min(lo,T[j][i]);hi=Math.max(hi,T[j][i]);}return[lo,hi];};
+  // Same hook solveThermal2D uses, so cfg.currentField behaves identically in
+  // both. The scale is applied after the electrical solve, which is correct:
+  // duty cycling changes how long the current flows, not where it flows.
+  let electrical=null;
+  const porosity=porosityFactor2D(mesh,cfg);
+  const withCurrentField=(point)=>{
+    if(!cfg.currentField) return point;
+    electrical=solveElectrical2D(T,material,mesh,point.current,point.pBulk,porosity);
+    return {...point,qCell:electrical.qCell};
+  };
+  const scaleSource=(point,scale)=>{
+    const scaled={...point,pBulk:point.pBulk*scale,pContact:point.pContact*scale,pTotal:point.pTotal*scale};
+    if(point.qCell) scaled.qCell=point.qCell.map((q)=>q*scale);
+    return scaled;
+  };
 
   const history=[];
   let totalLinear=0,worstClosure=0,converged=true,electricalEnergy=0;
   const mid=mesh.activeStart+Math.floor(mesh.nActiveZ/2);
-  let op=operating2DAt(startK,x,g,cfg,material);
+  let op=withCurrentField(operating2DAt(startK,x,g,cfg,material));
   for(let n=0;n<steps;n++){
     const t=(n+1)*dt;
     for(let j=0;j<mesh.nz;j++)for(let i=0;i<mesh.nr;i++)Tprev[j][i]=T[j][i];
     const scale=Math.max(0,sourceScale(t));
     let pass=0,step=Infinity;
     for(pass=0;pass<picardMax&&step>picardTol;pass++){
-      const base=operating2DAt(elementAverage(),x,g,cfg,material);
-      op={...base,pBulk:base.pBulk*scale,pContact:base.pContact*scale,pTotal:base.pTotal*scale};
+      op=scaleSource(withCurrentField(operating2DAt(elementAverage(),x,g,cfg,material)),scale);
       const system=assemble2DSystem(T,x,g,cfg,material,mesh,op,{dt,Tprev});
       const linear=bicgstab2D(system,Float64Array.from(T.flat()));
       totalLinear+=linear.iterations;
@@ -792,7 +1068,7 @@ export function solveTransient2D(x, zeroD, cfg, material, plan = {}) {
     }
   }
   const[tMin,tMax]=elementExtrema();
-  return{errors:[],x,zeroD,cfg,material,g,mesh,T,op,history,
+  return{errors:[],x,zeroD,cfg,material,g,mesh,T,op,history,electrical,porosity,
     dt,steps,tEnd:steps*dt,avgK:elementAverage(),tMin,tMax,deltaT:tMax-tMin,
     center:T[mid][0],wallOuter:T[mid][mesh.nElement+mesh.nGap+mesh.nWall-1],
     storedEnergy:internalEnergy2D(T,cfg,material,mesh,ambientK),
@@ -805,10 +1081,20 @@ export function solveThermal2D(x, zeroD, cfg, material) {
   const seedK=finite(zeroD.tss)?clamp(zeroD.tss,ambientK,3500):clamp(x.targetK,ambientK,2500);
   const T=Array.from({length:mesh.nz},(_,j)=>Array.from({length:mesh.nr},(_,i)=>{const code=mesh.materialAt(i,j);return ambientK+(code===0?0.65:code===1?0.25:code===2?0.10:code===4?0.08:0)*(seedK-ambientK);}));
   const elementAverage=()=>{let sum=0,vol=0;for(let j=0;j<mesh.nz;j++)for(let i=0;i<mesh.nr;i++)if(mesh.materialAt(i,j)===0){const v=mesh.cellVolume(i,j);sum+=T[j][i]*v;vol+=v;}return sum/vol;};
-  let maxStep=Infinity,outer=0,totalLinear=0,linearResidual=Infinity,op=operating2DAt(ambientK,x,g,cfg,material);
+  // cfg.currentField replaces the uniform Joule source with the dissipation of
+  // a solved potential field. Off by default, so the page's numbers only change
+  // once it is switched on.
+  let electrical=null;
+  const porosity=porosityFactor2D(mesh,cfg);
+  const withCurrentField=(point)=>{
+    if(!cfg.currentField) return point;
+    electrical=solveElectrical2D(T,material,mesh,point.current,point.pBulk,porosity);
+    return {...point,qCell:electrical.qCell};
+  };
+  let maxStep=Infinity,outer=0,totalLinear=0,linearResidual=Infinity,op=withCurrentField(operating2DAt(ambientK,x,g,cfg,material));
   let relaxation=0.62,stallStreak=0;
   for(outer=0;outer<cfg.maxIter&&maxStep>cfg.tolerance;outer++){
-    op=operating2DAt(elementAverage(),x,g,cfg,material);
+    op=withCurrentField(operating2DAt(elementAverage(),x,g,cfg,material));
     const system=assemble2DSystem(T,x,g,cfg,material,mesh,op),initial=Float64Array.from(T.flat()),linear=bicgstab2D(system,initial);
     totalLinear+=linear.iterations;linearResidual=linear.relativeResidual;
     const stepBefore=maxStep;
@@ -833,10 +1119,10 @@ export function solveThermal2D(x, zeroD, cfg, material) {
       else if(outer===4)relaxation=0.86;
     }
   }
-  const avgK=elementAverage();op=operating2DAt(avgK,x,g,cfg,material);
+  const avgK=elementAverage();op=withCurrentField(operating2DAt(avgK,x,g,cfg,material));
   const element=[];for(let j=0;j<mesh.nz;j++)for(let i=0;i<mesh.nr;i++)if(mesh.materialAt(i,j)===0)element.push(T[j][i]);
   const tMin=Math.min(...element),tMax=Math.max(...element),mid=mesh.activeStart+Math.floor(mesh.nActiveZ/2),bottomRow=mesh.activeStart,topRow=mesh.activeEnd-1,loss=boundaryLoss2D(T,x,g,cfg,material,mesh,op),boundaryLoss=loss.total;
   const closure=Math.abs(op.pBulk-boundaryLoss)/Math.max(op.pBulk,1e-12),representedVolumeError=Math.abs(mesh.elementVolume-g.envelopeVolume)/g.envelopeVolume;
   const heCoolingUpper=Math.max(0,HE_CAPACITY_RATE*(avgK-x.gasK));
-  return{errors:[],x,zeroD,cfg,material,g,mesh,T,op,avgK,tMin,tMax,deltaT:tMax-tMin,center:T[mid][0],side:T[mid][mesh.nElement-1],bottom:T[bottomRow][0],top:T[topRow][0],wallInner:T[mid][mesh.nElement+mesh.nGap],wallOuter:T[mid][mesh.nElement+mesh.nGap+mesh.nWall-1],boundaryLoss,staticBoundaryLoss:loss.staticLoss,closure,representedVolumeError,heCapacityRate:HE_CAPACITY_RATE,heCooling:loss.gasAdvective,heCoolingUpper,heOutletK:loss.gasOutletK,heFlowConnected:loss.flowConnected,iterations:outer,linearIterations:totalLinear,linearResidual,residual:maxStep,converged:maxStep<=cfg.tolerance,targetReached:avgK>=x.targetK,qVol:op.pBulk/g.envelopeVolume};
+  return{errors:[],x,zeroD,cfg,material,g,mesh,T,op,avgK,tMin,tMax,deltaT:tMax-tMin,center:T[mid][0],side:T[mid][mesh.nElement-1],bottom:T[bottomRow][0],top:T[topRow][0],wallInner:T[mid][mesh.nElement+mesh.nGap],wallOuter:T[mid][mesh.nElement+mesh.nGap+mesh.nWall-1],boundaryLoss,staticBoundaryLoss:loss.staticLoss,closure,representedVolumeError,heCapacityRate:HE_CAPACITY_RATE,heCooling:loss.gasAdvective,heCoolingUpper,heOutletK:loss.gasOutletK,heFlowConnected:loss.flowConnected,iterations:outer,linearIterations:totalLinear,linearResidual,residual:maxStep,converged:maxStep<=cfg.tolerance,targetReached:avgK>=x.targetK,qVol:op.pBulk/g.envelopeVolume,electrical,porosity};
 }

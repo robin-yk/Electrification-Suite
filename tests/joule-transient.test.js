@@ -166,3 +166,32 @@ test("solveTransient2D() reports a meaningful closure while the drive is off", (
   assert.ok(r.worstClosure < 1e-3, `closure ${r.worstClosure} under a duty-cycled drive`);
   assert.ok(r.history.some((h) => h.pBulk === 0), "test did not actually exercise an off step");
 });
+
+test("solveTransient2D() carries the solved current-density field, not just the uniform source", () => {
+  // cfg.currentField replaces the uniform Joule source with the dissipation of
+  // a solved potential field. The transient goes through the same hook as the
+  // steady solve, so its long-time limit has to land on the steady answer with
+  // the field switched on just as it does with it off.
+  const enclosure = { ...LOSSY, currentField: true };
+  const x = makeInput(enclosure);
+  const zeroD = calculate(x);
+  const steady = solveThermal2D(x, zeroD, enclosure, sic);
+  const transient = solveTransient2D(x, zeroD, enclosure, sic, { dt: 10, steps: 200 });
+
+  assert.equal(transient.errors.length, 0);
+  assert.ok(transient.op.qCell, "transient did not pick up the per-cell source");
+  assert.ok(Math.abs(transient.avgK - steady.avgK) < 1e-2,
+    `transient ${transient.avgK} K vs steady ${steady.avgK} K with currentField on`);
+  assert.ok(transient.worstClosure < 1e-5, `closure ${transient.worstClosure}`);
+});
+
+test("solveTransient2D() scales the per-cell source with the duty cycle", () => {
+  // Duty cycling changes how long the current flows, not where, so the scale
+  // must multiply qCell rather than being dropped when the current field is on.
+  const enclosure = { ...LOSSY, currentField: true };
+  const x = makeInput(enclosure);
+  const zeroD = calculate(x);
+  const off = solveTransient2D(x, zeroD, enclosure, sic, { dt: 1, steps: 3, sourceScale: () => 0 });
+  assert.ok(off.op.qCell.every((q) => q === 0), "qCell was not scaled to zero with the drive off");
+  assert.ok(off.history.every((h) => h.pBulk === 0));
+});

@@ -233,9 +233,12 @@ function main() {
   const last = rows[rows.length - 1];
   const asymptotic = rich.avg.p > 0.5 && rich.avg.p < 3;
   if (asymptotic) {
+    // Expect ~1.45, not 2: conduction and surface radiation are second order
+    // (studies 1-3), the He purge enthalpy balance is first-order upwind, and
+    // the default case mixes both.
     console.log(`Richardson (avg T): order ${fix(rich.avg.p, 2)}, extrapolated ${fix(rich.avg.qExtrap, 2)} °C, finest-grid error ${sci(rich.avg.fineError, 2)}`);
   } else {
-    console.log(`Richardson order not meaningful here (grid-to-grid differences are not yet in the asymptotic range: the surface-radiation coupling localizes T^4 exchange at cell centers, a first-order effect that dominates before the second-order conduction error does). Reporting sensitivity against the finest grid instead:`);
+    console.log(`Richardson order not meaningful here (grid-to-grid differences are not in the asymptotic range). Reporting sensitivity against the finest grid instead:`);
   }
   const rise = last.avgC - 20;
   console.log(`Default 30×60 grid vs finest ${last.grid}: avg T differs by ${fix(Math.abs(rows[0].avgC - last.avgC), 2)} K (${fix(100 * Math.abs(rows[0].avgC - last.avgC) / rise, 2)}% of the temperature rise), max T by ${fix(Math.abs(rows[0].maxC - last.maxC), 2)} K.`);

@@ -99,21 +99,63 @@ radiation on, 20 A current-limited drive):
 
 | grid | avg T (°C) | max T (°C) | energy closure | linear residual |
 | --- | --- | --- | --- | --- |
-| 30×60 (default) | 837.40 | 839.08 | 9.0e-8 | 2.9e-12 |
-| 60×120 | 833.68 | 835.36 | 1.0e-7 | 6.7e-12 |
-| 120×240 | 827.12 | 828.81 | 1.0e-7 | 9.4e-12 |
+| 30×60 (default) | 846.75 | 848.41 | 8.7e-8 | 9.0e-12 |
+| 60×120 | 846.35 | 848.02 | 8.3e-8 | 8.0e-12 |
+| 120×240 | 846.20 | 847.88 | 8.8e-8 | 7.0e-12 |
+| 240×480 | 846.15 | 847.82 | 6.5e-9 | 9.9e-12 |
 
-Energy closure (input power vs boundary losses) holds to ~1e-7 on every grid,
-and the linear solver converges to ~1e-11 relative residual. The grid-to-grid
-differences are **not yet in the asymptotic range** at 4× refinement (the
-T⁴ radiation exchange is localized at cell centers, a first-order effect that
-dominates before the second-order conduction error does), so no clean order
-can be quoted for the full nonlinear case. The honest statement is a
-sensitivity bound: **the default 30×60 grid differs from the 120×240 grid by
-10.3 K in average temperature, i.e. 1.3% of the ~817 K temperature rise** (and
-by the same margin in peak temperature). The second-order correctness of the
-underlying conduction discretization is established independently by studies
-1–3.
+Richardson on the first three grids gives an observed order of **1.45** for
+average temperature (1.46 for peak), an extrapolated 846.12 °C, and a
+finest-grid relative error of 9.9e-5. Repeating it on grids 2–4 gives 1.46 and
+846.12 °C: the two overlapping triplets agree on both the order and the
+extrapolated value, which is the check that the sequence is genuinely in the
+asymptotic range rather than accidentally well-behaved on one triplet.
+
+The order sits between first and second because the case mixes both. Conduction
+and surface radiation are second-order (studies 1–3); the He purge enthalpy
+balance is first-order upwind. A mixture converging at 1.45 is the expected
+result, not a defect.
+
+**Sensitivity bound: the default 30×60 grid differs from the 240×480 grid by
+0.60 K in average temperature and 0.59 K in peak, i.e. 0.07% of the ~827 K
+temperature rise.**
+
+#### Why this section used to report a negative order
+
+Until the purge advection was corrected, this study reported an observed order
+of **−0.588**: the answer moved further on each refinement instead of settling
+(837.40 → 833.68 → 827.12 °C on the three grids, and the advected purge power
+collapsing 0.75 → 0.63 → 0.50 W). A complexity ladder on the same grid sequence
+localized it to a single term:
+
+| configuration | observed order |
+| --- | --- |
+| pure conduction; no gap, no purge, no radiation | +1.22 |
+| radiation on; no gap, no purge | +1.16 |
+| gap present, purge **off**, no radiation | +1.33 |
+| gap present, purge **on**, no radiation | −0.32 |
+| full default | −0.588 |
+
+Conduction, radiation and the gap geometry all converged. Only the purge did
+not, and it is the sole difference between the third and fourth rows.
+
+The advection had given every flow cell an inflow equal to the area-weighted
+mean of the whole upstream row. That homogenizes the stream radially once per
+cell, so the mixing length is the mesh spacing and the mixing rate per unit
+length diverges under refinement; it is not a discretization of anything. The
+artifact did not stay in the gas, because the purge cells are also conduction
+cells: it landed in the element-to-wall gap resistance, whose temperature drop
+moved 906 → 803 → 672 K across the three grids while the heat through it barely
+changed. That is what carried the element temperature down and inverted the
+order. The advected power itself was never the mechanism, changing by only
+0.26 W against a 57 K/W case sensitivity, worth 15 K of the observed 264 K.
+
+Where the flow cross-section is unchanged from row to row, each cell now draws
+its inflow from the cell directly upstream of it; the area-weighted mean is kept
+for exactly the rows where the stream contracts or expands at the ends of the
+element annulus. Both branches conserve enthalpy. `cfg.purge` was added at the
+same time so the stream can be switched off without deleting the gap, which is
+what makes the ladder above separable at all.
 
 ## Microwave solver (`apps/microwave/solver.js`, `solve2D`)
 
@@ -166,6 +208,121 @@ differs from the 120×240 grid by 22.2 K at the bed center (2.9% of the rise),
 4.6 K in average bed temperature (0.8%), and 0.4 K at the wall**. The wall
 temperature, which is what the experimental calibration constrains, is
 grid-insensitive.
+
+## When the 0D screening model can be trusted (`tools/verification/zerod-*.mjs`)
+
+A model-reduction study, not verification and not validation: it measures when
+the lumped 0D temperature agrees with the resolved field, so it inherits the 2D
+solver's credibility and has to establish an anchor before it sweeps. Run with
+`npm run verify:zerod-limit` and `npm run verify:zerod-sweep`.
+
+### The gap is two quantities, not one
+
+Driving Bi_R to 2.3e-6 by scaling conductivity 1000x leaves the element
+isothermal — spread 0.05 K — while the 2D mean still sits **28.72 K above** the
+0D steady temperature. An offset that outlives the isothermal limit is not a
+lumping error, so the difference between the models separates:
+
+| component | definition | scales with Bi_R |
+| --- | --- | --- |
+| offset | `T_avg(2D) − T_ss(0D)` | no |
+| spread | `T_max(2D) − T_avg(2D)` | yes |
+
+Interrogating both loss models at the *same* temperature divides out the
+operating point and names the channel. At the isothermal limit the 0D network
+claims 554.28 W where the resolved field carries 532.23 W (4.14%):
+
+| path | 0D | 2D |
+| --- | --- | --- |
+| side | 505.03 W | — |
+| end | 47.90 W | — |
+| static total | 552.93 W | 532.12 W |
+| He advective | 1.352 W | 0.114 W |
+
+94% of the discrepancy is the static path. The 0D end term is the suspect: in 2D
+the element ends reach ambient through the He region, a series resistance the
+lumped network has no equivalent for. The advective terms differ twelvefold but
+are too small to matter at this operating point.
+
+**Consequence.** A criterion fitted to `peak − 0D` inherits a ~29 K floor and
+would report the lumped model as unsafe at Bi_R = 0, which says nothing about
+lumping. The criterion below is stated on the spread; the floor is a separate
+finding that has to be quoted beside it.
+
+### Control: the closed form is reproduced exactly
+
+For a cylinder of radius R with uniform volumetric generation — which is what the
+solver applies, since `qVol = pBulk / envelopeVolume` carries no local ρ(T)
+coupling — the hand derivation gives
+
+    centre-to-surface / surface-to-ambient  =  h R / (2k)  =  Bi_R / 2
+
+Scanning k over 32× returns a measured ratio that is a **constant 0.93333** of
+that. The constancy is the tell: cell-centred unknowns are sampled h/2 inside
+each boundary, which shortens the drop by exactly `1 − 1/N`, and N = 15 here.
+
+| test | raw | corrected for `1 − 1/N` |
+| --- | --- | --- |
+| parabola, `(centre−surface) / (qR²/4k)` | 0.93260 | **0.99921** |
+| ratio, through-origin slope on Bi_R/2 | 0.93333 | **0.99999** |
+
+The apparent 7% deficit is where the unknowns sit, not solver error.
+
+### The sweep
+
+Bi_R is scanned one factor at a time — k, emissivity and drive current
+separately — with Bi_R computed from the 2D solve's own side loss and surface
+temperature so both sides of the ratio refer to the same operating point.
+
+| stage | what varies | slope on Bi_R/2 | R² | n | Bi_R range |
+| --- | --- | --- | --- | --- | --- |
+| 3a | k, ε, current (SiC, L/D 30) | 0.9374 | 1.0000 | 48 | 2.9e-4 … 5.8e-2 |
+| 3b | 4 materials, power-matched | 0.9374 | 1.0000 | 12 | 2.6e-3 … 3.5e-2 |
+
+Both land on the same 0.937 the control explained, across a 200× range of Bi_R
+and materials whose conductivity spans 11 to 174 W/m·K. **Corrected for
+sampling, `spread / rise = Bi_R / 2` holds exactly and is material-free.**
+
+### Aspect ratio is a second group
+
+The hypothesis that Bi_R alone predicts is **rejected**. Holding Bi_R by
+construction and sweeping L/D:
+
+| L/D | 1.5 | 4 | 10 | 30 | 60 |
+| --- | --- | --- | --- | --- | --- |
+| f(L/D) | 0.649 | 0.799 | 0.939 | 1.000 | 0.9995 |
+
+f rises monotonically and saturates near L/D ≈ 20 — a factor of 1.54 across the
+range. Short elements shed heat axially, which relieves the radial gradient the
+lumped model cannot see. So the law carries a correction:
+
+    spread / rise  =  (Bi_R / 2) · f(L/D)
+
+Because f ≤ 1 everywhere swept, **Bi_R/2 remains a conservative upper bound**,
+which is the form worth applying:
+
+    Bi_R  ≤  2 ΔT_allowed / (T_avg − T_ambient)
+
+At a 2000 K rise, holding the unseen spread under 25 K needs Bi_R < 0.025. The
+textbook Bi < 0.1 rule — derived for transient cooling of an initially uniform
+body, not for steady internal generation — admits 5% of the rise, i.e. 100 K at
+that same operating point, and is **four times too permissive here**.
+
+### What this does not license
+
+Across the sweep the offset is frequently *larger* than the spread: 39.9 K
+against 5.2 K at Bi_R = 3.9e-4, and it changes sign (−35.6 K) at low emissivity
+with a high drive. In the low-Bi regime where lumping is safe, the residual 0D
+error is dominated by the loss-model difference, not by lumping. **A Biot
+criterion is necessary and not sufficient**, and must be quoted with the offset.
+
+Two reporting defects were found and fixed inside this study, both of the same
+shape — a summary statistic agreeing with the hypothesis while the rows
+underneath disagreed. A single fit through every aspect ratio averaged the f
+trend away and printed a pass; and `MATERIALS.find(m => m.name === "Kanthal
+A-1")` missed an entry reading `"Kanthal A-1 (FeCrAl)"` and dropped a material in
+silence, the fit returning n = 9 instead of 12 with nothing said. Both stages now
+print every point and name every drop.
 
 ## Continuous guards
 
