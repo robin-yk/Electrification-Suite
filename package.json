@@ -29,6 +29,8 @@
     "verify:joule": "node tools/verification/joule.mjs",
     "verify:electrical": "node tools/verification/electrical.mjs",
     "verify:crosscheck": "node tools/verification/crosscheck.mjs",
+    "verify:zerod-limit": "node tools/verification/zerod-limit.mjs",
+    "verify:zerod-sweep": "node tools/verification/zerod-sweep.mjs",
     "verify:microwave": "node tools/verification/microwave.mjs"
   },
   "devDependencies": {
