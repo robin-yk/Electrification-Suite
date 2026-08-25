@@ -14,6 +14,14 @@ from the solver rather than drawn.
 
 ### Added
 
+- `npm run verify:plates`: renders every plate in Chromium and measures each
+  element with `getBoundingClientRect`, which is after the transform, unlike
+  `getBBox`. It checks four things a build cannot see for itself: artwork off
+  the sheet, a data marker outside every panel frame, an element straddling a
+  frame, and type under the 8 pt floor. Exits nonzero, so it can gate a build.
+  Both defects fixed in this entry were invisible to the earlier boundary-only
+  check and are caught by this one.
+
 - Backward-Euler transient march for the Joule 2D solver. `createTransientRun()`
   hands control back after each batch of steps so a page can drive it from an
   animation frame and stop when the user says so; `solveTransient2D()` is that
@@ -88,6 +96,17 @@ from the solver rather than drawn.
 
 ### Fixed
 
+- Fig. 3 panel e drew its first and last data point outside the axes. The x
+  mapping padded `xs[0]` and `xs[last]` outward, which is only outward when
+  the values ascend; panel e counts the time step down from 7.50 to 0.94 s, so
+  the padding pulled the ends past the frame by 10 and 9.7 pt and carried the
+  tick labels with them, the 0.94 label landing under panel f's axis title.
+  The range is now taken from the smallest and largest value and mapped in the
+  order given, so either direction stays inside the frame.
+- The y-axis titles of Figs. S5 b and c sat inside the frame of the panel
+  before. The anchor is the baseline, and rotated -90 the ascender runs 7.8 pt
+  to the left of it; at the 35 pt panel gap that reached 2.8 pt into the
+  neighbour. The offset is 25 pt rather than 30.
 - Fig. S7 coloured its bars by the wrong test. The key read "orange beyond
   +-5 %" while the code filled with `C.field` above 5 % and `C.thermal` below,
   so the three deviations that matter (-6.32, -5.48, -5.48 %) were the amber

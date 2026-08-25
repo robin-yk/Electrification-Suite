@@ -33,7 +33,8 @@
     "verify:joule-rphcjh": "node tools/verification/joule-rphcjh.mjs",
     "verify:zerod-limit": "node tools/verification/zerod-limit.mjs",
     "verify:zerod-sweep": "node tools/verification/zerod-sweep.mjs",
-    "verify:microwave": "node tools/verification/microwave.mjs"
+    "verify:microwave": "node tools/verification/microwave.mjs",
+    "verify:plates": "node docs/figures/check-plates.mjs"
   },
   "devDependencies": {
     "@playwright/test": "1.56.1",

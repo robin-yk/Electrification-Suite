@@ -947,8 +947,13 @@ function verification(DATA) {
     const x0 = COL[cfg.col], ptop = ROW[cfg.row], pbot = ptop + ph;
     let o = rect(x0, ptop, pw, ph, { stroke: C.grey, fill: "#FFFFFF", sw: 0.8, rx: 0 });
     o += T(x0 - 34, ptop - 6, "abcdef"[cfg.row * 3 + cfg.col], { size: 11, weight: "bold" });
-    const xLo = lg(cfg.xs[0] / cfg.xPad), xHi = lg(cfg.xs[cfg.xs.length - 1] * cfg.xPad);
-    const X = (v) => lin(lg(v), xLo, xHi, x0 + 12, x0 + pw - 12);
+    /* xs may run either way: panel e counts the time step down. Pad outward
+       from the smallest and largest value, then map in the order given, so a
+       descending axis does not push its end points outside the frame. */
+    const xLo = lg(Math.min.apply(null, cfg.xs) / cfg.xPad);
+    const xHi = lg(Math.max.apply(null, cfg.xs) * cfg.xPad);
+    const up = cfg.xs[0] <= cfg.xs[cfg.xs.length - 1];
+    const X = (v) => lin(lg(v), up ? xLo : xHi, up ? xHi : xLo, x0 + 12, x0 + pw - 12);
     let Y;
     if (cfg.decades) {
       Y = (v) => lin(lg(v), cfg.decades[1], cfg.decades[0], ptop + 10, pbot - 10);
@@ -1186,7 +1191,10 @@ function transient(DATA) {
       o += T(X(v), pbot + 12, v.toFixed(xHi < 20 ? 1 : 0), { size: 8, anchor: "middle" });
     }
     o += T(x0 + pw / 2, pbot + 24, xLabel, { size: 8.5, anchor: "middle" });
-    o += '<text x="' + (x0 - 30) + '" y="' + ((ptop + pbot) / 2) + '" font-size="8.5" text-anchor="middle" transform="rotate(-90 ' + (x0 - 30) + ' ' + ((ptop + pbot) / 2) + ')">element average (°C)</text>';
+    /* the anchor is the baseline: rotated -90 the ascender runs 7.8 pt to the
+       left of it, and at a 35 pt panel gap that lands inside the frame of the
+       panel before. Offset 25, not 30, keeps the whole box in the gap. */
+    o += '<text x="' + (x0 - 25) + '" y="' + ((ptop + pbot) / 2) + '" font-size="8.5" text-anchor="middle" transform="rotate(-90 ' + (x0 - 25) + ' ' + ((ptop + pbot) / 2) + ')">element average (°C)</text>';
     return { o, X, Y, x0, yHi };
   }
   const trace = (F, series, colour, wdt) => {
