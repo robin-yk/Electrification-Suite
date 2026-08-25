@@ -888,7 +888,7 @@ export function transient(DATA) {
 /* the supply allows, the shape that carries it, and the material.      */
 /* ------------------------------------------------------------------ */
 export function screening(DATA) {
-  const ns = "s6", W = 505, H = 416;
+  const ns = "s6", W = 505, H = 434;
   const S = DATA.screening, F = DATA.forms;
   let b = defs(ns);
   const pw = 175, ph = 150, ptop = 34, pbot = 34 + 150;
@@ -986,10 +986,14 @@ export function screening(DATA) {
         (on ? C.thermal : "#FFFFFF") + '" stroke="' + (on ? C.thermal : C.faint) + '" stroke-width="0.8"/>';
       b += T(x0 + 12, y, r.name, { size: 8.5, fill: on ? C.ink : C.faint });
       b += T(x0 + 200, y, on ? "L/D " + r.ld.toFixed(1) + ",  " + r.R.toFixed(2) + " Ω"
-                             : "cannot: peaks at " + r.peakC.toFixed(0) + " °C",
+                             : "wants " + r.needs.current.toFixed(0) + " A at " + r.needs.voltage.toFixed(1) + " V" +
+                               (r.needs.overJmax ? " †" : ""),
         { size: 8, anchor: "end", fill: on ? C.grey : C.faint });
     });
-    b += T(x0, y0 + 11 + rows.length * 16 + 6, "resistivity spans " +
+    b += T(x0, y0 + 11 + rows.length * 16 + 6, "unfilled: no aspect ratio reaches it on this supply, because the", { size: 7.6, fill: C.grey });
+    b += T(x0, y0 + 11 + rows.length * 16 + 15, "current-density limit caps the power at j²ρV, whatever the shape", { size: 7.6, fill: C.grey });
+    b += T(x0, y0 + 11 + rows.length * 16 + 24, "† that current is above the material's own limit", { size: 7.6, fill: C.grey });
+    b += T(x0, y0 + 11 + rows.length * 16 + 34, "resistivity spans " +
       rows[0].rho.toExponential(1).replace("e-", "×10^{−") + "} to " +
       rows[rows.length - 1].rho.toExponential(1).replace("e-", "×10^{−") + "} Ω·cm", { size: 7.6, fill: C.grey });
   })();

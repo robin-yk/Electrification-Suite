@@ -5141,7 +5141,8 @@
     "R": 0.288,
     "constraint": "Current",
     "peakC": 2805.1,
-    "limitC": 2700
+    "limitC": 2700,
+    "needs": null
    },
    {
     "name": "CFP",
@@ -5151,7 +5152,8 @@
     "R": 0.303,
     "constraint": "Current",
     "peakC": 2813.3,
-    "limitC": 3600
+    "limitC": 3600,
+    "needs": null
    },
    {
     "name": "SiSiC",
@@ -5161,17 +5163,8 @@
     "R": 0.375,
     "constraint": "Current",
     "peakC": 2468.1,
-    "limitC": 1414
-   },
-   {
-    "name": "MoSi₂",
-    "rho": 0.000025,
-    "reaches": false,
-    "ld": null,
-    "R": null,
-    "constraint": "Current density",
-    "peakC": 151.82,
-    "limitC": 2030
+    "limitC": 1414,
+    "needs": null
    },
    {
     "name": "Kanthal A-1",
@@ -5181,7 +5174,29 @@
     "R": null,
     "constraint": "Current",
     "peakC": 756.3,
-    "limitC": 1500
+    "limitC": 1500,
+    "needs": {
+     "current": 129,
+     "voltage": 1.39,
+     "ld": 22.6,
+     "overJmax": true
+    }
+   },
+   {
+    "name": "MoSi₂",
+    "rho": 0.000025,
+    "reaches": false,
+    "ld": null,
+    "R": null,
+    "constraint": "Current density",
+    "peakC": 151.82,
+    "limitC": 2030,
+    "needs": {
+     "current": 139,
+     "voltage": 0.901,
+     "ld": 11.3,
+     "overJmax": true
+    }
    },
    {
     "name": "Molybdenum",
@@ -5191,7 +5206,13 @@
     "R": null,
     "constraint": "Current density",
     "peakC": 20.345,
-    "limitC": 2623
+    "limitC": 2623,
+    "needs": {
+     "current": 386,
+     "voltage": 0.32,
+     "ld": 11.3,
+     "overJmax": true
+    }
    }
   ],
   "targetC": 1200,

@@ -109,6 +109,15 @@ from the solver rather than drawn.
 
 ### Known issues
 
+- Two entries in the material library's `jmax` column look wrong. Molybdenum
+  carries 3e5 A/m2, which is 0.3 A/mm2: a hundred times below tungsten and
+  thirty times below stainless steel in the same table, and far below what a
+  molybdenum element actually runs at. Aluminum carries 5e9 A/m2, or
+  5000 A/mm2, which no conductor sustains. Every other entry sits between 3 and
+  30 A/mm2. The molybdenum value is load-bearing: it caps that material's
+  reachable temperature at 20 C, where a tungsten-like value gives 146 C. Both
+  need a source before they are changed.
+
 - `docs/VERIFICATION.md` studies 1 to 3 predate the change that let
   `build2DMesh` state its domain reach directly, and were never regenerated.
   Running `npm run verify:joule` today gives 6.4e-3 rather than 5.8e-3 for the

@@ -201,15 +201,42 @@ function reachTarget(material) {
   const hit = curve.find((c) => c.tssC >= TARGET_C) || null;
   return { peak, hit };
 }
+// A material that misses the target on the shipped supply is not out of reach.
+// Ask instead what supply it wants: bisect the current at each aspect ratio and
+// keep the cheapest. This is the useful answer, and unlike a reported ceiling
+// it does not rest on that material's current-density preset.
+const COARSE = LDS.filter((_, k) => k % 3 === 0);
+function supplyFor(material) {
+  let best = null;
+  for (const ld of COARSE) {
+    let lo = 1, hi = 5000;
+    for (let it = 0; it < 22; it++) {
+      const mid = (lo + hi) / 2;
+      const r = calculate({ ...x, material, aspectRatio: ld, imax: mid, iset: mid,
+                            supplyMode: "cc", vmax: 1e6, pmax: 1e9 });
+      if (!Number.isFinite(r.tss) || r.tss - 273.15 < TARGET_C) lo = mid; else hi = mid;
+    }
+    const r = calculate({ ...x, material, aspectRatio: ld, imax: hi, iset: hi,
+                          supplyMode: "cc", vmax: 1e6, pmax: 1e9 });
+    if (!Number.isFinite(r.tss)) continue;
+    const jNeeded = hi / geometry({ ...x, aspectRatio: ld }).area;
+    if (!best || hi < best.current) best = { current: hi, ld, voltage: r.target.voltage, power: r.target.power, jNeeded };
+  }
+  return best;
+}
 const byMaterial = PICKS.map((name) => {
   const m = MATERIALS.find((q) => q.name === name);
   const { peak, hit } = reachTarget(m);
+  const want = hit ? null : supplyFor(m);
   return { name: name.replace(" (Si-infiltrated SiC)", "").replace(" (FeCrAl)", ""),
            rho: p(m.rhoOhmCm, 3), reaches: Boolean(hit),
            ld: hit ? p(hit.ld, 3) : null, R: hit ? p(hit.R, 3) : null,
            constraint: hit ? hit.constraint : peak.constraint,
-           peakC: p(peak.tssC, 5), limitC: m.meltC };
-}).sort((a, c) => (Number(c.reaches) - Number(a.reaches)) || ((a.ld ?? 1e9) - (c.ld ?? 1e9)));
+           peakC: p(peak.tssC, 5), limitC: m.meltC,
+           needs: want ? { current: p(want.current, 3), voltage: p(want.voltage, 3),
+                           ld: p(want.ld, 3), overJmax: want.jNeeded > m.jmax } : null };
+}).sort((a, c) => (Number(c.reaches) - Number(a.reaches)) ||
+                  ((a.ld ?? a.needs.current) - (c.ld ?? c.needs.current)));
 
 const meets = sweep.filter((q) => q.tssC >= TARGET_C);
 DATA.screening = { sweep, best, byMaterial, targetC: TARGET_C, ldHi: LD_HI,
