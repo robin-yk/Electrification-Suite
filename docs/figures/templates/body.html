@@ -1,9 +1,9 @@
 <div class="wrap">
 <header>
-<p class="eyebrow">Proof sheet · solver {{COMMIT}}</p>
+<p class="eyebrow">Figure source &#183; solver {{COMMIT}}</p>
 <h1>Figures for the Joule heating solver</h1>
-<p class="sub">Five publication plates and one scope table for the Application Note, drawn to print size from a single frozen data object. Every dimension, cell count, region allocation and equivalent-cylinder property on this page came out of the solver at the commit stamped above. No number is typed in twice.</p>
-<p class="stamp"><span><b>Solver</b> apps/joule/solver.js</span><span><b>Body width</b> 178 mm / 505 pt</span><span><b>Type</b> Arial, 8 pt floor</span><span><b>Ground</b> white, flat fills only</span></p>
+<p class="sub">The complete plate set for the Application Note and its Supporting Information, in manuscript order, drawn to print size from the solver rather than from a drawing program. Every dimension, cell count, region allocation, equivalent-cylinder property and verification point on this page is a value the code produced. No number is typed in twice.</p>
+<p class="stamp"><span><b>Solver</b> apps/joule/solver.js</span><span><b>Plates</b> 8</span><span><b>Body width</b> 178 mm / 505 pt</span><span><b>Type</b> Arial, 8 pt floor</span><span><b>Ground</b> white, flat fills only</span></p>
 </header>
 
 <div class="note">
@@ -20,44 +20,96 @@ Captions sit below each plate as text rather than inside the artwork, so they ca
 <span><i style="background:#6E6E6E"></i>boundaries, inactive</span>
 </div>
 
-<figure id="f1">
-<div class="figbar"><span class="figno">Figure 1</span><span class="figwhere">Supporting Information, Solver section (near S3–S4)</span><span class="figsize">178 mm</span></div>
+<h2>Figure inventory</h2>
+<p class="lede">What each manuscript section claims, and where a reader can see it. A claim carried only by prose or by a data table is marked as such, so the gaps are visible rather than implied.</p>
+<div class="tablewrap">
+<table>
+<thead><tr><th>Manuscript section</th><th>Claim</th><th>Shown by</th></tr></thead>
+<tbody>
+<tr><td class="q">Software and user workflow</td><td>Three calculation stages hand results forward; the browser and the tests share one module</td><td class="s">Fig. 1</td></tr>
+<tr><td class="q">Governing model &#183; geometry, eq 1&#8211;2, S1&#8211;S5</td><td><i>R</i><sub>total</sub> = <i>R</i><sub>bulk</sub> + 2<i>R</i><sub>c</sub>; the supply picks the lowest allowed current</td><td class="s">Fig. 2, Fig. S3</td></tr>
+<tr><td class="q">Governing model &#183; power split, eq S6</td><td><i>P</i><sub>bulk</sub> is deposited; <i>P</i><sub>contact</sub> is reported and is not</td><td class="s">Fig. 2, Fig. S3</td></tr>
+<tr><td class="q">Governing model &#183; potential solve, S4.1</td><td>The local solve gives a shape, normalized to the scalar total</td><td class="s">Fig. 2</td></tr>
+<tr><td class="q">Axisymmetric thermal field, eq 3, S8&#8211;S9</td><td>An <i>r</i>&#8211;<i>z</i> half-domain with five material regions and a fixed mesh</td><td class="s">Fig. S1</td></tr>
+<tr><td class="q">Conductive face coupling, eq S10</td><td>Series half-cell resistance preserves flux at a conductivity jump</td><td class="s">Fig. S2</td></tr>
+<tr><td class="q">Radiation and boundaries, eq S11</td><td>Element-to-wall radiation couples cells that share no face, and stays symmetric</td><td class="s">Fig. S2</td></tr>
+<tr><td class="q">Directed helium link, eq S12</td><td>A one-sided enthalpy term makes the operator nonsymmetric and selects BiCGSTAB</td><td class="s">Fig. S2</td></tr>
+<tr><td class="q">Nonlinear and linear solution, S4.2&#8211;S4.4</td><td>Outer Picard sweep, relaxation, Jacobi-preconditioned Krylov solve, energy closure</td><td class="s">Fig. S3</td></tr>
+<tr><td class="q">Numerical verification, S5.1</td><td>Analytic radial profile: mismatch falls as end effects are removed</td><td class="s">Fig. 3a</td></tr>
+<tr><td class="q">Numerical verification, S5.2</td><td>Multilayer annulus against logarithmic resistance</td><td class="n">Table S3 only</td></tr>
+<tr><td class="q">Numerical verification, S5.3</td><td>Manufactured solution approaches second order</td><td class="s">Fig. 3b</td></tr>
+<tr><td class="q">Numerical verification, S5.4</td><td>Nonlinear grid sensitivity, observed order, extrapolated average</td><td class="s">Fig. 3c</td></tr>
+<tr><td class="q">Cross-checks, S7.1&#8211;S7.2</td><td>FeCrAl tube and SiSiC foam reproduce reported electrical and thermal scale</td><td class="n">Table 1 only</td></tr>
+<tr><td class="q">Cross-checks, S7.3</td><td>The strip is solved through a cylinder that preserves surface, mass and resistance</td><td class="s">Fig. S4</td></tr>
+<tr><td class="q">Illustrative design case</td><td>846.75 &#176;C average over a 4.5 K spread, wall and gas-outlet temperatures, and where the power leaves</td><td class="s">Fig. 4</td></tr>
+<tr><td class="q">Scope and limitations, S9</td><td>What the model includes, excludes, and when to escalate</td><td class="s">Table S7</td></tr>
+<tr><td class="q">Test coverage, S6</td><td>105 unit tests, nine browser tests, 47 Joule-specific</td><td class="n">prose only</td></tr>
+</tbody>
+</table>
+</div>
+
+<figure id="fig1">
+<div class="figbar"><span class="figno">Fig. 1</span><span class="figwhere">Main text &#183; Software and user workflow</span><span class="figsize">178 mm</span></div>
 <div class="plate"></div>
-<div class="tools"><button data-src="f1">Show SVG source</button><button data-png="f1">Render 600 dpi</button><button data-copy="f1">Copy SVG</button><span class="hint"></span></div>
+<div class="tools"><button data-src="fig1">Show SVG source</button><button data-png="fig1">Render 600 dpi</button><button data-copy="fig1">Copy SVG</button><span class="hint"></span></div>
 <textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Figure 1.</b> Order of computation in the coupled solver. A zero-dimensional steady state seeds the temperature field, the axisymmetric mesh is built once and held fixed, and an outer Picard iteration re-evaluates three groups of coefficients from the current field before each linear solve. The scalar electrical branch returns a single power; the local field branch returns only a spatial distribution; the property branch returns the conductivities, heat capacities and radiation coefficients used to assemble the matrix. The series resistance <i>R</i><sub>total</sub> = <i>R</i><sub>bulk</sub> + 2<i>R</i><sub>c</sub> sets the current, but only the bulk term is deposited: the contact power <i>I</i>&#178;&#183;2<i>R</i><sub>c</sub> is reported and is not added anywhere in the thermal domain. Heat capacity enters through the transient march alone.</div>
+<div class="cap"><b>Fig. 1.</b> Browser workflow. The three calculation stages and what passes between them. Single Design fixes the electrical operating point and a lumped steady-state temperature. 2D Thermal Field resolves the axisymmetric temperature distribution from that operating point. Dynamic marches the same spatial operator in time, starting from the converged field. Three further tabs support the sequence rather than extend it. Every tab calls one DOM-free module, so a number on screen and a number in an automated test come from the same code path.</div>
 </figure>
 
-<figure id="f2">
-<div class="figbar"><span class="figno">Figure 2</span><span class="figwhere">Supporting Information, S7.3</span><span class="figsize">178 mm</span></div>
+<figure id="fig2">
+<div class="figbar"><span class="figno">Fig. 2</span><span class="figwhere">Main text &#183; Nonlinear and linear solution</span><span class="figsize">178 mm</span></div>
 <div class="plate"></div>
-<div class="tools"><button data-src="f2">Show SVG source</button><button data-png="f2">Render 600 dpi</button><button data-copy="f2">Copy SVG</button><span class="hint"></span></div>
+<div class="tools"><button data-src="fig2">Show SVG source</button><button data-png="fig2">Render 600 dpi</button><button data-copy="fig2">Copy SVG</button><span class="hint"></span></div>
 <textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Figure 2.</b> Mapping of a rectangular element onto the cylinder the axisymmetric solver meshes, shown for the 38 × 8 × 0.21 mm carbon-fiber-paper strip. Length, radiating surface, mass and electrical resistance carry across unchanged; the equivalent diameter, effective density and effective resistivity are the three quantities derived to hold them. Geometric volume is not preserved and is larger by a factor of 11.38. The mapping preserves the quantities used in the lumped electrical, radiative-loss and thermal-capacitance balances. The resulting 2D temperature field remains an axisymmetric approximation, because the radial geometry and the conduction path differ from those of the original strip. The zero-dimensional solve uses the rectangular dimensions directly, with the conducting cross-section W&#183;H and the full box surface; the substitution is applied only by the axisymmetric solvers, which cannot mesh a box.</div>
+<div class="cap"><b>Fig. 2.</b> The two electrical paths in the model and the point at which they meet. The scalar branch sets the current from the total series resistance <i>R</i><sub>total</sub> = <i>R</i><sub>bulk</sub> + 2<i>R</i><sub>c</sub>, and the deposited power from the bulk term alone, <i>P</i><sub>bulk</sub> = <i>I</i>&#178;<i>R</i><sub>bulk</sub>. The contact power is reported and is not deposited. The field branch solves a unit-potential Laplace problem and returns a spatial distribution only. The distribution is normalized so that its volume integral equals the scalar total, which fixes where the power is deposited without changing how much is drawn.</div>
 </figure>
 
-<figure id="f3">
-<div class="figbar"><span class="figno">Figure 3</span><span class="figwhere">Supporting Information, model section (near S1 and S3)</span><span class="figsize">178 mm</span></div>
+<figure id="fig3">
+<div class="figbar"><span class="figno">Fig. 3</span><span class="figwhere">Main text &#183; Numerical verification</span><span class="figsize">178 mm</span></div>
 <div class="plate"></div>
-<div class="tools"><button data-src="f3">Show SVG source</button><button data-png="f3">Render 600 dpi</button><button data-copy="f3">Copy SVG</button><span class="hint"></span></div>
+<div class="tools"><button data-src="fig3">Show SVG source</button><button data-png="fig3">Render 600 dpi</button><button data-copy="fig3">Copy SVG</button><span class="hint"></span></div>
 <textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Figure 3.</b> Computational domain at the default 30 × 60 resolution, drawn from the cell edges the mesh builder returns. The domain is the axisymmetric half-plane: the left edge is the symmetry line at r = 0, and no mirrored counterpart is solved. Radial cells are divided between the element, the gas gap, the wall and a graded band of outside air; axial cells are uniform and are divided between the element and the gas pads above and below it. The outer radial boundary is held at the far-field condition.</div>
+<div class="cap"><b>Fig. 3.</b> Numerical verification. (a) Worst mismatch against the analytic parabolic radial profile of a uniformly heated cylinder, as end effects are removed by increasing L/D. (b) L2 and L&#8734; error of a manufactured <i>r</i>&#8211;<i>z</i> solution under grid doubling, shown against a second-order guide. (c) Volume-average and maximum element temperature of the nonlinear SiC case under grid doubling, with the Richardson-extrapolated average marked. Every point is a solver run recorded in docs/figures/verification-data.json, not a transcribed value.</div>
 </figure>
 
-<figure id="f4">
-<div class="figbar"><span class="figno">Figure 4</span><span class="figwhere">Supporting Information, between S3 and S4</span><span class="figsize">178 mm</span></div>
+<figure id="fig4">
+<div class="figbar"><span class="figno">Fig. 4</span><span class="figwhere">Main text &#183; Illustrative design case</span><span class="figsize">178 mm</span></div>
 <div class="plate"></div>
-<div class="tools"><button data-src="f4">Show SVG source</button><button data-png="f4">Render 600 dpi</button><button data-copy="f4">Copy SVG</button><span class="hint"></span></div>
+<div class="tools"><button data-src="fig4">Show SVG source</button><button data-png="fig4">Render 600 dpi</button><button data-copy="fig4">Copy SVG</button><span class="hint"></span></div>
 <textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Figure 4.</b> The four classes of entry the finite-volume assembly writes into the system matrix, with the stencil each one couples on the left and the position it occupies in the matrix on the right. Adjacent-cell conduction fills the bands next to the diagonal, boundary convection and radiation add to the diagonal alone, and element-to-wall radiation couples two cells that share no face. Directed enthalpy transport by the process gas is the only one-sided term.</div>
+<div class="cap"><b>Fig. 4.</b> Illustrative design case, solved rather than sketched. (a) Temperature field on the axisymmetric half-domain at the shipped default: dense SiC, 1.18 cm&#179; envelope, L/D 1.5, 20 A, quartz wall, 50 sccm helium. Colour carries magnitude by lightness within the single thermal hue, so the panel also reads in greyscale. (b) The steady power balance: where the bulk Joule power leaves the domain, and the temperatures the manuscript quotes. The element average, range, wall temperatures, gas-outlet temperature and energy closure are read from the same solve that produced the field.</div>
 </figure>
 
-<figure id="f5">
-<div class="figbar"><span class="figno">Figure 5</span><span class="figwhere">Main text, Figure 2</span><span class="figsize">178 mm</span></div>
+<figure id="figS1">
+<div class="figbar"><span class="figno">Fig. S1</span><span class="figwhere">Supporting Information &#183; S1, S3</span><span class="figsize">178 mm</span></div>
 <div class="plate"></div>
-<div class="tools"><button data-src="f5">Show SVG source</button><button data-png="f5">Render 600 dpi</button><button data-copy="f5">Copy SVG</button><span class="hint"></span></div>
+<div class="tools"><button data-src="figS1">Show SVG source</button><button data-png="figS1">Render 600 dpi</button><button data-copy="figS1">Copy SVG</button><span class="hint"></span></div>
 <textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Figure 5.</b> The two electrical paths in the model and the point at which they meet. The scalar branch sets the current from the total series resistance <i>R</i><sub>total</sub> = <i>R</i><sub>bulk</sub> + 2<i>R</i><sub>c</sub>, and the deposited power from the bulk term alone, <i>P</i><sub>bulk</sub> = <i>I</i>&#178;<i>R</i><sub>bulk</sub>. The contact power is reported and is not deposited. The field branch solves a unit-potential Laplace problem and returns a spatial distribution only. The distribution is normalized so that its volume integral equals the scalar total, which fixes where the power is deposited without changing how much is drawn.</div>
+<div class="cap"><b>Fig. S1.</b> Computational domain at the default 30 × 60 resolution, drawn from the cell edges the mesh builder returns. The domain is the axisymmetric half-plane: the left edge is the symmetry line at r = 0, and no mirrored counterpart is solved. Radial cells are divided between the element, the gas gap, the wall and a graded band of outside air; axial cells are uniform and are divided between the element and the gas pads above and below it. The outer radial boundary is held at the far-field condition.</div>
+</figure>
+
+<figure id="figS2">
+<div class="figbar"><span class="figno">Fig. S2</span><span class="figwhere">Supporting Information &#183; S3.4</span><span class="figsize">178 mm</span></div>
+<div class="plate"></div>
+<div class="tools"><button data-src="figS2">Show SVG source</button><button data-png="figS2">Render 600 dpi</button><button data-copy="figS2">Copy SVG</button><span class="hint"></span></div>
+<textarea readonly spellcheck="false"></textarea><canvas></canvas>
+<div class="cap"><b>Fig. S2.</b> The four classes of entry the finite-volume assembly writes into the system matrix, with the stencil each one couples on the left and the position it occupies in the matrix on the right. Adjacent-cell conduction fills the bands next to the diagonal, boundary convection and radiation add to the diagonal alone, and element-to-wall radiation couples two cells that share no face. Directed enthalpy transport by the process gas is the only one-sided term.</div>
+</figure>
+
+<figure id="figS3">
+<div class="figbar"><span class="figno">Fig. S3</span><span class="figwhere">Supporting Information &#183; S4</span><span class="figsize">178 mm</span></div>
+<div class="plate"></div>
+<div class="tools"><button data-src="figS3">Show SVG source</button><button data-png="figS3">Render 600 dpi</button><button data-copy="figS3">Copy SVG</button><span class="hint"></span></div>
+<textarea readonly spellcheck="false"></textarea><canvas></canvas>
+<div class="cap"><b>Fig. S3.</b> Order of computation in the coupled solver. A zero-dimensional steady state seeds the temperature field, the axisymmetric mesh is built once and held fixed, and an outer Picard iteration re-evaluates three groups of coefficients from the current field before each linear solve. The scalar electrical branch returns a single power; the local field branch returns only a spatial distribution; the property branch returns the conductivities, heat capacities and radiation coefficients used to assemble the matrix. The series resistance <i>R</i><sub>total</sub> = <i>R</i><sub>bulk</sub> + 2<i>R</i><sub>c</sub> sets the current, but only the bulk term is deposited: the contact power <i>I</i>&#178;&#183;2<i>R</i><sub>c</sub> is reported and is not added anywhere in the thermal domain. Heat capacity enters through the transient march alone.</div>
+</figure>
+
+<figure id="figS4">
+<div class="figbar"><span class="figno">Fig. S4</span><span class="figwhere">Supporting Information &#183; S7.3</span><span class="figsize">178 mm</span></div>
+<div class="plate"></div>
+<div class="tools"><button data-src="figS4">Show SVG source</button><button data-png="figS4">Render 600 dpi</button><button data-copy="figS4">Copy SVG</button><span class="hint"></span></div>
+<textarea readonly spellcheck="false"></textarea><canvas></canvas>
+<div class="cap"><b>Fig. S4.</b> Mapping of a rectangular element onto the cylinder the axisymmetric solver meshes, shown for the 38 × 8 × 0.21 mm carbon-fiber-paper strip. Length, radiating surface, mass and electrical resistance carry across unchanged; the equivalent diameter, effective density and effective resistivity are the three quantities derived to hold them. Geometric volume is not preserved and is larger by a factor of 11.38. The mapping preserves the quantities used in the lumped electrical, radiative-loss and thermal-capacitance balances. The resulting 2D temperature field remains an axisymmetric approximation, because the radial geometry and the conduction path differ from those of the original strip. The zero-dimensional solve uses the rectangular dimensions directly, with the conducting cross-section W&#183;H and the full box surface; the substitution is applied only by the axisymmetric solvers, which cannot mesh a box.</div>
 </figure>
 
 <h2>Symbols used in the figures</h2>

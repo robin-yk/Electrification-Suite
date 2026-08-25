@@ -14,9 +14,9 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { geometry, equivalentCylinder, build2DMesh } from "../../apps/joule/solver.js";
+import { geometry, equivalentCylinder, build2DMesh, calculate, solveThermal2D } from "../../apps/joule/solver.js";
 import { defaultInput } from "../../tools/verification/joule.mjs";
-import { fig1, fig2, fig3, fig4, fig5 } from "./draw.mjs";
+import { workflow, coupling, verification, defaultCase, meshDomain, matrixClasses, solverLoop, cylinderMapping } from "./draw.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const p = (x, n = 4) => Number(x.toPrecision(n));
@@ -85,23 +85,61 @@ const DATA = {
   }
 };
 
-const plates = { f1: fig1, f2: fig2, f3: fig3, f4: fig4, f5: fig5 };
-for (const [name, fn] of Object.entries(plates)) {
-  const svg = fn(DATA);
-  if (/NaN|undefined/.test(svg)) throw new Error(name + " drew a NaN or an undefined value");
-  writeFileSync(join(here, name.replace("f", "fig") + ".svg"), svg);
+// The illustrative case the manuscript describes in prose, solved here so the
+// plate shows a field the reader can check rather than a sketch. About 2 s.
+const dc = solveThermal2D(x, calculate(x), { ...x.enclosure, nr: 30, nz: 60 }, x.material);
+if (dc.errors.length) throw new Error("default case: " + dc.errors.join("; "));
+DATA.defaultCase = {
+  avgC: p(dc.avgK - 273.15, 6), minC: p(dc.tMin - 273.15, 6), maxC: p(dc.tMax - 273.15, 6),
+  spreadK: p(dc.tMax - dc.tMin, 3),
+  wallInnerC: p(dc.wallInner - 273.15, 5), wallOuterC: p(dc.wallOuter - 273.15, 5),
+  heOutletC: p(dc.heOutletK - 273.15, 5),
+  pBulk: p(dc.op.pBulk, 4), current: p(dc.op.current, 4), voltage: p(dc.op.voltage, 4),
+  boundaryLoss: p(dc.boundaryLoss, 4), closure: dc.closure,
+  outer: dc.iterations, linear: dc.linearIterations,
+  channels: { ...Object.fromEntries(Object.entries(dc.lossByChannel).map(([k, v]) => [k, p(v, 4)])),
+              gasEnthalpy: p(dc.heCooling, 3) },
+  Tc: dc.T.map((row) => row.map((v) => Number((v - 273.15).toFixed(1))))
+};
+
+// The verification study is expensive, so it is measured by
+// make-verification-data.mjs and read back here. Its absence is fatal rather
+// than silently skipped: a missing measurement must not become a missing plate.
+try {
+  DATA.verification = JSON.parse(readFileSync(join(here, "verification-data.json"), "utf8"));
+} catch {
+  throw new Error("verification-data.json is missing. Run: node docs/figures/make-verification-data.mjs --levels 4");
+}
+
+// The plates, in manuscript order. The id is the file name and the anchor the
+// page uses; the label is what the manuscript calls it.
+const PLATES = [
+  { id: "fig1",  label: "Fig. 1",  draw: workflow },
+  { id: "fig2",  label: "Fig. 2",  draw: coupling },
+  { id: "fig3",  label: "Fig. 3",  draw: verification },
+  { id: "fig4",  label: "Fig. 4",  draw: defaultCase },
+  { id: "figS1", label: "Fig. S1", draw: meshDomain },
+  { id: "figS2", label: "Fig. S2", draw: matrixClasses },
+  { id: "figS3", label: "Fig. S3", draw: solverLoop },
+  { id: "figS4", label: "Fig. S4", draw: cylinderMapping }
+];
+for (const plate of PLATES) {
+  const svg = plate.draw(DATA);
+  if (/NaN|undefined/.test(svg)) throw new Error(plate.label + " drew a NaN or an undefined value");
+  writeFileSync(join(here, plate.id + ".svg"), svg);
 }
 writeFileSync(join(here, "figure-data.json"), JSON.stringify(DATA, null, 1) + "\n");
 
 // ---- assemble the page that publishes them
 const read = (f) => readFileSync(join(here, f), "utf8");
 const draw = read("draw.mjs").replace(/^export function /gm, "function ");
+const figMap = "const FIGS = {" + PLATES.map((p) => p.id + ": " + p.draw.name).join(", ") + "};\n";
 const page = (read("templates/head.html") + read("templates/body.html")).replaceAll("{{COMMIT}}", COMMIT) +
   "<script>\nconst DATA = Object.freeze(" + JSON.stringify(DATA) + ");\n" +
-  draw + read("templates/wiring.js") + "</" + "script>\n";
+  draw + figMap + read("templates/wiring.js") + "</" + "script>\n";
 writeFileSync(join(here, "index.html"), page);
 
-console.log("wrote fig1-fig5.svg, figure-data.json and index.html at solver commit " + COMMIT);
+console.log("wrote " + PLATES.map((p) => p.id).join(", ") + " and index.html at solver commit " + COMMIT);
 console.log("  strip surface  " + DATA.strip.surface + " cm2 full box, " + DATA.strip.surface2f + " cm2 two faces");
 console.log("  equivalent D   " + DATA.cyl.D + " mm, resistance " + DATA.strip.R + " = " + DATA.cyl.R + " ohm");
 console.log("  default mesh   " + DATA.mesh.nr + " x " + DATA.mesh.nz +

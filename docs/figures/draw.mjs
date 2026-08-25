@@ -81,8 +81,8 @@ function stage(x, y, w, h, title, sub, color, fill) {
 /* ------------------------------------------------------------------ */
 /* Figure 1. Order of computation.                                     */
 /* ------------------------------------------------------------------ */
-export function fig1(DATA) {
-  const ns = "f1", W = 505, H = 636;
+export function solverLoop(DATA) {
+  const ns = "s3", W = 505, H = 636;
   const sx = 127.5, sw = 250, cx = sx + sw / 2;
   let b = defs(ns);
 
@@ -163,8 +163,8 @@ export function fig1(DATA) {
 /* ------------------------------------------------------------------ */
 /* Figure 2. Rectangular element to equivalent cylinder.               */
 /* ------------------------------------------------------------------ */
-export function fig2(DATA) {
-  const ns = "f2", W = 505, H = 406, s = 4.474;   /* pt per mm, both drawings */
+export function cylinderMapping(DATA) {
+  const ns = "s4", W = 505, H = 406, s = 4.474;   /* pt per mm, both drawings */
   const S = DATA.strip, Q = DATA.cyl;
   let b = defs(ns);
 
@@ -253,8 +253,8 @@ export function fig2(DATA) {
 /* Figure 3. The real half-domain, drawn from the cell edges the mesh  */
 /* builder returns. Nothing here is mirrored.                          */
 /* ------------------------------------------------------------------ */
-export function fig3(DATA) {
-  const ns = "f3", W = 505, H = 386;
+export function meshDomain(DATA) {
+  const ns = "s1", W = 505, H = 386;
   const M = DATA.mesh, re = M.redges, ze = M.zedges;
   const s = 15.0, x0 = 66, ytop = 34;
   const zmax = ze[ze.length - 1], zmin = ze[0];
@@ -362,8 +362,8 @@ export function fig3(DATA) {
 /* ------------------------------------------------------------------ */
 /* Figure 4. What the assembly writes into the matrix.                 */
 /* ------------------------------------------------------------------ */
-export function fig4(DATA) {
-  const ns = "f4", W = 505, H = 396;
+export function matrixClasses(DATA) {
+  const ns = "s2", W = 505, H = 396;
   let b = defs(ns);
   const rows = [34, 116, 198, 280];
   const SX = 30, MX = 168, TX = 268;
@@ -477,8 +477,8 @@ export function fig4(DATA) {
 /* ------------------------------------------------------------------ */
 /* Figure 5. One total power, one spatial shape, and where they meet.  */
 /* ------------------------------------------------------------------ */
-export function fig5(DATA) {
-  const ns = "f5", W = 505, H = 318;
+export function coupling(DATA) {
+  const ns = "m2", W = 505, H = 318;
   let b = defs(ns);
   const xs = [20, 142, 264, 386], bw = 108;
 
@@ -538,3 +538,315 @@ export function fig5(DATA) {
   return svgDoc(W, H, b);
 }
 
+
+/* ------------------------------------------------------------------ */
+/* Fig. 1. What each tab takes in, and what it hands on.               */
+/* ------------------------------------------------------------------ */
+export function workflow(DATA) {
+  const ns = "m1", W = 505, H = 336;
+  let b = defs(ns);
+  const xs = [18, 189, 360], pw = 127, py = 26, ph = 186;
+
+  const stages = [
+    { c: C.scalar, tint: TINT.scalar, key: "scalar", tab: "Single Design",
+      set: ["material properties", "geometry, void fraction", "limits on I, V, P, J", "target and ambient", "contact resistance"],
+      out: ["the binding limit", "R_{bulk}, R_{c}, R_{total}", "I, V, P_{bulk}, P_{contact}", "initial heating rate", "0D steady state"],
+      hand: ["operating", "point"] },
+    { c: C.thermal, tint: TINT.thermal, key: "thermal", tab: "2D Thermal Field",
+      set: ["wall and its thickness", "gap conductivity", "emissivity, convection", "electrode ends", "mesh resolution"],
+      out: ["T(r,z), half-domain", "element avg, min, max", "wall and gas-outlet T", "loss split by channel", "residual and closure"],
+      hand: ["converged", "field"] },
+    { c: C.thermal, tint: TINT.thermal, key: "thermal", tab: "Dynamic",
+      set: ["start-up or shutdown", "a step or a pulse train", "time step and duration", "the starting field", ""],
+      out: ["T(t) at every step", "the field per step", "closure at every step", "element time constant", "swing and cycle average"],
+      hand: null }
+  ];
+
+  stages.forEach(function (st, i) {
+    const x = xs[i];
+    b += rect(x, py, pw, ph, { stroke: st.c, fill: "#FFFFFF", sw: 1 });
+    b += '<rect x="' + x + '" y="' + py + '" width="' + pw + '" height="22" fill="' + st.tint + '"/>';
+    b += line(x, py + 22, x + pw, py + 22, { stroke: st.c, sw: 1 });
+    b += T(x + pw / 2, py + 15, st.tab, { size: 10, weight: "bold", anchor: "middle", fill: st.c });
+    b += T(x + 8, py + 38, "YOU SET", { size: 8, weight: "bold", fill: C.grey });
+    st.set.forEach(function (t, k) { if (t) b += T(x + 8, py + 50 + k * 11, t, { size: 8.5 }); });
+    b += line(x + 8, py + 111, x + pw - 8, py + 111, { stroke: C.rule, sw: 0.5 });
+    b += T(x + 8, py + 125, "IT RETURNS", { size: 8, weight: "bold", fill: C.grey });
+    st.out.forEach(function (t, k) { b += T(x + 8, py + 137 + k * 11, t, { size: 8.5 }); });
+    if (st.hand) {
+      const mid = (x + pw + xs[i + 1]) / 2;
+      b += T(mid, py + 84, st.hand[0], { size: 8, anchor: "middle", fill: C.grey });
+      b += T(mid, py + 94, st.hand[1], { size: 8, anchor: "middle", fill: C.grey });
+      b += arrow(ns, "M" + (x + pw + 2) + "," + (py + 104) + " L" + (xs[i + 1] - 2) + "," + (py + 104), { color: st.key, sw: 1.3 });
+    }
+  });
+
+  /* the tabs that support the three calculation stages rather than extend them */
+  b += rect(18, 226, 469, 46, { stroke: C.grey, fill: TINT.panel, sw: 0.8, dash: "3 2" });
+  b += T(28, 240, "SUPPORTING TABS", { size: 8, weight: "bold", fill: C.grey });
+  [["How to Use", "orientation and a worked path"],
+   ["Screening", "material and geometry sweeps"],
+   ["Reference", "equations, properties, code"]].forEach(function (s2, i) {
+    const x = 28 + i * 155;
+    b += T(x, 255, s2[0], { size: 9, weight: "bold", fill: C.grey });
+    b += T(x, 266, s2[1], { size: 8, fill: C.grey });
+  });
+
+  b += line(18, 288, 487, 288, { stroke: C.ink, sw: 0.9 });
+  b += T(18, 302, "Every tab calls the same DOM-free module, apps/joule/solver.js. The browser and the automated tests run identical", { size: 9 });
+  b += T(18, 314, "functions, so a number on screen and a number in a test come from one code path.", { size: 9 });
+  b += T(18, 330, "Tab names are those of the shipped application at the stamped revision.", { size: 8, fill: C.faint });
+  return svgDoc(W, H, b);
+}
+
+/* ------------------------------------------------------------------ */
+/* Fig. 3. The three spatial verification studies, plotted from the    */
+/* run recorded in verification-data.json.                             */
+/* ------------------------------------------------------------------ */
+export function verification(DATA) {
+  const ns = "m3", W = 505, H = 288;
+  const V = DATA.verification;
+  let b = defs(ns);
+  const pw = 118, ph = 138, ptop = 46, pbot = 46 + 138;
+  const ox = [50, 213, 376];
+  const lin = (v, lo, hi, a, c) => a + (v - lo) / (hi - lo) * (c - a);
+  const lg = (v) => Math.log10(v);
+  /* a decade label written as 10 with a real exponent, not a caret */
+  const decade = (x, y, d) => T(x, y, "10^{" + String(d).replace("-", "\u2212") + "}", { size: 8, anchor: "end", fill: C.grey });
+  const sci = (v) => {
+    const e = Math.floor(Math.log10(Math.abs(v)));
+    const m = v / Math.pow(10, e);
+    return m.toFixed(1) + " × 10^{" + String(e).replace("-", "\u2212") + "}";
+  };
+  function panel(i, title, sub) {
+    const x0 = ox[i];
+    let o = rect(x0, ptop, pw, ph, { stroke: C.grey, fill: "#FFFFFF", sw: 0.8, rx: 0 });
+    o += T(x0 - 22, 24, "abc"[i], { size: 11, weight: "bold" });
+    o += T(x0 - 8, 24, title, { size: 9.5, weight: "bold" });
+    if (sub) o += T(x0 - 8, 36, sub, { size: 8, fill: C.grey });
+    return { x0, o };
+  }
+  const marker = (kind, x, y, c) => kind === "circle"
+    ? '<circle cx="' + x + '" cy="' + y + '" r="2.6" fill="#FFFFFF" stroke="' + c + '" stroke-width="1.2"/>'
+    : '<rect x="' + (x - 2.4) + '" y="' + (y - 2.4) + '" width="4.8" height="4.8" fill="#FFFFFF" stroke="' + c + '" stroke-width="1.2"/>';
+  const foot = (x0, l1, l2) => T(x0, pbot + 36, l1, { size: 8, fill: C.grey }) +
+    (l2 ? T(x0, pbot + 46, l2, { size: 8, fill: C.grey }) : "");
+
+  /* ---- a. analytic radial profile ---- */
+  (function () {
+    const P = panel(0, "Analytic radial profile", "uniformly heated cylinder");
+    let o = P.o;
+    const pts = V.parabola;
+    const yLo = -5, yHi = -2, xLo = lg(17), xHi = lg(95);
+    const X = (v) => lin(lg(v), xLo, xHi, P.x0 + 12, P.x0 + pw - 12);
+    const Y = (v) => lin(lg(v), yHi, yLo, ptop + 10, pbot - 10);
+    for (let d = yLo; d <= yHi; d++) {
+      o += line(P.x0, Y(Math.pow(10, d)), P.x0 + pw, Y(Math.pow(10, d)), { stroke: "#EAEAEA", sw: 0.4 });
+      o += decade(P.x0 - 4, Y(Math.pow(10, d)) + 3, d);
+    }
+    let d = "";
+    pts.forEach(function (p, k) { d += (k ? " L" : "M") + X(p.ld) + "," + Y(p.worstRelative); });
+    o += '<path d="' + d + '" fill="none" stroke="' + C.scalar + '" stroke-width="1.3"/>';
+    pts.forEach(function (p) {
+      o += marker("circle", X(p.ld), Y(p.worstRelative), C.scalar);
+      o += T(X(p.ld), pbot + 12, String(p.ld), { size: 8, anchor: "middle" });
+    });
+    o += T(P.x0 + pw / 2, pbot + 24, "cylinder L/D", { size: 8.5, anchor: "middle" });
+    o += '<text x="' + (P.x0 - 28) + '" y="' + ((ptop + pbot) / 2) + '" font-size="8.5" text-anchor="middle" transform="rotate(-90 ' + (P.x0 - 28) + ' ' + ((ptop + pbot) / 2) + ')">worst relative mismatch</text>';
+    o += foot(P.x0, sci(pts[0].worstRelative) + " at L/D " + pts[0].ld,
+                    sci(pts[pts.length - 1].worstRelative) + " at L/D " + pts[pts.length - 1].ld);
+    b += o;
+  })();
+
+  /* ---- b. manufactured solution ---- */
+  (function () {
+    const P = panel(1, "Manufactured solution", "uniform-k r–z domain");
+    let o = P.o;
+    const cells = V.mms.map((r) => Number(r.grid.split("×")[0]));
+    const yLo = -2, yHi = 1, xLo = lg(25), xHi = lg(145);
+    const X = (v) => lin(lg(v), xLo, xHi, P.x0 + 14, P.x0 + pw - 14);
+    const Y = (v) => lin(lg(v), yHi, yLo, ptop + 10, pbot - 10);
+    for (let d = yLo; d <= yHi; d++) {
+      o += line(P.x0, Y(Math.pow(10, d)), P.x0 + pw, Y(Math.pow(10, d)), { stroke: "#EAEAEA", sw: 0.4 });
+      o += decade(P.x0 - 4, Y(Math.pow(10, d)) + 3, d);
+    }
+    /* a second-order guide, so the slope can be read without arithmetic */
+    const g1 = 8.0, gx1 = X(32), gx2 = X(78), gy1 = Y(g1), gy2 = Y(g1 * Math.pow(32 / 78, 2));
+    o += '<path d="M' + gx1 + ',' + gy1 + ' L' + gx2 + ',' + gy2 + '" fill="none" stroke="' + C.grey + '" stroke-width="0.8" stroke-dasharray="3 2"/>';
+    o += T(gx2 + 3, gy2 + 3, "slope −2", { size: 8, fill: C.grey });
+    [["l2", C.scalar, "circle"], ["linf", C.field, "square"]].forEach(function (ser) {
+      const vals = V.mms.map((r) => r[ser[0]]);
+      let d2 = "";
+      cells.forEach(function (v, k) { d2 += (k ? " L" : "M") + X(v) + "," + Y(vals[k]); });
+      o += '<path d="' + d2 + '" fill="none" stroke="' + ser[1] + '" stroke-width="1.3"/>';
+      cells.forEach(function (v, k) { o += marker(ser[2], X(v), Y(vals[k]), ser[1]); });
+    });
+    cells.forEach(function (v) { o += T(X(v), pbot + 12, String(v), { size: 8, anchor: "middle" }); });
+    o += T(P.x0 + pw / 2, pbot + 24, "radial cells", { size: 8.5, anchor: "middle" });
+    o += '<text x="' + (P.x0 - 28) + '" y="' + ((ptop + pbot) / 2) + '" font-size="8.5" text-anchor="middle" transform="rotate(-90 ' + (P.x0 - 28) + ' ' + ((ptop + pbot) / 2) + ')">temperature error (K)</text>';
+    o += T(P.x0 + 6, ptop + 14, "L∞", { size: 8.5, weight: "bold", fill: C.field });
+    o += T(P.x0 + 6, ptop + 25, "L2", { size: 8.5, weight: "bold", fill: C.scalar });
+    o += foot(P.x0, "order  " + V.mms.slice(1).map((r) => r.orderL2.toFixed(2)).join(", ") + "  (L2)",
+                    "order  " + V.mms.slice(1).map((r) => r.orderLinf.toFixed(2)).join(", ") + "  (L∞)");
+    b += o;
+  })();
+
+  /* ---- c. nonlinear SiC case ---- */
+  (function () {
+    const P = panel(2, "Nonlinear SiC case", "the default public case");
+    let o = P.o;
+    const rows = V.physical.rows;
+    const cells = rows.map((r) => Number(r.grid.split("×")[0]));
+    const ex = V.physical.extrapolated.avg;
+    const all = rows.map((r) => r.avgC).concat(rows.map((r) => r.maxC), [ex]);
+    const lo = Math.min.apply(null, all) - 0.45, hi = Math.max.apply(null, all) + 0.35;
+    const xLo = lg(25), xHi = lg(cells[cells.length - 1] * 1.22);
+    const X = (v) => lin(lg(v), xLo, xHi, P.x0 + 14, P.x0 + pw - 14);
+    const Y = (v) => lin(v, lo, hi, pbot - 10, ptop + 10);
+    for (let t = Math.ceil(lo * 2) / 2; t <= hi; t += 0.5) {
+      if (Math.abs(t - Math.round(t)) > 1e-9) continue;
+      o += line(P.x0, Y(t), P.x0 + pw, Y(t), { stroke: "#EAEAEA", sw: 0.4 });
+      o += T(P.x0 - 4, Y(t) + 3, String(Math.round(t)), { size: 8, anchor: "end", fill: C.grey });
+    }
+    o += line(P.x0, Y(ex), P.x0 + pw, Y(ex), { stroke: C.grey, sw: 0.9, dash: "3 2" });
+    o += T(P.x0 + 4, Y(ex) + 10, "extrapolated " + ex.toFixed(2), { size: 8, fill: C.grey });
+    [["maxC", C.field, "square"], ["avgC", C.scalar, "circle"]].forEach(function (ser) {
+      const vals = rows.map((r) => r[ser[0]]);
+      let d2 = "";
+      cells.forEach(function (v, k) { d2 += (k ? " L" : "M") + X(v) + "," + Y(vals[k]); });
+      o += '<path d="' + d2 + '" fill="none" stroke="' + ser[1] + '" stroke-width="1.3"/>';
+      cells.forEach(function (v, k) { o += marker(ser[2], X(v), Y(vals[k]), ser[1]); });
+    });
+    cells.forEach(function (v) { o += T(X(v), pbot + 12, String(v), { size: 8, anchor: "middle" }); });
+    o += T(P.x0 + pw / 2, pbot + 24, "radial cells", { size: 8.5, anchor: "middle" });
+    o += '<text x="' + (P.x0 - 30) + '" y="' + ((ptop + pbot) / 2) + '" font-size="8.5" text-anchor="middle" transform="rotate(-90 ' + (P.x0 - 30) + ' ' + ((ptop + pbot) / 2) + ')">element temperature (°C)</text>';
+    o += T(P.x0 + pw - 6, ptop + 14, "maximum", { size: 8.5, anchor: "end", weight: "bold", fill: C.field });
+    o += T(P.x0 + pw - 6, ptop + 25, "average", { size: 8.5, anchor: "end", weight: "bold", fill: C.scalar });
+    o += foot(P.x0, "order  " + V.physical.order.avg.toFixed(2) + "  average",
+                    "order  " + V.physical.order.max.toFixed(2) + "  maximum");
+    b += o;
+  })();
+
+  const cf = V.physical.coarseVsFinest;
+  b += line(18, 250, 487, 250, { stroke: C.ink, sw: 0.9 });
+  b += T(18, 264, "Every point is a solver run, not a transcribed value. Energy closure stays near 10^{\u22128} and the", { size: 9 });
+  b += T(18, 276, "linear residual below 10^{\u221211} on every grid. The " + V.physical.rows[0].grid + " grid differs from " +
+    cf.grid + " by " + Math.abs(cf.avgK).toFixed(2) + " K.", { size: 9 });
+  return svgDoc(W, H, b);
+}
+
+/* ------------------------------------------------------------------ */
+/* Fig. 4. The illustrative case, solved rather than sketched.         */
+/* ------------------------------------------------------------------ */
+export function defaultCase(DATA) {
+  const ns = "m4", W = 505, H = 306;
+  const M = DATA.mesh, K = DATA.defaultCase;
+  const re = M.redges, ze = M.zedges, Tc = K.Tc;
+  let b = defs(ns);
+
+  /* a single-hue ramp: the thermal role keeps its colour, magnitude is
+     carried by lightness, so the plate also reads in greyscale */
+  const STOPS = [[0, [255, 248, 242]], [0.5, [240, 168, 104]], [1, [155, 60, 0]]];
+  function ramp(t) {
+    t = Math.max(0, Math.min(1, t));
+    for (let i = 1; i < STOPS.length; i++) {
+      if (t <= STOPS[i][0]) {
+        const a = STOPS[i - 1], c = STOPS[i], f = (t - a[0]) / (c[0] - a[0]);
+        const v = a[1].map((q, k) => Math.round(q + f * (c[1][k] - q)));
+        return "rgb(" + v.join(",") + ")";
+      }
+    }
+    return "rgb(155,60,0)";
+  }
+
+  const s = 9.3, x0 = 54, ytop = 46;
+  const zmax = ze[ze.length - 1], zmin = ze[0];
+  const X = (r) => x0 + r * s, Y = (z) => ytop + (zmax - z) * s;
+  const ybot = Y(zmin), rOut = re[re.length - 1];
+  const lo = 20, hi = Math.ceil(K.maxC / 50) * 50;
+
+  b += T(32, 24, "a", { size: 11, weight: "bold" });
+  b += T(46, 24, "Temperature field", { size: 9.5, weight: "bold" });
+  b += T(46, 36, "half-domain, " + M.nr + " × " + M.nz + " cells", { size: 8, fill: C.grey });
+
+  for (let j = 0; j < M.nz; j++) for (let i = 0; i < M.nr; i++) {
+    const x1 = X(re[i]), x2 = X(re[i + 1]), y1 = Y(ze[j + 1]), y2 = Y(ze[j]);
+    b += '<rect x="' + x1 + '" y="' + y1 + '" width="' + (x2 - x1 + 0.12) + '" height="' + (y2 - y1 + 0.12) +
+      '" fill="' + ramp((Tc[j][i] - lo) / (hi - lo)) + '"/>';
+  }
+  const rEl = re[M.nElement], rGap = re[M.nElement + M.nGap], rWall = re[M.nElement + M.nGap + M.nWall];
+  const zEl0 = ze[M.nAirZ], zEl1 = ze[M.nAirZ + M.nActiveZ];
+  b += '<rect x="' + X(0) + '" y="' + Y(zEl1) + '" width="' + (rEl * s) + '" height="' + ((zEl1 - zEl0) * s) + '" fill="none" stroke="' + C.field + '" stroke-width="1"/>';
+  b += '<rect x="' + X(rGap) + '" y="' + ytop + '" width="' + ((rWall - rGap) * s) + '" height="' + (ybot - ytop) + '" fill="none" stroke="' + C.grey + '" stroke-width="0.9"/>';
+  b += line(x0, ytop, x0, ybot, { stroke: C.ink, sw: 1.2, dash: "4 3" });
+  b += rect(x0, ytop, rOut * s, ybot - ytop, { stroke: C.ink, fill: "none", sw: 1, rx: 0 });
+  b += '<text x="' + (x0 - 10) + '" y="' + ((ytop + ybot) / 2) + '" font-size="8" fill="' + C.ink + '" text-anchor="middle" transform="rotate(-90 ' + (x0 - 10) + ' ' + ((ytop + ybot) / 2) + ')">symmetry axis</text>';
+  b += arrow(ns, "M" + X((rEl + rGap) / 2) + "," + (ybot - 5) + " L" + X((rEl + rGap) / 2) + "," + (ytop + 6), { color: "gas", sw: 1.1 });
+  b += T(X(0), ytop - 5, "element", { size: 8, fill: C.field, weight: "bold" });
+  b += T(X(rWall) + 2, ytop - 5, "wall", { size: 8, fill: C.grey, weight: "bold" });
+
+  /* the scale */
+  const cbx = X(rOut) + 16, cbw = 11, cbTop = ytop, cbBot = ybot;
+  for (let k = 0; k < 60; k++) {
+    const y1 = cbBot - (k + 1) * (cbBot - cbTop) / 60;
+    b += '<rect x="' + cbx + '" y="' + y1 + '" width="' + cbw + '" height="' + ((cbBot - cbTop) / 60 + 0.12) + '" fill="' + ramp(k / 59) + '"/>';
+  }
+  b += rect(cbx, cbTop, cbw, cbBot - cbTop, { stroke: C.grey, fill: "none", sw: 0.7, rx: 0 });
+  for (let t = 0; t <= 4; t++) {
+    const v = lo + t * (hi - lo) / 4, y = cbBot - t * (cbBot - cbTop) / 4;
+    b += T(cbx + cbw + 4, y + 3, Math.round(v) + " °C", { size: 8, fill: C.grey });
+  }
+
+  /* b. where the power goes */
+  const px = 232;
+  b += T(px - 18, 24, "b", { size: 11, weight: "bold" });
+  b += T(px - 4, 24, "Where the power goes", { size: 9.5, weight: "bold" });
+  b += T(px - 4, 36, "P_{bulk} = " + K.pBulk.toFixed(2) + " W in, " + K.boundaryLoss.toFixed(2) + " W out", { size: 8, fill: C.grey });
+
+  const NAMES = { wallRadiation: "element to wall, radiation", axialAmbient: "axial ends to ambient",
+                  elementEndRadiation: "element ends, radiation", outerRadial: "outer boundary, radial",
+                  gasEnthalpy: "process gas, enthalpy" };
+  const chans = Object.entries(K.channels).filter(function (e) { return e[1] > 1e-6; })
+    .sort(function (a, c) { return c[1] - a[1]; });
+  const total = chans.reduce(function (a, c) { return a + c[1]; }, 0);
+  const barX = px - 4, barW = 250, barY = 52, barH = 22;
+  let acc = 0;
+  const HUE = [C.thermal, C.grey, C.field, C.scalar, C.gas];
+  chans.forEach(function (c, i) {
+    const w = barW * c[1] / total;
+    b += '<rect x="' + (barX + acc) + '" y="' + barY + '" width="' + w + '" height="' + barH + '" fill="' + HUE[i % HUE.length] + '" fill-opacity="0.85"/>';
+    acc += w;
+  });
+  b += rect(barX, barY, barW, barH, { stroke: C.ink, fill: "none", sw: 0.8, rx: 0 });
+  chans.forEach(function (c, i) {
+    const y = barY + barH + 16 + i * 12;
+    b += '<rect x="' + barX + '" y="' + (y - 7) + '" width="9" height="9" fill="' + HUE[i % HUE.length] + '" fill-opacity="0.85"/>';
+    b += T(barX + 14, y, NAMES[c[0]] || c[0], { size: 8.5 });
+    b += T(barX + barW, y, c[1].toFixed(2) + " W", { size: 8.5, anchor: "end", fill: C.grey });
+    b += T(barX + barW - 46, y, (100 * c[1] / total).toFixed(1) + " %", { size: 8.5, anchor: "end", fill: C.grey });
+  });
+
+  /* c. the numbers the manuscript quotes */
+  const cy = barY + barH + 16 + chans.length * 12 + 18;
+  b += line(barX, cy - 12, barX + barW, cy - 12, { stroke: C.rule, sw: 0.6 });
+  b += T(barX, cy, "READOUT", { size: 8, weight: "bold", fill: C.grey });
+  const readout = [
+    ["element average", K.avgC.toFixed(2) + " °C"],
+    ["element range", K.minC.toFixed(1) + " to " + K.maxC.toFixed(1) + " °C"],
+    ["internal spread", K.spreadK.toFixed(1) + " K"],
+    ["wall, inner and outer", K.wallInnerC.toFixed(1) + " and " + K.wallOuterC.toFixed(1) + " °C"],
+    ["process-gas outlet", K.heOutletC.toFixed(1) + " °C"],
+    ["energy closure", K.closure.toExponential(1).replace("e-", " × 10^{−") + "}"]
+  ];
+  readout.forEach(function (r, i) {
+    const y = cy + 13 + i * 12;
+    b += T(barX, y, r[0], { size: 8.5 });
+    b += T(barX + barW, y, r[1], { size: 8.5, anchor: "end", fill: C.grey });
+  });
+
+  b += line(18, 274, 487, 274, { stroke: C.ink, sw: 0.9 });
+  b += T(18, 288, "The field is a solve at the shipped default: dense SiC, 1.18 cm³ envelope, L/D 1.5, " + K.current.toFixed(0) +
+    " A, quartz wall, 50 sccm helium.", { size: 9 });
+  b += T(18, 300, "The " + K.spreadK.toFixed(1) + " K internal spread is small because this material conducts well; a poorer conductor spreads further.", { size: 9 });
+  return svgDoc(W, H, b);
+}

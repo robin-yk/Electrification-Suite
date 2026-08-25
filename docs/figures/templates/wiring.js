@@ -2,8 +2,7 @@
 /* ------------------------------------------------------------------ */
 /* Rendering and export.                                               */
 /* ------------------------------------------------------------------ */
-const FIGS = { f1: fig1, f2: fig2, f3: fig3, f4: fig4, f5: fig5 };
-const SRC = {};
+const SRC = {};   /* FIGS is defined by make-figures.mjs, in manuscript order */
 
 Object.keys(FIGS).forEach(function (id) {
   const el = document.getElementById(id);
