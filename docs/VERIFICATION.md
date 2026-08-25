@@ -463,11 +463,52 @@ means anything, for two reasons that have to be fixed in order:
    flatter it. Each source model has to be refit independently before either
    can be scored.
 
-`microwave-calibrate.mjs` reproduces the page's search headlessly so that both
-steps can be done offline, but its output is not a calibration until the mesh
-question is settled. The practical obstacle is that `solve2D` relaxes with
-Gauss-Seidel, which makes the fine meshes needed here expensive; a Krylov solve
-is the precondition for calibrating on a converged grid.
+### Resolved: the search mesh was the problem, not the report mesh
+
+`solve2D` now assembles its linearised system and hands it to a preconditioned
+conjugate-gradient solve, ported from the Joule solver. The matrix is symmetric
+by construction — every interior face contributes the same conductance to both
+its cells — and diagonally dominant once boundary, gas-exchange and radiation
+terms are added, so CG applies directly. It reproduces the relaxation answer to
+0.2 K (10x30 centre 501.0 -> 500.88; 30x60 473.8 -> 473.56), and makes the fine
+meshes affordable:
+
+| grid | centre (°C) | Picard steps | wall clock |
+| --- | --- | --- | --- |
+| 10x30 | 500.88 | 80 | 0.26 s |
+| 30x60 | 473.56 | 36 | 1.1 s |
+| 60x120 | 476.04 | 21 | 3.6 s |
+| 120x240 | 477.03 | 16 | 20 s |
+
+That locates the fault precisely. The converged centre is about 477 °C, so the
+**10x30 search mesh was 24 K away while 30x60 is 3.5 K away** — the report mesh
+was always adequate and only the search mesh was not. Moving the search to 30x60
+puts discretisation error under the residual, and at about a second per solve a
+full coordinate search costs minutes.
+
+### The refit, and what the fitted conductivities were carrying
+
+With both source models independently refit on the 30x60 mesh under an identical
+search schedule:
+
+| | k200 | k500 | k800 | radArea | combined RMSE |
+| --- | --- | --- | --- | --- | --- |
+| shipped defaults | 4.000 | 18.00 | 18.00 | 6.000 | 8.85 |
+| refit, fitted Gaussian source | 2.761 | 12.45 | **27.50** | 5.868 | 5.67 |
+| refit, solved Helmholtz field | 2.879 | 11.57 | **13.93** | 5.802 | **5.50** |
+
+Two results. The shipped calibration was **60% worse than achievable** (8.85
+against 5.50) purely because it had been searched on a mesh whose error exceeded
+the residual. And the hypothesis that motivated the field solve is confirmed and
+localised: k200 and k500 barely distinguish the two source models, but **k800
+differs by a factor of two**. The high-temperature anchor is where eps''(T) is
+largest and the source shape matters most, and fitting against a 43%-too-peaked
+source drives k800 to 27.5 — near its upper bound of 30 — to spread heat the
+source should never have concentrated. Against the solved field the same data
+asks for 13.9.
+
+The solved field also fits marginally better, 5.50 against 5.67, now that the
+comparison is like-for-like.
 
 ## Continuous guards
 
