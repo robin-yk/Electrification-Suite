@@ -1334,6 +1334,8 @@
             <article class="t2d-kpi"><div class="kpi-label">Spatial spread</div><div class="kpi-value" id="dynSpread">—</div><div class="kpi-sub">T<sub>max</sub> − T<sub>min</sub> at t<sub>end</sub></div></article>
             <article class="t2d-kpi"><div class="kpi-label">Worst closure</div><div class="kpi-value" id="dynClosure">—</div><div class="kpi-sub">|P − Q − dU/dt| / max term</div></article>
             <article class="t2d-kpi"><div class="kpi-label">Steps · linear</div><div class="kpi-value" id="dynSteps">—</div><div class="kpi-sub">implicit steps, Krylov total</div></article>
+            <article class="t2d-kpi"><div class="kpi-label">t<sub>90</sub></div><div class="kpi-value" id="dynT90">—</div><div class="kpi-sub">90% of the achieved change</div></article>
+            <article class="t2d-kpi"><div class="kpi-label">Time to steady</div><div class="kpi-value" id="dynTss">—</div><div class="kpi-sub">storage below 10⁻⁴ of its peak</div></article>
           </div>
 
           <div class="t2d-assumption" style="margin-top:14px"><strong>What this adds to the steady field:</strong> a backward-Euler march over the same operator, mesh, and current-density path as the 2D tab. It is unconditionally stable, so the time step follows the time scale you want to see rather than a stability limit, and it is first-order accurate in time. Storage is <span class="nowrap">ρc<sub>p</sub>V/Δt</span> per cell, with ρc<sub>p</sub> taken at the midpoint of the step so that a temperature-dependent heat capacity still balances energy.</div>
@@ -1361,7 +1363,8 @@
           <div class="field" id="dynPeriodField"><label for="dynPeriod">Pulse period</label><div class="control-row"><input id="dynPeriod" type="number" min="0.001" step="any" value="1"><span class="unit">s</span></div></div>
           <div class="field" id="dynDutyField"><label for="dynDuty">Duty</label><div class="control-row"><input id="dynDuty" type="number" min="0.1" max="100" step="any" value="5"><span class="unit">%</span></div></div>
           <div class="field"><label for="dynDt">Time step</label><div class="control-row"><input id="dynDt" type="number" min="1e-6" step="any" value="0.25"><span class="unit">s</span></div></div>
-          <div class="field"><label for="dynDuration">Duration</label><div class="control-row"><input id="dynDuration" type="number" min="0.001" step="any" value="60"><span class="unit">s</span></div></div>
+          <div class="field"><label for="dynDuration">Max duration</label><div class="control-row"><input id="dynDuration" type="number" min="0.001" step="any" value="600"><span class="unit">s</span></div></div>
+          <div class="field full" id="dynSteadyField"><div class="inline-check"><input id="dynSteady" type="checkbox" checked><span>Stop once steady, and grow the step in the tail</span></div></div>
           <p class="context-note" id="dynStepNote">—</p>
         </aside>
       </div>
@@ -2816,6 +2819,7 @@
        the tab stays responsive, the chart fills in as it goes, and Stop
        actually stops. */
     let dynRun=null, dynCancel=false, dynBusy=false;
+    const finiteNumber=(v)=>typeof v==="number"&&Number.isFinite(v);
 
     function dynPlanFromInputs() {
       const drive=$("dynDrive").value;
@@ -2823,11 +2827,20 @@
       const duty=clamp(num("dynDuty")/100,0.001,1);
       const dt=Math.max(1e-9,num("dynDt"));
       const duration=Math.max(dt,num("dynDuration"));
-      const steps=Math.max(1,Math.round(duration/dt));
+      // A pulse train never settles to a static field, and a growing step would
+      // walk off the duty cycle it is meant to resolve, so both are for the
+      // steady drives only.
+      const steady=$("dynSteady").checked&&drive!=="pulse";
+      const dtGrowth=steady?1.02:1;
+      const maxDt=dt*20;
+      // The cap has to stay reachable in steps as well as in time: with a
+      // growing step the same duration takes far fewer of them.
+      const steps=Math.max(1,Math.ceil(duration/dt));
       const sourceScale=drive==="off"?()=>0
         :drive==="pulse"?(t)=>(((t-1e-9)%period)/period<duty?1:0)
         :()=>1;
-      return {drive,period,duty,dt,duration,steps,sourceScale};
+      return {drive,period,duty,dt,duration,steps,sourceScale,steady,dtGrowth,maxDt,
+        steadyTol:steady?1e-4:0};
     }
 
     function syncDynControls() {
@@ -2835,8 +2848,11 @@
       $("dynPeriodField").style.display=pulse?"":"none";
       $("dynDutyField").style.display=pulse?"":"none";
       const plan=dynPlanFromInputs();
+      $("dynSteadyField").style.display=pulse?"none":"";
       const perCycle=pulse?Math.round(plan.period/plan.dt):null;
-      $("dynStepNote").textContent=`${plan.steps.toLocaleString()} implicit steps`
+      $("dynStepNote").textContent=(plan.steady
+          ? `Runs until the field settles, at most ${plan.steps.toLocaleString()} steps; Δt starts at ${plan.dt} s and grows to at most ${format(plan.maxDt,3)} s once the transient slows.`
+          : `${plan.steps.toLocaleString()} implicit steps`)
         +(pulse?` · ${perCycle} per cycle · ${format(plan.duration/plan.period,2)} cycles`:"")
         +(pulse&&perCycle<20?" — too few per cycle to resolve the pulse; reduce the time step.":"");
     }
@@ -2846,7 +2862,10 @@
       const W=canvas.width,H=canvas.height,L=64,R=16,Tp=16,B=38;
       ctx.clearRect(0,0,W,H);
       if(!history.length) return;
-      const tEnd=Math.max(plan.duration,1e-9);
+      // With a steady-state stop the run usually ends well before the cap, so
+      // the axis follows what has actually been marched rather than reserving
+      // room for time the march will never reach.
+      const tEnd=Math.max(plan.steady?history[history.length-1].t:plan.duration,1e-9);
       let lo=Infinity,hi=-Infinity;
       for(const h of history){lo=Math.min(lo,h.tMin);hi=Math.max(hi,h.tMax);}
       if(!(hi>lo)){hi=lo+1;}
@@ -2909,7 +2928,12 @@
       $("dynSpread").textContent=`${format(result.deltaT,2)} K`;
       $("dynClosure").textContent=`${format(result.worstClosure*100,4)}%`;
       $("dynSteps").textContent=`${result.stepsDone.toLocaleString()} · ${result.linearIterations.toLocaleString()}`;
-      $("dynMeshLabel").textContent=`${result.mesh.nr} × ${result.mesh.nz} mesh · Δt = ${plan.dt} s · ${plan.steps.toLocaleString()} steps`;
+      const t90=result.rise&&result.rise.t90;
+      $("dynT90").textContent=finiteNumber(t90)?`${format(t90,3)} s`:"—";
+      $("dynTss").textContent=result.reachedSteady?`${format(result.tSteady,3)} s`:"not reached";
+      $("dynMeshLabel").textContent=`${result.mesh.nr} × ${result.mesh.nz} mesh · `
+        +(plan.steady?`Δt ${plan.dt}→${format(plan.maxDt,3)} s`:`Δt = ${plan.dt} s`)
+        +` · ${result.stepsDone.toLocaleString()} steps`;
     }
 
     async function runDynamic() {
@@ -2930,10 +2954,15 @@
         }
         startField=current2DResult.T;
       }
+      // A growing step reaches the cap in a couple of hundred steps rather than
+      // a couple of thousand, so recording every step still leaves a chart the
+      // canvas can draw.
+      const expected=plan.steady?Math.min(plan.steps,600):plan.steps;
       const run=createTransientRun(zeroD.input,zeroD,cfg,zeroD.material,{
-        dt:plan.dt,steps:plan.steps,sourceScale:plan.sourceScale,startField,
-        startK:zeroD.input.ambientK,
-        record:Math.max(1,Math.round(plan.steps/600)),
+        dt:plan.dt,steps:plan.steps,duration:plan.duration,sourceScale:plan.sourceScale,
+        dtGrowth:plan.dtGrowth,maxDt:plan.maxDt,steadyTol:plan.steadyTol,
+        startField,startK:zeroD.input.ambientK,
+        record:Math.max(1,Math.round(expected/600)),
       });
       if(run.errors&&run.errors.length){$("dynProgress").textContent=run.errors.join(" ");return;}
 
@@ -2947,12 +2976,18 @@
           const budget=performance.now()+90;   // keep frames under ~100 ms
           while(!run.done&&performance.now()<budget) run.advance(4);
           drawDynChart(run.history,plan);
-          $("dynProgress").textContent=`${run.stepsDone.toLocaleString()} / ${plan.steps.toLocaleString()} steps · t = ${format(run.stepsDone*plan.dt,2)} s`;
+          $("dynProgress").textContent=plan.steady
+            ? `${run.stepsDone.toLocaleString()} steps · t = ${format(run.t,2)} s of at most ${format(plan.duration,2)} s`
+            : `${run.stepsDone.toLocaleString()} / ${plan.steps.toLocaleString()} steps · t = ${format(run.t,2)} s`;
         }
         const result=run.result();
         renderDynamic(result,plan);
         const secs=(performance.now()-started)/1000;
-        $("dynProgress").textContent=(dynCancel?"Stopped at ":"Finished at ")
+        const ending=dynCancel?"Stopped at "
+          :result.reachedSteady?"Reached steady state at "
+          :plan.steady?"Hit the duration cap, still changing, at "
+          :"Finished at ";
+        $("dynProgress").textContent=ending
           +`t = ${format(result.tEnd,2)} s after ${result.stepsDone.toLocaleString()} steps `
           +`(${format(secs,1)} s wall clock, ${result.converged?"every step converged":"a step hit the iteration limit"}); `
           +`worst energy closure ${format(result.worstClosure*100,4)}%.`;
@@ -3079,6 +3114,7 @@
       ["dynDrive","dynPeriod","dynDuty","dynDt","dynDuration"].forEach((id)=>
         $(id).addEventListener("input",syncDynControls));
       $("dynDrive").addEventListener("change",syncDynControls);
+      $("dynSteady").addEventListener("change",syncDynControls);
       $("export2D").addEventListener("click",exportCurrent2D);
       $("thermalMap").addEventListener("mousemove",inspect2DCell);
       $("t2dFieldSelect").addEventListener("change",(event)=>{

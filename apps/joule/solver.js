@@ -1036,9 +1036,30 @@ export function storageRate2D(T, Tprev, cfg, material, mesh, dt) {
 // then just this loop run to completion.
 export function createTransientRun(x, zeroD, cfg, material, plan = {}) {
   const configErrors=validate2DConfig(cfg);if(configErrors.length)return{errors:configErrors};
-  const dt=plan.dt,steps=plan.steps;
-  if(!finite(dt)||dt<=0) return {errors:["Time step must be greater than zero."]};
+  const dt0=plan.dt,steps=plan.steps;
+  if(!finite(dt0)||dt0<=0) return {errors:["Time step must be greater than zero."]};
   if(!Number.isInteger(steps)||steps<1) return {errors:["Step count must be a positive integer."]};
+  // Three optional ways to end a march, on top of the original fixed step count.
+  //
+  //   plan.duration   stop at a wall-clock time rather than a step count
+  //   plan.steadyTol  stop once the domain has stopped storing energy
+  //   plan.dtGrowth   let the step grow once the transient slows
+  //
+  // With none of them set the loop below is the original one: a fixed dt, a
+  // fixed step count, and t = (n+1)dt to the last bit.
+  const dtGrowth=finite(plan.dtGrowth)&&plan.dtGrowth>1?plan.dtGrowth:1;
+  const maxDt=finite(plan.maxDt)&&plan.maxDt>0?plan.maxDt:dt0*20;
+  const uniform=dtGrowth===1&&!finite(plan.duration);
+  const duration=finite(plan.duration)&&plan.duration>0?plan.duration:dt0*steps;
+  // Steady state is declared on the storage rate measured against the largest
+  // storage rate the run has seen, not on a temperature change per step, which
+  // would depend on dt. Normalising against the run's own peak is what makes
+  // one criterion cover both directions: a switch-on stores the whole drive at
+  // t = 0 and decays to nothing, and a quench releases at the full loss rate
+  // and decays to nothing. Comparing against the drive instead would never end
+  // a quench, where the drive is zero and every watt moving is storage.
+  const steadyTol=finite(plan.steadyTol)&&plan.steadyTol>0?plan.steadyTol:0;
+  const steadyHold=Math.max(1,plan.steadyHold??3);
   const g=geometry(x),mesh=build2DMesh(g,cfg),ambientK=x.ambientK;
   const startField=plan.startField;
   const startK=finite(plan.startK)?plan.startK:ambientK;
@@ -1066,18 +1087,21 @@ export function createTransientRun(x, zeroD, cfg, material, plan = {}) {
   const history=[];
   const mid=mesh.activeStart+Math.floor(mesh.nActiveZ/2);
   let n=0,totalLinear=0,worstClosure=0,converged=true,electricalEnergy=0;
+  let clock=0,dt=dt0,steadyStreak=0,peakStorage=0,stopReason=null,tSteady=null;
   let op=withCurrentField(operating2DAt(elementAverage(),x,g,cfg,material));
+  const finished=()=>stopReason!==null||n>=steps||clock>=duration-1e-12;
 
   const advance=(batch=1)=>{
-    const limit=Math.min(steps,n+Math.max(1,batch|0));
-    for(;n<limit;n++){
-      const t=(n+1)*dt;
+    const limit=n+Math.max(1,batch|0);
+    for(;n<limit&&!finished();n++){
+      const stepDt=uniform?dt0:Math.min(dt,duration-clock);
+      const t=uniform?(n+1)*dt0:clock+stepDt;
       for(let j=0;j<mesh.nz;j++)for(let i=0;i<mesh.nr;i++)Tprev[j][i]=T[j][i];
       const scale=Math.max(0,sourceScale(t));
       let pass=0,step=Infinity;
       for(pass=0;pass<picardMax&&step>picardTol;pass++){
         op=scaleSource(withCurrentField(operating2DAt(elementAverage(),x,g,cfg,material)),scale);
-        const system=assemble2DSystem(T,x,g,cfg,material,mesh,op,{dt,Tprev});
+        const system=assemble2DSystem(T,x,g,cfg,material,mesh,op,{dt:stepDt,Tprev});
         const linear=bicgstab2D(system,Float64Array.from(T.flat()));
         totalLinear+=linear.iterations;
         step=0;
@@ -1088,7 +1112,7 @@ export function createTransientRun(x, zeroD, cfg, material, plan = {}) {
       }
       if(step>picardTol)converged=false;
       const loss=boundaryLoss2D(T,x,g,cfg,material,mesh,op);
-      const storageRate=storageRate2D(T,Tprev,cfg,material,mesh,dt);
+      const storageRate=storageRate2D(T,Tprev,cfg,material,mesh,stepDt);
       // The transient balance carries a term the steady one does not: what the
       // domain absorbed. It is normalised against the largest term present, not
       // against P_bulk: a duty-cycled drive spends most of its period with
@@ -1098,28 +1122,56 @@ export function createTransientRun(x, zeroD, cfg, material, plan = {}) {
       const scaleW=Math.max(op.pBulk,Math.abs(loss.total),Math.abs(storageRate),1e-12);
       const closure=Math.abs(op.pBulk-loss.total-storageRate)/scaleW;
       worstClosure=Math.max(worstClosure,closure);
-      electricalEnergy+=op.pBulk*dt;
-      if(n%record===0||n===steps-1){
+      electricalEnergy+=op.pBulk*stepDt;
+      clock=t;
+      // Held for a few consecutive steps so a single quiet step inside a duty
+      // cycle cannot end the march.
+      peakStorage=Math.max(peakStorage,Math.abs(storageRate));
+      if(steadyTol>0&&peakStorage>0){
+        const settled=Math.abs(storageRate)/peakStorage;
+        steadyStreak=settled<steadyTol?steadyStreak+1:0;
+        if(steadyStreak>=steadyHold){stopReason="steady";tSteady=t;}
+      }
+      if(!uniform&&dtGrowth>1) dt=Math.min(maxDt,dt*dtGrowth);
+      if(n%record===0||n===steps-1||finished()){
         const[tMin,tMax]=elementExtrema();
         history.push({t,avgK:elementAverage(),tMin,tMax,center:T[mid][0],
           wallOuter:T[mid][mesh.nElement+mesh.nGap+mesh.nWall-1],
           pBulk:op.pBulk,boundaryLoss:loss.total,storageRate,closure,passes:pass});
       }
     }
-    return n>=steps;
+    if(stopReason===null&&(n>=steps||clock>=duration-1e-12)) stopReason=n>=steps?"steps":"duration";
+    return finished();
+  };
+
+  // Fractions of the total rise actually achieved, read back off the recorded
+  // history against the value the march ended on. Reported rather than assumed,
+  // so a run that stopped early does not claim a rise time it never reached.
+  const riseTimes=()=>{
+    if(history.length<2) return {};
+    const start=history[0].avgK,end=history[history.length-1].avgK,span=end-start;
+    if(Math.abs(span)<1e-9) return {};
+    const at=(fraction)=>{
+      for(const h of history) if((h.avgK-start)/span>=fraction) return h.t;
+      return null;
+    };
+    return {t50:at(0.5),t90:at(0.9),t99:at(0.99)};
   };
 
   const result=()=>{
     const[tMin,tMax]=elementExtrema();
     return{errors:[],x,zeroD,cfg,material,g,mesh,T,op,history,electrical,porosity,
-      dt,steps,stepsDone:n,tEnd:n*dt,avgK:elementAverage(),tMin,tMax,deltaT:tMax-tMin,
+      dt:dt0,steps,stepsDone:n,tEnd:uniform?n*dt0:clock,
+      stopReason,tSteady,reachedSteady:stopReason==="steady",rise:riseTimes(),
+      avgK:elementAverage(),tMin,tMax,deltaT:tMax-tMin,
       center:T[mid][0],wallOuter:T[mid][mesh.nElement+mesh.nGap+mesh.nWall-1],
       storedEnergy:internalEnergy2D(T,cfg,material,mesh,ambientK),
       electricalEnergy,linearIterations:totalLinear,worstClosure,converged};
   };
 
   return {errors:[],mesh,g,history,advance,result,
-    get done(){return n>=steps;},get stepsDone(){return n;},get T(){return T;}};
+    get done(){return finished();},get stepsDone(){return n;},
+    get t(){return uniform?n*dt0:clock;},get T(){return T;}};
 }
 
 // Run a transient to completion in one call. Everything of substance is in
