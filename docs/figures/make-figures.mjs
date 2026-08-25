@@ -17,6 +17,7 @@ import { dirname, join } from "node:path";
 import { geometry, equivalentCylinder, build2DMesh, calculate, solveThermal2D, solveTransient2D,
          elementTimeConstant, MATERIALS } from "../../apps/joule/solver.js";
 import { defaultInput } from "../../tools/verification/joule.mjs";
+import { cfpMaterial, cfpEnclosure, cfpInputs } from "../../tools/verification/joule-rphcjh.mjs";
 import { workflow, coupling, verification, defaultCase, transient, screening,
          meshDomain, matrixClasses, solverLoop, cylinderMapping } from "./draw.mjs";
 
@@ -104,32 +105,76 @@ DATA.defaultCase = {
   Tc: dc.T.map((row) => row.map((v) => Number((v - 273.15).toFixed(1))))
 };
 
-// Transient operation, on the same default case. Start-up runs to steady state
-// rather than to a duration, and the pulse train runs long enough for the last
-// cycle to be a repeating one. About 16 s together.
+// Transient operation. The pulse is shown on the element that can follow one:
+// the carbon-fibre strip of the published pulsed cross-check, whose time
+// constant is about half a second against a one-second period. It is compared
+// against the same strip driven continuously at the same average power, which
+// is the only comparison that isolates what pulsing buys. The SiC rod of the
+// default case is kept alongside to show the other regime, where the time
+// constant is tens of seconds and no pulse at this rate survives.
 const dcCfg = { ...x.enclosure, nr: 30, nz: 60 };
 const zeroD = calculate(x);
-const startup = solveTransient2D(x, zeroD, dcCfg, x.material,
+const sicStart = solveTransient2D(x, zeroD, dcCfg, x.material,
   { dt: 2, steps: 400, record: 4, steadyTol: 1e-4 });
-// Long enough to reach a repeating cycle: the element time constant is tens of
-// seconds, so a few periods is still the approach and its swing means nothing.
-const PERIOD = 20, DUTY = 0.3, PDT = 1, PSTEPS = 600;
-const pulse = solveTransient2D(x, zeroD, dcCfg, x.material,
-  { dt: PDT, steps: PSTEPS, record: 1, sourceScale: (t) => ((t % PERIOD) < PERIOD * DUTY ? 1 : 0) });
-const lastCycle = pulse.history.slice(-Math.round(PERIOD / PDT));
+
+const PERIOD = 1, DUTY = 0.05, PDT = PERIOD / 200, PCYCLES = 8, PULSE_V = 31;
+const cfpM = cfpMaterial(400), cfpEnc = cfpEnclosure();
+const cfpPulseX = cfpInputs(PULSE_V, cfpM, cfpEnc), cfpPulseZ = calculate(cfpPulseX);
+
+// Match the continuous drive to the pulsed one on average power. The pulsed
+// element's resistance depends on how hot it is, which depends on the enclosure
+// it is sitting in, so the match has to be taken with both already settled:
+// solve the continuous steady state, start the pulse train from that field,
+// measure what it actually draws, and correct the voltage until the two agree.
+const pulsePlan = (steps, startField) => ({
+  dt: PDT, steps, record: 2, startField,
+  sourceScale: (t) => (((t - 1e-9) % PERIOD) / PERIOD < DUTY ? 1 : 0)
+});
+const cycleMeanPower = (run, cycles) => {
+  const last = run.history.filter((h) => h.t > PERIOD * (cycles - 1));
+  return last.reduce((a, h) => a + h.pBulk, 0) / last.length;
+};
+let volts = PULSE_V * Math.sqrt(DUTY), steady = null, drawn = null;
+for (let it = 0; it < 4; it++) {
+  const xc = cfpInputs(volts, cfpM, cfpEnc);
+  steady = solveThermal2D(xc, calculate(xc), cfpEnc, cfpM);
+  const trial = solveTransient2D(cfpPulseX, cfpPulseZ, cfpEnc, cfpM, pulsePlan(200 * 3, steady.T));
+  drawn = cycleMeanPower(trial, 3);
+  if (Math.abs(steady.op.pBulk - drawn) / drawn < 5e-3) break;
+  volts *= Math.sqrt(drawn / steady.op.pBulk);
+}
+const cfpContX = cfpInputs(volts, cfpM, cfpEnc), cfpContZ = calculate(cfpContX);
+
+// The element settles in under a second; the quartz tube around it takes
+// minutes. The continuous approach is therefore shown in full, and the pulse
+// train starts from its settled field so the two are compared in the same
+// enclosure state rather than at two different points of a warm-up.
+const cont = solveTransient2D(cfpContX, cfpContZ, cfpEnc, cfpM,
+  { dt: 0.5, steps: 1200, record: 4 });
+const pulse = solveTransient2D(cfpPulseX, cfpPulseZ, cfpEnc, cfpM, pulsePlan(200 * PCYCLES, steady.T));
+const lastCycle = pulse.history.filter((h) => h.t > PERIOD * (PCYCLES - 1));
+const meanPower = lastCycle.reduce((a, h) => a + h.pBulk, 0) / lastCycle.length;
+
 DATA.transient = {
-  tau: p(elementTimeConstant(zeroD), 4),
-  startup: startup.history.map((h) => [Number(h.t.toFixed(2)), Number((h.avgK - 273.15).toFixed(2))]),
-  steadyC: p(startup.avgK - 273.15, 6),
-  pulse: pulse.history.map((h) => [Number(h.t.toFixed(2)), Number((h.avgK - 273.15).toFixed(2))]),
-  period: PERIOD, duty: DUTY, pulseEnd: PDT * PSTEPS,
+  period: PERIOD, duty: DUTY, pulseVolts: PULSE_V, pulseEnd: PERIOD * PCYCLES,
+  meanPower: p(meanPower, 4),
+  cfpTau: p(elementTimeConstant(cfpPulseZ), 3),
+  contVolts: p(volts, 3),
+  contPower: p(steady.op.pBulk, 4),
+  contSteadyC: p(steady.avgK - 273.15, 5),
+  cont: cont.history.map((h) => [Number(h.t.toFixed(2)), Number((h.avgK - 273.15).toFixed(2))]),
+  pulse: pulse.history.map((h) => [Number(h.t.toFixed(3)), Number((h.avgK - 273.15).toFixed(2))]),
+  peakC: p(Math.max.apply(null, lastCycle.map((h) => h.avgK)) - 273.15, 5),
+  troughC: p(Math.min.apply(null, lastCycle.map((h) => h.avgK)) - 273.15, 5),
+  cycleMeanC: p(lastCycle.reduce((a, h) => a + h.avgK, 0) / lastCycle.length - 273.15, 5),
   swingK: p(Math.max.apply(null, lastCycle.map((h) => h.avgK)) - Math.min.apply(null, lastCycle.map((h) => h.avgK)), 4),
-  cycleMeanC: p(lastCycle.reduce((a, h) => a + h.avgK, 0) / lastCycle.length - 273.15, 5)
+  closure: pulse.worstClosure,
+  sic: sicStart.history.map((h) => [Number(h.t.toFixed(2)), Number((h.avgK - 273.15).toFixed(2))]),
+  sicTau: p(elementTimeConstant(zeroD), 4),
+  sicSteadyC: p(sicStart.avgK - 273.15, 6),
+  sicLabel: x.material.name + " rod"
 };
 
-// Design screening: what the tool was built to answer. Stretching the element
-// at a fixed envelope volume raises its resistance, which raises the power a
-// current-limited supply delivers, until the supply runs out of voltage.
 // The range has to reach past the optimum, or the sweep reports its own edge
 // as an answer. A low-resistivity metal never turns over inside it at all.
 const LD_LO = 0.5, LD_HI = 512, LD_N = 60;

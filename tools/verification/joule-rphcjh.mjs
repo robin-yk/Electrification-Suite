@@ -29,18 +29,18 @@ const cfpRho = (T) => (4.25 - 7.24e-4 * T) * CFP_A * 100 / CFP_L;
 // grafted on so that a transient comparison is not silently comparing two
 // different heat capacities. k is a parameter here because it turns out to
 // decide the whole spatial-spread question below.
-const cfpMaterial = (k) => ({
+export const cfpMaterial = (k) => ({
   name: "CFP H23 (effective)", rhoOhmCm: cfpRho(25), density: 39.7, cp: 900, k,
   jmax: 1e9, emissivity: 0.57,
   rhoTable: [[25, cfpRho(25)], [500, cfpRho(500)], [1000, cfpRho(1000)], [1500, cfpRho(1500)], [1800, cfpRho(1800)]],
   cpTable: RPH.CFP_CP_TABLE,
 });
-const enclosure = (extra = {}) => ({
+export const cfpEnclosure = (extra = {}) => ({
   wallMaterial: "quartz", wallK: 1.4, wallThickness: 0.001, wallEmissivity: 0.93,
   gap: (17e-3 - CFP_D) / 2, gapK: 0.15, endMode: "ambient", endK: kelvin(20), endH: 200,
   contactRho: 0, maxIter: 160, tolerance: 1e-4, nr: 16, nz: 32, ...extra,
 });
-const inputs = (vset, material, enc) => ({
+export const cfpInputs = (vset, material, enc) => ({
   material, solidFraction: 1, volumeCm3: 0.7254, aspectRatio: CFP_L / CFP_D,
   imax: 20, vmax: 75, pmax: 1500, supplyMode: "cv", vset, iset: 20,
   ambientK: kelvin(20), targetK: kelvin(1200), emissivity: 0.57,
@@ -51,7 +51,7 @@ function main() {
   console.log("## Joule 2D transient vs the RPH/CJH lumped element (CFP strip)\n");
 
   console.log("### 1. What the equivalent cylinder preserves\n");
-  const g = geometry(inputs(20, cfpMaterial(5), enclosure()));
+  const g = geometry(cfpInputs(20, cfpMaterial(5), cfpEnclosure()));
   console.log(markdownTable(["quantity", "38 × 8 × 0.21 mm strip", "equivalent cylinder", "ratio"], [
     ["volume (cm³)", fix(0.038 * 0.008 * 0.21e-3 * 1e6, 5), fix(g.volume * 1e6, 5), fix(g.volume / (0.038 * 0.008 * 0.21e-3), 2)],
     ["radiating area (cm²)", fix(2 * 0.038 * 0.008 * 1e4, 4), fix(g.surface * 1e4, 4), fix(g.surface / (2 * 0.038 * 0.008), 3)],
@@ -61,8 +61,8 @@ function main() {
   console.log("### 2. Steady temperature, two independent solvers\n");
   const steadyRows = [];
   for (const V of [16, 20, 25, 31]) {
-    const material = cfpMaterial(5), enc = enclosure();
-    const x = inputs(V, material, enc), z = calculate(x);
+    const material = cfpMaterial(5), enc = cfpEnclosure();
+    const x = cfpInputs(V, material, enc), z = calculate(x);
     const s = solveThermal2D(x, z, enc, material);
     const lumped = RPH.steadyElementTemperature({ voltage: V });
     steadyRows.push([V, fix(celsius(z.tss), 1), fix(celsius(s.avgK), 1), fix(lumped, 1),
@@ -81,8 +81,8 @@ function main() {
     ["k = 5, adiabatic ends", 5, { endMode: "adiabatic" }],
     ["k = 400, adiabatic ends", 400, { endMode: "adiabatic" }],
   ]) {
-    const material = cfpMaterial(k), enc = enclosure(extra);
-    const x = inputs(20, material, enc), z = calculate(x);
+    const material = cfpMaterial(k), enc = cfpEnclosure(extra);
+    const x = cfpInputs(20, material, enc), z = calculate(x);
     const s = solveThermal2D(x, z, enc, material);
     spreadRows.push([label, fix(celsius(s.avgK), 1), fix(s.tMax - s.tMin, 2)]);
   }
@@ -97,8 +97,8 @@ function main() {
   const rows = [["RPH/CJH lumped", fix(pulsed.tPeak, 1), fix(pulsed.tMin, 1), fix(pulsed.tAvg, 1),
                  fix(pulsed.tPeak - pulsed.tMin, 1), "—", "—"]];
   for (const k of [5, 400]) {
-    const material = cfpMaterial(k), enc = enclosure();
-    const x = inputs(31, material, enc), z = calculate(x);
+    const material = cfpMaterial(k), enc = cfpEnclosure();
+    const x = cfpInputs(31, material, enc), z = calculate(x);
     const tr = solveTransient2D(x, z, enc, material, {
       dt, steps: 200 * cycles, record: 1, startK: kelvin(pulsed.tMin),
       sourceScale: (t) => ((t - 1e-9) % period) / period < 0.05 ? 1 : 0,

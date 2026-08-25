@@ -812,72 +812,91 @@ export function defaultCase(DATA) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Fig. S5. Transient operation: start-up, and a pulse train.          */
+/* Fig. S5. Pulsed against continuous on the same element and the same  */
+/* average power, and the element that cannot follow a pulse at all.    */
 /* ------------------------------------------------------------------ */
 export function transient(DATA) {
-  const ns = "s5", W = 505, H = 250;
+  const ns = "s5", W = 505, H = 254;
   const K = DATA.transient;
   let b = defs(ns);
-  const pw = 208, ph = 168, ptop = 26, pbot = 26 + 168;
+  const pw = 128, ph = 160, ptop = 26, pbot = 26 + 160;
+  const COL = [52, 215, 378];
   const lin = (v, lo, hi, a, c) => a + (v - lo) / (hi - lo) * (c - a);
 
-  function frame(x0, xs, ys, xLabel, yLabel, letter) {
-    const xLo = 0, xHi = Math.max.apply(null, xs);
-    const yLo = 0, yHi = Math.ceil(Math.max.apply(null, ys) / 100) * 100;
-    const X = (v) => lin(v, xLo, xHi, x0 + 10, x0 + pw - 10);
-    const Y = (v) => lin(v, yLo, yHi, pbot - 10, ptop + 10);
+  function frame(col, series, xLabel, letter, yHiHint) {
+    const x0 = COL[col];
+    const xHi = Math.max.apply(null, series.map((q) => q[0]));
+    const yHi = yHiHint || Math.ceil(Math.max.apply(null, series.map((q) => q[1])) / 100) * 100;
+    const X = (v) => lin(v, 0, xHi, x0 + 10, x0 + pw - 10);
+    const Y = (v) => lin(v, 0, yHi, pbot - 10, ptop + 10);
     let o = rect(x0, ptop, pw, ph, { stroke: C.grey, fill: "#FFFFFF", sw: 0.8, rx: 0 });
-    o += T(x0 - 34, ptop - 6, letter, { size: 11, weight: "bold" });
+    o += T(x0 - 36, ptop - 8, letter, { size: 11, weight: "bold" });
     for (let t = 0; t <= yHi; t += yHi / 4) {
       o += line(x0, Y(t), x0 + pw, Y(t), { stroke: "#EAEAEA", sw: 0.4 });
       o += T(x0 - 4, Y(t) + 3, String(Math.round(t)), { size: 8, anchor: "end", fill: C.grey });
     }
-    for (let k = 0; k <= 4; k++) {
-      const v = xLo + k * (xHi - xLo) / 4;
-      o += T(X(v), pbot + 12, v.toFixed(v < 10 ? 1 : 0), { size: 8, anchor: "middle" });
+    for (let k = 0; k <= 3; k++) {
+      const v = k * xHi / 3;
+      o += T(X(v), pbot + 12, v.toFixed(xHi < 20 ? 1 : 0), { size: 8, anchor: "middle" });
     }
     o += T(x0 + pw / 2, pbot + 24, xLabel, { size: 8.5, anchor: "middle" });
-    o += '<text x="' + (x0 - 30) + '" y="' + ((ptop + pbot) / 2) + '" font-size="8.5" text-anchor="middle" transform="rotate(-90 ' + (x0 - 30) + ' ' + ((ptop + pbot) / 2) + ')">' + yLabel + '</text>';
-    return { o, X, Y, yHi };
+    o += '<text x="' + (x0 - 30) + '" y="' + ((ptop + pbot) / 2) + '" font-size="8.5" text-anchor="middle" transform="rotate(-90 ' + (x0 - 30) + ' ' + ((ptop + pbot) / 2) + ')">element average (°C)</text>';
+    return { o, X, Y, x0, yHi };
   }
-
-  /* a. switch-on to steady state */
-  (function () {
-    const xs = K.startup.map((q) => q[0]), ys = K.startup.map((q) => q[1]);
-    const F = frame(50, xs, ys, "time (s)", "element average (°C)", "a");
-    let o = F.o;
-    o += line(50, F.Y(K.steadyC), 50 + pw, F.Y(K.steadyC), { stroke: C.grey, sw: 0.9, dash: "3 2" });
-    o += T(50 + pw - 4, F.Y(K.steadyC) - 5, "steady " + K.steadyC.toFixed(1) + " °C", { size: 8, anchor: "end", fill: C.grey });
+  const trace = (F, series, colour, wdt) => {
     let d = "";
-    xs.forEach(function (v, k) { d += (k ? " L" : "M") + F.X(v) + "," + F.Y(ys[k]); });
-    o += '<path d="' + d + '" fill="none" stroke="' + C.thermal + '" stroke-width="1.5"/>';
-    const tx = F.X(K.tau);
-    o += line(tx, ptop + 10, tx, pbot - 10, { stroke: C.scalar, sw: 0.8, dash: "2 2" });
-    o += T(tx + 4, ptop + 22, "τ = " + K.tau.toFixed(0) + " s", { size: 8, fill: C.scalar });
+    series.forEach(function (q, k) { d += (k ? " L" : "M") + F.X(q[0]) + "," + F.Y(q[1]); });
+    return '<path d="' + d + '" fill="none" stroke="' + colour + '" stroke-width="' + (wdt || 1.4) + '"/>';
+  };
+
+  const yTop = Math.ceil(Math.max(
+    Math.max.apply(null, K.pulse.map((q) => q[1])),
+    Math.max.apply(null, K.cont.map((q) => q[1]))) / 100) * 100;
+
+  /* a. continuous drive, matched on average power */
+  (function () {
+    const F = frame(0, K.cont, "time (s)", "a", yTop);
+    let o = F.o;
+    o += line(F.x0, F.Y(K.contSteadyC), F.x0 + pw, F.Y(K.contSteadyC), { stroke: C.grey, sw: 0.9, dash: "3 2" });
+    o += T(F.x0 + 6, F.Y(K.contSteadyC) - 5, "steady " + K.contSteadyC.toFixed(0) + " °C", { size: 8, fill: C.grey });
+    o += trace(F, K.cont, C.thermal, 1.5);
+    o += T(F.x0 + 6, pbot - 30, "continuous, " + K.contVolts.toFixed(2) + " V, " + K.contPower.toFixed(1) + " W", { size: 8.5, weight: "bold", fill: C.thermal });
+    o += T(F.x0 + 6, pbot - 19, "the enclosure sets the settling time", { size: 8, fill: C.grey });
     b += o;
   })();
 
-  /* b. a duty-cycled drive */
+  /* b. the same element and the same average power, delivered in pulses */
   (function () {
-    const xs = K.pulse.map((q) => q[0]), ys = K.pulse.map((q) => q[1]);
-    const F = frame(297, xs, ys, "time (s)", "element average (°C)", "b");
+    const F = frame(1, K.pulse, "time (s)", "b", yTop);
     let o = F.o;
-    /* the drive itself, as a strip along the foot of the panel */
-    const tEnd = Math.max.apply(null, xs), strip = pbot - 14;
-    for (let t = 0; t < tEnd; t += K.period) {
-      o += '<rect x="' + F.X(t) + '" y="' + strip + '" width="' + (F.X(K.period * K.duty) - F.X(0)) +
-        '" height="8" fill="' + C.scalar + '" fill-opacity="0.75"/>';
+    const strip = pbot - 13;
+    for (let t = 0; t < K.pulseEnd; t += K.period) {
+      o += '<rect x="' + F.X(t) + '" y="' + strip + '" width="' + Math.max(0.8, F.X(K.period * K.duty) - F.X(0)) +
+        '" height="7" fill="' + C.scalar + '" fill-opacity="0.8"/>';
     }
-    o += line(297, strip + 8, 297 + pw, strip + 8, { stroke: C.scalar, sw: 0.6 });
-    o += T(303, strip - 3, "drive", { size: 7.6, fill: C.scalar });
-    o += line(297, F.Y(K.cycleMeanC), 297 + pw, F.Y(K.cycleMeanC), { stroke: C.grey, sw: 0.9, dash: "3 2" });
-    o += T(297 + pw - 4, F.Y(K.cycleMeanC) - 5, "cycle mean " + K.cycleMeanC.toFixed(0) + " °C", { size: 8, anchor: "end", fill: C.grey });
-    let d = "";
-    xs.forEach(function (v, k) { d += (k ? " L" : "M") + F.X(v) + "," + F.Y(ys[k]); });
-    o += '<path d="' + d + '" fill="none" stroke="' + C.thermal + '" stroke-width="1.4"/>';
-    o += T(303, pbot - 60, (K.period * K.duty).toFixed(0) + " s on, " + (K.period * (1 - K.duty)).toFixed(0) + " s off", { size: 8.5, weight: "bold", fill: C.scalar });
-    o += T(303, pbot - 49, "last-cycle swing " + K.swingK.toFixed(1) + " K", { size: 8.5, weight: "bold", fill: C.thermal });
-    o += T(303, pbot - 38, "cycle-periodic only after several \u03c4", { size: 7.6, fill: C.grey });
+    o += line(F.x0, strip + 7, F.x0 + pw, strip + 7, { stroke: C.scalar, sw: 0.6 });
+    o += line(F.x0, F.Y(K.contSteadyC), F.x0 + pw, F.Y(K.contSteadyC), { stroke: C.grey, sw: 0.9, dash: "3 2" });
+    o += T(F.x0 + 6, F.Y(K.contSteadyC) + 11, "continuous " + K.contSteadyC.toFixed(0) + " °C", { size: 8, fill: C.grey });
+    o += trace(F, K.pulse, C.thermal, 1.2);
+    o += T(F.x0 + pw - 6, pbot - 58, "peak " + K.peakC.toFixed(0) + " °C", { size: 8.5, weight: "bold", anchor: "end", fill: C.thermal });
+    o += T(F.x0 + pw - 6, pbot - 47, "mean " + K.cycleMeanC.toFixed(0) + " °C, swing " + K.swingK.toFixed(0) + " K", { size: 8.5, anchor: "end", fill: C.grey });
+    o += T(F.x0 + 6, pbot - 30, (K.duty * 100).toFixed(0) + " % duty, " + K.period + " s period, " + K.pulseVolts + " V", { size: 8.5, weight: "bold", fill: C.scalar });
+    o += T(F.x0 + 6, pbot - 19, "τ = " + K.cfpTau.toFixed(2) + " s, same " + K.meanPower.toFixed(1) + " W average", { size: 8, fill: C.grey });
+    b += o;
+  })();
+
+  /* c. the other regime: a rod whose time constant is far above the period */
+  (function () {
+    const F = frame(2, K.sic, "time (s)", "c");
+    let o = F.o;
+    o += line(F.x0, F.Y(K.sicSteadyC), F.x0 + pw, F.Y(K.sicSteadyC), { stroke: C.grey, sw: 0.9, dash: "3 2" });
+    o += T(F.x0 + 6, F.Y(K.sicSteadyC) - 5, "steady " + K.sicSteadyC.toFixed(0) + " °C", { size: 8, fill: C.grey });
+    const tx = F.X(K.sicTau);
+    o += line(tx, ptop + 10, tx, pbot - 10, { stroke: C.scalar, sw: 0.8, dash: "2 2" });
+    o += T(tx + 4, ptop + 22, "τ = " + K.sicTau.toFixed(0) + " s", { size: 8, fill: C.scalar });
+    o += trace(F, K.sic, C.thermal, 1.5);
+    o += T(F.x0 + 6, pbot - 30, K.sicLabel + ", switched on", { size: 8.5, weight: "bold", fill: C.thermal });
+    o += T(F.x0 + 6, pbot - 19, "τ is " + (K.sicTau / K.period).toFixed(0) + "× the pulse period", { size: 8, fill: C.grey });
     b += o;
   })();
   return svgDoc(W, H, b);
