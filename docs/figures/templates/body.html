@@ -60,6 +60,35 @@ Captions sit below each plate as text rather than inside the artwork, so they ca
 <div class="cap"><b>Figure 5.</b> The two electrical paths in the model and the point at which they meet. The scalar branch sets the current from the total series resistance <i>R</i><sub>total</sub> = <i>R</i><sub>bulk</sub> + 2<i>R</i><sub>c</sub>, and the deposited power from the bulk term alone, <i>P</i><sub>bulk</sub> = <i>I</i>&#178;<i>R</i><sub>bulk</sub>. The contact power is reported and is not deposited. The field branch solves a unit-potential Laplace problem and returns a spatial distribution only. The distribution is normalized so that its volume integral equals the scalar total, which fixes where the power is deposited without changing how much is drawn.</div>
 </figure>
 
+<h2>Symbols used in the figures</h2>
+<p class="lede">Nothing in the plates is a symbol the reader is expected to already know. Units are those the solver works in; resistivity is entered in &#937;&#183;cm and converted on the way in.</p>
+<div class="tablewrap">
+<table>
+<thead><tr><th>Symbol</th><th>Meaning</th><th>Units</th></tr></thead>
+<tbody>
+<tr><td class="q"><i>r</i>, <i>z</i></td><td>radial and axial coordinate; <i>r</i> = 0 is the symmetry axis</td><td>m</td></tr>
+<tr><td class="q"><i>T</i>(<i>r</i>,<i>z</i>)</td><td>temperature field, the quantity the thermal solve returns</td><td>K</td></tr>
+<tr><td class="q"><i>T</i><sub>avg</sub></td><td>volume-average temperature over the element cells only</td><td>K</td></tr>
+<tr><td class="q">&#961;(<i>T</i>)</td><td>electrical resistivity of the element material</td><td>&#937;&#183;m</td></tr>
+<tr><td class="q">&#963;(<i>T</i>)</td><td>electrical conductivity, 1/&#961;(<i>T</i>)</td><td>S/m</td></tr>
+<tr><td class="q"><i>V</i></td><td>electric potential in the unit-potential solve</td><td>V</td></tr>
+<tr><td class="q"><i>L</i>, <i>A</i></td><td>element length and conducting cross-section</td><td>m, m&#178;</td></tr>
+<tr><td class="q"><i>R</i><sub>bulk</sub></td><td>resistance of the element itself, &#961;<i>L</i>/<i>A</i></td><td>&#937;</td></tr>
+<tr><td class="q"><i>R</i><sub>c</sub></td><td>electrical contact resistance at one end; both ends give 2<i>R</i><sub>c</sub></td><td>&#937;</td></tr>
+<tr><td class="q"><i>R</i><sub>total</sub></td><td><i>R</i><sub>bulk</sub> + 2<i>R</i><sub>c</sub>, the resistance the supply sees</td><td>&#937;</td></tr>
+<tr><td class="q"><i>I</i></td><td>current, set by the drive setting against <i>R</i><sub>total</sub></td><td>A</td></tr>
+<tr><td class="q"><i>P</i><sub>bulk</sub></td><td><i>I</i>&#178;<i>R</i><sub>bulk</sub>, the power dissipated in the element and deposited in the thermal domain</td><td>W</td></tr>
+<tr><td class="q"><i>P</i><sub>contact</sub></td><td><i>I</i>&#178;&#183;2<i>R</i><sub>c</sub>, dissipated at the two contacts; reported, and not deposited</td><td>W</td></tr>
+<tr><td class="q"><i>q</i>&#8244;(<i>r</i>,<i>z</i>)</td><td>deposited electrical power per unit volume, the source term of the thermal solve</td><td>W/m&#179;</td></tr>
+<tr><td class="q"><i>q</i>&#8244;<sub>unit</sub>(<i>r</i>,<i>z</i>)</td><td>the same field as the unit-potential solve returns it, before normalization; its shape is meaningful and its magnitude is not</td><td>arbitrary</td></tr>
+<tr><td class="q"><i>k</i>(<i>T</i>)</td><td>thermal conductivity</td><td>W/(m&#183;K)</td></tr>
+<tr><td class="q"><i>c</i><sub>p</sub>(<i>T</i>)</td><td>specific heat capacity, read only by the transient march</td><td>J/(kg&#183;K)</td></tr>
+<tr><td class="q"><i>h</i><sub>rad</sub></td><td>radiation coefficient, &#949;&#963;<sub>SB</sub>(<i>T</i>+<i>T</i><sub>s</sub>)(<i>T</i>&#178;+<i>T</i><sub>s</sub>&#178;), linearized about the current temperature. &#949; is emissivity, &#963;<sub>SB</sub> the Stefan&#8211;Boltzmann constant, and <i>T</i><sub>s</sub> the temperature of the surface being exchanged with</td><td>W/(m&#178;&#183;K)</td></tr>
+<tr><td class="q"><i>D</i></td><td>diameter of the equivalent cylinder, chosen so its surface matches the strip</td><td>m</td></tr>
+</tbody>
+</table>
+</div>
+
 <h2>Table S7. Questions the solver answers, and the boundary of each answer</h2>
 <p class="lede">Intended as Supporting Information Table S7. Every limitation below is a property of the model as implemented at solver commit {{COMMIT}}, not a statement about what a Joule-heated reactor does.</p>
 <div class="tablewrap"><table>

@@ -11,7 +11,7 @@
 /* unit is a printed point and a font-size of 9 is 9 pt on the page.   */
 /* ------------------------------------------------------------------ */
 const C = { scalar:"#0072B2", field:"#E69F00", thermal:"#D55E00", gas:"#009E73",
-            grey:"#6E6E6E", ink:"#111111", rule:"#BBBBBB" };
+            grey:"#6E6E6E", ink:"#111111", rule:"#BBBBBB", faint:"#8A8A8A" };
 const TINT = { field:"#FCF0DC", gas:"#E4F5EF", wall:"#E8E8E8", air:"#F7F7F7",
                scalar:"#E6F1F8", thermal:"#FBE9DF", panel:"#FBFBFB" };
 const ZWS = "​";
@@ -294,6 +294,8 @@ export function fig3(DATA) {
   /* axes and boundary labels */
   b += '<text x="' + (x0 - 12) + '" y="' + ((ytop + ybot) / 2) + '" font-size="9" fill="' + C.ink + '" text-anchor="middle" transform="rotate(-90 ' + (x0 - 12) + ' ' + ((ytop + ybot) / 2) + ')">symmetry axis, r = 0</text>';
   b += T(x0, ytop - 8, "r", { size: 9, weight: "bold" });
+  b += arrow(ns, "M" + (x0 - 32) + "," + (ytop + 44) + " L" + (x0 - 32) + "," + (ytop + 8), { color: "grey", sw: 0.7 });
+  b += T(x0 - 32, ytop - 2, "z", { size: 9, weight: "bold", anchor: "middle" });
   b += arrow(ns, "M" + (x0 + 6) + "," + (ytop - 11) + " L" + (x0 + 34) + "," + (ytop - 11), { color: "grey", sw: 0.7 });
   b += T(X(rOut), ytop - 8, "domain radius " + M.domainRadius.toFixed(3) + " mm", { size: 8.5, anchor: "end", fill: C.grey });
 
@@ -324,6 +326,8 @@ export function fig3(DATA) {
     b += T(495, ay, v, { size: 9, anchor: "end", fill: C.grey });
     ay += 13;
   };
+  b += T(ax, ay, M.nr + " × " + M.nz + " = " + (M.nr * M.nz) + " finite-volume cells", { size: 9.5, weight: "bold" });
+  ay += 18;
   head("Radial division, " + M.nr + " cells");
   row("element", M.nElement + " cells,  0 to " + M.radius.toFixed(3) + " mm", TINT.field);
   row("gas gap", M.nGap + " cells,  to " + re[M.nElement + M.nGap].toFixed(3) + " mm", TINT.gas);
@@ -340,6 +344,11 @@ export function fig3(DATA) {
   row("r = 0", "symmetry, no flux");
   row("r = R_{domain}", "far field,  R_{domain} / R_{wall} = " + M.ratio.toFixed(3));
   row("z at both ends", "gas pads close the domain");
+  ay += 4;
+  b += T(ax + 13, ay, "A gas pad is the gas-filled band of rows above and", { size: 8.5, fill: C.grey });
+  b += T(ax + 13, ay + 10, "below the element. Graded means the air cells widen", { size: 8.5, fill: C.grey });
+  b += T(ax + 13, ay + 20, "outward, the last being ×" + M.stretch.toFixed(0) + " the first.", { size: 8.5, fill: C.grey });
+  ay += 32;
   ay += 10;
   b += '<rect x="' + ax + '" y="' + (ay - 7) + '" width="8" height="8" fill="none" stroke="' + C.gas + '" stroke-width="1.2"/>';
   b += T(ax + 13, ay, "process gas, in the flow direction", { size: 9, fill: C.gas });
@@ -361,6 +370,7 @@ export function fig4(DATA) {
 
   b += T(SX, 22, "Cells coupled", { size: 8.5, weight: "bold", fill: C.grey });
   b += T(MX, 22, "Matrix position", { size: 8.5, weight: "bold", fill: C.grey });
+  b += T(MX, 32, "schematic; the 30 × 60 mesh has 1800 unknowns", { size: 8, fill: C.faint });
   b += T(TX, 22, "Term", { size: 8.5, weight: "bold", fill: C.grey });
   b += line(SX, 26, 495, 26, { stroke: C.ink, sw: 0.9 });
 
