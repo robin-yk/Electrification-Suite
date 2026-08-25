@@ -618,7 +618,7 @@ function meshDomain(DATA) {
 
   /* flow through the gas gap */
   const xg = X((rEl + rGap) / 2);
-  b += arrow(ns, "M" + xg + "," + (ybot - 6) + " L" + xg + "," + (ytop + 8), { color: "gas", sw: 1.4 });
+  b += arrow(ns, "M" + xg + "," + (ytop + 6) + " L" + xg + "," + (ybot - 8), { color: "gas", sw: 1.4 });
 
   /* radial allocation brackets */
   const brk = function (r1, r2, label, color) {
@@ -661,6 +661,8 @@ function meshDomain(DATA) {
   row("r = 0", "symmetry, no flux");
   row("r = R_{domain}", "far field,  R_{domain} / R_{wall} = " + M.ratio.toFixed(3));
   row("z at both ends", "gas pads close the domain");
+  ay += 2;
+  row("gas inlet, outlet", "top row in, row 0 out");
   ay += 4;
   b += T(ax + 13, ay, "A gas pad is the gas-filled band of rows above and", { size: 8.5, fill: C.grey });
   b += T(ax + 13, ay + 10, "below the element. Graded means the air cells widen", { size: 8.5, fill: C.grey });
@@ -668,7 +670,7 @@ function meshDomain(DATA) {
   ay += 32;
   ay += 10;
   b += '<rect x="' + ax + '" y="' + (ay - 7) + '" width="8" height="8" fill="none" stroke="' + C.gas + '" stroke-width="1.2"/>';
-  b += T(ax + 13, ay, "process gas, in the flow direction", { size: 9, fill: C.gas });
+  b += T(ax + 13, ay, "process gas, top to bottom", { size: 9, fill: C.gas });
   ay += 13;
   b += T(ax, ay, "The solved region is the half-plane shown. No mirrored", { size: 8.5, fill: C.grey });
   b += T(ax, ay + 11, "counterpart is stored or solved.", { size: 8.5, fill: C.grey });
@@ -1098,7 +1100,7 @@ function defaultCase(DATA) {
   b += line(x0, ytop, x0, ybot, { stroke: C.ink, sw: 1.2, dash: "4 3" });
   b += rect(x0, ytop, rOut * s, ybot - ytop, { stroke: C.ink, fill: "none", sw: 1, rx: 0 });
   b += '<text x="' + (x0 - 10) + '" y="' + ((ytop + ybot) / 2) + '" font-size="8" fill="' + C.ink + '" text-anchor="middle" transform="rotate(-90 ' + (x0 - 10) + ' ' + ((ytop + ybot) / 2) + ')">symmetry axis</text>';
-  b += arrow(ns, "M" + X((rEl + rGap) / 2) + "," + (ybot - 5) + " L" + X((rEl + rGap) / 2) + "," + (ytop + 6), { color: "gas", sw: 1.1 });
+  b += arrow(ns, "M" + X((rEl + rGap) / 2) + "," + (ytop + 5) + " L" + X((rEl + rGap) / 2) + "," + (ybot - 6), { color: "gas", sw: 1.1 });
   b += T(X(0), ytop - 5, "element", { size: 8, fill: C.field, weight: "bold" });
   b += T(X(rWall) + 2, ytop - 5, "wall", { size: 8, fill: C.grey, weight: "bold" });
 
