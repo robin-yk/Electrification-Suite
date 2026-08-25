@@ -903,6 +903,7 @@
       <button class="tab" data-tab="howto" role="tab" aria-selected="false">How to Use</button>
       <button class="tab active" data-tab="calculator" role="tab" aria-selected="true">Single Design</button>
       <button class="tab" data-tab="thermal2d" role="tab" aria-selected="false">2D Thermal Field</button>
+      <button class="tab" data-tab="dynamic" role="tab" aria-selected="false">Dynamic</button>
       <button class="tab" data-tab="compare" role="tab" aria-selected="false">Material Compare</button>
       <button class="tab" data-tab="sweep" role="tab" aria-selected="false">Resistivity &amp; Geometry Sweep</button>
       <button class="tab" data-tab="calculations" role="tab" aria-selected="false">Calculations</button>
@@ -1309,6 +1310,63 @@
       </div>
     </section>
 
+    <section id="dynamic" class="panel" role="tabpanel">
+      <div class="t2d-layout">
+        <div class="t2d-results">
+          <article class="card t2d-canvas-shell">
+            <div class="card-header">
+              <h3>Element temperature against time</h3>
+              <span id="dynMeshLabel" class="context-note">Run to populate</span>
+            </div>
+            <canvas id="dynChart" width="960" height="420" aria-label="Element volume-average, maximum and minimum temperature against time, with the drive periods shaded"></canvas>
+            <div class="t2d-material-key">
+              <span style="color:#8f1d1d"><i></i>Volume average</span>
+              <span style="color:#d59a2f"><i></i>Element maximum</span>
+              <span style="color:#2c6e9b"><i></i>Element minimum</span>
+              <span style="color:#64717d"><i></i>Drive on</span>
+            </div>
+          </article>
+
+          <div class="t2d-kpis" aria-label="Transient results">
+            <article class="t2d-kpi"><div class="kpi-label">Final volume-average</div><div class="kpi-value" id="dynAvg">—</div><div class="kpi-sub">at t<sub>end</sub></div></article>
+            <article class="t2d-kpi"><div class="kpi-label">Peak element</div><div class="kpi-value" id="dynPeak">—</div><div class="kpi-sub">over the whole march</div></article>
+            <article class="t2d-kpi"><div class="kpi-label">Cycle swing</div><div class="kpi-value" id="dynSwing">—</div><div class="kpi-sub">average, last cycle</div></article>
+            <article class="t2d-kpi"><div class="kpi-label">Spatial spread</div><div class="kpi-value" id="dynSpread">—</div><div class="kpi-sub">T<sub>max</sub> − T<sub>min</sub> at t<sub>end</sub></div></article>
+            <article class="t2d-kpi"><div class="kpi-label">Worst closure</div><div class="kpi-value" id="dynClosure">—</div><div class="kpi-sub">|P − Q − dU/dt| / max term</div></article>
+            <article class="t2d-kpi"><div class="kpi-label">Steps · linear</div><div class="kpi-value" id="dynSteps">—</div><div class="kpi-sub">implicit steps, Krylov total</div></article>
+          </div>
+
+          <div class="t2d-assumption" style="margin-top:14px"><strong>What this adds to the steady field:</strong> a backward-Euler march over the same operator, mesh, and current-density path as the 2D tab. It is unconditionally stable, so the time step follows the time scale you want to see rather than a stability limit, and it is first-order accurate in time. Storage is <span class="nowrap">ρc<sub>p</sub>V/Δt</span> per cell, with ρc<sub>p</sub> taken at the midpoint of the step so that a temperature-dependent heat capacity still balances energy.</div>
+
+          <div class="t2d-assumption" style="margin-top:10px" id="dynProgress">Set a drive and press Run.</div>
+        </div>
+
+        <aside class="t2d-inputs" aria-label="Transient inputs">
+          <div class="section-head-row" style="margin-bottom:0">
+            <span class="context-note" id="dynSummary">Uses the material, geometry and enclosure from the 2D tab.</span>
+          </div>
+          <div class="t2d-controls">
+            <button class="btn primary" id="runDynamic" type="button">Run transient</button>
+            <button class="btn" id="cancelDynamic" type="button" disabled>Stop</button>
+          </div>
+          <div class="field"><label for="dynStart">Start from</label><div class="control-row"><select id="dynStart">
+            <option value="ambient" selected>Ambient</option>
+            <option value="steady">The 2D steady field</option>
+          </select></div></div>
+          <div class="field"><label for="dynDrive">Drive</label><div class="control-row"><select id="dynDrive">
+            <option value="on" selected>Switch on and hold</option>
+            <option value="off">Switch off (quench)</option>
+            <option value="pulse">Pulse train</option>
+          </select></div></div>
+          <div class="field" id="dynPeriodField"><label for="dynPeriod">Pulse period</label><div class="control-row"><input id="dynPeriod" type="number" min="0.001" step="any" value="1"><span class="unit">s</span></div></div>
+          <div class="field" id="dynDutyField"><label for="dynDuty">Duty</label><div class="control-row"><input id="dynDuty" type="number" min="0.1" max="100" step="any" value="5"><span class="unit">%</span></div></div>
+          <div class="field"><label for="dynDt">Time step</label><div class="control-row"><input id="dynDt" type="number" min="1e-6" step="any" value="0.25"><span class="unit">s</span></div></div>
+          <div class="field"><label for="dynDuration">Duration</label><div class="control-row"><input id="dynDuration" type="number" min="0.001" step="any" value="60"><span class="unit">s</span></div></div>
+          <p class="context-note" id="dynStepNote">—</p>
+        </aside>
+      </div>
+    </section>
+
     <section id="compare" class="panel" role="tabpanel">
       <p class="section-kicker">Same hardware, different materials</p>
       <h2 class="section-title">Material comparison</h2>
@@ -1606,7 +1664,7 @@
       gapRadiationCoefficient, enclosureHeatLoss, heatLoss, operatingAt, solveSteadyTemperature,
       calculate, allocateSegmentCells, build2DMesh, material2DName, cellK2D, operating2DAt,
       gasFlowCells2D, gasBulkRowTemperature2D, assemble2DSystem, multiply2DSystem, pcg2D,
-      bicgstab2D, boundaryLoss2D, solveThermal2D
+      bicgstab2D, boundaryLoss2D, solveThermal2D, createTransientRun
     } from "./solver.js";
     import { evaluateCrossChecks, thermalComparison, sig4 } from "./crosscheck.js";
   (() => {
@@ -2751,6 +2809,163 @@
       return { passed, total:cases.length };
     }
 
+
+    /* ---------------------------------------------------------------- Dynamic
+       A transient run is thousands of implicit solves, so it is driven from
+       animation frames in small batches rather than in one synchronous call:
+       the tab stays responsive, the chart fills in as it goes, and Stop
+       actually stops. */
+    let dynRun=null, dynCancel=false, dynBusy=false;
+
+    function dynPlanFromInputs() {
+      const drive=$("dynDrive").value;
+      const period=Math.max(1e-6,num("dynPeriod"));
+      const duty=clamp(num("dynDuty")/100,0.001,1);
+      const dt=Math.max(1e-9,num("dynDt"));
+      const duration=Math.max(dt,num("dynDuration"));
+      const steps=Math.max(1,Math.round(duration/dt));
+      const sourceScale=drive==="off"?()=>0
+        :drive==="pulse"?(t)=>(((t-1e-9)%period)/period<duty?1:0)
+        :()=>1;
+      return {drive,period,duty,dt,duration,steps,sourceScale};
+    }
+
+    function syncDynControls() {
+      const pulse=$("dynDrive").value==="pulse";
+      $("dynPeriodField").style.display=pulse?"":"none";
+      $("dynDutyField").style.display=pulse?"":"none";
+      const plan=dynPlanFromInputs();
+      const perCycle=pulse?Math.round(plan.period/plan.dt):null;
+      $("dynStepNote").textContent=`${plan.steps.toLocaleString()} implicit steps`
+        +(pulse?` · ${perCycle} per cycle · ${format(plan.duration/plan.period,2)} cycles`:"")
+        +(pulse&&perCycle<20?" — too few per cycle to resolve the pulse; reduce the time step.":"");
+    }
+
+    function drawDynChart(history, plan) {
+      const canvas=$("dynChart"),ctx=canvas.getContext("2d");
+      const W=canvas.width,H=canvas.height,L=64,R=16,Tp=16,B=38;
+      ctx.clearRect(0,0,W,H);
+      if(!history.length) return;
+      const tEnd=Math.max(plan.duration,1e-9);
+      let lo=Infinity,hi=-Infinity;
+      for(const h of history){lo=Math.min(lo,h.tMin);hi=Math.max(hi,h.tMax);}
+      if(!(hi>lo)){hi=lo+1;}
+      const pad=(hi-lo)*0.08;lo-=pad;hi+=pad;
+      const X=(t)=>L+(W-L-R)*(t/tEnd);
+      const Y=(k)=>Tp+(H-Tp-B)*(1-(k-lo)/(hi-lo));
+
+      // shade the intervals where the drive is on
+      ctx.fillStyle="rgba(100,113,125,0.13)";
+      if(plan.drive==="pulse"){
+        for(let c=0;c*plan.period<tEnd;c++){
+          const a=X(c*plan.period),b=X(Math.min((c+plan.duty)*plan.period,tEnd));
+          if(b>a) ctx.fillRect(a,Tp,b-a,H-Tp-B);
+        }
+      } else if(plan.drive==="on"){ ctx.fillRect(L,Tp,W-L-R,H-Tp-B); }
+
+      ctx.strokeStyle="#d8dee4";ctx.lineWidth=1;ctx.fillStyle="#5a6b79";
+      ctx.font="12px Arial, Helvetica, sans-serif";ctx.textAlign="right";
+      for(let g=0;g<=4;g++){
+        const k=lo+(hi-lo)*g/4,y=Math.round(Y(k))+0.5;
+        ctx.beginPath();ctx.moveTo(L,y);ctx.lineTo(W-R,y);ctx.stroke();
+        ctx.fillText(format(celsius(k),0),L-8,y+4);
+      }
+      ctx.textAlign="center";
+      for(let g=0;g<=5;g++){
+        const t=tEnd*g/5;
+        ctx.fillText(format(t,t<1?2:t<10?1:0),X(t),H-14);
+      }
+      ctx.fillText("time (s)",(L+W-R)/2,H-2);
+      ctx.save();ctx.translate(14,(Tp+H-B)/2);ctx.rotate(-Math.PI/2);
+      ctx.fillText("element temperature (°C)",0,0);ctx.restore();
+
+      const line=(key,color,width)=>{
+        ctx.strokeStyle=color;ctx.lineWidth=width;ctx.beginPath();
+        history.forEach((h,i)=>{const x=X(h.t),y=Y(h[key]);i?ctx.lineTo(x,y):ctx.moveTo(x,y);});
+        ctx.stroke();
+      };
+      line("tMax","#d59a2f",1.4);
+      line("tMin","#2c6e9b",1.4);
+      line("avgK","#8f1d1d",2);
+    }
+
+    function dynCycleSwing(history, plan) {
+      if(plan.drive!=="pulse"||history.length<4) return null;
+      const start=plan.duration-plan.period;
+      const last=history.filter((h)=>h.t>=start);
+      if(last.length<3) return null;
+      let lo=Infinity,hi=-Infinity;
+      for(const h of last){lo=Math.min(lo,h.avgK);hi=Math.max(hi,h.avgK);}
+      return hi-lo;
+    }
+
+    function renderDynamic(result, plan) {
+      drawDynChart(result.history,plan);
+      $("dynAvg").textContent=`${format(celsius(result.avgK),1)} °C`;
+      let peak=-Infinity;for(const h of result.history)peak=Math.max(peak,h.tMax);
+      $("dynPeak").textContent=`${format(celsius(peak),1)} °C`;
+      const swing=dynCycleSwing(result.history,plan);
+      $("dynSwing").textContent=swing===null?"—":`${format(swing,1)} K`;
+      $("dynSpread").textContent=`${format(result.deltaT,2)} K`;
+      $("dynClosure").textContent=`${format(result.worstClosure*100,4)}%`;
+      $("dynSteps").textContent=`${result.stepsDone.toLocaleString()} · ${result.linearIterations.toLocaleString()}`;
+      $("dynMeshLabel").textContent=`${result.mesh.nr} × ${result.mesh.nz} mesh · Δt = ${plan.dt} s · ${plan.steps.toLocaleString()} steps`;
+    }
+
+    async function runDynamic() {
+      if(dynBusy) return;
+      const zeroD=currentResult(),cfg=get2DConfig();
+      if(zeroD.errors.length){$("dynProgress").textContent=zeroD.errors.join(" ");return;}
+      const configErrors=validate2DConfig(cfg);
+      if(configErrors.length){$("dynProgress").textContent=configErrors.join(" ");return;}
+      const plan=dynPlanFromInputs();
+      // Starting from the converged steady field is what makes this the third
+      // stage of 0D -> 2D -> Dynamic rather than a separate calculation; it is
+      // also the only sensible start for a quench.
+      let startField=null;
+      if($("dynStart").value==="steady"){
+        if(!current2DResult||signature2D(zeroD.input,zeroD.material)!==current2DResult.signature){
+          $("dynProgress").textContent="Solve the 2D field first — the steady start has to match the current inputs.";
+          return;
+        }
+        startField=current2DResult.T;
+      }
+      const run=createTransientRun(zeroD.input,zeroD,cfg,zeroD.material,{
+        dt:plan.dt,steps:plan.steps,sourceScale:plan.sourceScale,startField,
+        startK:zeroD.input.ambientK,
+        record:Math.max(1,Math.round(plan.steps/600)),
+      });
+      if(run.errors&&run.errors.length){$("dynProgress").textContent=run.errors.join(" ");return;}
+
+      dynRun=run;dynCancel=false;dynBusy=true;
+      $("runDynamic").disabled=true;$("runDynamic").textContent="Running…";
+      $("cancelDynamic").disabled=false;
+      const started=performance.now();
+      try{
+        while(!run.done&&!dynCancel){
+          await new Promise((resolve)=>requestAnimationFrame(()=>setTimeout(resolve,0)));
+          const budget=performance.now()+90;   // keep frames under ~100 ms
+          while(!run.done&&performance.now()<budget) run.advance(4);
+          drawDynChart(run.history,plan);
+          $("dynProgress").textContent=`${run.stepsDone.toLocaleString()} / ${plan.steps.toLocaleString()} steps · t = ${format(run.stepsDone*plan.dt,2)} s`;
+        }
+        const result=run.result();
+        renderDynamic(result,plan);
+        const secs=(performance.now()-started)/1000;
+        $("dynProgress").textContent=(dynCancel?"Stopped at ":"Finished at ")
+          +`t = ${format(result.tEnd,2)} s after ${result.stepsDone.toLocaleString()} steps `
+          +`(${format(secs,1)} s wall clock, ${result.converged?"every step converged":"a step hit the iteration limit"}); `
+          +`worst energy closure ${format(result.worstClosure*100,4)}%.`;
+        $("dynSummary").textContent=`${result.material.name} · ${format(celsius(result.avgK),1)} °C at t = ${format(result.tEnd,2)} s`;
+      }catch(error){
+        $("dynProgress").textContent=`Transient failed: ${error.message}`;
+      }finally{
+        dynBusy=false;dynRun=null;
+        $("runDynamic").disabled=false;$("runDynamic").textContent="Run transient";
+        $("cancelDynamic").disabled=true;
+      }
+    }
+
     function activateTab(name) {
       document.querySelectorAll(".tab").forEach((tab) => {
         const active = tab.dataset.tab === name;
@@ -2764,6 +2979,7 @@
         sync2DImported();
         scheduleAutoSolve2D(0);
       }
+      if (name === "dynamic") syncDynControls();
     }
 
     // The three published-reactor cases live in crosscheck.js so that
@@ -2858,6 +3074,11 @@
       ["t2dWallK","t2dWallThickness","t2dWallEps","t2dGap","t2dGapK","t2dEndMode","t2dEndC","t2dEndH","t2dContactRho","t2dPorosityContrast","t2dMaxIter","t2dTolerance"]
         .forEach((id)=>$(id).addEventListener("input",updateAll));
       $("solve2D").addEventListener("click",()=>solveSelected2D(false));
+      $("runDynamic").addEventListener("click",runDynamic);
+      $("cancelDynamic").addEventListener("click",()=>{dynCancel=true;});
+      ["dynDrive","dynPeriod","dynDuty","dynDt","dynDuration"].forEach((id)=>
+        $(id).addEventListener("input",syncDynControls));
+      $("dynDrive").addEventListener("change",syncDynControls);
       $("export2D").addEventListener("click",exportCurrent2D);
       $("thermalMap").addEventListener("mousemove",inspect2DCell);
       $("t2dFieldSelect").addEventListener("change",(event)=>{

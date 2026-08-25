@@ -1027,23 +1027,29 @@ export function storageRate2D(T, Tprev, cfg, material, mesh, dt) {
 // plan: { dt, steps, startK, sourceScale(t), picardMax, picardTol, record }
 //   sourceScale(t) multiplies the bulk Joule source, so a pulse train is
 //   just a square wave and a shutdown transient is a step to zero.
-export function solveTransient2D(x, zeroD, cfg, material, plan = {}) {
+// A transient run split into advanceable chunks. The browser cannot afford to
+// call solveTransient2D directly -- a few thousand implicit steps is tens of
+// seconds of solid compute, and a synchronous loop that long freezes the tab
+// and cannot be cancelled. createTransientRun does the same march but hands
+// back control after each batch, so a page can drive it from an animation
+// frame, draw as it goes, and stop when the user says so. solveTransient2D is
+// then just this loop run to completion.
+export function createTransientRun(x, zeroD, cfg, material, plan = {}) {
   const configErrors=validate2DConfig(cfg);if(configErrors.length)return{errors:configErrors};
   const dt=plan.dt,steps=plan.steps;
   if(!finite(dt)||dt<=0) return {errors:["Time step must be greater than zero."]};
   if(!Number.isInteger(steps)||steps<1) return {errors:["Step count must be a positive integer."]};
   const g=geometry(x),mesh=build2DMesh(g,cfg),ambientK=x.ambientK;
+  const startField=plan.startField;
   const startK=finite(plan.startK)?plan.startK:ambientK;
-  const T=Array.from({length:mesh.nz},()=>new Array(mesh.nr).fill(startK));
-  const Tprev=Array.from({length:mesh.nz},()=>new Array(mesh.nr).fill(startK));
+  const T=Array.from({length:mesh.nz},(_,j)=>Array.from({length:mesh.nr},(_,i)=>
+    startField?startField[j][i]:startK));
+  const Tprev=Array.from({length:mesh.nz},()=>new Array(mesh.nr).fill(0));
   const sourceScale=typeof plan.sourceScale==="function"?plan.sourceScale:()=>1;
   const picardMax=plan.picardMax??20,picardTol=plan.picardTol??(finite(cfg.tolerance)?cfg.tolerance:1e-4);
   const record=Math.max(1,plan.record??1);
   const elementAverage=()=>{let sum=0,vol=0;for(let j=0;j<mesh.nz;j++)for(let i=0;i<mesh.nr;i++)if(mesh.materialAt(i,j)===0){const v=mesh.cellVolume(i,j);sum+=T[j][i]*v;vol+=v;}return sum/vol;};
   const elementExtrema=()=>{let lo=Infinity,hi=-Infinity;for(let j=0;j<mesh.nz;j++)for(let i=0;i<mesh.nr;i++)if(mesh.materialAt(i,j)===0){lo=Math.min(lo,T[j][i]);hi=Math.max(hi,T[j][i]);}return[lo,hi];};
-  // Same hook solveThermal2D uses, so cfg.currentField behaves identically in
-  // both. The scale is applied after the electrical solve, which is correct:
-  // duty cycling changes how long the current flows, not where it flows.
   let electrical=null;
   const porosity=porosityFactor2D(mesh,cfg);
   const withCurrentField=(point)=>{
@@ -1058,51 +1064,72 @@ export function solveTransient2D(x, zeroD, cfg, material, plan = {}) {
   };
 
   const history=[];
-  let totalLinear=0,worstClosure=0,converged=true,electricalEnergy=0;
   const mid=mesh.activeStart+Math.floor(mesh.nActiveZ/2);
-  let op=withCurrentField(operating2DAt(startK,x,g,cfg,material));
-  for(let n=0;n<steps;n++){
-    const t=(n+1)*dt;
-    for(let j=0;j<mesh.nz;j++)for(let i=0;i<mesh.nr;i++)Tprev[j][i]=T[j][i];
-    const scale=Math.max(0,sourceScale(t));
-    let pass=0,step=Infinity;
-    for(pass=0;pass<picardMax&&step>picardTol;pass++){
-      op=scaleSource(withCurrentField(operating2DAt(elementAverage(),x,g,cfg,material)),scale);
-      const system=assemble2DSystem(T,x,g,cfg,material,mesh,op,{dt,Tprev});
-      const linear=bicgstab2D(system,Float64Array.from(T.flat()));
-      totalLinear+=linear.iterations;
-      step=0;
-      for(let j=0;j<mesh.nz;j++)for(let i=0;i<mesh.nr;i++){
-        const old=T[j][i],solved=clamp(linear.x[j*mesh.nr+i],1,6000);
-        T[j][i]=solved;step=Math.max(step,Math.abs(solved-old));
+  let n=0,totalLinear=0,worstClosure=0,converged=true,electricalEnergy=0;
+  let op=withCurrentField(operating2DAt(elementAverage(),x,g,cfg,material));
+
+  const advance=(batch=1)=>{
+    const limit=Math.min(steps,n+Math.max(1,batch|0));
+    for(;n<limit;n++){
+      const t=(n+1)*dt;
+      for(let j=0;j<mesh.nz;j++)for(let i=0;i<mesh.nr;i++)Tprev[j][i]=T[j][i];
+      const scale=Math.max(0,sourceScale(t));
+      let pass=0,step=Infinity;
+      for(pass=0;pass<picardMax&&step>picardTol;pass++){
+        op=scaleSource(withCurrentField(operating2DAt(elementAverage(),x,g,cfg,material)),scale);
+        const system=assemble2DSystem(T,x,g,cfg,material,mesh,op,{dt,Tprev});
+        const linear=bicgstab2D(system,Float64Array.from(T.flat()));
+        totalLinear+=linear.iterations;
+        step=0;
+        for(let j=0;j<mesh.nz;j++)for(let i=0;i<mesh.nr;i++){
+          const old=T[j][i],solved=clamp(linear.x[j*mesh.nr+i],1,6000);
+          T[j][i]=solved;step=Math.max(step,Math.abs(solved-old));
+        }
+      }
+      if(step>picardTol)converged=false;
+      const loss=boundaryLoss2D(T,x,g,cfg,material,mesh,op);
+      const storageRate=storageRate2D(T,Tprev,cfg,material,mesh,dt);
+      // The transient balance carries a term the steady one does not: what the
+      // domain absorbed. It is normalised against the largest term present, not
+      // against P_bulk: a duty-cycled drive spends most of its period with
+      // P_bulk exactly zero, and dividing the residual by that would report an
+      // arbitrarily large closure for a step that is in fact balanced to
+      // round-off between loss and storage.
+      const scaleW=Math.max(op.pBulk,Math.abs(loss.total),Math.abs(storageRate),1e-12);
+      const closure=Math.abs(op.pBulk-loss.total-storageRate)/scaleW;
+      worstClosure=Math.max(worstClosure,closure);
+      electricalEnergy+=op.pBulk*dt;
+      if(n%record===0||n===steps-1){
+        const[tMin,tMax]=elementExtrema();
+        history.push({t,avgK:elementAverage(),tMin,tMax,center:T[mid][0],
+          wallOuter:T[mid][mesh.nElement+mesh.nGap+mesh.nWall-1],
+          pBulk:op.pBulk,boundaryLoss:loss.total,storageRate,closure,passes:pass});
       }
     }
-    if(step>picardTol)converged=false;
-    const loss=boundaryLoss2D(T,x,g,cfg,material,mesh,op);
-    const storageRate=storageRate2D(T,Tprev,cfg,material,mesh,dt);
-    // The transient balance carries a term the steady one does not: what the
-    // domain absorbed. It is normalised against the largest term present, not
-    // against P_bulk: a duty-cycled drive spends most of its period with
-    // P_bulk exactly zero, and dividing the residual by that would report an
-    // arbitrarily large closure for a step that is in fact balanced to
-    // round-off between loss and storage.
-    const scaleW=Math.max(op.pBulk,Math.abs(loss.total),Math.abs(storageRate),1e-12);
-    const closure=Math.abs(op.pBulk-loss.total-storageRate)/scaleW;
-    worstClosure=Math.max(worstClosure,closure);
-    electricalEnergy+=op.pBulk*dt;
-    if(n%record===0||n===steps-1){
-      const[tMin,tMax]=elementExtrema();
-      history.push({t,avgK:elementAverage(),tMin,tMax,center:T[mid][0],
-        wallOuter:T[mid][mesh.nElement+mesh.nGap+mesh.nWall-1],
-        pBulk:op.pBulk,boundaryLoss:loss.total,storageRate,closure,passes:pass});
-    }
-  }
-  const[tMin,tMax]=elementExtrema();
-  return{errors:[],x,zeroD,cfg,material,g,mesh,T,op,history,electrical,porosity,
-    dt,steps,tEnd:steps*dt,avgK:elementAverage(),tMin,tMax,deltaT:tMax-tMin,
-    center:T[mid][0],wallOuter:T[mid][mesh.nElement+mesh.nGap+mesh.nWall-1],
-    storedEnergy:internalEnergy2D(T,cfg,material,mesh,ambientK),
-    electricalEnergy,linearIterations:totalLinear,worstClosure,converged};
+    return n>=steps;
+  };
+
+  const result=()=>{
+    const[tMin,tMax]=elementExtrema();
+    return{errors:[],x,zeroD,cfg,material,g,mesh,T,op,history,electrical,porosity,
+      dt,steps,stepsDone:n,tEnd:n*dt,avgK:elementAverage(),tMin,tMax,deltaT:tMax-tMin,
+      center:T[mid][0],wallOuter:T[mid][mesh.nElement+mesh.nGap+mesh.nWall-1],
+      storedEnergy:internalEnergy2D(T,cfg,material,mesh,ambientK),
+      electricalEnergy,linearIterations:totalLinear,worstClosure,converged};
+  };
+
+  return {errors:[],mesh,g,history,advance,result,
+    get done(){return n>=steps;},get stepsDone(){return n;},get T(){return T;}};
+}
+
+// Run a transient to completion in one call. Everything of substance is in
+// createTransientRun; this is the batch entry point the tests and the
+// verification tools use.
+export function solveTransient2D(x, zeroD, cfg, material, plan = {}) {
+  const run=createTransientRun(x,zeroD,cfg,material,plan);
+  if(run.errors&&run.errors.length) return {errors:run.errors};
+  while(!run.advance(64));
+  return run.result();
 }
 
 export function solveThermal2D(x, zeroD, cfg, material) {
