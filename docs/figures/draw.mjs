@@ -401,9 +401,7 @@ export function matrixClasses(DATA) {
   for (let i = 0; i < 8; i++) { bandE.push([i, i]); if (i > 0) bandE.push([i, i - 1]); if (i < 7) bandE.push([i, i + 1]); if (i > 2) bandE.push([i, i - 3]); if (i < 5) bandE.push([i, i + 3]); }
   b += matrix(MX, y + 2, bandE, [], C.thermal);
   b += T(TX, y + 10, "Adjacent-cell conduction", { size: 9.5, weight: "bold", fill: C.thermal });
-  b += T(TX, y + 23, "Two-point flux across the shared face, with the two", { size: 8.5 });
-  b += T(TX, y + 34, "half-cell resistances in series. Fills the bands next", { size: 8.5 });
-  b += T(TX, y + 45, "to the diagonal, and is symmetric.", { size: 8.5 });
+  b += T(TX, y + 23, "bands next to the diagonal · symmetric", { size: 8.5, fill: C.grey });
   b += line(SX, y + 68, 495, y + 68, { stroke: "#E4E4E4", sw: 0.5 });
 
   /* row 2: boundary convection and radiation */
@@ -418,9 +416,7 @@ export function matrixClasses(DATA) {
   })();
   b += matrix(MX, y + 2, [[0, 0], [1, 1], [2, 2], [3, 3], [4, 4], [5, 5], [6, 6], [7, 7]], [], C.thermal);
   b += T(TX, y + 10, "Boundary convection and radiation", { size: 9.5, weight: "bold", fill: C.thermal });
-  b += T(TX, y + 23, "Adds to the diagonal and to the right-hand side only.", { size: 8.5 });
-  b += T(TX, y + 34, "The radiation coefficient is linearized about the", { size: 8.5 });
-  b += T(TX, y + 45, "current temperature, and is symmetric.", { size: 8.5 });
+  b += T(TX, y + 23, "diagonal and right-hand side · symmetric", { size: 8.5, fill: C.grey });
   b += line(SX, y + 68, 495, y + 68, { stroke: "#E4E4E4", sw: 0.5 });
 
   /* row 3: element to wall radiation across the gap */
@@ -437,9 +433,7 @@ export function matrixClasses(DATA) {
   })();
   b += matrix(MX, y + 2, [[1, 6], [6, 1], [2, 7], [7, 2]], [], C.thermal);
   b += T(TX, y + 10, "Element-to-wall radiation", { size: 9.5, weight: "bold", fill: C.thermal });
-  b += T(TX, y + 23, "Couples two cells that share no face, across the gas", { size: 8.5 });
-  b += T(TX, y + 34, "gap. The entries sit far from the diagonal, and appear", { size: 8.5 });
-  b += T(TX, y + 45, "in matching pairs, so the operator stays symmetric.", { size: 8.5 });
+  b += T(TX, y + 23, "off-diagonal, in matching pairs · symmetric", { size: 8.5, fill: C.grey });
   b += line(SX, y + 68, 495, y + 68, { stroke: "#E4E4E4", sw: 0.5 });
 
   /* row 4: directed gas enthalpy transport */
@@ -454,9 +448,7 @@ export function matrixClasses(DATA) {
   })();
   b += matrix(MX, y + 2, [[3, 2], [4, 3], [5, 4]], [[2, 3], [3, 4], [4, 5]], C.gas);
   b += T(TX, y + 10, "Directed process-gas enthalpy transport", { size: 9.5, weight: "bold", fill: C.gas });
-  b += T(TX, y + 23, "The cell upstream in the flow direction contributes; the", { size: 8.5 });
-  b += T(TX, y + 34, "cell downstream does not. The matching entry is absent,", { size: 8.5 });
-  b += T(TX, y + 45, "shown dashed, so the operator is not symmetric.", { size: 8.5 });
+  b += T(TX, y + 23, "upstream entry only · nonsymmetric, selects BiCGSTAB", { size: 8.5, fill: C.grey });
 
   return svgDoc(W, H, b);
 }
@@ -712,7 +704,7 @@ export function defaultCase(DATA) {
   let b = defs(ns);
 
   /* a single-hue ramp: the thermal role keeps its colour, magnitude is
-     carried by lightness, so the plate also reads in greyscale */
+     carried by lightness, so the plate also reads in grayscale */
   const STOPS = [[0, [255, 248, 242]], [0.5, [240, 168, 104]], [1, [155, 60, 0]]];
   function ramp(t) {
     t = Math.max(0, Math.min(1, t));
@@ -816,7 +808,7 @@ export function defaultCase(DATA) {
 /* average power, and the element that cannot follow a pulse at all.    */
 /* ------------------------------------------------------------------ */
 export function transient(DATA) {
-  const ns = "s5", W = 505, H = 254;
+  const ns = "s5", W = 505, H = 242;
   const K = DATA.transient;
   let b = defs(ns);
   const pw = 128, ph = 160, ptop = 26, pbot = 26 + 160;
@@ -860,8 +852,8 @@ export function transient(DATA) {
     o += line(F.x0, F.Y(K.contSteadyC), F.x0 + pw, F.Y(K.contSteadyC), { stroke: C.grey, sw: 0.9, dash: "3 2" });
     o += T(F.x0 + 6, F.Y(K.contSteadyC) - 5, "steady " + K.contSteadyC.toFixed(0) + " °C", { size: 8, fill: C.grey });
     o += trace(F, K.cont, C.thermal, 1.5);
-    o += T(F.x0 + 6, pbot - 30, "continuous, " + K.contVolts.toFixed(2) + " V, " + K.contPower.toFixed(1) + " W", { size: 8.5, weight: "bold", fill: C.thermal });
-    o += T(F.x0 + 6, pbot - 19, "the enclosure sets the settling time", { size: 8, fill: C.grey });
+    o += T(F.x0, pbot + 38, "continuous, " + K.contVolts.toFixed(2) + " V, " + K.contPower.toFixed(1) + " W", { size: 8.5, weight: "bold", fill: C.thermal });
+    o += T(F.x0, pbot + 48, "settling set by the enclosure", { size: 8, fill: C.grey });
     b += o;
   })();
 
@@ -876,12 +868,12 @@ export function transient(DATA) {
     }
     o += line(F.x0, strip + 7, F.x0 + pw, strip + 7, { stroke: C.scalar, sw: 0.6 });
     o += line(F.x0, F.Y(K.contSteadyC), F.x0 + pw, F.Y(K.contSteadyC), { stroke: C.grey, sw: 0.9, dash: "3 2" });
-    o += T(F.x0 + pw - 6, F.Y(K.contSteadyC) + 11, "continuous " + K.contSteadyC.toFixed(0) + " °C", { size: 8, anchor: "end", fill: C.grey });
+    o += T(F.x0 + 6, pbot - 30, "dashed, continuous " + K.contSteadyC.toFixed(0) + " °C", { size: 8, fill: C.grey });
     o += trace(F, K.pulse, C.thermal, 1.2);
     o += T(F.x0 + pw - 6, pbot - 58, "peak " + K.peakC.toFixed(0) + " °C", { size: 8.5, weight: "bold", anchor: "end", fill: C.thermal });
     o += T(F.x0 + pw - 6, pbot - 47, "mean " + K.cycleMeanC.toFixed(0) + " °C, swing " + K.swingK.toFixed(0) + " K", { size: 8.5, anchor: "end", fill: C.grey });
-    o += T(F.x0 + 6, pbot - 30, (K.duty * 100).toFixed(0) + " % duty, " + K.period + " s period, " + K.pulseVolts + " V", { size: 8.5, weight: "bold", fill: C.scalar });
-    o += T(F.x0 + 6, pbot - 19, "τ = " + K.cfpTau.toFixed(2) + " s, same " + K.meanPower.toFixed(1) + " W average", { size: 8, fill: C.grey });
+    o += T(F.x0, pbot + 38, (K.duty * 100).toFixed(0) + " % duty, " + K.period + " s period, " + K.pulseVolts + " V", { size: 8.5, weight: "bold", fill: C.scalar });
+    o += T(F.x0, pbot + 48, "τ = " + K.cfpTau.toFixed(2) + " s, " + K.meanPower.toFixed(1) + " W average", { size: 8, fill: C.grey });
     b += o;
   })();
 
@@ -895,8 +887,8 @@ export function transient(DATA) {
     o += line(tx, ptop + 10, tx, pbot - 10, { stroke: C.scalar, sw: 0.8, dash: "2 2" });
     o += T(tx + 5, ptop + 96, "τ = " + K.sicTau.toFixed(0) + " s", { size: 8, fill: C.scalar });
     o += trace(F, K.sic, C.thermal, 1.5);
-    o += T(F.x0 + pw - 6, pbot - 30, K.sicLabel + ", switched on", { size: 8.5, weight: "bold", anchor: "end", fill: C.thermal });
-    o += T(F.x0 + pw - 6, pbot - 19, "τ is " + (K.sicTau / K.period).toFixed(0) + "× the pulse period", { size: 8, anchor: "end", fill: C.grey });
+    o += T(F.x0, pbot + 38, K.sicLabel + ", switched on", { size: 8.5, weight: "bold", fill: C.thermal });
+    o += T(F.x0, pbot + 48, "τ is " + (K.sicTau / K.period).toFixed(0) + "× the pulse period", { size: 8, fill: C.grey });
     b += o;
   })();
   return svgDoc(W, H, b);
@@ -907,7 +899,7 @@ export function transient(DATA) {
 /* the supply allows, the shape that carries it, and the material.      */
 /* ------------------------------------------------------------------ */
 export function screening(DATA) {
-  const ns = "s6", W = 505, H = 434;
+  const ns = "s6", W = 505, H = 402;
   const S = DATA.screening, F = DATA.forms;
   let b = defs(ns);
   const pw = 175, ph = 150, ptop = 34, pbot = 34 + 150;
@@ -963,13 +955,13 @@ export function screening(DATA) {
         '" height="' + (pbot - 10 - Y(S.targetC)) + '" fill="' + TINT.thermal + '" fill-opacity="0.7"/>';
     }
     o += line(287, Y(S.limitC), 287 + pw, Y(S.limitC), { stroke: C.ink, sw: 1, dash: "4 2" });
-    o += T(287 + pw - 4, Y(S.limitC) + 10, S.materialName + " " + S.limitKind + ", " + S.limitC + " °C", { size: 8, anchor: "end" });
+    o += T(291, Y(S.limitC) + 10, S.materialName + " " + S.limitKind, { size: 8 });
     o += line(287, Y(S.targetC), 287 + pw, Y(S.targetC), { stroke: C.thermal, sw: 1, dash: "4 2" });
     o += T(291, Y(S.targetC) - 4, "target " + S.targetC + " °C", { size: 8, weight: "bold", fill: C.thermal });
     let d2 = "";
     S.sweep.forEach(function (q, k) { d2 += (k ? " L" : "M") + P.X(q.ld) + "," + Y(q.tssC); });
     o += '<path d="' + d2 + '" fill="none" stroke="' + C.thermal + '" stroke-width="1.5"/>';
-    if (S.window) o += T(291, pbot - 8, "met between L/D " + S.window.lo.toFixed(1) + " and " + S.window.hi.toFixed(0), { size: 8, fill: C.thermal });
+    if (S.window) o += T(291, pbot - 3, "met between L/D " + S.window.lo.toFixed(1) + " and " + S.window.hi.toFixed(0), { size: 8, fill: C.thermal });
     o += T(287 + pw - 4, ptop + 12, "voltage limited", { size: 8, weight: "bold", anchor: "end", fill: C.field });
     o += T(291, ptop + 12, "current limited", { size: 8, weight: "bold", fill: C.scalar });
     b += o;
@@ -979,12 +971,12 @@ export function screening(DATA) {
   (function () {
     const x0 = 52, y0 = 254;
     b += T(x0 - 36, y0 - 12, "c", { size: 11, weight: "bold" });
-    b += T(x0, y0 - 12, "shapes that reach " + S.targetC + " °C, with " + S.materialName, { size: 8.5, weight: "bold" });
+    b += T(x0, y0 - 12, ("shapes that reach " + S.targetC + " °C, in " + S.materialName).toUpperCase(), { size: 8, weight: "bold", fill: C.grey });
     b += line(x0, y0 - 6, x0 + 200, y0 - 6, { stroke: C.ink, sw: 0.8 });
     F.forEach(function (f, i) {
       const y = y0 + 12 + i * 34;
       b += T(x0, y, f.form, { size: 9, weight: "bold", fill: C.thermal });
-      b += T(x0 + 200, y, f.constraint.toLowerCase() + " limited", { size: 7.6, anchor: "end", fill: C.faint });
+      b += T(x0 + 200, y, f.constraint.toLowerCase() + " limited", { size: 8, anchor: "end", fill: C.faint });
       b += T(x0, y + 11, f.dims, { size: 8.5 });
       b += T(x0, y + 22, f.R.toFixed(2) + " Ω · " + f.current.toFixed(1) + " A · " +
         f.voltage.toFixed(1) + " V · " + f.power.toFixed(0) + " W", { size: 8, fill: C.grey });
@@ -996,7 +988,7 @@ export function screening(DATA) {
   (function () {
     const x0 = 287, y0 = 254, rows = S.byMaterial;
     b += T(x0 - 36, y0 - 12, "d", { size: 11, weight: "bold" });
-    b += T(x0, y0 - 12, "materials that reach it, on the same sweep", { size: 8.5, weight: "bold" });
+    b += T(x0, y0 - 12, ("materials that reach " + S.targetC + " °C").toUpperCase(), { size: 8, weight: "bold", fill: C.grey });
     b += line(x0, y0 - 6, x0 + 200, y0 - 6, { stroke: C.ink, sw: 0.8 });
     rows.forEach(function (r, i) {
       const y = y0 + 11 + i * 16;
@@ -1005,16 +997,13 @@ export function screening(DATA) {
         (on ? C.thermal : "#FFFFFF") + '" stroke="' + (on ? C.thermal : C.faint) + '" stroke-width="0.8"/>';
       b += T(x0 + 12, y, r.name, { size: 8.5, fill: on ? C.ink : C.faint });
       b += T(x0 + 200, y, on ? "L/D " + r.ld.toFixed(1) + ",  " + r.R.toFixed(2) + " Ω"
-                             : "wants " + r.needs.current.toFixed(0) + " A at " + r.needs.voltage.toFixed(1) + " V" +
+                             : "requires " + r.needs.current.toFixed(0) + " A at " + r.needs.voltage.toFixed(1) + " V" +
                                (r.needs.overJmax ? " †" : ""),
         { size: 8, anchor: "end", fill: on ? C.grey : C.faint });
     });
-    b += T(x0, y0 + 11 + rows.length * 16 + 6, "unfilled: no aspect ratio reaches it on this supply, because the", { size: 7.6, fill: C.grey });
-    b += T(x0, y0 + 11 + rows.length * 16 + 15, "current-density limit caps the power at j²ρV, whatever the shape", { size: 7.6, fill: C.grey });
-    b += T(x0, y0 + 11 + rows.length * 16 + 24, "† that current is above the material's own limit", { size: 7.6, fill: C.grey });
-    b += T(x0, y0 + 11 + rows.length * 16 + 34, "resistivity spans " +
+    b += T(x0, y0 + 11 + rows.length * 16 + 9, "resistivity spans " +
       rows[0].rho.toExponential(1).replace("e-", "×10^{−") + "} to " +
-      rows[rows.length - 1].rho.toExponential(1).replace("e-", "×10^{−") + "} Ω·cm", { size: 7.6, fill: C.grey });
+      rows[rows.length - 1].rho.toExponential(1).replace("e-", "×10^{−") + "} Ω·cm", { size: 8, fill: C.grey });
   })();
   return svgDoc(W, H, b);
 }
@@ -1039,7 +1028,7 @@ export function crosscheck(DATA) {
   let y = 42;
   G.forEach(function (grp, gi) {
     b += T(LX, y, grp.source, { size: 9, weight: "bold" });
-    b += T(RX, y, grp.detail, { size: 7.8, fill: C.faint });
+    b += T(MX, y, grp.detail, { size: 8, anchor: "end", fill: C.faint });
     y += 13;
     grp.rows.forEach(function (r) {
       const diff = 100 * (r.model - r.reported) / r.reported;
@@ -1048,7 +1037,7 @@ export function crosscheck(DATA) {
       b += T(RX, y, r.reported + (r.unit ? " " + r.unit : ""), { size: 8.5, anchor: "end", fill: C.grey });
       b += T(MX, y, r.model + (r.unit ? " " + r.unit : ""), { size: 8.5, anchor: "end" });
       b += '<rect x="' + (diff < 0 ? CX - w : CX) + '" y="' + (y - 6.5) + '" width="' + Math.max(w, 0.6) +
-        '" height="8" fill="' + (Math.abs(diff) > 5 ? C.field : C.thermal) + '" fill-opacity="0.85"/>';
+        '" height="8" fill="' + (Math.abs(diff) > 5 ? C.thermal : C.grey) + '" fill-opacity="0.85"/>';
       b += T(diff < 0 ? CX - w - 4 : CX + w + 4, y, (diff > 0 ? "+" : "−") + Math.abs(diff).toFixed(2) + " %",
         { size: 8, anchor: diff < 0 ? "end" : "start", fill: C.grey });
       y += 15;
@@ -1063,7 +1052,7 @@ export function crosscheck(DATA) {
     b += T(X(t), ay + 11, (t > 0 ? "+" : t < 0 ? "−" : "") + Math.abs(t) + " %", { size: 8, anchor: "middle", fill: C.grey });
   });
   b += line(X(-SPAN), ay, X(SPAN), ay, { stroke: C.grey, sw: 0.7 });
-  b += T(LX, ay + 11, "orange beyond ±5 %", { size: 7.8, fill: C.grey });
+  b += T(LX, ay + 11, "orange beyond ±5 %, grey within", { size: 8, fill: C.grey });
   return svgDoc(W, H, b);
 }
 
@@ -1072,7 +1061,7 @@ export function crosscheck(DATA) {
 /* one. No tool or model is named: they date, the structure does not.   */
 /* ------------------------------------------------------------------ */
 export function architecture(DATA) {
-  const ns = "s8", W = 505, H = 388;
+  const ns = "s8", W = 505, H = 274;
   let b = defs(ns);
 
   /* ---- a. the gate a revision has to pass ---- */
@@ -1101,31 +1090,28 @@ export function architecture(DATA) {
   /* the failure path returns to implementation, which is the whole point */
   b += arrow(ns, "M386," + (ay + ah + 4) + " L386,96 L178,96 L178," + (ay + ah + 1), { color: "thermal", sw: 1 });
   b += T(282, 93, "fail", { size: 8, anchor: "middle", fill: C.thermal });
-  b += T(18, 112, "The gates are the repository's own: regression tests, energy closure, the analytic and manufactured-solution", { size: 8.5, fill: C.grey });
-  b += T(18, 123, "benchmarks, and grid convergence. Every physical and numerical decision is adjudicated by the human author.", { size: 8.5, fill: C.grey });
-
-  /* ---- b. what a change actually touches ---- */
-  b += T(18, 152, "b", { size: 11, weight: "bold" });
-  const cx = 232, cy = 196, cw = 118, ch = 40;
+  /* ---- b. what attaches to the core, and what the core does not know ---- */
+  b += T(18, 128, "b", { size: 11, weight: "bold" });
+  const cx = 232, cy = 172, cw = 118, ch = 40;
   b += rect(cx, cy, cw, ch, { stroke: C.thermal, fill: TINT.thermal, sw: 1.2 });
   b += T(cx + cw / 2, cy + 17, "solver.js", { size: 10, weight: "bold", anchor: "middle", fill: C.thermal });
   b += T(cx + cw / 2, cy + 29, "DOM-free numerical core", { size: 8, anchor: "middle", fill: C.grey });
 
   const feeds = [
-    { y: 164, label: "Material presets", note: "temperature-dependent properties", c: C.scalar },
-    { y: 196, label: "Geometry, wall, gas", note: "the boundary-condition configuration", c: C.field },
-    { y: 228, label: "Browser interface", note: "inputs and outputs only", c: C.grey }
+    { y: 140, label: "Material presets", note: "temperature-dependent properties", c: C.scalar },
+    { y: 172, label: "Geometry, wall, gas", note: "the boundary-condition configuration", c: C.field },
+    { y: 204, label: "Browser interface", note: "inputs and outputs only", c: C.grey }
   ];
   feeds.forEach(function (f) {
-    b += rect(18, f.y, 150, 24, { stroke: f.c, fill: "#FFFFFF", sw: 0.9 });
+    b += rect(18, f.y, 168, 24, { stroke: f.c, fill: "#FFFFFF", sw: 0.9 });
     b += T(26, f.y + 10, f.label, { size: 8.5, weight: "bold", fill: f.c });
-    b += T(26, f.y + 20, f.note, { size: 7.6, fill: C.grey });
-    b += arrow(ns, "M168," + (f.y + 12) + " L" + (cx - 2) + "," + (cy + ch / 2), { color: "grey", sw: 0.8 });
+    b += T(26, f.y + 20, f.note, { size: 8, fill: C.grey });
+    b += arrow(ns, "M186," + (f.y + 12) + " L" + (cx - 2) + "," + (cy + ch / 2), { color: "grey", sw: 0.8 });
   });
-  b += rect(18, 260, 150, 24, { stroke: C.gas, fill: "#FFFFFF", sw: 0.9, dash: "3 2" });
-  b += T(26, 270, "Verification suite", { size: 8.5, weight: "bold", fill: C.gas });
-  b += T(26, 280, "regression, conservation, benchmarks", { size: 7.2, fill: C.grey });
-  b += arrow(ns, "M168,272 L" + (cx - 2) + "," + (cy + ch - 4), { color: "gas", sw: 0.8 });
+  b += rect(18, 236, 168, 24, { stroke: C.gas, fill: "#FFFFFF", sw: 0.9, dash: "3 2" });
+  b += T(26, 246, "Verification suite", { size: 8.5, weight: "bold", fill: C.gas });
+  b += T(26, 256, "regression, conservation, benchmarks", { size: 8, fill: C.grey });
+  b += arrow(ns, "M186,248 L" + (cx - 2) + "," + (cy + ch - 4), { color: "gas", sw: 0.8 });
 
   b += arrow(ns, "M" + (cx + cw) + "," + (cy + ch / 2) + " L" + (cx + cw + 14) + "," + (cy + ch / 2), { color: "thermal" });
   b += rect(cx + cw + 15, cy - 6, 108, ch + 12, { stroke: C.grey, fill: "#FFFFFF", sw: 0.9 });
@@ -1133,16 +1119,5 @@ export function architecture(DATA) {
     b += T(cx + cw + 23, cy + 6 + i * 11, t, { size: 8, fill: i === 0 ? C.ink : C.grey });
   });
 
-  b += line(18, 302, 487, 302, { stroke: C.ink, sw: 0.9 });
-  b += T(18, 316, "WHAT A CHANGE TOUCHES", { size: 8, weight: "bold", fill: C.grey });
-  [["add a material", "the preset and its property functions; nothing else"],
-   ["change the shape, wall or gas", "the boundary-condition configuration"],
-   ["change the interface", "the input and output layer; the core is untouched"],
-   ["change the calculation", "solver.js, and the verification scripts that check it"],
-   ["any of the above", "rerun the same regression and conservation tests"]].forEach(function (r, i) {
-    const y = 330 + i * 12;
-    b += T(26, y, r[0], { size: 8.5 });
-    b += T(178, y, r[1], { size: 8.5, fill: C.grey });
-  });
   return svgDoc(W, H, b);
 }

@@ -107,7 +107,7 @@ DATA.defaultCase = {
 };
 
 // Transient operation. The pulse is shown on the element that can follow one:
-// the carbon-fibre strip of the published pulsed cross-check, whose time
+// the carbon-fiber strip of the published pulsed cross-check, whose time
 // constant is about half a second against a one-second period. It is compared
 // against the same strip driven continuously at the same average power, which
 // is the only comparison that isolates what pulsing buys. The SiC rod of the
@@ -312,7 +312,7 @@ DATA.crosscheck = [
       { q: "current at 14.10 V", unit: "A", reported: 34.70, model: p(zh.v1410.operatingCurrent, 4) },
       { q: "power at 14.10 V", unit: "W", reported: 489.3, model: p(zh.v1410.steadyLoss.total, 4) }
     ] },
-  { source: "Kwak et al. 2025", detail: "carbon-fibre strip, 38 × 8 × 0.21 mm",
+  { source: "Kwak et al. 2025", detail: "carbon-fiber strip, 38 × 8 × 0.21 mm",
     rows: [
       { q: "T–P exponent", unit: "", reported: 0.3525, model: p(expo(kw.v16, kw.v31), 3) }
     ] }

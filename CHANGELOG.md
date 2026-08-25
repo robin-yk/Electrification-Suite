@@ -88,6 +88,45 @@ from the solver rather than drawn.
 
 ### Fixed
 
+- Fig. S7 coloured its bars by the wrong test. The key read "orange beyond
+  +-5 %" while the code filled with `C.field` above 5 % and `C.thermal` below,
+  so the three deviations that matter (-6.32, -5.48, -5.48 %) were the amber
+  ones and the four inside tolerance were the orange ones: the plate said the
+  opposite of its own key. Bars are now grey within +-5 % and orange beyond it,
+  and the two roles in the palette are no longer borrowed for a quantity that
+  is neither a field nor a thermal solve.
+- Type below the 8 pt floor the figure spec sets. Fifteen labels in Figs. S6,
+  S7 and S8 were set between 7.2 and 7.8 pt. All are at 8 pt, and the two
+  boxes that were sized around 7.6 pt notes were widened to hold them.
+- Labels that sat on the data they annotate. In Fig. S5 the two descriptor
+  lines per panel ran past their own frame into the neighbouring panel's axis
+  label, and the continuous reference was written across the sawtooth; the
+  descriptors now sit below each panel and the plate is 12 pt shorter for it.
+  In Fig. S6 the decomposition line was labelled where the sweep curve peaks.
+- British spellings in a manuscript set in American English: "carbon-fibre" in
+  the Fig. S7 data and the Fig. S5 caption, "colour" and "greyscale" in the
+  Fig. 4 caption.
+
+### Changed
+
+- Prose moved out of the artwork and into the captions, which is where a
+  journal in this family puts it. Fig. S8 carried a two-line paragraph about
+  the verification gates and a five-row table of what a change touches, both
+  already stated in its caption; the plate is now the two diagrams alone and
+  is 114 pt shorter. Fig. S2 carried three lines of description per row, again
+  verbatim in the caption, and now carries a property tag per row. Fig. S6
+  dropped four explanatory lines under panel d, keeping the one value the
+  caption does not give.
+- Captions that said the same thing twice, an artefact of revising by addition:
+  Figs. 1, S1 and S3 each stated a claim in the opening sentences and again in
+  the closing one. Fig. S1 also defined "gas pads" two sentences after first
+  using the term.
+- Register. "WHAT A CHANGE TOUCHES" as a table header, "wants 129 A at 1.4 V"
+  for a material, "solved rather than sketched" and "which is the question the
+  tool was built to answer" as caption openers, "pulsing buys a peak", "where
+  SiC stops being SiC", and an aside in the Fig. S8 caption about why the
+  figure names no tools. Figure text states what a thing is and does.
+
 - 0D wall radiation was charged to the whole domain height rather than to a fin
   length, leaving a 28.72 K gap against the 2D mean at Bi_R = 2e-6, where the
   element is isothermal and lumping cannot be the cause.
