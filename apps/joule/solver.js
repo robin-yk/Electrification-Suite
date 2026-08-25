@@ -11,12 +11,25 @@ export const MOLAR_VOLUME_STP = 0.022414;
 export const HE_CAPACITY_RATE = HE_FLOW_SCCM * 1e-6 / 60 / MOLAR_VOLUME_STP * HE_CP_MOLAR;
 export const OUTSIDE_AIR_K = 0.026;
 
+// density and cp are unused by the steady solve and exist only for the
+// transient one, where the wall's thermal mass is comparable to the
+// element's and therefore sets much of the warm-up time.
 export const T2D_WALLS = {
-  quartz: { name:"Quartz", k:1.4, emissivity:0.93 },
-  alumina: { name:"Alumina", k:22, emissivity:0.75 },
-  stainless: { name:"Stainless steel", k:16, emissivity:0.70 },
-  custom: { name:"Custom wall", k:1.4, emissivity:0.80 }
+  quartz: { name:"Quartz", k:1.4, emissivity:0.93, density:2200, cp:740 },
+  alumina: { name:"Alumina", k:22, emissivity:0.75, density:3900, cp:880 },
+  stainless: { name:"Stainless steel", k:16, emissivity:0.70, density:8000, cp:500 },
+  custom: { name:"Custom wall", k:1.4, emissivity:0.80, density:2200, cp:740 }
 };
+
+// Volumetric heat capacity of the gas regions, J/m^3/K. Two orders of
+// magnitude below any solid here (He at 1 atm is ~1e3 against SiC's 2.4e6),
+// so these carry no weight in the answer; they are present so that every
+// cell has a finite time constant and the transient operator stays
+// nonsingular. Evaluated at the cell temperature through the ideal-gas
+// density, which is the only part that matters at all.
+export const GAS_RHOCP_REF = 1.0e3;    // He, ~300 K
+export const AIR_RHOCP_REF = 1.2e3;    // air, ~300 K
+export const RHOCP_REF_K = 300;
 
 export const MATERIALS = [
   { name:"CFP", rhoOhmCm:0.05, density:452, cp:990, k:400, jmax:1e7, source:"Mittal et al. (2025), Table 1", model:"constant; anisotropy not represented",
@@ -411,6 +424,22 @@ export function cellK2D(code, tempK, material, cfg, x) {
   return OUTSIDE_AIR_K;
 }
 
+// Volumetric heat capacity per material code, the transient counterpart of
+// cellK2D. Only the element and the wall carry meaningful thermal mass; the
+// gas codes fall back to an ideal-gas scaling so that a hot cell stores less
+// than a cold one rather than being pinned at its reference value.
+export function rhoCp2D(code, tempK, material, cfg) {
+  if (code === 0) return Math.max(1, material.density * propertiesAt(material, tempK).cp);
+  if (code === 2) {
+    const wall = T2D_WALLS[cfg.wallMaterial] || T2D_WALLS.custom;
+    const density = finite(cfg.wallDensity) ? cfg.wallDensity : wall.density;
+    const cp = finite(cfg.wallCp) ? cfg.wallCp : wall.cp;
+    return Math.max(1, density * cp);
+  }
+  const ref = code === 3 ? AIR_RHOCP_REF : GAS_RHOCP_REF;
+  return Math.max(1, ref * RHOCP_REF_K / Math.max(tempK, 1));
+}
+
 export function operating2DAt(tempK, x, g, cfg, material) {
   const props = propertiesAt(material,tempK);
   const rhoE = props.rhoOhmCm * 0.01;
@@ -463,13 +492,21 @@ export function gasBulkRowTemperature2D(T, mesh, j) {
   return weighted/Math.max(areaTotal,1e-30);
 }
 
-export function assemble2DSystem(T, x, g, cfg, material, mesh, op) {
+// `transient`, when present, is {dt, Tprev}: a backward-Euler storage term.
+// Its shape is exactly the Robin boundary term already used throughout —
+// rho*cp*V/dt onto the diagonal and the same coefficient times the previous
+// temperature onto the right-hand side — so it needs no new machinery and
+// leaves the operator symmetric. It is kept out of `boundaryTerms` on purpose:
+// that list is what boundaryLoss2D sums as heat leaving the domain, and stored
+// energy is not a loss.
+export function assemble2DSystem(T, x, g, cfg, material, mesh, op, transient = null) {
   const count=mesh.nr*mesh.nz,diag=new Float64Array(count),rhs=new Float64Array(count),edges=[],directed=[],boundaryTerms=[];
   const idx=(i,j)=>j*mesh.nr+i;
   const axialArea=(i)=>Math.PI*(mesh.edges[i+1]*mesh.edges[i+1]-mesh.edges[i]*mesh.edges[i]);
   const qVol=op.pBulk/g.envelopeVolume;
   const addFace=(p,q,G)=>{diag[p]+=G;diag[q]+=G;edges.push([p,q,G]);};
   const addBoundary=(p,G,Tb)=>{if(G<=0)return;diag[p]+=G;rhs[p]+=G*Tb;boundaryTerms.push([p,G,Tb]);};
+  const addStorage=(p,G,Tb)=>{if(G<=0)return;diag[p]+=G;rhs[p]+=G*Tb;};
   const pairConductance=(area,d1,k1,d2,k2,code1,code2)=>{
     let resistance=d1/k1+d2/k2;
     const solidAir=(code1===3&&code2===2)||(code1===2&&code2===3);
@@ -509,6 +546,7 @@ export function assemble2DSystem(T, x, g, cfg, material, mesh, op) {
     // sets it, and energy-closure reporting assumes the ordinary Joule source.
     if(cfg.verificationSource) rhs[p]+=cfg.verificationSource(mesh.centers[i],mesh.zCenters[j])*mesh.cellVolume(i,j);
     else if(code===0) rhs[p]+=qVol*mesh.cellVolume(i,j);
+    if(transient) addStorage(p,rhoCp2D(code,T[j][i],material,cfg)*mesh.cellVolume(i,j)/transient.dt,transient.Tprev[j][i]);
     if(i<mesh.nr-1) {
       const q=idx(i+1,j),face=mesh.edges[i+1],area=2*Math.PI*face*(mesh.zEdges[j+1]-mesh.zEdges[j]),nextCode=mesh.materialAt(i+1,j),kn=cellK2D(nextCode,T[j][i+1],material,cfg,x);
       const G=pairConductance(area,face-mesh.centers[i],kp,mesh.centers[i+1]-face,kn,code,nextCode);
@@ -648,6 +686,94 @@ export function boundaryLoss2D(T,x,g,cfg,material,mesh,op) {
   const gasOutletK=system.gasFlow.connected?gasBulkRowTemperature2D(T,mesh,0):x.gasK;
   const gasAdvective=system.gasFlow.capacityRate*(gasOutletK-x.gasK);
   return {total:staticLoss+gasAdvective,staticLoss,gasAdvective,gasOutletK,flowConnected:system.gasFlow.connected};
+}
+
+// Total internal energy of the domain above a reference temperature, J.
+// Used only as a transient diagnostic: the storage term the closure needs.
+export function internalEnergy2D(T, cfg, material, mesh, refK) {
+  let sum=0;
+  for(let j=0;j<mesh.nz;j++)for(let i=0;i<mesh.nr;i++){
+    const code=mesh.materialAt(i,j);
+    sum+=rhoCp2D(code,T[j][i],material,cfg)*mesh.cellVolume(i,j)*(T[j][i]-refK);
+  }
+  return sum;
+}
+
+// Backward-Euler time march of the same operator solveThermal2D solves at
+// steady state. Unconditionally stable, so dt is chosen by the time scale of
+// interest rather than by a stability limit, and first-order accurate in
+// time — a deliberate trade for a screening tool, since Crank-Nicolson rings
+// on the stiff radiation boundary at the step sizes a browser can afford.
+//
+// No under-relaxation here: the storage term puts rho*cp*V/dt on every
+// diagonal, which for any dt short enough to be interesting dominates the
+// conduction couplings and makes the inner iteration a contraction on its
+// own. Each step starts from the previous step's field, so a handful of
+// passes is normally enough.
+//
+// plan: { dt, steps, startK, sourceScale(t), picardMax, picardTol, record }
+//   sourceScale(t) multiplies the bulk Joule source, so a pulse train is
+//   just a square wave and a shutdown transient is a step to zero.
+export function solveTransient2D(x, zeroD, cfg, material, plan = {}) {
+  const configErrors=validate2DConfig(cfg);if(configErrors.length)return{errors:configErrors};
+  const dt=plan.dt,steps=plan.steps;
+  if(!finite(dt)||dt<=0) return {errors:["Time step must be greater than zero."]};
+  if(!Number.isInteger(steps)||steps<1) return {errors:["Step count must be a positive integer."]};
+  const g=geometry(x),mesh=build2DMesh(g,cfg),ambientK=x.ambientK;
+  const startK=finite(plan.startK)?plan.startK:ambientK;
+  const T=Array.from({length:mesh.nz},()=>new Array(mesh.nr).fill(startK));
+  const Tprev=Array.from({length:mesh.nz},()=>new Array(mesh.nr).fill(startK));
+  const sourceScale=typeof plan.sourceScale==="function"?plan.sourceScale:()=>1;
+  const picardMax=plan.picardMax??20,picardTol=plan.picardTol??(finite(cfg.tolerance)?cfg.tolerance:1e-4);
+  const record=Math.max(1,plan.record??1);
+  const elementAverage=()=>{let sum=0,vol=0;for(let j=0;j<mesh.nz;j++)for(let i=0;i<mesh.nr;i++)if(mesh.materialAt(i,j)===0){const v=mesh.cellVolume(i,j);sum+=T[j][i]*v;vol+=v;}return sum/vol;};
+  const elementExtrema=()=>{let lo=Infinity,hi=-Infinity;for(let j=0;j<mesh.nz;j++)for(let i=0;i<mesh.nr;i++)if(mesh.materialAt(i,j)===0){lo=Math.min(lo,T[j][i]);hi=Math.max(hi,T[j][i]);}return[lo,hi];};
+
+  const history=[];
+  let totalLinear=0,worstClosure=0,converged=true,electricalEnergy=0;
+  const mid=mesh.activeStart+Math.floor(mesh.nActiveZ/2);
+  let op=operating2DAt(startK,x,g,cfg,material);
+  for(let n=0;n<steps;n++){
+    const t=(n+1)*dt;
+    for(let j=0;j<mesh.nz;j++)for(let i=0;i<mesh.nr;i++)Tprev[j][i]=T[j][i];
+    const energyBefore=internalEnergy2D(Tprev,cfg,material,mesh,ambientK);
+    const scale=Math.max(0,sourceScale(t));
+    let pass=0,step=Infinity;
+    for(pass=0;pass<picardMax&&step>picardTol;pass++){
+      const base=operating2DAt(elementAverage(),x,g,cfg,material);
+      op={...base,pBulk:base.pBulk*scale,pContact:base.pContact*scale,pTotal:base.pTotal*scale};
+      const system=assemble2DSystem(T,x,g,cfg,material,mesh,op,{dt,Tprev});
+      const linear=bicgstab2D(system,Float64Array.from(T.flat()));
+      totalLinear+=linear.iterations;
+      step=0;
+      for(let j=0;j<mesh.nz;j++)for(let i=0;i<mesh.nr;i++){
+        const old=T[j][i],solved=clamp(linear.x[j*mesh.nr+i],1,6000);
+        T[j][i]=solved;step=Math.max(step,Math.abs(solved-old));
+      }
+    }
+    if(step>picardTol)converged=false;
+    const loss=boundaryLoss2D(T,x,g,cfg,material,mesh,op);
+    const energyAfter=internalEnergy2D(T,cfg,material,mesh,ambientK);
+    const storageRate=(energyAfter-energyBefore)/dt;
+    // The transient balance carries a term the steady one does not: what the
+    // domain absorbed. Reporting it against P_bulk keeps the diagnostic
+    // comparable with the steady closure.
+    const closure=Math.abs(op.pBulk-loss.total-storageRate)/Math.max(op.pBulk,1e-12);
+    worstClosure=Math.max(worstClosure,closure);
+    electricalEnergy+=op.pBulk*dt;
+    if(n%record===0||n===steps-1){
+      const[tMin,tMax]=elementExtrema();
+      history.push({t,avgK:elementAverage(),tMin,tMax,center:T[mid][0],
+        wallOuter:T[mid][mesh.nElement+mesh.nGap+mesh.nWall-1],
+        pBulk:op.pBulk,boundaryLoss:loss.total,storageRate,closure,passes:pass});
+    }
+  }
+  const[tMin,tMax]=elementExtrema();
+  return{errors:[],x,zeroD,cfg,material,g,mesh,T,op,history,
+    dt,steps,tEnd:steps*dt,avgK:elementAverage(),tMin,tMax,deltaT:tMax-tMin,
+    center:T[mid][0],wallOuter:T[mid][mesh.nElement+mesh.nGap+mesh.nWall-1],
+    storedEnergy:internalEnergy2D(T,cfg,material,mesh,ambientK),
+    electricalEnergy,linearIterations:totalLinear,worstClosure,converged};
 }
 
 export function solveThermal2D(x, zeroD, cfg, material) {

@@ -28,6 +28,7 @@
     "test:e2e": "playwright test",
     "verify:joule": "node tools/verification/joule.mjs",
     "verify:crosscheck": "node tools/verification/crosscheck.mjs",
+    "verify:joule-transient": "node tools/verification/joule-transient.mjs",
     "verify:microwave": "node tools/verification/microwave.mjs"
   },
   "devDependencies": {
