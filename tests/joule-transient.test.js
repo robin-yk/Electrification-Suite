@@ -126,3 +126,43 @@ test("solveTransient2D() rejects an unusable time plan instead of looping foreve
     assert.ok(r.errors.length > 0, `plan ${JSON.stringify(plan)} should have been rejected`);
   }
 });
+
+// Both of the following were found by driving the solver with carbon paper
+// rather than SiC, and neither was caught by the tests above: SiC has a
+// constant heat capacity and the earlier cases never switched the supply off
+// mid-march.
+
+test("solveTransient2D() keeps energy closure with a strongly temperature-dependent cp", () => {
+  // Graphitic carbon roughly triples its heat capacity over this range. A
+  // storage term evaluated at the end-of-step temperature rather than the
+  // midpoint stores the wrong amount of energy, which shows up here as a
+  // closure of order 0.1 rather than order 1e-8.
+  const steep = {
+    name: "steep-cp probe", rhoOhmCm: 0.05, density: 452, k: 400, jmax: 1e9, cp: 710,
+    cpTable: [[25, 710], [400, 1390], [800, 1730], [1200, 1900], [1800, 2040]],
+  };
+  const x = { ...makeInput(LOSSY), material: steep };
+  const zeroD = calculate(x);
+  const r = solveTransient2D(x, zeroD, LOSSY, steep, { dt: 0.05, steps: 120 });
+  assert.equal(r.errors.length, 0);
+  assert.ok(r.worstClosure < 1e-5,
+    `closure ${r.worstClosure} — storage term is inconsistent with the enthalpy change`);
+});
+
+test("solveTransient2D() reports a meaningful closure while the drive is off", () => {
+  const x = makeInput(LOSSY);
+  const zeroD = calculate(x);
+  // A 20% duty square wave: most steps have P_bulk exactly zero, so a closure
+  // normalised by P_bulk alone would divide the residual by ~0 and report a
+  // meaningless number for steps that balance loss against storage perfectly.
+  const r = solveTransient2D(x, zeroD, LOSSY, sic, {
+    dt: 0.5, steps: 80, sourceScale: (t) => (Math.floor(t / 0.5) % 5 === 0 ? 1 : 0),
+  });
+  assert.equal(r.errors.length, 0);
+  // The bug this guards against reported a closure of order 1e+6, so the
+  // threshold is loose on purpose. What remains at 1e-5 is the per-step Picard
+  // residual on the switching steps, which is a real and acceptable cost of a
+  // hard on/off edge, not a balance error.
+  assert.ok(r.worstClosure < 1e-3, `closure ${r.worstClosure} under a duty-cycled drive`);
+  assert.ok(r.history.some((h) => h.pBulk === 0), "test did not actually exercise an off step");
+});

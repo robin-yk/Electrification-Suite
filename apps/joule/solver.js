@@ -546,7 +546,15 @@ export function assemble2DSystem(T, x, g, cfg, material, mesh, op, transient = n
     // sets it, and energy-closure reporting assumes the ordinary Joule source.
     if(cfg.verificationSource) rhs[p]+=cfg.verificationSource(mesh.centers[i],mesh.zCenters[j])*mesh.cellVolume(i,j);
     else if(code===0) rhs[p]+=qVol*mesh.cellVolume(i,j);
-    if(transient) addStorage(p,rhoCp2D(code,T[j][i],material,cfg)*mesh.cellVolume(i,j)/transient.dt,transient.Tprev[j][i]);
+    // rho*cp is evaluated at the mean of the old and current temperatures, not
+    // at the current one. For a material whose cp is strongly temperature
+    // dependent -- carbon paper triples over this range -- the two differ
+    // enough to break the energy balance: the assembled term would store
+    // rho*cp(T_new)*(T_new-T_old) while the actual enthalpy change is the
+    // integral of rho*cp dT across the step. The midpoint value makes the
+    // discrete term a second-order approximation to that integral, and lets
+    // storageRate2D reproduce it exactly rather than approximately.
+    if(transient) addStorage(p,rhoCp2D(code,0.5*(T[j][i]+transient.Tprev[j][i]),material,cfg)*mesh.cellVolume(i,j)/transient.dt,transient.Tprev[j][i]);
     if(i<mesh.nr-1) {
       const q=idx(i+1,j),face=mesh.edges[i+1],area=2*Math.PI*face*(mesh.zEdges[j+1]-mesh.zEdges[j]),nextCode=mesh.materialAt(i+1,j),kn=cellK2D(nextCode,T[j][i+1],material,cfg,x);
       const G=pairConductance(area,face-mesh.centers[i],kp,mesh.centers[i+1]-face,kn,code,nextCode);
@@ -699,6 +707,19 @@ export function internalEnergy2D(T, cfg, material, mesh, refK) {
   return sum;
 }
 
+// Rate of change of stored energy between two fields, W. Evaluated exactly
+// the way assemble2DSystem builds its storage term -- same midpoint rho*cp,
+// same cell volumes -- so that the transient closure measures the physics
+// rather than a mismatch between two spellings of the same quantity.
+export function storageRate2D(T, Tprev, cfg, material, mesh, dt) {
+  let sum=0;
+  for(let j=0;j<mesh.nz;j++)for(let i=0;i<mesh.nr;i++){
+    const code=mesh.materialAt(i,j);
+    sum+=rhoCp2D(code,0.5*(T[j][i]+Tprev[j][i]),material,cfg)*mesh.cellVolume(i,j)*(T[j][i]-Tprev[j][i]);
+  }
+  return sum/dt;
+}
+
 // Backward-Euler time march of the same operator solveThermal2D solves at
 // steady state. Unconditionally stable, so dt is chosen by the time scale of
 // interest rather than by a stability limit, and first-order accurate in
@@ -736,7 +757,6 @@ export function solveTransient2D(x, zeroD, cfg, material, plan = {}) {
   for(let n=0;n<steps;n++){
     const t=(n+1)*dt;
     for(let j=0;j<mesh.nz;j++)for(let i=0;i<mesh.nr;i++)Tprev[j][i]=T[j][i];
-    const energyBefore=internalEnergy2D(Tprev,cfg,material,mesh,ambientK);
     const scale=Math.max(0,sourceScale(t));
     let pass=0,step=Infinity;
     for(pass=0;pass<picardMax&&step>picardTol;pass++){
@@ -753,12 +773,15 @@ export function solveTransient2D(x, zeroD, cfg, material, plan = {}) {
     }
     if(step>picardTol)converged=false;
     const loss=boundaryLoss2D(T,x,g,cfg,material,mesh,op);
-    const energyAfter=internalEnergy2D(T,cfg,material,mesh,ambientK);
-    const storageRate=(energyAfter-energyBefore)/dt;
+    const storageRate=storageRate2D(T,Tprev,cfg,material,mesh,dt);
     // The transient balance carries a term the steady one does not: what the
-    // domain absorbed. Reporting it against P_bulk keeps the diagnostic
-    // comparable with the steady closure.
-    const closure=Math.abs(op.pBulk-loss.total-storageRate)/Math.max(op.pBulk,1e-12);
+    // domain absorbed. It is normalised against the largest term present, not
+    // against P_bulk: a duty-cycled drive spends most of its period with
+    // P_bulk exactly zero, and dividing the residual by that would report an
+    // arbitrarily large closure for a step that is in fact balanced to
+    // round-off between loss and storage.
+    const scaleW=Math.max(op.pBulk,Math.abs(loss.total),Math.abs(storageRate),1e-12);
+    const closure=Math.abs(op.pBulk-loss.total-storageRate)/scaleW;
     worstClosure=Math.max(worstClosure,closure);
     electricalEnergy+=op.pBulk*dt;
     if(n%record===0||n===steps-1){
