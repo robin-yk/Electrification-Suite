@@ -428,6 +428,47 @@ bed conductivities fitted against a 43%-too-peaked source were absorbing that
 error, so refitting them against the solved field is what makes those numbers
 mean what they claim.
 
+## Microwave calibration is fitting mesh error (`tools/verification/microwave-calibrate.mjs`)
+
+The page fits four numbers -- the bed conductivity anchors k200, k500, k800 and
+the radiation-area multiplier radArea -- by bounded coordinate search against a
+measured [P_abs, T_wall, T_centre] sweep. The search runs on a 10x30 mesh and the
+result is reported on 30x60. At fixed parameters those two meshes disagree by far
+more than the residual being minimised:
+
+| P (W) | centre 10x30 -> 30x60 | wall 10x30 -> 30x60 |
+| --- | --- | --- |
+| 10 | 225.0 -> 217.2 (−7.8) | 188.4 -> 185.5 (−2.9) |
+| 20 | 340.0 -> 325.5 (−14.5) | 277.0 -> 271.3 (−5.7) |
+| 30 | 427.4 -> 406.4 (−21.0) | 339.7 -> 331.8 (−7.9) |
+| 40 | 501.0 -> 473.8 (−27.3) | 389.0 -> 379.3 (−9.7) |
+
+**The discretisation error reaches 27 K where the RMSE being minimised is about
+10 K**, and it grows systematically with power rather than scattering. A search
+under those conditions does not find parameters that describe the physics; it
+finds parameters that cancel coarse-mesh error. The reproduction shows exactly
+that: driving the coarse objective from 10.21 down to 7.87 leaves the 30x60
+result at 10.83, *worse* than the 8.72 the unsearched defaults give.
+
+### What this invalidates, including a claim made here
+
+Comparing the fitted-Gaussian source against the solved field on this objective
+does not work yet, and an intermediate reading of it was wrong. On the 10x30
+search mesh the solved field scored 8.80 against 10.21 and looked like a 14%
+improvement; on 30x60 the order reverses, 11.23 against 8.72. Neither number
+means anything, for two reasons that have to be fixed in order:
+
+1. the objective is dominated by discretisation error, and
+2. the shipped conductivities were fitted *with* the Gaussian source, so they
+   flatter it. Each source model has to be refit independently before either
+   can be scored.
+
+`microwave-calibrate.mjs` reproduces the page's search headlessly so that both
+steps can be done offline, but its output is not a calibration until the mesh
+question is settled. The practical obstacle is that `solve2D` relaxes with
+Gauss-Seidel, which makes the fine meshes needed here expensive; a Krylov solve
+is the precondition for calibrating on a converged grid.
+
 ## Continuous guards
 
 `tests/verification.test.js` (run by `npm test` and CI) keeps the headline
