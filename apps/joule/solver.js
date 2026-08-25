@@ -332,26 +332,53 @@ export function allocateSegmentCells(segments, total) {
 
 export function build2DMesh(g, cfg) {
   const nr=cfg.nr||30,nz=cfg.nz||60,radius=g.D/2,hasGap=cfg.gap>1e-12,outerRadius=radius+cfg.gap+cfg.wallThickness;
-  // domainRadius/domainHeight below are set by the *ratio* nr/(nr-nAir), so a
-  // fixed nAir would shrink the surrounding-air blanket every time the grid is
-  // refined — a refinement study would then move the far-field boundary instead
-  // of holding the problem fixed. Default nAir/nAirZ proportionally to nr/nz so
-  // the physical domain is grid-independent. The 8/30 and 8/60 ratios reproduce
-  // the historical defaults exactly at 30×60, and reproduce 8<<level at the
-  // doubled grids used by tools/verification/joule.mjs.
-  const nAir=cfg.nAir??Math.max(4,Math.round(nr*8/30)),activeRadialCells=nr-nAir;
+  // The surrounding-air blanket reaches domainRatio x the outer radius. It used
+  // to be written as nr/(nr-nAir), which tied the *physical* domain to the cell
+  // count: refining the grid with a fixed nAir walked the far-field boundary
+  // inward (1.364 -> 1.071 from 30x60 to 120x240), so a refinement study moved
+  // the boundary condition instead of holding the problem fixed. State the reach
+  // directly instead. The 30/22 default is the historical value to the digit.
+  const domainRatio=cfg.domainRatio??30/22;
+  // Air resolution no longer changes the physics, only how well the log profile
+  // out to that boundary is resolved, so it can be cut back and graded. What is
+  // freed goes to the element, which carries both the source and the steep
+  // near-surface gradient the radiation boundary reads.
+  const nAir=cfg.nAir??Math.max(4,Math.round(nr*5/30)),activeRadialCells=nr-nAir;
+  // Left length-proportional deliberately. Down-weighting the wall to hand its
+  // cells to the element looks attractive on the shipped enclosure, where a 1 mm
+  // quartz shell is nearly isothermal — but quartz at k = 1.4 is the *highest*
+  // resistance per unit thickness in the stack, and starving it broke the
+  // multi-layer ln-resistance benchmark (0.8% -> 3.5% at L/D 100). The element
+  // gains its cells from the smaller air blanket instead, which costs nothing.
   const segments=[{key:"element",length:radius,min:8}];
   if(hasGap) segments.push({key:"gap",length:cfg.gap,min:1});
   segments.push({key:"wall",length:cfg.wallThickness,min:2});
   const counts=allocateSegmentCells(segments,activeRadialCells),byKey=Object.fromEntries(segments.map((segment,index)=>[segment.key,counts[index]]));
   const nElement=byKey.element,nGap=byKey.gap||0,nWall=byKey.wall,nAirZ=cfg.nAirZ??Math.max(4,Math.round(nz*8/60)),nActiveZ=nz-2*nAirZ;
-  const domainRadius=outerRadius*nr/activeRadialCells,domainHeight=g.L*nz/nActiveZ,dz=domainHeight/nz;
+  const domainRadius=outerRadius*domainRatio,domainHeight=g.L*nz/nActiveZ,dz=domainHeight/nz;
   const edges=[0];
   const addSegment=(start,end,count)=>{for(let i=1;i<=count;i++)edges.push(start+(end-start)*i/count);};
+  // Geometric grading for the air: the radial profile out there is logarithmic,
+  // so cells near the wall carry the gradient and cells far out carry almost
+  // none. Grading lets a smaller nAir cover the same reach at lower error.
+  //
+  // The *total* stretch (last cell / first cell) is what is held fixed, not the
+  // cell-to-cell growth factor. A fixed growth factor compounds: at nAir = 20 a
+  // 1.35 ratio spans 600:1 across the blanket, which is both inaccurate and
+  // badly conditioned. Fixing the total instead keeps neighbouring cells close
+  // in size and makes refinement scale every air cell by the same factor, so the
+  // grid sequence stays a genuine refinement.
+  const addGradedSegment=(start,end,count,stretch)=>{
+    const growth=count>1?Math.pow(stretch,1/(count-1)):1;
+    const widths=[];let w=1,total=0;
+    for(let n=0;n<count;n++){widths.push(w);total+=w;w*=growth;}
+    let acc=start;
+    for(let n=0;n<count;n++){acc+=(end-start)*widths[n]/total;edges.push(n===count-1?end:acc);}
+  };
   addSegment(0,radius,nElement);
   if(hasGap) addSegment(radius,radius+cfg.gap,nGap);
   addSegment(radius+cfg.gap,outerRadius,nWall);
-  addSegment(outerRadius,domainRadius,nAir);
+  addGradedSegment(outerRadius,domainRadius,nAir,8);
   const centers=Array.from({length:nr},(_,i)=>(edges[i]+edges[i+1])/2);
   const zEdges=Array.from({length:nz+1},(_,j)=>-domainHeight/2+j*dz),zCenters=Array.from({length:nz},(_,j)=>(zEdges[j]+zEdges[j+1])/2);
   const activeStart=nAirZ,activeEnd=nAirZ+nActiveZ;
@@ -639,7 +666,13 @@ export function solveThermal2D(x, zeroD, cfg, material) {
     maxStep=0;
     for(let j=0;j<mesh.nz;j++)for(let i=0;i<mesh.nr;i++){
       const old=T[j][i],solved=clamp(linear.x[j*mesh.nr+i],1,6000),updated=old+relaxation*(solved-old);
-      T[j][i]=updated;maxStep=Math.max(maxStep,Math.abs(updated-old));
+      // Measure the *un-relaxed* Picard step. Using |updated - old| instead
+      // folds the relaxation factor into the convergence test, so a case the
+      // stall detector damps to 0.08 stops with a true step 12.5x the stated
+      // tolerance while still reporting converged. Since the damping is path
+      // dependent, two grids then stop at two different accuracies, which shows
+      // up as a Richardson order that is not merely low but negative.
+      T[j][i]=updated;maxStep=Math.max(maxStep,Math.abs(solved-old));
     }
     // A fixed 0.62/0.86 relaxation schedule can settle into a period-2 limit cycle on
     // very stiff cases (extreme element L/D with strongly radiative boundaries): the
