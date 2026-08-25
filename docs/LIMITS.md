@@ -112,11 +112,13 @@ is still right.
 
 ### A pulse train needs a period the element can follow
 
-The element's lumped relaxation time is `elementTimeConstant()`, roughly 7.6 s
-for the shipped default geometry. A drive whose period is well under that is
-integrated by the element, which then responds to the mean: at 0.13 τ the
-swing was 2.9 K on a 42 K rise. No time step changes this, and the tab now says
-so before it asks for more steps.
+The element's lumped relaxation time is `elementTimeConstant()`. It depends on
+the material as much as the envelope: the shipped default relaxes in about
+41 s as dense SiC and in 7.6 s as CFP in the same envelope, because CFP is a
+seventh of the mass. A drive whose period is well under that is integrated by
+the element, which then responds to the mean: at 0.13 τ the swing was 2.9 K on
+a 42 K rise. No time step changes this, and the tab now says so before it asks
+for more steps.
 
 **Do not** expect this tab to reproduce rapid pulsed heating on a thin foil.
 The RPH element in the companion paper is a 38 × 8 × 0.21 mm strip relaxing in
