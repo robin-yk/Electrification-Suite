@@ -82,6 +82,51 @@ export function propertiesAt(material, tempK) {
   };
 }
 
+// Maxwell-Eucken effective conductivity for a continuous solid skeleton holding
+// dispersed gas-filled pores. Exact at both limits (phi = 0 returns the solid,
+// phi = 1 returns the gas), and the same closure the microwave solver uses for
+// its packed bed, so the two apps homogenize by one method rather than two.
+export function maxwellEucken(kSolid, kGas, voidFraction) {
+  const phi = clamp(voidFraction, 0, 1);
+  return kSolid * (2*kSolid + kGas - 2*phi*(kSolid - kGas)) / (2*kSolid + kGas + phi*(kSolid - kGas));
+}
+
+// Conductivity of the element treated as a continuum.
+//
+// Homogenizing here is OPT-IN, gated on material.kIsSkeleton, and that gate is
+// the whole point. The geometry already dilutes the electrical path by the solid
+// fraction (geometry(): area = grossArea * solidFraction) and the 2D source by
+// the envelope volume, so it looks as though the conductivity is the one term
+// left un-diluted. Applying a porous closure to solidFraction unconditionally is
+// wrong twice over on the cases this repo actually ships:
+//
+//   * solidFraction is overloaded. For the Wismann tube it is the area fraction
+//     of a 0.35 mm annulus in a 6 mm envelope, not a porosity -- the metal there
+//     is a continuous dense wall and the table value is already correct. Feeding
+//     0.2198 to a dispersed-pore model moved that case's 2D peak from 818 to
+//     852 C against an 800 C measurement, away from the experiment.
+//   * the shipped porous entries already carry homogenized values. "SiSiC foam
+//     (effective)" at k = 40 against ~130 for dense SiSiC, and "CFP H23
+//     (effective)" at k = 5, are bed-scale numbers. Re-mixing them double counts
+//     the porosity.
+//
+// So this path activates only for a material that declares its k to be a
+// skeleton (dense-phase) value AND an input whose solidFraction is a genuine
+// porosity. No shipped material sets the flag; it exists so that adding one is a
+// deliberate act with a stated basis, the way the microwave solver back-solves a
+// skeleton value from a reference measurement before re-mixing.
+//
+// The pore gas is the process gas, so it shares cfg.gapK with the gap and purge
+// regions instead of introducing a second gas model.
+export function elementK(material, tempK, x, cfg) {
+  const kSolid = Math.max(1e-6, propertiesAt(material, tempK).k);
+  if (!material || !material.kIsSkeleton) return kSolid;
+  const solidFraction = finite(x && x.solidFraction) ? clamp(x.solidFraction, 1e-6, 1) : 1;
+  if (solidFraction >= 1) return kSolid;
+  const kGas = Math.max(1e-9, finite(cfg && cfg.gapK) ? cfg.gapK : OUTSIDE_AIR_K);
+  return Math.max(1e-6, maxwellEucken(kSolid, kGas, 1 - solidFraction));
+}
+
 export function validate2DConfig(cfg) {
   const errors = [];
   [["Wall conductivity",cfg.wallK],["Wall thickness",cfg.wallThickness],["Gap conductivity",cfg.gapK],["Maximum iterations",cfg.maxIter],["Temperature tolerance",cfg.tolerance]].forEach(([label,value]) => {
@@ -299,7 +344,7 @@ export function calculate(x) {
   const deltaT = Math.max(0, x.targetK - x.ambientK);
   const adiabaticTime = deltaT / rampRate;
   const hEffective = deltaT>0?requiredPower/Math.max(g.surface*deltaT,1e-30):0;
-  const bi = hEffective * g.lc / target.props.k;
+  const bi = hEffective * g.lc / elementK(m, x.targetK, x, x.enclosure);
   const kcrit = hEffective * g.lc / x.biLimit;
   const uniform = bi <= x.biLimit;
   const maxMaterialRamp = m.jmax * m.jmax * rhoE / (m.density * target.props.cp);
@@ -405,7 +450,7 @@ export function material2DName(code, result) {
 }
 
 export function cellK2D(code, tempK, material, cfg, x) {
-  if (code === 0) return Math.max(1e-6, propertiesAt(material,tempK).k);
+  if (code === 0) return elementK(material, tempK, x, cfg);
   if (code === 1 || code === 4) return Math.max(1e-6, cfg.gapK);
   if (code === 2) return Math.max(1e-6, cfg.wallK);
   return OUTSIDE_AIR_K;

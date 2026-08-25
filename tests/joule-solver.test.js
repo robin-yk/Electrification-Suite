@@ -3,7 +3,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  MATERIALS, geometry, calculate, build2DMesh, solveThermal2D
+  MATERIALS, geometry, calculate, build2DMesh, solveThermal2D, maxwellEucken, elementK
 } from "../apps/joule/solver.js";
 
 const DEFAULT_ENCLOSURE = {
@@ -246,4 +246,35 @@ test("calculate() attaches a melt warning, and its suggested Vmax/Imax each inde
   const safelyCappedByCurrent = calculate({ ...x, vmax: 1e9, imax: overheated.melt.safeCurrent * 0.999 });
   assert.equal(safelyCappedByCurrent.melt, null);
   assert.ok(safelyCappedByCurrent.tss < meltK);
+});
+
+test("maxwellEucken() is exact at both phase limits and monotone between them", () => {
+  const kSolid = 120, kGas = 0.03;
+  assert.ok(Math.abs(maxwellEucken(kSolid, kGas, 0) - kSolid) < 1e-9);
+  assert.ok(Math.abs(maxwellEucken(kSolid, kGas, 1) - kGas) < 1e-9);
+  let previous = Infinity;
+  for (let phi = 0; phi <= 1.0001; phi += 0.05) {
+    const k = maxwellEucken(kSolid, kGas, phi);
+    assert.ok(k < previous, `k must fall with porosity, broke at phi=${phi}`);
+    assert.ok(k >= kGas && k <= kSolid);
+    previous = k;
+  }
+});
+
+test("elementK() homogenizes only for a material that declares a skeleton k", () => {
+  const x = { solidFraction: 0.12 }, cfg = { gapK: 0.03 };
+  const effective = { name: "foam (effective)", k: 40 };
+  const skeleton = { name: "foam (skeleton)", k: 40, kIsSkeleton: true };
+  // Default: the table value is taken at face value, so a material whose k was
+  // already measured on the porous body is not diluted a second time.
+  assert.equal(elementK(effective, 1273, x, cfg), 40);
+  assert.ok(elementK(skeleton, 1273, x, cfg) < 40 * 0.2);
+  // A solid element is untouched either way.
+  assert.equal(elementK(skeleton, 1273, { solidFraction: 1 }, cfg), 40);
+});
+
+test("no shipped material declares kIsSkeleton, so 2D conductivity is the table value", () => {
+  for (const material of MATERIALS) {
+    assert.ok(!material.kIsSkeleton, `${material.name} would silently re-homogenize`);
+  }
 });
