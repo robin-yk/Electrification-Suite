@@ -88,7 +88,7 @@ export function solverLoop(DATA) {
 
   b += stage(sx, 12, sw, 28, "Inputs", "geometry, material, drive setting, enclosure", C.grey);
   b += arrow(ns, "M" + cx + ",40 L" + cx + ",53");
-  b += stage(sx, 54, sw, 28, "Zero-dimensional steady state", "one temperature, used as the seed", C.scalar, TINT.scalar);
+  b += stage(sx, 54, sw, 28, "Zero-dimensional steady state", "single temperature, used as the seed", C.scalar, TINT.scalar);
   b += arrow(ns, "M" + cx + ",82 L" + cx + ",95");
   b += stage(sx, 96, sw, 28, "Build the axisymmetric mesh", "built once and held fixed", C.grey);
   b += arrow(ns, "M" + cx + ",124 L" + cx + ",137");
@@ -99,7 +99,7 @@ export function solverLoop(DATA) {
   b += T(163, 153, "coefficients re-evaluated from the current temperature field", { size: 8.5, fill: C.grey });
 
   const cols = [
-    { x: 34, c: C.scalar, tint: TINT.scalar, key: "scalar", head: "Scalar electrical", role: "returns one number",
+    { x: 34, c: C.scalar, tint: TINT.scalar, key: "scalar", head: "Scalar electrical", role: "one scalar power",
       items: [{ t: "T_{avg}   volume average" },
               { t: "ρ(T_{avg})   resistivity" },
               { t: "R_{bulk} = ρ L / A" },
@@ -107,12 +107,12 @@ export function solverLoop(DATA) {
               { t: "I   set by R_{total}" },
               { t: "P_{bulk} = I² R_{bulk}" },
               { t: "P_{contact} = I² · 2R_{c}", off: true }] },
-    { x: 186, c: C.field, tint: TINT.field, key: "field", head: "Local electrical field", role: "returns a shape only",
+    { x: 186, c: C.field, tint: TINT.field, key: "field", head: "Local electrical field", role: "spatial distribution only",
       items: [{ t: "T(r,z)   temperature field" },
               { t: "σ(T) = 1 / ρ(T)" },
               { t: "∇·(σ ∇V) = 0" },
               { t: "q‴_{unit}(r,z)" }] },
-    { x: 338, c: C.thermal, tint: TINT.thermal, key: "thermal", head: "Thermal properties", role: "returns matrix coefficients",
+    { x: 338, c: C.thermal, tint: TINT.thermal, key: "thermal", head: "Thermal properties", role: "matrix coefficients",
       items: [{ t: "k(T)   conduction" },
               { t: "c_{p}(T)   transient only" },
               { t: "h_{rad}   radiation" }] }
@@ -125,8 +125,8 @@ export function solverLoop(DATA) {
       if (it.off) {
         b += rect(col.x, y, 137, 17, { stroke: C.grey, fill: "#FFFFFF", sw: 0.8, dash: "2.5 2" });
         b += T(col.x + 6, y + 11.6, it.t, { size: 9, fill: C.grey });
-        b += T(col.x, y + 27, "reported, and not deposited", { size: 8, fill: C.grey });
-        b += T(col.x, y + 37, "anywhere in the thermal domain", { size: 8, fill: C.grey });
+        b += T(col.x, y + 27, "reported; not deposited in", { size: 8, fill: C.grey });
+        b += T(col.x, y + 37, "the thermal domain", { size: 8, fill: C.grey });
         return;
       }
       b += rect(col.x, y, 137, 17, { stroke: col.c, fill: col.tint, sw: 0.8 });
@@ -136,15 +136,14 @@ export function solverLoop(DATA) {
       if (next && next.off) b += line(col.x + 68.5, y + 17, col.x + 68.5, y + 25, { stroke: C.grey, sw: 0.8, dash: "2 2" });
     });
   });
-  b += T(36, 384, "Each sweep re-evaluates all three branches from the temperature field the previous sweep produced.", { size: 8.5, fill: C.grey });
 
   b += arrow(ns, "M" + cx + ",392 L" + cx + ",407");
   b += stage(sx, 408, sw, 28, "Assemble the thermal matrix", "one row per finite-volume cell", C.thermal, TINT.thermal);
   b += arrow(ns, "M" + cx + ",436 L" + cx + ",449");
   b += rect(sx, 450, sw, 40, { stroke: C.thermal, fill: TINT.thermal, sw: 1 });
   b += T(cx, 463, "Preconditioned linear solve", { size: 9.5, weight: "bold", anchor: "middle", fill: C.thermal });
-  b += T(cx, 474, "PCG while the matrix is symmetric,", { size: 8.5, anchor: "middle", fill: C.grey });
-  b += T(cx, 484, "BiCGSTAB once gas transport makes it not", { size: 8.5, anchor: "middle", fill: C.grey });
+  b += T(cx, 474, "PCG for a symmetric matrix,", { size: 8.5, anchor: "middle", fill: C.grey });
+  b += T(cx, 484, "BiCGSTAB when gas transport breaks symmetry", { size: 8.5, anchor: "middle", fill: C.grey });
   b += arrow(ns, "M" + cx + ",490 L" + cx + ",505");
   b += stage(sx, 506, sw, 28, "Relax the temperature field", "under-relaxed update", C.thermal, TINT.thermal);
   b += arrow(ns, "M" + cx + ",534 L" + cx + ",547");
@@ -164,7 +163,7 @@ export function solverLoop(DATA) {
 /* Figure 2. Rectangular element to equivalent cylinder.               */
 /* ------------------------------------------------------------------ */
 export function cylinderMapping(DATA) {
-  const ns = "s4", W = 505, H = 406, s = 4.474;   /* pt per mm, both drawings */
+  const ns = "s4", W = 505, H = 358, s = 4.474;   /* pt per mm, both drawings */
   const S = DATA.strip, Q = DATA.cyl;
   let b = defs(ns);
 
@@ -180,7 +179,7 @@ export function cylinderMapping(DATA) {
   b += line(24, 30, 24, 30 + sw2, { stroke: C.grey, sw: 0.6 });
   b += '<text x="16" y="' + (30 + sw2 / 2) + '" font-size="8.5" fill="' + C.ink + '" text-anchor="middle" transform="rotate(-90 16 ' + (30 + sw2 / 2) + ')">' + S.W.toFixed(2) + ' mm</text>';
   b += rect(32, 100, sl, sh, { stroke: C.field, fill: C.field, sw: 0.6, rx: 0 });
-  b += T(32, 116, "edge view, drawn to the same scale", { size: 8.5, fill: C.grey });
+  b += T(32, 116, "edge view, same scale", { size: 8.5, fill: C.grey });
   b += arrow(ns, "M" + (32 + sl + 30) + ",101 L" + (32 + sl + 4) + "," + (100 + sh / 2), { color: "grey", sw: 0.6 });
   b += T(32 + sl + 33, 104, S.H.toFixed(2) + " mm", { size: 8.5 });
 
@@ -198,7 +197,7 @@ export function cylinderMapping(DATA) {
   b += T(300 + sl / 2, 88, Q.L.toFixed(2) + " mm", { size: 8.5, anchor: "middle" });
   b += line(292, cy, 292, cy + cd, { stroke: C.grey, sw: 0.6 });
   b += T(300 + sl, cy - 6, "D = " + Q.D.toFixed(3) + " mm", { size: 8.5, anchor: "end" });
-  b += T(300, 116, "the diameter follows from the surface, not the volume", { size: 8.5, fill: C.grey });
+  b += T(300, 116, "diameter set by surface, not by volume", { size: 8.5, fill: C.grey });
 
   /* the ledger */
   const col = [32, 214, 316, 404], y0 = 146;
@@ -217,7 +216,7 @@ export function cylinderMapping(DATA) {
     ["Electrical resistance", S.R.toFixed(3) + " Ω", Q.R.toFixed(3) + " Ω", "identical"],
     { g: "Not preserved", c: C.thermal },
     ["Geometric volume", S.volume.toFixed(5) + " cm³", Q.volume.toFixed(4) + " cm³", "larger by ×" + Q.volumeRatio.toFixed(2), "bad"],
-    { g: "Derived to hold the four above", c: C.grey },
+    { g: "Derived", c: C.grey },
     ["Diameter", "—", Q.D.toFixed(3) + " mm", "set by the surface"],
     ["Effective density", S.density.toFixed(1) + " kg/m³", Q.density.toFixed(2) + " kg/m³", "×" + Q.densityScale.toFixed(5)],
     ["Effective resistivity", S.rho.toFixed(5) + " Ω·cm", Q.rho.toFixed(4) + " Ω·cm", "×" + Q.areaRatio.toFixed(2)]
@@ -240,11 +239,6 @@ export function cylinderMapping(DATA) {
     y += 17;
   });
 
-  b += line(32, y + 4, 480, y + 4, { stroke: C.ink, sw: 0.9 });
-  b += T(32, y + 18, "Surface is 2(LW + LH + WH) = " + S.surface.toFixed(3) + " cm². The two-face convention 2LW gives " + S.surface2f.toFixed(3) + " cm² and omits the edges,", { size: 8.5, fill: C.grey });
-  b += T(32, y + 29, "which are " + S.edgePct.toFixed(2) + " % of the total. The solver uses the first convention everywhere.", { size: 8.5, fill: C.grey });
-  b += T(32, y + 43, "The zero-dimensional solve uses the three rectangular dimensions as they are. This substitution applies only to", { size: 8.5 });
-  b += T(32, y + 54, "the axisymmetric solves, which cannot mesh a box.", { size: 8.5 });
 
   return svgDoc(W, H, b);
 }
@@ -346,17 +340,11 @@ export function meshDomain(DATA) {
   row("z at both ends", "gas pads close the domain");
   ay += 2;
   row("gas inlet, outlet", "top row in, row 0 out");
-  ay += 4;
-  b += T(ax + 13, ay, "A gas pad is the gas-filled band of rows above and", { size: 8.5, fill: C.grey });
-  b += T(ax + 13, ay + 10, "below the element. Graded means the air cells widen", { size: 8.5, fill: C.grey });
-  b += T(ax + 13, ay + 20, "outward, the last being ×" + M.stretch.toFixed(0) + " the first.", { size: 8.5, fill: C.grey });
-  ay += 32;
+
   ay += 10;
   b += '<rect x="' + ax + '" y="' + (ay - 7) + '" width="8" height="8" fill="none" stroke="' + C.gas + '" stroke-width="1.2"/>';
   b += T(ax + 13, ay, "process gas, top to bottom", { size: 9, fill: C.gas });
-  ay += 13;
-  b += T(ax, ay, "The solved region is the half-plane shown. No mirrored", { size: 8.5, fill: C.grey });
-  b += T(ax, ay + 11, "counterpart is stored or solved.", { size: 8.5, fill: C.grey });
+
 
   return svgDoc(W, H, b);
 }
@@ -365,7 +353,7 @@ export function meshDomain(DATA) {
 /* Figure 4. What the assembly writes into the matrix.                 */
 /* ------------------------------------------------------------------ */
 export function matrixClasses(DATA) {
-  const ns = "s2", W = 505, H = 396;
+  const ns = "s2", W = 505, H = 352;
   let b = defs(ns);
   const rows = [34, 116, 198, 280];
   const SX = 30, MX = 168, TX = 268;
@@ -470,9 +458,6 @@ export function matrixClasses(DATA) {
   b += T(TX, y + 34, "cell downstream does not. The matching entry is absent,", { size: 8.5 });
   b += T(TX, y + 45, "shown dashed, so the operator is not symmetric.", { size: 8.5 });
 
-  b += line(SX, 356, 495, 356, { stroke: C.ink, sw: 0.9 });
-  b += T(SX, 370, "The first three terms preserve matrix symmetry. Directed gas enthalpy transport produces a nonsymmetric", { size: 9 });
-  b += T(SX, 382, "operator and activates BiCGSTAB.", { size: 9 });
   return svgDoc(W, H, b);
 }
 
@@ -480,7 +465,7 @@ export function matrixClasses(DATA) {
 /* Figure 5. One total power, one spatial shape, and where they meet.  */
 /* ------------------------------------------------------------------ */
 export function coupling(DATA) {
-  const ns = "m2", W = 505, H = 318;
+  const ns = "m2", W = 505, H = 282;
   let b = defs(ns);
   const xs = [20, 142, 264, 386], bw = 108;
 
@@ -496,31 +481,31 @@ export function coupling(DATA) {
   };
 
   b += T(20, 18, "Scalar branch", { size: 10, weight: "bold", fill: C.scalar });
-  b += T(96, 18, "sets how much power the element dissipates, from the volume-average temperature", { size: 8.5, fill: C.grey });
+  b += T(96, 18, "total power dissipated, from the volume-average temperature", { size: 8.5, fill: C.grey });
   chain(26, C.scalar, TINT.scalar, [
     ["T_{avg}", "volume average"],
     ["ρ(T_{avg}),  R_{bulk}", "R_{total} = R_{bulk} + 2R_{c}"],
     ["I", "set by R_{total}"],
-    ["P_{bulk} = I² R_{bulk}", "one number, in watts"]
+    ["P_{bulk} = I² R_{bulk}", "scalar, in watts"]
   ]);
   /* the contact term is computed on the same current and then leaves */
   b += line(440, 54, 440, 62, { stroke: C.grey, sw: 0.8, dash: "2 2" });
   b += rect(236, 62, 258, 18, { stroke: C.grey, fill: "#FFFFFF", sw: 0.8, dash: "2.5 2" });
-  b += T(365, 74, "P_{contact} = I² · 2R_{c},  reported and not deposited", { size: 8.5, anchor: "middle", fill: C.grey });
+  b += T(365, 74, "P_{contact} = I² · 2R_{c},  reported; not deposited", { size: 8.5, anchor: "middle", fill: C.grey });
 
   b += T(20, 106, "Field branch", { size: 10, weight: "bold", fill: C.field });
-  b += T(90, 106, "sets only where that power lands, from the local temperature field", { size: 8.5, fill: C.grey });
+  b += T(90, 106, "spatial distribution only, from the local temperature field", { size: 8.5, fill: C.grey });
   chain(114, C.field, TINT.field, [
     ["T(r,z)", "temperature field"],
     ["σ(T) = 1 / ρ(T)", "local conductivity"],
     ["∇·(σ ∇V) = 0", "unit potential"],
-    ["q‴_{unit}(r,z)", "a shape, not a magnitude"]
+    ["q‴_{unit}(r,z)", "distribution only"]
   ]);
 
   /* the join */
   b += rect(110, 176, 360, 46, { stroke: C.ink, fill: "#FFFFFF", sw: 1.2 });
   b += T(290, 194, "q‴(r,z)  =  P_{bulk} · q‴_{unit}(r,z) / ∫ q‴_{unit} dV", { size: 10.5, weight: "bold", anchor: "middle" });
-  b += T(290, 210, "the shape is scaled so that its volume integral equals the scalar total", { size: 8.5, anchor: "middle", fill: C.grey });
+  b += T(290, 210, "scaled so the volume integral equals the scalar total", { size: 8.5, anchor: "middle", fill: C.grey });
   b += arrow(ns, "M494,54 L500,54 L500,199 L472,199", { color: "scalar", sw: 1 });
   b += arrow(ns, "M440,142 L440,174", { color: "field", sw: 1 });
 
@@ -534,18 +519,15 @@ export function coupling(DATA) {
   b += arrow(ns, "M10,128 L18,128", { color: "thermal", sw: 1 });
   b += '<text x="6" y="180" font-size="8.5" fill="' + C.thermal + '" text-anchor="middle" transform="rotate(-90 6 180)">T(r,z)</text>';
 
-  b += line(20, 288, 495, 288, { stroke: C.ink, sw: 0.9 });
-  b += T(20, 302, "The field solve redistributes a fixed total power. It does not allow a local hot spot to increase the total", { size: 9 });
-  b += T(20, 314, "electrical power drawn.", { size: 9 });
+  return svgDoc(W, H, b);
   return svgDoc(W, H, b);
 }
-
 
 /* ------------------------------------------------------------------ */
 /* Fig. 1. What each tab takes in, and what it hands on.               */
 /* ------------------------------------------------------------------ */
 export function workflow(DATA) {
-  const ns = "m1", W = 505, H = 336;
+  const ns = "m1", W = 505, H = 280;
   let b = defs(ns);
   const xs = [18, 189, 360], pw = 127, py = 26, ph = 186;
 
@@ -570,10 +552,10 @@ export function workflow(DATA) {
     b += '<rect x="' + x + '" y="' + py + '" width="' + pw + '" height="22" fill="' + st.tint + '"/>';
     b += line(x, py + 22, x + pw, py + 22, { stroke: st.c, sw: 1 });
     b += T(x + pw / 2, py + 15, st.tab, { size: 10, weight: "bold", anchor: "middle", fill: st.c });
-    b += T(x + 8, py + 38, "YOU SET", { size: 8, weight: "bold", fill: C.grey });
+    b += T(x + 8, py + 38, "INPUTS", { size: 8, weight: "bold", fill: C.grey });
     st.set.forEach(function (t, k) { if (t) b += T(x + 8, py + 50 + k * 11, t, { size: 8.5 }); });
     b += line(x + 8, py + 111, x + pw - 8, py + 111, { stroke: C.rule, sw: 0.5 });
-    b += T(x + 8, py + 125, "IT RETURNS", { size: 8, weight: "bold", fill: C.grey });
+    b += T(x + 8, py + 125, "RETURNS", { size: 8, weight: "bold", fill: C.grey });
     st.out.forEach(function (t, k) { b += T(x + 8, py + 137 + k * 11, t, { size: 8.5 }); });
     if (st.hand) {
       const mid = (x + pw + xs[i + 1]) / 2;
@@ -594,146 +576,128 @@ export function workflow(DATA) {
     b += T(x, 266, s2[1], { size: 8, fill: C.grey });
   });
 
-  b += line(18, 288, 487, 288, { stroke: C.ink, sw: 0.9 });
-  b += T(18, 302, "Every tab calls the same DOM-free module, apps/joule/solver.js. The browser and the automated tests run identical", { size: 9 });
-  b += T(18, 314, "functions, so a number on screen and a number in a test come from one code path.", { size: 9 });
-  b += T(18, 330, "Tab names are those of the shipped application at the stamped revision.", { size: 8, fill: C.faint });
   return svgDoc(W, H, b);
 }
 
 /* ------------------------------------------------------------------ */
-/* Fig. 3. The three spatial verification studies, plotted from the    */
-/* run recorded in verification-data.json.                             */
+/* Fig. 3. Six verification studies. No panel titles: the axes carry    */
+/* the panel and the caption carries the rest.                          */
 /* ------------------------------------------------------------------ */
 export function verification(DATA) {
-  const ns = "m3", W = 505, H = 288;
+  const ns = "m3", W = 505, H = 430;
   const V = DATA.verification;
   let b = defs(ns);
-  const pw = 118, ph = 138, ptop = 46, pbot = 46 + 138;
-  const ox = [50, 213, 376];
+  const pw = 118, ph = 138;
+  const COL = [52, 215, 378], ROW = [30, 234];
   const lin = (v, lo, hi, a, c) => a + (v - lo) / (hi - lo) * (c - a);
   const lg = (v) => Math.log10(v);
-  /* a decade label written as 10 with a real exponent, not a caret */
-  const decade = (x, y, d) => T(x, y, "10^{" + String(d).replace("-", "\u2212") + "}", { size: 8, anchor: "end", fill: C.grey });
-  const sci = (v) => {
-    const e = Math.floor(Math.log10(Math.abs(v)));
-    const m = v / Math.pow(10, e);
-    return m.toFixed(1) + " × 10^{" + String(e).replace("-", "\u2212") + "}";
-  };
-  function panel(i, title, sub) {
-    const x0 = ox[i];
-    let o = rect(x0, ptop, pw, ph, { stroke: C.grey, fill: "#FFFFFF", sw: 0.8, rx: 0 });
-    o += T(x0 - 22, 24, "abc"[i], { size: 11, weight: "bold" });
-    o += T(x0 - 8, 24, title, { size: 9.5, weight: "bold" });
-    if (sub) o += T(x0 - 8, 36, sub, { size: 8, fill: C.grey });
-    return { x0, o };
-  }
   const marker = (kind, x, y, c) => kind === "circle"
     ? '<circle cx="' + x + '" cy="' + y + '" r="2.6" fill="#FFFFFF" stroke="' + c + '" stroke-width="1.2"/>'
     : '<rect x="' + (x - 2.4) + '" y="' + (y - 2.4) + '" width="4.8" height="4.8" fill="#FFFFFF" stroke="' + c + '" stroke-width="1.2"/>';
-  const foot = (x0, l1, l2) => T(x0, pbot + 36, l1, { size: 8, fill: C.grey }) +
-    (l2 ? T(x0, pbot + 46, l2, { size: 8, fill: C.grey }) : "");
 
-  /* ---- a. analytic radial profile ---- */
-  (function () {
-    const P = panel(0, "Analytic radial profile", "uniformly heated cylinder");
-    let o = P.o;
-    const pts = V.parabola;
-    const yLo = -5, yHi = -2, xLo = lg(17), xHi = lg(95);
-    const X = (v) => lin(lg(v), xLo, xHi, P.x0 + 12, P.x0 + pw - 12);
-    const Y = (v) => lin(lg(v), yHi, yLo, ptop + 10, pbot - 10);
-    for (let d = yLo; d <= yHi; d++) {
-      o += line(P.x0, Y(Math.pow(10, d)), P.x0 + pw, Y(Math.pow(10, d)), { stroke: "#EAEAEA", sw: 0.4 });
-      o += decade(P.x0 - 4, Y(Math.pow(10, d)) + 3, d);
+  /* One panel: log x, log or linear y, up to two series, an optional guide
+     slope and reference line, and two annotation lines under the axis. */
+  function plot(cfg) {
+    const x0 = COL[cfg.col], ptop = ROW[cfg.row], pbot = ptop + ph;
+    let o = rect(x0, ptop, pw, ph, { stroke: C.grey, fill: "#FFFFFF", sw: 0.8, rx: 0 });
+    o += T(x0 - 34, ptop - 6, "abcdef"[cfg.row * 3 + cfg.col], { size: 11, weight: "bold" });
+    const xLo = lg(cfg.xs[0] / cfg.xPad), xHi = lg(cfg.xs[cfg.xs.length - 1] * cfg.xPad);
+    const X = (v) => lin(lg(v), xLo, xHi, x0 + 12, x0 + pw - 12);
+    let Y;
+    if (cfg.decades) {
+      Y = (v) => lin(lg(v), cfg.decades[1], cfg.decades[0], ptop + 10, pbot - 10);
+      for (let d = cfg.decades[0]; d <= cfg.decades[1]; d++) {
+        o += line(x0, Y(Math.pow(10, d)), x0 + pw, Y(Math.pow(10, d)), { stroke: "#EAEAEA", sw: 0.4 });
+        o += T(x0 - 4, Y(Math.pow(10, d)) + 3, "10^{" + String(d).replace("-", "\u2212") + "}", { size: 8, anchor: "end", fill: C.grey });
+      }
+    } else {
+      Y = (v) => lin(v, cfg.range[0], cfg.range[1], pbot - 10, ptop + 10);
+      for (let t = Math.ceil(cfg.range[0]); t <= cfg.range[1]; t++) {
+        o += line(x0, Y(t), x0 + pw, Y(t), { stroke: "#EAEAEA", sw: 0.4 });
+        o += T(x0 - 4, Y(t) + 3, String(t), { size: 8, anchor: "end", fill: C.grey });
+      }
     }
-    let d = "";
-    pts.forEach(function (p, k) { d += (k ? " L" : "M") + X(p.ld) + "," + Y(p.worstRelative); });
-    o += '<path d="' + d + '" fill="none" stroke="' + C.scalar + '" stroke-width="1.3"/>';
-    pts.forEach(function (p) {
-      o += marker("circle", X(p.ld), Y(p.worstRelative), C.scalar);
-      o += T(X(p.ld), pbot + 12, String(p.ld), { size: 8, anchor: "middle" });
-    });
-    o += T(P.x0 + pw / 2, pbot + 24, "cylinder L/D", { size: 8.5, anchor: "middle" });
-    o += '<text x="' + (P.x0 - 28) + '" y="' + ((ptop + pbot) / 2) + '" font-size="8.5" text-anchor="middle" transform="rotate(-90 ' + (P.x0 - 28) + ' ' + ((ptop + pbot) / 2) + ')">worst relative mismatch</text>';
-    o += foot(P.x0, sci(pts[0].worstRelative) + " at L/D " + pts[0].ld,
-                    sci(pts[pts.length - 1].worstRelative) + " at L/D " + pts[pts.length - 1].ld);
-    b += o;
-  })();
-
-  /* ---- b. manufactured solution ---- */
-  (function () {
-    const P = panel(1, "Manufactured solution", "uniform-k r–z domain");
-    let o = P.o;
-    const cells = V.mms.map((r) => Number(r.grid.split("×")[0]));
-    const yLo = -2, yHi = 1, xLo = lg(25), xHi = lg(145);
-    const X = (v) => lin(lg(v), xLo, xHi, P.x0 + 14, P.x0 + pw - 14);
-    const Y = (v) => lin(lg(v), yHi, yLo, ptop + 10, pbot - 10);
-    for (let d = yLo; d <= yHi; d++) {
-      o += line(P.x0, Y(Math.pow(10, d)), P.x0 + pw, Y(Math.pow(10, d)), { stroke: "#EAEAEA", sw: 0.4 });
-      o += decade(P.x0 - 4, Y(Math.pow(10, d)) + 3, d);
+    if (cfg.guide) {
+      const ga = cfg.guide[0], gb = cfg.guide[1], gv = cfg.guide[2], gp = cfg.guide[3];
+      o += '<path d="M' + X(ga) + ',' + Y(gv) + ' L' + X(gb) + ',' + Y(gv * Math.pow(ga / gb, gp)) +
+        '" fill="none" stroke="' + C.grey + '" stroke-width="0.8" stroke-dasharray="3 2"/>';
+      o += T(X(gb) + 3, Y(gv * Math.pow(ga / gb, gp)) + 3, cfg.guide[4] || ("slope \u2212" + gp), { size: 8, fill: C.grey });
     }
-    /* a second-order guide, so the slope can be read without arithmetic */
-    const g1 = 8.0, gx1 = X(32), gx2 = X(78), gy1 = Y(g1), gy2 = Y(g1 * Math.pow(32 / 78, 2));
-    o += '<path d="M' + gx1 + ',' + gy1 + ' L' + gx2 + ',' + gy2 + '" fill="none" stroke="' + C.grey + '" stroke-width="0.8" stroke-dasharray="3 2"/>';
-    o += T(gx2 + 3, gy2 + 3, "slope −2", { size: 8, fill: C.grey });
-    [["l2", C.scalar, "circle"], ["linf", C.field, "square"]].forEach(function (ser) {
-      const vals = V.mms.map((r) => r[ser[0]]);
-      let d2 = "";
-      cells.forEach(function (v, k) { d2 += (k ? " L" : "M") + X(v) + "," + Y(vals[k]); });
-      o += '<path d="' + d2 + '" fill="none" stroke="' + ser[1] + '" stroke-width="1.3"/>';
-      cells.forEach(function (v, k) { o += marker(ser[2], X(v), Y(vals[k]), ser[1]); });
+    if (cfg.rule) {
+      o += line(x0, Y(cfg.rule[0]), x0 + pw, Y(cfg.rule[0]), { stroke: C.grey, sw: 0.9, dash: "3 2" });
+      o += T(x0 + 4, Y(cfg.rule[0]) + 10, cfg.rule[1], { size: 8, fill: C.grey });
+    }
+    cfg.series.forEach(function (ser) {
+      let d = "";
+      cfg.xs.forEach(function (v, k) { d += (k ? " L" : "M") + X(v) + "," + Y(ser.vals[k]); });
+      o += '<path d="' + d + '" fill="none" stroke="' + ser.color + '" stroke-width="1.3"/>';
+      cfg.xs.forEach(function (v, k) { o += marker(ser.marker, X(v), Y(ser.vals[k]), ser.color); });
     });
-    cells.forEach(function (v) { o += T(X(v), pbot + 12, String(v), { size: 8, anchor: "middle" }); });
-    o += T(P.x0 + pw / 2, pbot + 24, "radial cells", { size: 8.5, anchor: "middle" });
-    o += '<text x="' + (P.x0 - 28) + '" y="' + ((ptop + pbot) / 2) + '" font-size="8.5" text-anchor="middle" transform="rotate(-90 ' + (P.x0 - 28) + ' ' + ((ptop + pbot) / 2) + ')">temperature error (K)</text>';
-    o += T(P.x0 + 6, ptop + 14, "L∞", { size: 8.5, weight: "bold", fill: C.field });
-    o += T(P.x0 + 6, ptop + 25, "L2", { size: 8.5, weight: "bold", fill: C.scalar });
-    o += foot(P.x0, "order  " + V.mms.slice(1).map((r) => r.orderL2.toFixed(2)).join(", ") + "  (L2)",
-                    "order  " + V.mms.slice(1).map((r) => r.orderLinf.toFixed(2)).join(", ") + "  (L∞)");
+    cfg.xs.forEach(function (v, k) { o += T(X(v), pbot + 12, cfg.xLabels ? cfg.xLabels[k] : String(v), { size: 8, anchor: "middle" }); });
+    o += T(x0 + pw / 2, pbot + 24, cfg.xLabel, { size: 8.5, anchor: "middle" });
+    o += '<text x="' + (x0 - 30) + '" y="' + ((ptop + pbot) / 2) + '" font-size="8.5" text-anchor="middle" transform="rotate(-90 ' + (x0 - 30) + ' ' + ((ptop + pbot) / 2) + ')">' + cfg.yLabel + '</text>';
+    (cfg.legend || []).forEach(function (l, k) {
+      o += T(x0 + (l.right ? pw - 6 : 6), ptop + 14 + k * 11, l.label,
+        { size: 8.5, weight: "bold", fill: l.color, anchor: l.right ? "end" : "start" });
+    });
+    (cfg.foot || []).forEach(function (t, k) { o += T(x0, pbot + 36 + k * 10, t, { size: 8, fill: C.grey }); });
     b += o;
-  })();
+  }
+  const sci1 = (v) => {
+    const e = Math.floor(Math.log10(Math.abs(v)));
+    return (v / Math.pow(10, e)).toFixed(1) + " \u00d7 10^{" + String(e).replace("-", "\u2212") + "}";
+  };
 
-  /* ---- c. nonlinear SiC case ---- */
+  plot({ col: 0, row: 0, xs: V.parabola.map((q) => q.ld), xPad: 1.18, xLabel: "cylinder L/D",
+    yLabel: "mismatch vs analytic profile", decades: [-5, -2],
+    series: [{ vals: V.parabola.map((q) => q.worstRelative), color: C.scalar, marker: "circle" }],
+    foot: [sci1(V.parabola[0].worstRelative) + " at L/D " + V.parabola[0].ld,
+           sci1(V.parabola[2].worstRelative) + " at L/D " + V.parabola[2].ld] });
+
+  plot({ col: 1, row: 0, xs: V.annulus.map((a) => a.ld), xPad: 1.18, xLabel: "cylinder L/D",
+    yLabel: "worst layer error vs theory", decades: [-2, 0],
+    series: [{ vals: V.annulus.map((a) => a.worst), color: C.scalar, marker: "circle" }],
+    foot: [(100 * V.annulus[0].worst).toFixed(1) + " % at L/D " + V.annulus[0].ld,
+           (100 * V.annulus[2].worst).toFixed(2) + " % at L/D " + V.annulus[2].ld] });
+
+  plot({ col: 2, row: 0, xs: V.mms.map((r) => Number(r.grid.split("\u00d7")[0])), xPad: 1.22,
+    xLabel: "radial cells", yLabel: "error vs manufactured solution (K)",
+    decades: [-2, 1], guide: [32, 78, 8.0, 2],
+    series: [{ vals: V.mms.map((r) => r.linf), color: C.field, marker: "square" },
+             { vals: V.mms.map((r) => r.l2), color: C.scalar, marker: "circle" }],
+    legend: [{ label: "L\u221e", color: C.field }, { label: "L2", color: C.scalar }],
+    foot: ["order  " + V.mms.slice(1).map((r) => r.orderL2.toFixed(2)).join(", ") + "  (L2)",
+           "order  " + V.mms.slice(1).map((r) => r.orderLinf.toFixed(2)).join(", ") + "  (L\u221e)"] });
+
+  plot({ col: 0, row: 1, xs: V.electrical.map((r) => Number(r.grid.split("\u00d7")[0])), xPad: 1.22,
+    xLabel: "radial cells", yLabel: "resistance error vs exact",
+    decades: [-7, -4], guide: [34, 84, 2.4e-5, 2],
+    series: [{ vals: V.electrical.map((r) => r.error), color: C.field, marker: "square" }],
+    foot: ["order  " + V.electrical.slice(1).map((r) => r.order.toFixed(2)).join(", "),
+           "unit-potential solve"] });
+
+  plot({ col: 1, row: 1, xs: V.transient.rows.map((r) => r.dt), xPad: 1.35,
+    xLabels: V.transient.rows.map((r) => r.dt.toFixed(2)),
+    xLabel: "time step (s)", yLabel: "error vs reference step (K)",
+    decades: [-1, 1], guide: [6.0, 1.2, 1.4, -1, "first order"],
+    series: [{ vals: V.transient.rows.map((r) => r.error), color: C.thermal, marker: "circle" }],
+    foot: ["order  " + V.transient.rows.slice(1).map((r) => r.order.toFixed(2)).join(", "),
+           "backward Euler, t = " + V.transient.tEnd + " s"] });
+
   (function () {
-    const P = panel(2, "Nonlinear SiC case", "the default public case");
-    let o = P.o;
-    const rows = V.physical.rows;
-    const cells = rows.map((r) => Number(r.grid.split("×")[0]));
-    const ex = V.physical.extrapolated.avg;
+    const rows = V.physical.rows, ex = V.physical.extrapolated.avg;
     const all = rows.map((r) => r.avgC).concat(rows.map((r) => r.maxC), [ex]);
-    const lo = Math.min.apply(null, all) - 0.45, hi = Math.max.apply(null, all) + 0.35;
-    const xLo = lg(25), xHi = lg(cells[cells.length - 1] * 1.22);
-    const X = (v) => lin(lg(v), xLo, xHi, P.x0 + 14, P.x0 + pw - 14);
-    const Y = (v) => lin(v, lo, hi, pbot - 10, ptop + 10);
-    for (let t = Math.ceil(lo * 2) / 2; t <= hi; t += 0.5) {
-      if (Math.abs(t - Math.round(t)) > 1e-9) continue;
-      o += line(P.x0, Y(t), P.x0 + pw, Y(t), { stroke: "#EAEAEA", sw: 0.4 });
-      o += T(P.x0 - 4, Y(t) + 3, String(Math.round(t)), { size: 8, anchor: "end", fill: C.grey });
-    }
-    o += line(P.x0, Y(ex), P.x0 + pw, Y(ex), { stroke: C.grey, sw: 0.9, dash: "3 2" });
-    o += T(P.x0 + 4, Y(ex) + 10, "extrapolated " + ex.toFixed(2), { size: 8, fill: C.grey });
-    [["maxC", C.field, "square"], ["avgC", C.scalar, "circle"]].forEach(function (ser) {
-      const vals = rows.map((r) => r[ser[0]]);
-      let d2 = "";
-      cells.forEach(function (v, k) { d2 += (k ? " L" : "M") + X(v) + "," + Y(vals[k]); });
-      o += '<path d="' + d2 + '" fill="none" stroke="' + ser[1] + '" stroke-width="1.3"/>';
-      cells.forEach(function (v, k) { o += marker(ser[2], X(v), Y(vals[k]), ser[1]); });
-    });
-    cells.forEach(function (v) { o += T(X(v), pbot + 12, String(v), { size: 8, anchor: "middle" }); });
-    o += T(P.x0 + pw / 2, pbot + 24, "radial cells", { size: 8.5, anchor: "middle" });
-    o += '<text x="' + (P.x0 - 30) + '" y="' + ((ptop + pbot) / 2) + '" font-size="8.5" text-anchor="middle" transform="rotate(-90 ' + (P.x0 - 30) + ' ' + ((ptop + pbot) / 2) + ')">element temperature (°C)</text>';
-    o += T(P.x0 + pw - 6, ptop + 14, "maximum", { size: 8.5, anchor: "end", weight: "bold", fill: C.field });
-    o += T(P.x0 + pw - 6, ptop + 25, "average", { size: 8.5, anchor: "end", weight: "bold", fill: C.scalar });
-    o += foot(P.x0, "order  " + V.physical.order.avg.toFixed(2) + "  average",
-                    "order  " + V.physical.order.max.toFixed(2) + "  maximum");
-    b += o;
+    plot({ col: 2, row: 1, xs: rows.map((r) => Number(r.grid.split("\u00d7")[0])), xPad: 1.22,
+      xLabel: "radial cells", yLabel: "element temperature (\u00b0C)",
+      range: [Math.min.apply(null, all) - 0.45, Math.max.apply(null, all) + 0.35],
+      rule: [ex, "extrapolated " + ex.toFixed(2)],
+      series: [{ vals: rows.map((r) => r.maxC), color: C.field, marker: "square" },
+               { vals: rows.map((r) => r.avgC), color: C.scalar, marker: "circle" }],
+      legend: [{ label: "maximum", color: C.field, right: true }, { label: "average", color: C.scalar, right: true }],
+      foot: ["order  " + V.physical.order.avg.toFixed(2) + "  average",
+             "order  " + V.physical.order.max.toFixed(2) + "  maximum"] });
   })();
 
-  const cf = V.physical.coarseVsFinest;
-  b += line(18, 250, 487, 250, { stroke: C.ink, sw: 0.9 });
-  b += T(18, 264, "Every point is a solver run, not a transcribed value. Energy closure stays near 10^{\u22128} and the", { size: 9 });
-  b += T(18, 276, "linear residual below 10^{\u221211} on every grid. The " + V.physical.rows[0].grid + " grid differs from " +
-    cf.grid + " by " + Math.abs(cf.avgK).toFixed(2) + " K.", { size: 9 });
   return svgDoc(W, H, b);
 }
 
@@ -741,7 +705,7 @@ export function verification(DATA) {
 /* Fig. 4. The illustrative case, solved rather than sketched.         */
 /* ------------------------------------------------------------------ */
 export function defaultCase(DATA) {
-  const ns = "m4", W = 505, H = 306;
+  const ns = "m4", W = 505, H = 268;
   const M = DATA.mesh, K = DATA.defaultCase;
   const re = M.redges, ze = M.zedges, Tc = K.Tc;
   let b = defs(ns);
@@ -767,9 +731,7 @@ export function defaultCase(DATA) {
   const ybot = Y(zmin), rOut = re[re.length - 1];
   const lo = 20, hi = Math.ceil(K.maxC / 50) * 50;
 
-  b += T(32, 24, "a", { size: 11, weight: "bold" });
-  b += T(46, 24, "Temperature field", { size: 9.5, weight: "bold" });
-  b += T(46, 36, "half-domain, " + M.nr + " × " + M.nz + " cells", { size: 8, fill: C.grey });
+  b += T(32, 32, "a", { size: 11, weight: "bold" });
 
   for (let j = 0; j < M.nz; j++) for (let i = 0; i < M.nr; i++) {
     const x1 = X(re[i]), x2 = X(re[i + 1]), y1 = Y(ze[j + 1]), y2 = Y(ze[j]);
@@ -801,9 +763,8 @@ export function defaultCase(DATA) {
 
   /* b. where the power goes */
   const px = 232;
-  b += T(px - 18, 24, "b", { size: 11, weight: "bold" });
-  b += T(px - 4, 24, "Where the power goes", { size: 9.5, weight: "bold" });
-  b += T(px - 4, 36, "P_{bulk} = " + K.pBulk.toFixed(2) + " W in, " + K.boundaryLoss.toFixed(2) + " W out", { size: 8, fill: C.grey });
+  b += T(px - 18, 32, "b", { size: 11, weight: "bold" });
+  b += T(px - 4, 32, "P_{bulk} = " + K.pBulk.toFixed(2) + " W in, " + K.boundaryLoss.toFixed(2) + " W out", { size: 8.5, fill: C.grey });
 
   const NAMES = { wallRadiation: "element to wall, radiation", axialAmbient: "axial ends to ambient",
                   elementEndRadiation: "element ends, radiation", outerRadial: "outer boundary, radial",
@@ -831,7 +792,7 @@ export function defaultCase(DATA) {
   /* c. the numbers the manuscript quotes */
   const cy = barY + barH + 16 + chans.length * 12 + 18;
   b += line(barX, cy - 12, barX + barW, cy - 12, { stroke: C.rule, sw: 0.6 });
-  b += T(barX, cy, "READOUT", { size: 8, weight: "bold", fill: C.grey });
+  b += T(barX, cy, "RESULTS", { size: 8, weight: "bold", fill: C.grey });
   const readout = [
     ["element average", K.avgC.toFixed(2) + " °C"],
     ["element range", K.minC.toFixed(1) + " to " + K.maxC.toFixed(1) + " °C"],
@@ -846,9 +807,175 @@ export function defaultCase(DATA) {
     b += T(barX + barW, y, r[1], { size: 8.5, anchor: "end", fill: C.grey });
   });
 
-  b += line(18, 274, 487, 274, { stroke: C.ink, sw: 0.9 });
-  b += T(18, 288, "The field is a solve at the shipped default: dense SiC, 1.18 cm³ envelope, L/D 1.5, " + K.current.toFixed(0) +
-    " A, quartz wall, 50 sccm helium.", { size: 9 });
-  b += T(18, 300, "The " + K.spreadK.toFixed(1) + " K internal spread is small because this material conducts well; a poorer conductor spreads further.", { size: 9 });
+  return svgDoc(W, H, b);
+}
+
+/* ------------------------------------------------------------------ */
+/* Fig. S5. Transient operation: start-up, and a pulse train.          */
+/* ------------------------------------------------------------------ */
+export function transient(DATA) {
+  const ns = "s5", W = 505, H = 250;
+  const K = DATA.transient;
+  let b = defs(ns);
+  const pw = 208, ph = 168, ptop = 26, pbot = 26 + 168;
+  const lin = (v, lo, hi, a, c) => a + (v - lo) / (hi - lo) * (c - a);
+
+  function frame(x0, xs, ys, xLabel, yLabel, letter) {
+    const xLo = 0, xHi = Math.max.apply(null, xs);
+    const yLo = 0, yHi = Math.ceil(Math.max.apply(null, ys) / 100) * 100;
+    const X = (v) => lin(v, xLo, xHi, x0 + 10, x0 + pw - 10);
+    const Y = (v) => lin(v, yLo, yHi, pbot - 10, ptop + 10);
+    let o = rect(x0, ptop, pw, ph, { stroke: C.grey, fill: "#FFFFFF", sw: 0.8, rx: 0 });
+    o += T(x0 - 34, ptop - 6, letter, { size: 11, weight: "bold" });
+    for (let t = 0; t <= yHi; t += yHi / 4) {
+      o += line(x0, Y(t), x0 + pw, Y(t), { stroke: "#EAEAEA", sw: 0.4 });
+      o += T(x0 - 4, Y(t) + 3, String(Math.round(t)), { size: 8, anchor: "end", fill: C.grey });
+    }
+    for (let k = 0; k <= 4; k++) {
+      const v = xLo + k * (xHi - xLo) / 4;
+      o += T(X(v), pbot + 12, v.toFixed(v < 10 ? 1 : 0), { size: 8, anchor: "middle" });
+    }
+    o += T(x0 + pw / 2, pbot + 24, xLabel, { size: 8.5, anchor: "middle" });
+    o += '<text x="' + (x0 - 30) + '" y="' + ((ptop + pbot) / 2) + '" font-size="8.5" text-anchor="middle" transform="rotate(-90 ' + (x0 - 30) + ' ' + ((ptop + pbot) / 2) + ')">' + yLabel + '</text>';
+    return { o, X, Y, yHi };
+  }
+
+  /* a. switch-on to steady state */
+  (function () {
+    const xs = K.startup.map((q) => q[0]), ys = K.startup.map((q) => q[1]);
+    const F = frame(50, xs, ys, "time (s)", "element average (°C)", "a");
+    let o = F.o;
+    o += line(50, F.Y(K.steadyC), 50 + pw, F.Y(K.steadyC), { stroke: C.grey, sw: 0.9, dash: "3 2" });
+    o += T(50 + pw - 4, F.Y(K.steadyC) - 5, "steady " + K.steadyC.toFixed(1) + " °C", { size: 8, anchor: "end", fill: C.grey });
+    let d = "";
+    xs.forEach(function (v, k) { d += (k ? " L" : "M") + F.X(v) + "," + F.Y(ys[k]); });
+    o += '<path d="' + d + '" fill="none" stroke="' + C.thermal + '" stroke-width="1.5"/>';
+    const tx = F.X(K.tau);
+    o += line(tx, ptop + 10, tx, pbot - 10, { stroke: C.scalar, sw: 0.8, dash: "2 2" });
+    o += T(tx + 4, ptop + 22, "τ = " + K.tau.toFixed(0) + " s", { size: 8, fill: C.scalar });
+    b += o;
+  })();
+
+  /* b. a duty-cycled drive */
+  (function () {
+    const xs = K.pulse.map((q) => q[0]), ys = K.pulse.map((q) => q[1]);
+    const F = frame(297, xs, ys, "time (s)", "element average (°C)", "b");
+    let o = F.o;
+    /* the drive itself, as a strip along the foot of the panel */
+    const tEnd = Math.max.apply(null, xs), strip = pbot - 14;
+    for (let t = 0; t < tEnd; t += K.period) {
+      o += '<rect x="' + F.X(t) + '" y="' + strip + '" width="' + (F.X(K.period * K.duty) - F.X(0)) +
+        '" height="8" fill="' + C.scalar + '" fill-opacity="0.75"/>';
+    }
+    o += line(297, strip + 8, 297 + pw, strip + 8, { stroke: C.scalar, sw: 0.6 });
+    o += T(303, strip - 3, "drive", { size: 7.6, fill: C.scalar });
+    o += line(297, F.Y(K.cycleMeanC), 297 + pw, F.Y(K.cycleMeanC), { stroke: C.grey, sw: 0.9, dash: "3 2" });
+    o += T(297 + pw - 4, F.Y(K.cycleMeanC) - 5, "cycle mean " + K.cycleMeanC.toFixed(0) + " °C", { size: 8, anchor: "end", fill: C.grey });
+    let d = "";
+    xs.forEach(function (v, k) { d += (k ? " L" : "M") + F.X(v) + "," + F.Y(ys[k]); });
+    o += '<path d="' + d + '" fill="none" stroke="' + C.thermal + '" stroke-width="1.4"/>';
+    o += T(303, pbot - 60, (K.period * K.duty).toFixed(0) + " s on, " + (K.period * (1 - K.duty)).toFixed(0) + " s off", { size: 8.5, weight: "bold", fill: C.scalar });
+    o += T(303, pbot - 49, "last-cycle swing " + K.swingK.toFixed(1) + " K", { size: 8.5, weight: "bold", fill: C.thermal });
+    o += T(303, pbot - 38, "cycle-periodic only after several \u03c4", { size: 7.6, fill: C.grey });
+    b += o;
+  })();
+  return svgDoc(W, H, b);
+}
+
+/* ------------------------------------------------------------------ */
+/* Fig. S6. Design screening: geometry and material against what the   */
+/* supply, and then the material, will allow.                           */
+/* ------------------------------------------------------------------ */
+export function screening(DATA) {
+  const ns = "s6", W = 505, H = 262;
+  const S = DATA.screening;
+  let b = defs(ns);
+  const pw = 128, ph = 168, ptop = 30, pbot = 30 + 168;
+  const lin = (v, lo, hi, a, c) => a + (v - lo) / (hi - lo) * (c - a);
+  const lg = (v) => Math.log10(v);
+  const lds = S.sweep.map((q) => q.ld);
+  const xLo = lg(lds[0] / 1.1), xHi = lg(lds[lds.length - 1] * 1.1);
+  const firstV = S.sweep.findIndex((q) => q.constraint !== S.sweep[0].constraint);
+
+  function frame(x0, letter, yLabel) {
+    const X = (v) => lin(lg(v), xLo, xHi, x0 + 10, x0 + pw - 10);
+    let o = "";
+    if (firstV > 0) o += '<rect x="' + X(S.sweep[firstV].ld) + '" y="' + ptop + '" width="' +
+      (x0 + pw - X(S.sweep[firstV].ld)) + '" height="' + ph + '" fill="' + TINT.field + '"/>';
+    o += rect(x0, ptop, pw, ph, { stroke: C.grey, fill: "none", sw: 0.8, rx: 0 });
+    o += T(x0 - 34, ptop - 8, letter, { size: 11, weight: "bold" });
+    [0.5, 2, 8, 32].forEach(function (v) { o += T(X(v), pbot + 12, String(v), { size: 8, anchor: "middle" }); });
+    o += T(x0 + pw / 2, pbot + 24, "aspect ratio L/D", { size: 8.5, anchor: "middle" });
+    o += '<text x="' + (x0 - 30) + '" y="' + ((ptop + pbot) / 2) + '" font-size="8.5" text-anchor="middle" transform="rotate(-90 ' + (x0 - 30) + ' ' + ((ptop + pbot) / 2) + ')">' + yLabel + '</text>';
+    return { o, X };
+  }
+
+  /* a. stretching the element at a fixed envelope volume raises its resistance */
+  (function () {
+    const Rs = S.sweep.map((q) => q.R);
+    const dLo = Math.floor(lg(Math.min.apply(null, Rs))), dHi = Math.ceil(lg(Math.max.apply(null, Rs)));
+    const Y = (v) => lin(lg(v), dHi, dLo, ptop + 10, pbot - 10);
+    const F = frame(50, "a", "resistance (Ω)");
+    let o = F.o;
+    for (let d = dLo; d <= dHi; d++) {
+      o += line(50, Y(Math.pow(10, d)), 50 + pw, Y(Math.pow(10, d)), { stroke: "#EAEAEA", sw: 0.4 });
+      o += T(46, Y(Math.pow(10, d)) + 3, "10^{" + String(d).replace("-", "\u2212") + "}", { size: 8, anchor: "end", fill: C.grey });
+    }
+    let d2 = "";
+    S.sweep.forEach(function (q, k) { d2 += (k ? " L" : "M") + F.X(q.ld) + "," + Y(q.R); });
+    o += '<path d="' + d2 + '" fill="none" stroke="' + C.scalar + '" stroke-width="1.5"/>';
+    b += o;
+  })();
+
+  /* b. the temperature that follows, and the two ceilings it meets */
+  (function () {
+    const Ts = S.sweep.map((q) => q.tssC);
+    const hi = Math.ceil(Math.max.apply(null, Ts.concat([S.limitC])) / 500) * 500;
+    const Y = (v) => lin(v, 0, hi, pbot - 10, ptop + 10);
+    const F = frame(213, "b", "steady temperature (°C)");
+    let o = F.o;
+    for (let t = 0; t <= hi; t += hi / 4) {
+      o += line(213, Y(t), 213 + pw, Y(t), { stroke: "#EAEAEA", sw: 0.4 });
+      o += T(209, Y(t) + 3, String(Math.round(t)), { size: 8, anchor: "end", fill: C.grey });
+    }
+    o += line(213, Y(S.limitC), 213 + pw, Y(S.limitC), { stroke: C.ink, sw: 1, dash: "4 2" });
+    o += T(217, Y(S.limitC) - 4, S.materialName + " " + S.limitKind + ", " + S.limitC + " °C", { size: 8 });
+    let d2 = "";
+    S.sweep.forEach(function (q, k) { d2 += (k ? " L" : "M") + F.X(q.ld) + "," + Y(q.tssC); });
+    o += '<path d="' + d2 + '" fill="none" stroke="' + C.thermal + '" stroke-width="1.5"/>';
+    o += '<circle cx="' + F.X(S.best.ld) + '" cy="' + Y(S.best.tssC) + '" r="3.2" fill="#FFFFFF" stroke="' + C.thermal + '" stroke-width="1.4"/>';
+    o += T(213 + pw - 4, Y(S.best.tssC) + 26, S.best.tssC.toFixed(0) + " °C at L/D " + S.best.ld.toFixed(0), { size: 8, anchor: "end", fill: C.thermal });
+    o += T(217, pbot - 8, S.imax + " A, " + S.vmax + " V supply", { size: 8, fill: C.grey });
+    o += T(217, ptop + 12, "current limited", { size: 8, weight: "bold", fill: C.scalar });
+    o += T(213 + pw - 4, ptop + 12, "voltage limited", { size: 8, weight: "bold", anchor: "end", fill: C.field });
+    b += o;
+  })();
+
+  /* c. the same question asked of the material */
+  (function () {
+    const x0 = 372, rows = S.byMaterial;
+    const hi = Math.ceil(Math.max.apply(null, rows.map((r) => r.tssC)) / 500) * 500;
+    const barW = 60, bx = x0;
+    b += T(x0 - 10, ptop - 8, "c", { size: 11, weight: "bold" });
+    b += T(x0 + 6, ptop - 8, "best over the same L/D sweep", { size: 8, fill: C.grey });
+    rows.forEach(function (r, i) {
+      const y = ptop + 14 + i * 26;
+      b += T(x0, y, r.name, { size: 8.5 });
+      b += T(x0 + barW + 68, y, r.rho.toExponential(1).replace("e-", "×10^{−") + "} Ω·cm", { size: 7.6, anchor: "end", fill: C.faint });
+      const w = Math.max(0.6, barW * r.tssC / hi), wLim = Math.min(w, barW * r.limitC / hi);
+      b += '<rect x="' + bx + '" y="' + (y + 4) + '" width="' + wLim + '" height="9" fill="' + C.thermal + '" fill-opacity="0.85"/>';
+      if (w > wLim) b += '<rect x="' + (bx + wLim) + '" y="' + (y + 4) + '" width="' + (w - wLim) +
+        '" height="9" fill="none" stroke="' + C.thermal + '" stroke-width="0.7" stroke-dasharray="1.6 1.4"/>';
+      if (r.limitC <= hi) b += line(bx + barW * r.limitC / hi, y + 2, bx + barW * r.limitC / hi, y + 15, { stroke: C.ink, sw: 0.9 });
+      b += T(bx + barW + 6, y + 12, r.tssC.toFixed(0) + " °C", { size: 8 });
+      b += T(bx + barW + 68, y + 12, "L/D " + r.ld.toFixed(1), { size: 7.6, anchor: "end", fill: C.faint });
+    });
+    const yb = ptop + 14 + rows.length * 26 - 6;
+    b += line(bx, yb, bx + barW, yb, { stroke: C.grey, sw: 0.6 });
+    b += T(bx, yb + 10, "0", { size: 8, anchor: "middle", fill: C.grey });
+    b += T(bx + barW, yb + 10, String(hi) + " °C", { size: 8, anchor: "middle", fill: C.grey });
+    b += line(bx + 3, yb + 22, bx + 3, yb + 30, { stroke: C.ink, sw: 0.9 });
+    b += T(bx + 9, yb + 29, "material limit; dashed beyond it", { size: 7.6, fill: C.grey });
+  })();
   return svgDoc(W, H, b);
 }

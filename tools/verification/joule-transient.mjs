@@ -47,6 +47,36 @@ function makeInput(enclosure) {
   };
 }
 
+// The two studies the Application Note figure plots. They are exported so the
+// figure build and this report cannot describe different runs.
+export function longTimeLimit() {
+  const xl = makeInput(LOSSY), zl = calculate(xl);
+  const steady = solveThermal2D(xl, zl, LOSSY, sic);
+  const rows = [];
+  for (const steps of [50, 100, 200, 400]) {
+    const r = solveTransient2D(xl, zl, LOSSY, sic, { dt: 5, steps, record: steps });
+    const last = r.history[r.history.length - 1];
+    rows.push({ tEnd: steps * 5, avgK: r.avgK, gap: Math.abs(r.avgK - steady.avgK),
+                storageRate: Math.abs(last.storageRate), worstClosure: r.worstClosure });
+  }
+  return { rows, steadyK: steady.avgK, steadyClosure: steady.closure };
+}
+
+export function stepRefinement(tEnd = 60) {
+  const xl = makeInput(LOSSY), zl = calculate(xl);
+  const reference = solveTransient2D(xl, zl, LOSSY, sic, { dt: tEnd / 512, steps: 512 });
+  const rows = [];
+  let previous = null;
+  for (const n of [8, 16, 32, 64]) {
+    const r = solveTransient2D(xl, zl, LOSSY, sic, { dt: tEnd / n, steps: n });
+    const err = Math.abs(r.avgK - reference.avgK);
+    rows.push({ dt: tEnd / n, avgK: r.avgK, error: err,
+                order: previous === null ? null : Math.log2(previous / err) });
+    previous = err;
+  }
+  return { rows, referenceK: reference.avgK, tEnd };
+}
+
 function main() {
   console.log("## Joule 2D transient solver: numerical verification\n");
 
@@ -67,33 +97,19 @@ function main() {
 
   // ------------------------------------------------------------- study 2
   console.log("### 2. Long-time limit against the steady solve\n");
-  const xl = makeInput(LOSSY), zl = calculate(xl);
-  const steady = solveThermal2D(xl, zl, LOSSY, sic);
-  const rows = [];
-  for (const steps of [50, 100, 200, 400]) {
-    const r = solveTransient2D(xl, zl, LOSSY, sic, { dt: 5, steps, record: steps });
-    const last = r.history[r.history.length - 1];
-    rows.push([fix(steps * 5, 0), fix(r.avgK, 4), sci(Math.abs(r.avgK - steady.avgK), 2),
-               sci(Math.abs(last.storageRate), 2), sci(r.worstClosure, 2)]);
-  }
+  const lt = longTimeLimit();
   console.log(markdownTable(
-    ["t_end (s)", "T_avg (K)", "|Δ| vs steady (K)", "storage rate (W)", "worst closure"], rows));
-  console.log(`\nSteady reference: T_avg = ${fix(steady.avgK, 4)} K, closure ${sci(steady.closure, 2)}\n`);
+    ["t_end (s)", "T_avg (K)", "|Δ| vs steady (K)", "storage rate (W)", "worst closure"],
+    lt.rows.map((r) => [fix(r.tEnd, 0), fix(r.avgK, 4), sci(r.gap, 2), sci(r.storageRate, 2), sci(r.worstClosure, 2)])));
+  console.log(`\nSteady reference: T_avg = ${fix(lt.steadyK, 4)} K, closure ${sci(lt.steadyClosure, 2)}\n`);
 
   // ------------------------------------------------------------- study 3
   console.log("### 3. Time-step refinement at t = 60 s\n");
-  const T_END = 60;
-  const reference = solveTransient2D(xl, zl, LOSSY, sic, { dt: T_END / 512, steps: 512 });
-  const orders = [];
-  let previous = null;
-  for (const n of [8, 16, 32, 64]) {
-    const r = solveTransient2D(xl, zl, LOSSY, sic, { dt: T_END / n, steps: n });
-    const err = Math.abs(r.avgK - reference.avgK);
-    orders.push([fix(T_END / n, 4), fix(r.avgK, 5), sci(err, 2),
-                 previous === null ? "—" : fix(Math.log2(previous / err), 2)]);
-    previous = err;
-  }
-  console.log(markdownTable(["dt (s)", "T_avg (K)", "error vs dt/512 (K)", "observed order"], orders));
+  const sr = stepRefinement(60);
+  console.log(markdownTable(["dt (s)", "T_avg (K)", "error vs dt/512 (K)", "observed order"],
+    sr.rows.map((r) => [fix(r.dt, 4), fix(r.avgK, 5), sci(r.error, 2),
+                        r.order === null ? "—" : fix(r.order, 2)])));
+
   console.log(`\nFirst order is the expected and intended result: backward Euler is A-stable,`);
   console.log(`which is what a browser-affordable step size needs on this stiff radiation`);
   console.log(`boundary, and the price is one order in time.`);

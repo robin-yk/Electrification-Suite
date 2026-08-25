@@ -11,7 +11,7 @@ node docs/figures/make-figures.mjs                        # fast; draws the plat
 The first command runs the repository's verification studies and writes
 `verification-data.json`. The second reads that file, computes every geometric
 and electrical value it needs directly from `apps/joule/solver.js`, and writes
-the eight plates, `figure-data.json`, and `index.html` (the page published as
+the ten plates, `figure-data.json`, and `index.html` (the page published as
 the figure source).
 
 | Plate | Subject | Manuscript position | Width |
@@ -24,6 +24,8 @@ the figure source).
 | `figS2.svg` | Matrix contribution classes | SI, S3.4 | 178 mm |
 | `figS3.svg` | Nested solver loop and order of computation | SI, S4 | 178 mm |
 | `figS4.svg` | Rectangular element to equivalent cylinder | SI, S7.3 | 178 mm |
+| `figS5.svg` | Transient operation: start-up and a pulse train | proposed SI | 178 mm |
+| `figS6.svg` | Design screening: geometry and material against the supply | proposed SI | 178 mm |
 
 ## Why it is generated
 
@@ -42,12 +44,16 @@ when the working tree is dirty.
 
 ## Conventions
 
+Plates carry no titles and no explanatory paragraphs: panel letters and axis
+labels only, with everything else in the caption. Captions live in
+`templates/body.html`.
+
 Artwork is authored in points, so a viewBox unit is a printed point and
 `font-size="9"` is 9 pt on the page. Subscripts drop to 8 pt, which is the
 floor. Type is Arial, the ground is white, and fills are flat: no shadow, no
 gradient, no transparency.
 
-One hue carries one physical role in all eight plates. The set is the
+One hue carries one physical role in all ten plates. The set is the
 Okabe-Ito colorblind-safe palette.
 
 | Role | Hue |

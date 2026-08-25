@@ -12,6 +12,8 @@ import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { radialParabola, annulusDrops, mmsStudy, physicalConvergence } from "../../tools/verification/joule.mjs";
+import { axialSigma } from "../../tools/verification/electrical.mjs";
+import { stepRefinement } from "../../tools/verification/joule-transient.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const argLevels = process.argv.indexOf("--levels");
@@ -34,6 +36,8 @@ const annulus = [20, 50, 100].map((ld) => ({
 }));
 const mms = mmsStudy(3);
 const physical = physicalConvergence(levels);
+const electrical = axialSigma(3);   // the potential solve, series conductors along z
+const transient = stepRefinement(60);
 
 const out = {
   solverCommit: solverCommit(),
@@ -42,6 +46,8 @@ const out = {
   parabola,
   annulus,
   mms,
+  electrical,
+  transient,
   physical: {
     rows: physical.rows,
     order: { avg: physical.rich.avg.p, max: physical.rich.max.p },
@@ -61,3 +67,7 @@ console.log("mms L2  ", mms.map((r) => r.l2.toExponential(3)).join("  "), "| ord
   mms.slice(1).map((r) => r.orderL2.toFixed(2)).join(", "), "/ Linf", mms.slice(1).map((r) => r.orderLinf.toFixed(2)).join(", "));
 console.log("physical", physical.rows.map((r) => r.grid + ":" + r.avgC.toFixed(2)).join("  "),
   "| order", out.physical.order.avg.toFixed(2), "| extrap", out.physical.extrapolated.avg.toFixed(2));
+console.log("electric", electrical.map((r) => r.grid + ":" + r.error.toExponential(2)).join("  "), "| orders",
+  electrical.slice(1).map((r) => r.order.toFixed(2)).join(", "));
+console.log("transient", transient.rows.map((r) => "dt" + r.dt.toFixed(2) + ":" + r.error.toPrecision(3)).join("  "), "| orders",
+  transient.rows.slice(1).map((r) => r.order.toFixed(2)).join(", "));

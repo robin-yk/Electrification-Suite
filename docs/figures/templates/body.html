@@ -2,14 +2,14 @@
 <header>
 <p class="eyebrow">Figure source &#183; solver {{COMMIT}}</p>
 <h1>Figures for the Joule heating solver</h1>
-<p class="sub">The complete plate set for the Application Note and its Supporting Information, in manuscript order, drawn to print size from the solver rather than from a drawing program. Every dimension, cell count, region allocation, equivalent-cylinder property and verification point on this page is a value the code produced. No number is typed in twice.</p>
-<p class="stamp"><span><b>Solver</b> apps/joule/solver.js</span><span><b>Plates</b> 8</span><span><b>Body width</b> 178 mm / 505 pt</span><span><b>Type</b> Arial, 8 pt floor</span><span><b>Ground</b> white, flat fills only</span></p>
+<p class="sub">The plate set for the Application Note and its Supporting Information, in manuscript order, drawn to print size from the solver. Every dimension, cell count, region allocation, equivalent-cylinder property and verification point on this page is a value the code produced. No number is typed in twice.</p>
+<p class="stamp"><span><b>Solver</b> apps/joule/solver.js</span><span><b>Plates</b> 10</span><span><b>Body width</b> 178 mm / 505 pt</span><span><b>Type</b> Arial, 8 pt floor</span><span><b>Ground</b> white, flat fills only</span></p>
 </header>
 
 <div class="note">
-<b>Getting a plate into Word.</b> Open <i>SVG source</i>, select all, copy, and save the text as a file ending in <code>.svg</code>, then place that file in the manuscript. The vector copy stays sharp at any size and holds the type at a true 8 pt. <i>Render 600 dpi</i> rasterizes the same artwork into a canvas; right-click it and choose Save image as to keep a PNG. Neither route can start the download for you, because a published page is not allowed to write to your disk.
+<b>Placing a plate in Word.</b> Open <i>SVG source</i>, select all, copy, and save the text as a file ending in <code>.svg</code>, then place that file in the manuscript. The vector copy stays sharp at any size and holds the type at a true 8 pt. <i>Render 600 dpi</i> rasterizes the same artwork into a canvas; right-click it and choose Save image as for a PNG. Neither route can start the download itself: a published page cannot write to disk.
 <br><br>
-Captions sit below each plate as text rather than inside the artwork, so they can be pasted in as Word captions and picked up by cross-references and the list of figures. Every symbol and every numerical method the plates name is defined in the two tables below them, so a plate can be read without the paper and without the code.
+Captions sit below each plate as text rather than inside the artwork, so they can be pasted in as Word captions and picked up by cross-references and the list of figures. Every symbol and numerical method the plates name is defined in the two tables below, so a plate can be read without the paper and without the code.
 </div>
 
 <div class="key">
@@ -21,7 +21,7 @@ Captions sit below each plate as text rather than inside the artwork, so they ca
 </div>
 
 <h2>Figure inventory</h2>
-<p class="lede">What each manuscript section claims, and where a reader can see it. A claim carried only by prose or by a data table is marked as such, so the gaps are visible rather than implied.</p>
+<p class="lede">What each manuscript section claims, and where it is shown. Claims carried only by prose or by a data table are marked as such.</p>
 <div class="tablewrap">
 <table>
 <thead><tr><th>Manuscript section</th><th>Claim</th><th>Shown by</th></tr></thead>
@@ -36,13 +36,17 @@ Captions sit below each plate as text rather than inside the artwork, so they ca
 <tr><td class="q">Directed helium link, eq S12</td><td>A one-sided enthalpy term makes the operator nonsymmetric and selects BiCGSTAB</td><td class="s">Fig. S2</td></tr>
 <tr><td class="q">Nonlinear and linear solution, S4.2&#8211;S4.4</td><td>Outer Picard sweep, relaxation, Jacobi-preconditioned Krylov solve, energy closure</td><td class="s">Fig. S3</td></tr>
 <tr><td class="q">Numerical verification, S5.1</td><td>Analytic radial profile: mismatch falls as end effects are removed</td><td class="s">Fig. 3a</td></tr>
-<tr><td class="q">Numerical verification, S5.2</td><td>Multilayer annulus against logarithmic resistance</td><td class="n">Table S3 only</td></tr>
-<tr><td class="q">Numerical verification, S5.3</td><td>Manufactured solution approaches second order</td><td class="s">Fig. 3b</td></tr>
-<tr><td class="q">Numerical verification, S5.4</td><td>Nonlinear grid sensitivity, observed order, extrapolated average</td><td class="s">Fig. 3c</td></tr>
+<tr><td class="q">Numerical verification, S5.2</td><td>Multilayer annulus against logarithmic resistance</td><td class="s">Fig. 3b</td></tr>
+<tr><td class="q">Numerical verification, S5.3</td><td>Manufactured solution approaches second order</td><td class="s">Fig. 3c</td></tr>
+<tr><td class="q">Numerical verification, S5.4</td><td>Nonlinear grid sensitivity, observed order, extrapolated average</td><td class="s">Fig. 3f</td></tr>
+<tr><td class="q">Current-density solve (not in the SI)</td><td>Unit-potential solve against the exact series-resistance integral</td><td class="s">Fig. 3d</td></tr>
+<tr><td class="q">Transient march (not in the SI)</td><td>Backward Euler is first order in time, as intended for an A-stable scheme</td><td class="s">Fig. 3e</td></tr>
 <tr><td class="q">Cross-checks, S7.1&#8211;S7.2</td><td>FeCrAl tube and SiSiC foam reproduce reported electrical and thermal scale</td><td class="n">Table 1 only</td></tr>
 <tr><td class="q">Cross-checks, S7.3</td><td>The strip is solved through a cylinder that preserves surface, mass and resistance</td><td class="s">Fig. S4</td></tr>
 <tr><td class="q">Illustrative design case</td><td>846.75 &#176;C average over a 4.5 K spread, wall and gas-outlet temperatures, and where the power leaves</td><td class="s">Fig. 4</td></tr>
 <tr><td class="q">Scope and limitations, S9</td><td>What the model includes, excludes, and when to escalate</td><td class="s">Table S7</td></tr>
+<tr><td class="q">Transient and pulsed operation (abstract)</td><td>Steady state and transients; the march starts from the converged field</td><td class="s">Fig. S5</td></tr>
+<tr><td class="q">Introduction: aspect ratio moves a design from current- to voltage-limited</td><td>Resistance, achievable temperature, and the binding supply limit against L/D</td><td class="s">Fig. S6</td></tr>
 <tr><td class="q">Test coverage, S6</td><td>105 unit tests, nine browser tests, 47 Joule-specific</td><td class="n">prose only</td></tr>
 </tbody>
 </table>
@@ -53,7 +57,7 @@ Captions sit below each plate as text rather than inside the artwork, so they ca
 <div class="plate"></div>
 <div class="tools"><button data-src="fig1">Show SVG source</button><button data-png="fig1">Render 600 dpi</button><button data-copy="fig1">Copy SVG</button><span class="hint"></span></div>
 <textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Fig. 1.</b> Browser workflow. The three calculation stages and what passes between them. Single Design fixes the electrical operating point and a lumped steady-state temperature. 2D Thermal Field resolves the axisymmetric temperature distribution from that operating point. Dynamic marches the same spatial operator in time, starting from the converged field. Three further tabs support the sequence rather than extend it. Every tab calls one DOM-free module, so a number on screen and a number in an automated test come from the same code path.</div>
+<div class="cap"><b>Fig. 1.</b> Browser workflow. The three calculation stages and what passes between them. Single Design fixes the electrical operating point and a lumped steady-state temperature. 2D Thermal Field resolves the axisymmetric temperature distribution from that operating point. Dynamic marches the same spatial operator in time, starting from the converged field. Three further tabs support the sequence rather than extend it. Every tab calls one DOM-free module, so a number on screen and a number in an automated test come from the same code path. All tabs call one DOM-free module, apps/joule/solver.js, so the browser interface and the automated tests call identical functions and a value on screen shares a code path with a value in a test. Tab names are those of the application at the stamped revision.</div>
 </figure>
 
 <figure id="fig2">
@@ -61,7 +65,7 @@ Captions sit below each plate as text rather than inside the artwork, so they ca
 <div class="plate"></div>
 <div class="tools"><button data-src="fig2">Show SVG source</button><button data-png="fig2">Render 600 dpi</button><button data-copy="fig2">Copy SVG</button><span class="hint"></span></div>
 <textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Fig. 2.</b> The two electrical paths in the model and the point at which they meet. The scalar branch sets the current from the total series resistance <i>R</i><sub>total</sub> = <i>R</i><sub>bulk</sub> + 2<i>R</i><sub>c</sub>, and the deposited power from the bulk term alone, <i>P</i><sub>bulk</sub> = <i>I</i>&#178;<i>R</i><sub>bulk</sub>. The contact power is reported and is not deposited. The field branch solves a unit-potential Laplace problem and returns a spatial distribution only. The distribution is normalized so that its volume integral equals the scalar total, which fixes where the power is deposited without changing how much is drawn.</div>
+<div class="cap"><b>Fig. 2.</b> The two electrical paths in the model and the point at which they meet. The scalar branch sets the current from the total series resistance <i>R</i><sub>total</sub> = <i>R</i><sub>bulk</sub> + 2<i>R</i><sub>c</sub>, and the deposited power from the bulk term alone, <i>P</i><sub>bulk</sub> = <i>I</i>&#178;<i>R</i><sub>bulk</sub>. The contact power is reported and is not deposited. The field branch solves a unit-potential Laplace problem and returns a spatial distribution only. The distribution is normalized so that its volume integral equals the scalar total, which fixes where the power is deposited without changing how much is drawn. The field solve redistributes a fixed total power. It does not allow a local hot spot to increase the total electrical power drawn.</div>
 </figure>
 
 <figure id="fig3">
@@ -69,7 +73,7 @@ Captions sit below each plate as text rather than inside the artwork, so they ca
 <div class="plate"></div>
 <div class="tools"><button data-src="fig3">Show SVG source</button><button data-png="fig3">Render 600 dpi</button><button data-copy="fig3">Copy SVG</button><span class="hint"></span></div>
 <textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Fig. 3.</b> Numerical verification. (a) Worst mismatch against the analytic parabolic radial profile of a uniformly heated cylinder, as end effects are removed by increasing L/D. (b) L2 and L&#8734; error of a manufactured <i>r</i>&#8211;<i>z</i> solution under grid doubling, shown against a second-order guide. (c) Volume-average and maximum element temperature of the nonlinear SiC case under grid doubling, with the Richardson-extrapolated average marked. Every point is a solver run recorded in docs/figures/verification-data.json, not a transcribed value.</div>
+<div class="cap"><b>Fig. 3.</b> Numerical verification. (a) Worst mismatch against the analytic parabolic radial profile of a uniformly heated cylinder, as end effects are removed by increasing L/D. (b) Worst layer error of a multilayer annulus against the logarithmic resistance of concentric shells. (c) L2 and L&#8734; error of a manufactured <i>r</i>&#8211;<i>z</i> solution under grid doubling, against a second-order guide. (d) Resistance error of the unit-potential solve for conductors in series along <i>z</i>, against the exact 1/&#963; integral. (e) Time-step refinement of the backward-Euler march against a reference step of <i>t</i>/512; first order is the intended result of an A-stable scheme. (f) Volume-average and maximum element temperature of the nonlinear SiC case under grid doubling, with the Richardson-extrapolated average marked. Each point is a solver run recorded in docs/figures/verification-data.json. Energy closure holds near 10<sup>&#8722;8</sup> and the linear residual below 10<sup>&#8722;11</sup> on every grid.</div>
 </figure>
 
 <figure id="fig4">
@@ -77,7 +81,7 @@ Captions sit below each plate as text rather than inside the artwork, so they ca
 <div class="plate"></div>
 <div class="tools"><button data-src="fig4">Show SVG source</button><button data-png="fig4">Render 600 dpi</button><button data-copy="fig4">Copy SVG</button><span class="hint"></span></div>
 <textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Fig. 4.</b> Illustrative design case, solved rather than sketched. (a) Temperature field on the axisymmetric half-domain at the shipped default: dense SiC, 1.18 cm&#179; envelope, L/D 1.5, 20 A, quartz wall, 50 sccm helium. Colour carries magnitude by lightness within the single thermal hue, so the panel also reads in greyscale. (b) The steady power balance: where the bulk Joule power leaves the domain, and the temperatures the manuscript quotes. The element average, range, wall temperatures, gas-outlet temperature and energy closure are read from the same solve that produced the field.</div>
+<div class="cap"><b>Fig. 4.</b> Illustrative design case, solved rather than sketched. (a) Temperature field on the axisymmetric half-domain at the shipped default: dense SiC, 1.18 cm&#179; envelope, L/D 1.5, 20 A, quartz wall, 50 sccm helium. Colour carries magnitude by lightness within the single thermal hue, so the panel also reads in greyscale. (b) The steady power balance: where the bulk Joule power leaves the domain, and the temperatures the manuscript quotes. The element average, range, wall temperatures, gas-outlet temperature and energy closure are read from the same solve that produced the field. The 4.5 K spread follows from the high thermal conductivity and low Biot number of this case; a poorer conductor, a longer heat-transfer path or a stronger boundary loss produces a larger internal gradient.</div>
 </figure>
 
 <figure id="figS1">
@@ -85,7 +89,7 @@ Captions sit below each plate as text rather than inside the artwork, so they ca
 <div class="plate"></div>
 <div class="tools"><button data-src="figS1">Show SVG source</button><button data-png="figS1">Render 600 dpi</button><button data-copy="figS1">Copy SVG</button><span class="hint"></span></div>
 <textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Fig. S1.</b> Computational domain at the default 30 × 60 resolution, drawn from the cell edges the mesh builder returns. The domain is the axisymmetric half-plane: the left edge is the symmetry line at r = 0, and no mirrored counterpart is solved. Radial cells are divided between the element, the gas gap, the wall and a graded band of outside air; axial cells are uniform and are divided between the element and the gas pads above and below it. The outer radial boundary is held at the far-field condition.</div>
+<div class="cap"><b>Fig. S1.</b> Computational domain at the default 30 × 60 resolution, drawn from the cell edges the mesh builder returns. The domain is the axisymmetric half-plane: the left edge is the symmetry line at r = 0, and no mirrored counterpart is solved. Radial cells are divided between the element, the gas gap, the wall and a graded band of outside air; axial cells are uniform and are divided between the element and the gas pads above and below it. The outer radial boundary is held at the far-field condition. Gas pads are the gas-filled rows above and below the element. Grading widens the outside-air cells outward, the last being eight times the first. The solved region is the half-plane shown; no mirrored counterpart is stored or solved.</div>
 </figure>
 
 <figure id="figS2">
@@ -93,7 +97,7 @@ Captions sit below each plate as text rather than inside the artwork, so they ca
 <div class="plate"></div>
 <div class="tools"><button data-src="figS2">Show SVG source</button><button data-png="figS2">Render 600 dpi</button><button data-copy="figS2">Copy SVG</button><span class="hint"></span></div>
 <textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Fig. S2.</b> The four classes of entry the finite-volume assembly writes into the system matrix, with the stencil each one couples on the left and the position it occupies in the matrix on the right. Adjacent-cell conduction fills the bands next to the diagonal, boundary convection and radiation add to the diagonal alone, and element-to-wall radiation couples two cells that share no face. Directed enthalpy transport by the process gas is the only one-sided term.</div>
+<div class="cap"><b>Fig. S2.</b> The four classes of entry the finite-volume assembly writes into the system matrix, with the stencil each one couples on the left and the position it occupies in the matrix on the right. Adjacent-cell conduction fills the bands next to the diagonal, boundary convection and radiation add to the diagonal alone, and element-to-wall radiation couples two cells that share no face. Directed enthalpy transport by the process gas is the only one-sided term. The first three terms preserve matrix symmetry. Directed gas enthalpy transport produces a nonsymmetric operator and activates BiCGSTAB.</div>
 </figure>
 
 <figure id="figS3">
@@ -101,7 +105,7 @@ Captions sit below each plate as text rather than inside the artwork, so they ca
 <div class="plate"></div>
 <div class="tools"><button data-src="figS3">Show SVG source</button><button data-png="figS3">Render 600 dpi</button><button data-copy="figS3">Copy SVG</button><span class="hint"></span></div>
 <textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Fig. S3.</b> Order of computation in the coupled solver. A zero-dimensional steady state seeds the temperature field, the axisymmetric mesh is built once and held fixed, and an outer Picard iteration re-evaluates three groups of coefficients from the current field before each linear solve. The scalar electrical branch returns a single power; the local field branch returns only a spatial distribution; the property branch returns the conductivities, heat capacities and radiation coefficients used to assemble the matrix. The series resistance <i>R</i><sub>total</sub> = <i>R</i><sub>bulk</sub> + 2<i>R</i><sub>c</sub> sets the current, but only the bulk term is deposited: the contact power <i>I</i>&#178;&#183;2<i>R</i><sub>c</sub> is reported and is not added anywhere in the thermal domain. Heat capacity enters through the transient march alone.</div>
+<div class="cap"><b>Fig. S3.</b> Order of computation in the coupled solver. A zero-dimensional steady state seeds the temperature field, the axisymmetric mesh is built once and held fixed, and an outer Picard iteration re-evaluates three groups of coefficients from the current field before each linear solve. The scalar electrical branch returns a single power; the local field branch returns only a spatial distribution; the property branch returns the conductivities, heat capacities and radiation coefficients used to assemble the matrix. The series resistance <i>R</i><sub>total</sub> = <i>R</i><sub>bulk</sub> + 2<i>R</i><sub>c</sub> sets the current, but only the bulk term is deposited: the contact power <i>I</i>&#178;&#183;2<i>R</i><sub>c</sub> is reported and is not added anywhere in the thermal domain. Heat capacity enters through the transient march alone. All three branches are re-evaluated on every sweep, from the temperature field the previous sweep produced.</div>
 </figure>
 
 <figure id="figS4">
@@ -109,11 +113,27 @@ Captions sit below each plate as text rather than inside the artwork, so they ca
 <div class="plate"></div>
 <div class="tools"><button data-src="figS4">Show SVG source</button><button data-png="figS4">Render 600 dpi</button><button data-copy="figS4">Copy SVG</button><span class="hint"></span></div>
 <textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Fig. S4.</b> Mapping of a rectangular element onto the cylinder the axisymmetric solver meshes, shown for the 38 × 8 × 0.21 mm carbon-fiber-paper strip. Length, radiating surface, mass and electrical resistance carry across unchanged; the equivalent diameter, effective density and effective resistivity are the three quantities derived to hold them. Geometric volume is not preserved and is larger by a factor of 11.38. The mapping preserves the quantities used in the lumped electrical, radiative-loss and thermal-capacitance balances. The resulting 2D temperature field remains an axisymmetric approximation, because the radial geometry and the conduction path differ from those of the original strip. The zero-dimensional solve uses the rectangular dimensions directly, with the conducting cross-section W&#183;H and the full box surface; the substitution is applied only by the axisymmetric solvers, which cannot mesh a box.</div>
+<div class="cap"><b>Fig. S4.</b> Mapping of a rectangular element onto the cylinder the axisymmetric solver meshes, shown for the 38 × 8 × 0.21 mm carbon-fiber-paper strip. Length, radiating surface, mass and electrical resistance carry across unchanged; the equivalent diameter, effective density and effective resistivity are the three quantities derived to hold them. Geometric volume is not preserved and is larger by a factor of 11.38. The mapping preserves the quantities used in the lumped electrical, radiative-loss and thermal-capacitance balances. The resulting 2D temperature field remains an axisymmetric approximation, because the radial geometry and the conduction path differ from those of the original strip. The zero-dimensional solve uses the rectangular dimensions directly, with the conducting cross-section W&#183;H and the full box surface; the substitution is applied only by the axisymmetric solvers, which cannot mesh a box. Surface is taken as 2(LW + LH + WH) = 6.273 cm&#178;. The two-face convention 2LW gives 6.080 cm&#178; and omits the edges, which are 3.08 % of the total; the two must not be compared with each other.</div>
+</figure>
+
+<figure id="figS5">
+<div class="figbar"><span class="figno">Fig. S5</span><span class="figwhere">Proposed &#183; Supporting Information, transient operation</span><span class="figsize">178 mm</span></div>
+<div class="plate"></div>
+<div class="tools"><button data-src="figS5">Show SVG source</button><button data-png="figS5">Render 600 dpi</button><button data-copy="figS5">Copy SVG</button><span class="hint"></span></div>
+<textarea readonly spellcheck="false"></textarea><canvas></canvas>
+<div class="cap"><b>Fig. S5.</b> Transient operation. (a) Switch-on from ambient at the shipped default, marched to steady state rather than to a fixed duration. The dashed line is the converged steady value and &#964; is the lumped time constant the zero-dimensional result implies. (b) The same element under a duty-cycled drive, with the drive shown as a strip along the foot of the panel. The element needs several &#964; before successive cycles repeat, so a swing measured over the first few periods is part of the approach and not a property of the cycle. Both panels are marches of the same spatial operator used for the steady solve.</div>
+</figure>
+
+<figure id="figS6">
+<div class="figbar"><span class="figno">Fig. S6</span><span class="figwhere">Proposed &#183; Supporting Information, design screening</span><span class="figsize">178 mm</span></div>
+<div class="plate"></div>
+<div class="tools"><button data-src="figS6">Show SVG source</button><button data-png="figS6">Render 600 dpi</button><button data-copy="figS6">Copy SVG</button><span class="hint"></span></div>
+<textarea readonly spellcheck="false"></textarea><canvas></canvas>
+<div class="cap"><b>Fig. S6.</b> Design screening, which is the question the tool was built to answer. At a fixed envelope volume and the shipped 20 A, 100 V supply: (a) stretching the element raises its resistance; (b) that raises the power a current-limited supply delivers, and so the steady temperature, until the supply reaches its voltage ceiling and further stretching lowers both. The shaded region is voltage limited. The dashed line is the temperature at which the material stops being a material. (c) The same sweep run for six presets: resistivity decides whether the supply can reach a useful temperature at all, and the bar is dashed where the answer lies above the material's own limit. These are electrical and thermal balances only; no oxidation, creep or lifetime model is applied.</div>
 </figure>
 
 <h2>Symbols used in the figures</h2>
-<p class="lede">Nothing in the plates is a symbol the reader is expected to already know. Units are those the solver works in; resistivity is entered in &#937;&#183;cm and converted on the way in.</p>
+<p class="lede">Every symbol that appears in a plate, with its units. Resistivity is entered in &#937;&#183;cm and converted on the way in.</p>
 <div class="tablewrap">
 <table>
 <thead><tr><th>Symbol</th><th>Meaning</th><th>Units</th></tr></thead>
@@ -142,7 +162,7 @@ Captions sit below each plate as text rather than inside the artwork, so they ca
 </div>
 
 <h2>Methods named in the figures</h2>
-<p class="lede">Every numerical term that appears in a plate, in plain language. Nothing here assumes prior knowledge of finite-volume or Krylov methods.</p>
+<p class="lede">Every numerical term that appears in a plate, stated without assuming finite-volume or Krylov background.</p>
 <div class="tablewrap">
 <table>
 <thead><tr><th>Term</th><th>What it is</th><th>Where it appears</th></tr></thead>

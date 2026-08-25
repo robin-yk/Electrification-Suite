@@ -14,9 +14,11 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { geometry, equivalentCylinder, build2DMesh, calculate, solveThermal2D } from "../../apps/joule/solver.js";
+import { geometry, equivalentCylinder, build2DMesh, calculate, solveThermal2D, solveTransient2D,
+         elementTimeConstant, MATERIALS } from "../../apps/joule/solver.js";
 import { defaultInput } from "../../tools/verification/joule.mjs";
-import { workflow, coupling, verification, defaultCase, meshDomain, matrixClasses, solverLoop, cylinderMapping } from "./draw.mjs";
+import { workflow, coupling, verification, defaultCase, transient, screening,
+         meshDomain, matrixClasses, solverLoop, cylinderMapping } from "./draw.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const p = (x, n = 4) => Number(x.toPrecision(n));
@@ -102,6 +104,57 @@ DATA.defaultCase = {
   Tc: dc.T.map((row) => row.map((v) => Number((v - 273.15).toFixed(1))))
 };
 
+// Transient operation, on the same default case. Start-up runs to steady state
+// rather than to a duration, and the pulse train runs long enough for the last
+// cycle to be a repeating one. About 16 s together.
+const dcCfg = { ...x.enclosure, nr: 30, nz: 60 };
+const zeroD = calculate(x);
+const startup = solveTransient2D(x, zeroD, dcCfg, x.material,
+  { dt: 2, steps: 400, record: 4, steadyTol: 1e-4 });
+// Long enough to reach a repeating cycle: the element time constant is tens of
+// seconds, so a few periods is still the approach and its swing means nothing.
+const PERIOD = 20, DUTY = 0.3, PDT = 1, PSTEPS = 600;
+const pulse = solveTransient2D(x, zeroD, dcCfg, x.material,
+  { dt: PDT, steps: PSTEPS, record: 1, sourceScale: (t) => ((t % PERIOD) < PERIOD * DUTY ? 1 : 0) });
+const lastCycle = pulse.history.slice(-Math.round(PERIOD / PDT));
+DATA.transient = {
+  tau: p(elementTimeConstant(zeroD), 4),
+  startup: startup.history.map((h) => [Number(h.t.toFixed(2)), Number((h.avgK - 273.15).toFixed(2))]),
+  steadyC: p(startup.avgK - 273.15, 6),
+  pulse: pulse.history.map((h) => [Number(h.t.toFixed(2)), Number((h.avgK - 273.15).toFixed(2))]),
+  period: PERIOD, duty: DUTY, pulseEnd: PDT * PSTEPS,
+  swingK: p(Math.max.apply(null, lastCycle.map((h) => h.avgK)) - Math.min.apply(null, lastCycle.map((h) => h.avgK)), 4),
+  cycleMeanC: p(lastCycle.reduce((a, h) => a + h.avgK, 0) / lastCycle.length - 273.15, 5)
+};
+
+// Design screening: what the tool was built to answer. Stretching the element
+// at a fixed envelope volume raises its resistance, which raises the power a
+// current-limited supply delivers, until the supply runs out of voltage.
+const LDS = [];
+for (let e = Math.log10(0.5); e <= Math.log10(64) + 1e-9; e += (Math.log10(64) - Math.log10(0.5)) / 39) LDS.push(Math.pow(10, e));
+const sweep = LDS.map((ld) => {
+  const r = calculate({ ...x, aspectRatio: ld });
+  return { ld: Number(ld.toFixed(3)), R: p(r.resistance, 5), tssC: p(r.tss - 273.15, 5),
+           power: p(r.target.power, 5), constraint: r.constraint };
+}).filter((r) => Number.isFinite(r.tssC));
+const best = sweep.reduce((a, c) => (c.tssC > a.tssC ? c : a), sweep[0]);
+const PICKS = ["CFP", "SiC", "SiSiC (Si-infiltrated SiC)", "MoSi₂", "Kanthal A-1 (FeCrAl)", "Molybdenum"];
+const byMaterial = PICKS.map((name) => {
+  const m = MATERIALS.find((q) => q.name === name);
+  let top = null;
+  for (const ld of LDS) {
+    const r = calculate({ ...x, material: m, aspectRatio: ld });
+    if (!Number.isFinite(r.tss)) continue;
+    if (!top || r.tss > top.tss) top = { tss: r.tss, ld, R: r.resistance, constraint: r.constraint };
+  }
+  return { name: name.replace(" (Si-infiltrated SiC)", "").replace(" (FeCrAl)", ""),
+           rho: p(m.rhoOhmCm, 3), tssC: p(top.tss - 273.15, 5), ld: p(top.ld, 3),
+           R: p(top.R, 4), constraint: top.constraint,
+           limitC: m.meltC, limitKind: m.meltKind };
+}).sort((a, c) => c.tssC - a.tssC);
+DATA.screening = { sweep, best, byMaterial, imax: x.imax, vmax: x.vmax, volumeCm3: x.volumeCm3,
+                   limitC: x.material.meltC, limitKind: x.material.meltKind, materialName: x.material.name };
+
 // The verification study is expensive, so it is measured by
 // make-verification-data.mjs and read back here. Its absence is fatal rather
 // than silently skipped: a missing measurement must not become a missing plate.
@@ -118,6 +171,8 @@ const PLATES = [
   { id: "fig2",  label: "Fig. 2",  draw: coupling },
   { id: "fig3",  label: "Fig. 3",  draw: verification },
   { id: "fig4",  label: "Fig. 4",  draw: defaultCase },
+  { id: "figS5", label: "Fig. S5", draw: transient },
+  { id: "figS6", label: "Fig. S6", draw: screening },
   { id: "figS1", label: "Fig. S1", draw: meshDomain },
   { id: "figS2", label: "Fig. S2", draw: matrixClasses },
   { id: "figS3", label: "Fig. S3", draw: solverLoop },
