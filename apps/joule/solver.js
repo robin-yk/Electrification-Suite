@@ -508,6 +508,128 @@ export function gasBulkRowTemperature2D(T, mesh, j) {
   return weighted/Math.max(areaTotal,1e-30);
 }
 
+// ------------------------------------------------------------- electrical field
+// The thermal assembly treats the Joule source as uniform over the element:
+// every element cell gets op.pBulk/envelopeVolume. That is exact only when the
+// electrical conductivity is uniform. For a material with rho(T) it is not: the
+// hot core conducts differently from the cooler skin, current redistributes, and
+// the dissipation follows it. Solving del.(sigma grad V) = 0 on the element and
+// deriving the source from the resulting field is what turns "uniform heating"
+// into a current-density model.
+//
+// No new discretization is needed. A two-point-flux conductance is the same
+// operator whether the coefficient is k or sigma, and pcg2D/multiply2DSystem
+// only read {diag, rhs, edges}, so the existing machinery is reused as is.
+
+export function cellSigma2D(tempK, material) {
+  // propertiesAt returns resistivity in ohm.cm; 0.01 converts to ohm.m.
+  return 1 / Math.max(propertiesAt(material, tempK).rhoOhmCm * 0.01, 1e-30);
+}
+
+// Potential problem on the element only. The gap, wall and surrounding air are
+// insulators, so no face is built into them and the element's curved surface
+// becomes a natural zero-current boundary. The two axial ends are the
+// electrodes, held at 0 and 1 V here; the physical drive level is applied
+// afterwards by scaling, since the system is linear in V at fixed sigma.
+//
+// Cells outside the element still occupy a slot in the flat index space so the
+// shared solver can run unchanged; they are given an identity row (V = 0).
+export function assembleElectrical2D(T, material, mesh) {
+  const count=mesh.nr*mesh.nz,diag=new Float64Array(count),rhs=new Float64Array(count),edges=[],faces=[],electrodes=[];
+  const idx=(i,j)=>j*mesh.nr+i;
+  const axialArea=(i)=>Math.PI*(mesh.edges[i+1]*mesh.edges[i+1]-mesh.edges[i]*mesh.edges[i]);
+  const sigmaAt=(i,j)=>cellSigma2D(T[j][i],material);
+  const pairG=(area,d1,s1,d2,s2)=>area/Math.max(d1/s1+d2/s2,1e-30);
+  for(let j=mesh.activeStart;j<mesh.activeEnd;j++) for(let i=0;i<mesh.nElement;i++) {
+    const p=idx(i,j),sp=sigmaAt(i,j);
+    if(i+1<mesh.nElement) {
+      const q=idx(i+1,j),face=mesh.edges[i+1],area=2*Math.PI*face*(mesh.zEdges[j+1]-mesh.zEdges[j]);
+      const G=pairG(area,face-mesh.centers[i],sp,mesh.centers[i+1]-face,sigmaAt(i+1,j));
+      diag[p]+=G;diag[q]+=G;edges.push([p,q,G]);faces.push([p,q,G,"r"]);
+    }
+    if(j+1<mesh.activeEnd) {
+      const q=idx(i,j+1),face=mesh.zEdges[j+1],area=axialArea(i);
+      const G=pairG(area,face-mesh.zCenters[j],sp,mesh.zCenters[j+1]-face,sigmaAt(i,j+1));
+      diag[p]+=G;diag[q]+=G;edges.push([p,q,G]);faces.push([p,q,G,"z"]);
+    }
+    // Electrode half-cell conductances. Only the driven end contributes to rhs.
+    if(j===mesh.activeStart) {
+      const G=sp*axialArea(i)/Math.max(mesh.zCenters[j]-mesh.zEdges[j],1e-30);
+      diag[p]+=G;electrodes.push([p,G,0,i]);
+    }
+    if(j===mesh.activeEnd-1) {
+      const G=sp*axialArea(i)/Math.max(mesh.zEdges[j+1]-mesh.zCenters[j],1e-30);
+      diag[p]+=G;rhs[p]+=G;electrodes.push([p,G,1,i]);
+    }
+  }
+  for(let n=0;n<count;n++) if(diag[n]===0) diag[n]=1;
+  return {diag,rhs,edges,faces,electrodes};
+}
+
+// Solve the unit-potential problem, rescale to the operating current, and turn
+// the face currents into a per-cell dissipation.
+//
+// The returned qCell is renormalized so that it sums to targetPower (op.pBulk).
+// The 2D element spans the *envelope* radius while the zero-D bulk resistance
+// uses the solid cross-section g.area = grossArea x solidFraction, so the two
+// resistances differ whenever solidFraction < 1. Renormalizing keeps the total
+// injected power identical to what the rest of the solver already accounts for
+// (energy closure, supply limits, contact losses), so this change redistributes
+// heat without moving the energy budget: only the *shape* of the source is new.
+export function solveElectrical2D(T, material, mesh, targetCurrent, targetPower) {
+  const system=assembleElectrical2D(T,material,mesh),count=mesh.nr*mesh.nz;
+  const zLo=mesh.zEdges[mesh.activeStart],zSpan=Math.max(mesh.zEdges[mesh.activeEnd]-zLo,1e-30);
+  const guess=new Float64Array(count);
+  for(let j=mesh.activeStart;j<mesh.activeEnd;j++) for(let i=0;i<mesh.nElement;i++) guess[j*mesh.nr+i]=(mesh.zCenters[j]-zLo)/zSpan;
+  const solved=pcg2D(system,guess),V=solved.x;
+  // Current drawn at the driven electrode when 1 V is applied across the element.
+  let unitCurrent=0;
+  for(const [p,G,end] of system.electrodes) if(end===1) unitCurrent+=G*(1-V[p]);
+  const resistance=unitCurrent>1e-30?1/unitCurrent:Infinity;
+  const scale=unitCurrent>1e-30?targetCurrent/unitCurrent:0;
+
+  const qCell=new Float64Array(count),jr=new Float64Array(count),jz=new Float64Array(count);
+  const axialArea=(i)=>Math.PI*(mesh.edges[i+1]*mesh.edges[i+1]-mesh.edges[i]*mesh.edges[i]);
+  const nr2=new Float64Array(count),nz2=new Float64Array(count);
+  for(const [p,q,G,axis] of system.faces) {
+    const drop=V[p]-V[q],dissipation=G*drop*drop/2;
+    qCell[p]+=dissipation;qCell[q]+=dissipation;
+    // Face current density [A/m2] at the drive level, averaged onto the two
+    // cells the face separates. Each cell keeps a separate count per axis, so a
+    // cell on the element edge is not diluted by the faces it does not have.
+    const i=p%mesh.nr,j=(p-i)/mesh.nr;
+    const area=axis==="z"?axialArea(i):2*Math.PI*mesh.edges[i+1]*(mesh.zEdges[j+1]-mesh.zEdges[j]);
+    const density=scale*G*drop/Math.max(area,1e-30);
+    if(axis==="z"){jz[p]+=density;jz[q]+=density;nz2[p]++;nz2[q]++;}
+    else{jr[p]+=density;jr[q]+=density;nr2[p]++;nr2[q]++;}
+  }
+  // The electrode half-face carries the same current as the cell it feeds, so
+  // it counts toward that cell's axial average like any other face. Signs
+  // follow the interior convention: the face current is G times the potential
+  // drop taken from the -z side to the +z side, so the driven end at the top
+  // reads (V_cell - V_applied) and the grounded end at the bottom reads
+  // (V_applied - V_cell). Both are negative when current flows downward.
+  for(const [p,G,end] of system.electrodes) {
+    const applied=end===1?1:0,drop=applied-V[p];
+    qCell[p]+=G*drop*drop;
+    const i=p%mesh.nr,signed=end===1?V[p]-applied:applied-V[p];
+    jz[p]+=scale*G*signed/Math.max(axialArea(i),1e-30);
+    nz2[p]++;
+  }
+  let total=0;for(let n=0;n<count;n++) total+=qCell[n];
+  const norm=total>1e-30?targetPower/total:0;
+  const jMag=new Float64Array(count);
+  for(let n=0;n<count;n++) {
+    qCell[n]*=norm;
+    if(nr2[n]>0) jr[n]/=nr2[n];
+    if(nz2[n]>0) jz[n]/=nz2[n];
+    jMag[n]=Math.hypot(jr[n],jz[n]);
+  }
+  for(let n=0;n<count;n++) V[n]*=scale;
+  return {V,qCell,jr,jz,jMag,resistance,unitCurrent,current:targetCurrent,
+    iterations:solved.iterations,relativeResidual:solved.relativeResidual};
+}
+
 export function assemble2DSystem(T, x, g, cfg, material, mesh, op) {
   const count=mesh.nr*mesh.nz,diag=new Float64Array(count),rhs=new Float64Array(count),edges=[],directed=[],boundaryTerms=[];
   const idx=(i,j)=>j*mesh.nr+i;
@@ -557,7 +679,9 @@ export function assemble2DSystem(T, x, g, cfg, material, mesh, op) {
     // domain. Only for code verification (manufactured solutions); the page never
     // sets it, and energy-closure reporting assumes the ordinary Joule source.
     if(cfg.verificationSource) rhs[p]+=cfg.verificationSource(mesh.centers[i],mesh.zCenters[j])*mesh.cellVolume(i,j);
-    else if(code===0) rhs[p]+=qVol*mesh.cellVolume(i,j);
+    // op.qCell, when present, is the per-cell dissipation [W] from the
+    // electrical field solve; it already sums to op.pBulk.
+    else if(code===0) rhs[p]+=op.qCell?op.qCell[p]:qVol*mesh.cellVolume(i,j);
     if(i<mesh.nr-1) {
       const q=idx(i+1,j),face=mesh.edges[i+1],area=2*Math.PI*face*(mesh.zEdges[j+1]-mesh.zEdges[j]),nextCode=mesh.materialAt(i+1,j),kn=cellK2D(nextCode,T[j][i+1],material,cfg,x);
       const G=pairConductance(area,face-mesh.centers[i],kp,mesh.centers[i+1]-face,kn,code,nextCode);
@@ -715,10 +839,19 @@ export function solveThermal2D(x, zeroD, cfg, material) {
   const seedK=finite(zeroD.tss)?clamp(zeroD.tss,ambientK,3500):clamp(x.targetK,ambientK,2500);
   const T=Array.from({length:mesh.nz},(_,j)=>Array.from({length:mesh.nr},(_,i)=>{const code=mesh.materialAt(i,j);return ambientK+(code===0?0.65:code===1?0.25:code===2?0.10:code===4?0.08:0)*(seedK-ambientK);}));
   const elementAverage=()=>{let sum=0,vol=0;for(let j=0;j<mesh.nz;j++)for(let i=0;i<mesh.nr;i++)if(mesh.materialAt(i,j)===0){const v=mesh.cellVolume(i,j);sum+=T[j][i]*v;vol+=v;}return sum/vol;};
-  let maxStep=Infinity,outer=0,totalLinear=0,linearResidual=Infinity,op=operating2DAt(ambientK,x,g,cfg,material);
+  // cfg.currentField replaces the uniform Joule source with the dissipation of
+  // a solved potential field. Off by default, so the page's numbers only change
+  // once it is switched on.
+  let electrical=null;
+  const withCurrentField=(point)=>{
+    if(!cfg.currentField) return point;
+    electrical=solveElectrical2D(T,material,mesh,point.current,point.pBulk);
+    return {...point,qCell:electrical.qCell};
+  };
+  let maxStep=Infinity,outer=0,totalLinear=0,linearResidual=Infinity,op=withCurrentField(operating2DAt(ambientK,x,g,cfg,material));
   let relaxation=0.62,stallStreak=0;
   for(outer=0;outer<cfg.maxIter&&maxStep>cfg.tolerance;outer++){
-    op=operating2DAt(elementAverage(),x,g,cfg,material);
+    op=withCurrentField(operating2DAt(elementAverage(),x,g,cfg,material));
     const system=assemble2DSystem(T,x,g,cfg,material,mesh,op),initial=Float64Array.from(T.flat()),linear=bicgstab2D(system,initial);
     totalLinear+=linear.iterations;linearResidual=linear.relativeResidual;
     const stepBefore=maxStep;
@@ -743,10 +876,10 @@ export function solveThermal2D(x, zeroD, cfg, material) {
       else if(outer===4)relaxation=0.86;
     }
   }
-  const avgK=elementAverage();op=operating2DAt(avgK,x,g,cfg,material);
+  const avgK=elementAverage();op=withCurrentField(operating2DAt(avgK,x,g,cfg,material));
   const element=[];for(let j=0;j<mesh.nz;j++)for(let i=0;i<mesh.nr;i++)if(mesh.materialAt(i,j)===0)element.push(T[j][i]);
   const tMin=Math.min(...element),tMax=Math.max(...element),mid=mesh.activeStart+Math.floor(mesh.nActiveZ/2),bottomRow=mesh.activeStart,topRow=mesh.activeEnd-1,loss=boundaryLoss2D(T,x,g,cfg,material,mesh,op),boundaryLoss=loss.total;
   const closure=Math.abs(op.pBulk-boundaryLoss)/Math.max(op.pBulk,1e-12),representedVolumeError=Math.abs(mesh.elementVolume-g.envelopeVolume)/g.envelopeVolume;
   const heCoolingUpper=Math.max(0,HE_CAPACITY_RATE*(avgK-x.gasK));
-  return{errors:[],x,zeroD,cfg,material,g,mesh,T,op,avgK,tMin,tMax,deltaT:tMax-tMin,center:T[mid][0],side:T[mid][mesh.nElement-1],bottom:T[bottomRow][0],top:T[topRow][0],wallInner:T[mid][mesh.nElement+mesh.nGap],wallOuter:T[mid][mesh.nElement+mesh.nGap+mesh.nWall-1],boundaryLoss,staticBoundaryLoss:loss.staticLoss,closure,representedVolumeError,heCapacityRate:HE_CAPACITY_RATE,heCooling:loss.gasAdvective,heCoolingUpper,heOutletK:loss.gasOutletK,heFlowConnected:loss.flowConnected,iterations:outer,linearIterations:totalLinear,linearResidual,residual:maxStep,converged:maxStep<=cfg.tolerance,targetReached:avgK>=x.targetK,qVol:op.pBulk/g.envelopeVolume};
+  return{errors:[],x,zeroD,cfg,material,g,mesh,T,op,avgK,tMin,tMax,deltaT:tMax-tMin,center:T[mid][0],side:T[mid][mesh.nElement-1],bottom:T[bottomRow][0],top:T[topRow][0],wallInner:T[mid][mesh.nElement+mesh.nGap],wallOuter:T[mid][mesh.nElement+mesh.nGap+mesh.nWall-1],boundaryLoss,staticBoundaryLoss:loss.staticLoss,closure,representedVolumeError,heCapacityRate:HE_CAPACITY_RATE,heCooling:loss.gasAdvective,heCoolingUpper,heOutletK:loss.gasOutletK,heFlowConnected:loss.flowConnected,iterations:outer,linearIterations:totalLinear,linearResidual,residual:maxStep,converged:maxStep<=cfg.tolerance,targetReached:avgK>=x.targetK,qVol:op.pBulk/g.envelopeVolume,electrical};
 }
