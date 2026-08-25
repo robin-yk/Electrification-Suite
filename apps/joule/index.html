@@ -318,6 +318,31 @@
     }
     .validation.show { display: block; }
 
+    .melt-warning {
+      display: none;
+      margin: -6px 0 16px;
+      border-left: 4px solid var(--red);
+      background: var(--danger-bg);
+      border-radius: 0 8px 8px 0;
+      padding: 11px 14px;
+      color: #7e2424;
+      font-size: 13.5px;
+      line-height: 1.5;
+    }
+    .melt-warning.show { display: block; }
+    .melt-warning-sub { margin-top: 3px; color: #8a4141; font-size: 12.5px; }
+    .melt-chip {
+      display: inline-block;
+      margin-left: 6px;
+      border-radius: 999px;
+      padding: 1px 7px;
+      background: var(--danger-bg);
+      color: #7e2424;
+      font-size: 11.5px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
     .kpi-grid {
       display: grid;
       grid-template-columns: repeat(6, minmax(135px, 1fr));
@@ -1071,6 +1096,11 @@
             <article class="kpi" id="kpiBi"><div class="kpi-label">Biot number</div><div class="kpi-value" id="biValue">—</div><div class="kpi-sub" id="biSub">Lumped screening</div></article>
           </div>
 
+          <div id="meltWarning" class="melt-warning" role="alert">
+            <strong id="meltWarningMain"></strong>
+            <div id="meltWarningSub" class="melt-warning-sub"></div>
+          </div>
+
           <article class="card recommendation-card" aria-label="Design recommendation">
             <div class="recommendation-body">
               <div>
@@ -1411,6 +1441,7 @@
             <div class="formula-item"><div class="formula-name">Power required at target</div><div class="formula">P<sub>req</sub> = max(0, P<sub>loss</sub>(T<sub>t</sub>))</div></div>
             <div class="formula-item"><div class="formula-name">Required electrical point</div><div class="formula">V<sub>req</sub> = √(P<sub>req</sub>R), &nbsp; I<sub>req</sub> = √(P<sub>req</sub>/R)</div></div>
             <div class="formula-item"><div class="formula-name">Feasibility</div><div class="formula">Target feasible ⇔ P(T<sub>t</sub>) ≥ P<sub>req</sub></div></div>
+            <div class="formula-item"><div class="formula-name">Melting/decomposition check</div><div class="formula">Warn ⇔ T<sub>ss</sub> &gt; T<sub>melt</sub>; &nbsp; V<sub>safe</sub> = √(P<sub>loss</sub>(T<sub>melt</sub>)R(T<sub>melt</sub>)), &nbsp; I<sub>safe</sub> = √(P<sub>loss</sub>(T<sub>melt</sub>)/R(T<sub>melt</sub>))</div><div class="formula-note">T<sub>melt</sub> is each preset's melting, decomposition, or sublimation point (source noted per material). V<sub>safe</sub> and I<sub>safe</sub> are the single-parameter Vmax or Imax ceiling that would hold T<sub>ss</sub> at T<sub>melt</sub> with everything else unchanged; lowering either one alone is sufficient.</div></div>
           </div>
         </article>
 
@@ -1524,6 +1555,24 @@
           temperature is expected: conduction into the copper clamps and the IR camera's area-averaging are not modeled.
         </p>
         <div class="table-wrap" style="margin-top:10px"><table class="metric-table"><thead><tr><th>Quantity</th><th>This tool</th><th>Reference</th></tr></thead><tbody id="crossCheckBody3"></tbody></table></div>
+
+        <p class="calc-note" style="margin-top:18px">
+          <strong>0D vs 2D vs experiment.</strong> The tables above compare the 0D screening model, which carries one
+          lumped temperature for the whole element. The 2D columns below solve the same three cases as resolved fields,
+          so the question they answer is whether the single number 0D reports is a temperature the element actually holds.
+          The 2D solves are precomputed (each takes seconds) and regenerate with
+          <code>node tools/verification/crosscheck.mjs --write</code>; the 0D column is computed live from the enclosure
+          set on the 2D Thermal Map tab, so the two columns agree only while that enclosure is at its defaults.
+        </p>
+        <div class="table-wrap" style="margin-top:10px"><table class="metric-table"><thead><tr>
+          <th>Case</th><th>0D T<sub>ss</sub></th><th>2D average</th><th>2D peak</th><th>2D ΔT</th><th>Experiment</th>
+        </tr></thead><tbody id="crossCheckThermalBody"></tbody></table></div>
+        <p class="calc-note" style="margin-top:10px">
+          Wismann's tube is the only case with a measured element temperature, and there the resolved field lands within
+          2% of it while the lumped model is 5% low — the 0D screen understates the temperature because it spreads the
+          same power over an isothermal body. Every case carries an internal ΔT that 0D cannot represent at all, which is
+          what the melting-point check on the Single Design tab is reading past: that check runs on the 0D T<sub>ss</sub>.
+        </p>
       </details>
     </section>
 
@@ -1555,6 +1604,7 @@
       gasFlowCells2D, gasBulkRowTemperature2D, assemble2DSystem, multiply2DSystem, pcg2D,
       bicgstab2D, boundaryLoss2D, solveThermal2D
     } from "./solver.js";
+    import { evaluateCrossChecks, thermalComparison, sig4 } from "./crosscheck.js";
   (() => {
     "use strict";
 
@@ -1580,13 +1630,8 @@
       if (ax >= 1e5 || ax < 1e-3) return x.toExponential(2);
       return x.toPrecision(3);
     }
-    function sig4(x) {
-      if (!finite(x)) return "—";
-      if (x === 0) return "0";
-      const ax = Math.abs(x);
-      if (ax >= 1e5 || ax < 1e-3) return x.toExponential(3);
-      return Number(x.toPrecision(4)).toLocaleString("en-US", { maximumFractionDigits: 8 });
-    }
+    // sig4 lives in crosscheck.js so the page and the headless report format
+    // the same numbers the same way; imported above.
     function fmtTemp(k) {
       if (!finite(k)) return "—";
       return `${format(celsius(k), 1)} °C`;
@@ -1981,6 +2026,18 @@
       };
     }
 
+    function renderMeltWarning(r) {
+      const box = $("meltWarning");
+      if (!r.melt) { box.classList.remove("show"); return; }
+      const { meltC, meltKind, safeVoltage, safeCurrent } = r.melt;
+      const verb = meltKind === "melting" ? "melting point" : meltKind === "sublimation" ? "sublimation point" : "decomposition point";
+      $("meltWarningMain").textContent =
+        `Steady-state temperature (${format(celsius(r.tss), 0)} °C) exceeds ${r.material.name}'s ${verb} (${format(meltC, 0)} °C).`;
+      $("meltWarningSub").textContent =
+        `Lower Vmax to about ${sig3(safeVoltage)} V or Imax to about ${sig3(safeCurrent)} A to hold Tss at or below that limit; either one alone is enough.`;
+      box.classList.add("show");
+    }
+
     function renderRecommendation(r) {
       const rec = designRecommendation(r);
       $("recommendationMain").textContent = rec.main;
@@ -2056,10 +2113,11 @@
       $("biSub").textContent = r.uniform ? "Bi ≤ screening limit" : "Temperature-gradient risk";
 
       setClass($("kpiConstraint"), r.violations?.length ? "bad" : r.constraint.includes("+") ? "warn" : "good");
-      setClass($("kpiTss"), r.feasible ? "good" : "bad");
+      setClass($("kpiTss"), r.melt ? "bad" : r.feasible ? "good" : "bad");
       setClass($("kpiTime"), "good");
       setClass($("kpiFeasible"), r.feasible ? "good" : "bad");
       setClass($("kpiBi"), r.uniform ? "good" : "warn");
+      renderMeltWarning(r);
       renderRecommendation(r);
       renderJouleDiagnostics(r);
 
@@ -2455,7 +2513,7 @@
           <td>${format(r.target.props.rhoOhmCm, 7)} Ω·cm</td>
           <td>${format(r.power, 3)} W</td>
           <td>${format(r.rampRate, 4)}</td>
-          <td>${format(celsius(r.tss), 1)} °C</td>
+          <td>${format(celsius(r.tss), 1)} °C${r.melt ? `<span class="melt-chip" title="Exceeds ${format(r.melt.meltC, 0)} °C ${r.melt.meltKind} point">⚠ melts</span>` : ""}</td>
           <td><span class="status ${r.feasible ? "good" : "bad"}">${r.feasible ? "Feasible" : "No"}</span></td>
         </tr>`).join("");
 
@@ -2657,87 +2715,47 @@
       }
     }
 
-    // Live validation against Wismann et al., Science 364, 756 (2019): their
-    // FeCrAl tube expressed in this tool's inputs (annulus wall as void fraction).
+    // The three published-reactor cases live in crosscheck.js so that
+    // tools/verification/crosscheck.mjs can regenerate every number in these
+    // tables headlessly. The 0D engine runs live here; the 2D field solves take
+    // seconds each, so they are precomputed into data/crosscheck-2d.json.
+    const CROSS_CHECK_BODIES = { wismann: "crossCheckBody", zheng: "crossCheckBody2", kwak: "crossCheckBody3" };
+    let crossCheck2D = null;
+
     function renderCrossCheck() {
-      const material = MATERIALS.find((m) => /Kanthal|FeCrAl/i.test(m.name));
-      if (!material) return;
-      const x = {
-        material, solidFraction: 0.2198, porosity: 0.7802,
-        volumeCm3: 14.137 * 0.2198, aspectRatio: 83.3,
-        imax: 65, vmax: 100, pmax: 2000, supplyMode: "auto", iset: 65, vset: 100,
-        ambientK: kelvin(20), targetK: kelvin(800),
-        emissivity: material.emissivity ?? 0.8, convection: false, h: 0,
-        gasK: kelvin(20), biLimit: 0.01, enclosure: get2DConfig()
-      };
-      const r = calculate(x);
-      if (r.errors.length) return;
-      const rows = [
-        ["Element geometry L × D", `${sig4(r.g.L*1000)} × ${sig4(r.g.D*1000)} mm`, "500 × 6.0 mm tube (paper Fig. 2)"],
-        ["Element resistance", `${sig4(r.resistance)} Ω`, "ρL/A = 0.117 Ω for the 0.35 mm annulus"],
-        ["Electrical power at 65 A", `${sig4(r.power)} W`, "I²R ≈ 495 W"],
-        ["Steady-state temperature", fmtTemp(r.tss), "800 °C maximum measured"],
-        ["Biot number", sig4(r.bi), "no measurable wall temperature gradient"]
-      ];
-      $("crossCheckBody").innerHTML = rows.map(([a,b,c]) => `<tr><th>${a}</th><td>${b}</td><td>${c}</td></tr>`).join("");
-
-      // Zheng et al., AIChE J. 69, e17620 (2022): SiSiC foam entered through the
-      // measured foam resistance as an effective straight-pore resistivity.
-      const foam = { name: "SiSiC foam (effective)", rhoOhmCm: 0.0419, density: 3050, cp: 680, k: 40, jmax: 1e7, emissivity: 0.9 };
-      const zBase = {
-        material: foam, solidFraction: 0.12, porosity: 0.88,
-        volumeCm3: 79.6 * 0.12, aspectRatio: 9.9 / 3.2,
-        imax: 50, vmax: 30, pmax: 2000, supplyMode: "cv", iset: 50, vset: 13.04,
-        ambientK: kelvin(20), targetK: kelvin(750),
-        emissivity: 0.9, convection: false, h: 0,
-        gasK: kelvin(20), biLimit: 0.01, enclosure: get2DConfig()
-      };
-      const z1 = calculate(zBase), z2 = calculate({ ...zBase, vset: 14.10 });
-      if (z1.errors.length || z2.errors.length) return;
-      const zRows = [
-        ["Foam geometry L × D", `${sig4(z1.g.L*1000)} × ${sig4(z1.g.D*1000)} mm`, "99 × 32 mm foam (paper §3.1)"],
-        ["Foam resistance", `${sig4(z1.resistance)} Ω`, "0.41–0.45 Ω measured"],
-        ["Current at 13.04 V", `${sig4(z1.operatingCurrent)} A`, "30.26 A measured"],
-        ["Current at 14.10 V", `${sig4(z2.operatingCurrent)} A`, "34.70 A measured"],
-        ["Power at 14.10 V", `${sig4(z2.power)} W`, "489.3 W measured"]
-      ];
-      $("crossCheckBody2").innerHTML = zRows.map(([a,b,c]) => `<tr><th>${a}</th><td>${b}</td><td>${c}</td></tr>`).join("");
-
-      // Kwak et al., ACS Energy Lett. (2025), SI Fig. S11: the CFP strip as a
-      // radiating-area-equivalent cylinder carrying the measured R(T), mass, and emissivity.
-      const cfpD = 4.93e-3, cfpL = 0.038, cfpA = Math.PI / 4 * cfpD * cfpD;
-      const cfpRho = (T) => (4.25 - 7.24e-4 * T) * cfpA * 100 / cfpL;
-      const cfp = {
-        name: "CFP H23 (effective)", rhoOhmCm: cfpRho(25), density: 39.7, cp: 900, k: 5, jmax: 1e9, emissivity: 0.57,
-        rhoTable: [[25, cfpRho(25)], [500, cfpRho(500)], [1000, cfpRho(1000)], [1500, cfpRho(1500)], [1800, cfpRho(1800)]]
-      };
-      const cBase = {
-        material: cfp, solidFraction: 1, porosity: 0,
-        volumeCm3: 0.7254, aspectRatio: cfpL / cfpD,
-        imax: 20, vmax: 75, pmax: 1500, supplyMode: "cv", iset: 20, vset: 20,
-        ambientK: kelvin(20), targetK: kelvin(1200),
-        emissivity: 0.57, convection: false, h: 0, gasK: kelvin(20), biLimit: 0.01,
-        enclosure: { wallMaterial: "quartz", wallK: 1.4, wallThickness: 0.001, wallEmissivity: 0.93,
-          gap: (17e-3 - cfpD) / 2, gapK: 0.15, endMode: "ambient", endK: kelvin(20), endH: 200,
-          contactRho: 0, maxIter: 160, tolerance: 1e-4 }
-      };
-      const cfpPoint = (V) => {
-        const x = { ...cBase, vset: V }, res = calculate(x);
-        if (res.errors.length) return null;
-        const P = operatingAt(res.tss, x, res.g).power;
-        return { P, T: celsius(res.tss), R25: res.initial.resistance };
-      };
-      const c1 = cfpPoint(16), c2 = cfpPoint(20), c3 = cfpPoint(31);
-      if (!c1 || !c2 || !c3) return;
-      const cExp = Math.log(c3.T / c1.T) / Math.log(c3.P / c1.P);
-      const cRows = [
-        ["Strip as equivalent cylinder", `Ø${sig4(cfpD*1000)} × ${sig4(cfpL*1000)} mm`, "38 × 8 × 0.21 mm strip, same radiating area"],
-        ["Cold resistance R(25 °C)", `${sig4(c2.R25)} Ω`, "4.23 Ω from the measured R(T) fit"],
-        ["T–P scaling exponent", cExp.toFixed(3), "0.3525 measured, R² = 0.997 (Fig. S11b)"],
-        [`Steady T at 20 V (${sig4(c2.P)} W)`, `${sig4(c2.T)} °C`, `${sig4(202.24 * Math.pow(c2.P, 0.3525))} °C from the paper fit; clamp conduction and IR averaging explain the offset`]
-      ];
-      $("crossCheckBody3").innerHTML = cRows.map(([a,b,c]) => `<tr><th>${a}</th><td>${b}</td><td>${c}</td></tr>`).join("");
+      const evaluated = evaluateCrossChecks(get2DConfig());
+      for (const item of evaluated) {
+        const body = $(CROSS_CHECK_BODIES[item.id]);
+        if (!body || item.error) continue;
+        body.innerHTML = item.rows.map(([a, b, c]) => `<tr><th>${a}</th><td>${b}</td><td>${c}</td></tr>`).join("");
+      }
+      renderCrossCheckThermal(evaluated);
     }
+
+    function renderCrossCheckThermal(evaluated) {
+      const body = $("crossCheckThermalBody");
+      if (!body) return;
+      const labels = { wismann: "Wismann FeCrAl tube", zheng: "Zheng SiSiC foam", kwak: "Kwak CFP strip" };
+      body.innerHTML = evaluated.map((item) => {
+        const twoD = crossCheck2D?.cases?.[item.id];
+        const c = thermalComparison(item, twoD ? { avgK: kelvin(twoD.avgC), tMax: kelvin(twoD.maxC) } : null);
+        if (!c) return "";
+        const experiment = c.referenceC == null
+          ? `<span class="context-note">${c.referenceLabel}</span>`
+          : `${sig4(c.referenceC)} °C`;
+        return `<tr><th>${labels[item.id] ?? item.id}</th>
+          <td>${sig4(c.zeroDC)} °C</td>
+          <td>${c.twoDAvgC == null ? "—" : `${sig4(c.twoDAvgC)} °C`}</td>
+          <td>${c.twoDMaxC == null ? "—" : `${sig4(c.twoDMaxC)} °C`}</td>
+          <td>${twoD ? `${sig4(twoD.deltaT)} K` : "—"}</td>
+          <td>${experiment}</td></tr>`;
+      }).join("");
+    }
+
+    fetch("data/crosscheck-2d.json")
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => { crossCheck2D = data; renderCrossCheck(); })
+      .catch(() => {});
 
     function renderPropertyTable() {
       $("propertyBody").innerHTML = MATERIALS.map((m) => `<tr>

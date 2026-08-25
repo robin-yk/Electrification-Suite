@@ -19,23 +19,36 @@ export const T2D_WALLS = {
 };
 
 export const MATERIALS = [
-  { name:"CFP", rhoOhmCm:0.05, density:452, cp:990, k:400, jmax:1e7, source:"Mittal et al. (2025), Table 1", model:"constant; anisotropy not represented" },
-  { name:"SiC", rhoOhmCm:0.0555556, density:3210, cp:750, k:120, jmax:5e6, source:"Mittal et al. (2025), Table 1", model:"constant grade proxy" },
+  { name:"CFP", rhoOhmCm:0.05, density:452, cp:990, k:400, jmax:1e7, source:"Mittal et al. (2025), Table 1", model:"constant; anisotropy not represented",
+    meltC:3600, meltKind:"sublimation", meltNote:"carbon sublimes rather than melting at 1 atm; CRC Handbook graphite value" },
+  { name:"SiC", rhoOhmCm:0.0555556, density:3210, cp:750, k:120, jmax:5e6, source:"Mittal et al. (2025), Table 1", model:"constant grade proxy",
+    meltC:2700, meltKind:"decomposition", meltNote:"SiC decomposes rather than melting at 1 atm; commonly cited onset" },
   { name:"SiSiC (Si-infiltrated SiC)", rhoOhmCm:0.08, density:3050, cp:680, k:140, jmax:5e6, emissivity:0.9,
     rhoTable:[[20,0.08],[300,0.028],[550,0.0179],[650,0.0174],[750,0.0165],[1000,0.0155],[1350,0.015]],
     kTable:[[20,140],[600,60],[1000,45],[1350,40]],
     source:"550-750 °C bulk ρ back-calculated from Zheng et al., AIChE J. 69, e17620 (2022), Table 2; RT branch is a commercial SiC-element proxy",
-    model:"ρ(T) table; RT resistivity varies widely between SiSiC grades, so prefer a datasheet; free Si melts at 1414 °C" },
-  { name:"MoSi₂", rhoOhmCm:2.5e-5, density:6500, cp:420, k:30, jmax:3e6, emissivity:0.78, rhoTable:[[20,2.5e-5],[200,7e-5],[600,1.5e-4],[1000,2.3e-4],[1400,3.0e-4],[1800,3.5e-4]], kTable:[[20,30],[600,30],[1200,15],[1800,15]], source:"Kanthal Super handbook", model:"digitized handbook curve" },
-  { name:"Kanthal A-1 (FeCrAl)", rhoOhmCm:1.45e-4, density:7100, cp:460, k:11, jmax:1e7, emissivity:0.70, rhoFactor:[[20,1],[500,1.01],[800,1.03],[1000,1.04],[1400,1.05]], source:"Kanthal resistance materials handbook", model:"manufacturer Ct interpolation" },
-  { name:"Nikrothal 80 (NiCr)", rhoOhmCm:1.09e-4, density:8300, cp:450, k:15, jmax:1e7, emissivity:0.88, rhoFactor:[[20,1],[400,1.03],[800,1.05],[1200,1.07]], source:"Kanthal resistance materials handbook", model:"manufacturer Ct interpolation" },
-  { name:"Inconel 601", rhoOhmCm:1.18e-4, density:8110, cp:448, k:11.2, jmax:1e7, rhoTable:[[20,1.18e-4],[100,1.192e-4],[200,1.207e-4],[300,1.220e-4],[400,1.229e-4],[500,1.239e-4],[600,1.247e-4],[700,1.249e-4],[800,1.249e-4],[900,1.259e-4],[1000,1.262e-4]], cpTable:[[20,448],[100,469],[200,498],[300,523],[400,548],[500,578],[600,603],[700,632],[800,657],[900,686],[1000,712]], kTable:[[20,11.2],[100,12.7],[200,14.3],[300,16.0],[400,17.7],[500,19.5],[600,21.0],[700,22.8],[800,24.4],[900,26.1],[1000,27.8]], source:"Special Metals Inconel 601 bulletin, Table 3", model:"manufacturer table interpolation" },
-  { name:"304 stainless steel", rhoOhmCm:7.2e-5, density:8000, cp:500, k:16.2, jmax:5e6, rhoAlpha:0.00094, source:"Mittal Table 1; standardized RT correction", model:"linear ρ(T); Cp,k constant" },
-  { name:"Molybdenum", rhoOhmCm:5.34e-6, density:10220, cp:251, k:138, jmax:3e5, rhoAlpha:0.0046, source:"NIST resistivity compilation; Mittal Table 1", model:"linear ρ(T); Cp,k constant" },
-  { name:"Tungsten", rhoOhmCm:5.60e-6, density:19300, cp:134, k:164, jmax:3e7, rhoAlpha:0.0045, source:"NIST resistivity compilation; Mittal Table 1", model:"linear ρ(T); Cp,k constant" },
-  { name:"Copper", rhoOhmCm:1.68e-6, density:8960, cp:385, k:400, jmax:1e7, rhoAlpha:0.00393, source:"NIST recommended data", model:"linear ρ(T); Cp,k constant" },
-  { name:"Aluminum", rhoOhmCm:2.65e-6, density:2700, cp:897, k:237, jmax:5e9, rhoAlpha:0.00429, source:"NIST recommended data", model:"linear ρ(T); Cp,k constant" },
-  { name:"Titanium", rhoOhmCm:4.2e-5, density:4500, cp:523, k:17, jmax:4.5e6, rhoAlpha:0.0038, source:"Mittal Table 1; RT correction", model:"linear ρ(T); Cp,k constant" }
+    model:"ρ(T) table; RT resistivity varies widely between SiSiC grades, so prefer a datasheet; free Si melts at 1414 °C",
+    meltC:1414, meltKind:"melting", meltNote:"free-Si matrix constituent melts here, well below the SiC skeleton" },
+  { name:"MoSi₂", rhoOhmCm:2.5e-5, density:6500, cp:420, k:30, jmax:3e6, emissivity:0.78, rhoTable:[[20,2.5e-5],[200,7e-5],[600,1.5e-4],[1000,2.3e-4],[1400,3.0e-4],[1800,3.5e-4]], kTable:[[20,30],[600,30],[1200,15],[1800,15]], source:"Kanthal Super handbook", model:"digitized handbook curve",
+    meltC:2030, meltKind:"melting", meltNote:"MoSi₂ melting point" },
+  { name:"Kanthal A-1 (FeCrAl)", rhoOhmCm:1.45e-4, density:7100, cp:460, k:11, jmax:1e7, emissivity:0.70, rhoFactor:[[20,1],[500,1.01],[800,1.03],[1000,1.04],[1400,1.05]], source:"Kanthal resistance materials handbook", model:"manufacturer Ct interpolation",
+    meltC:1500, meltKind:"melting", meltNote:"FeCrAl solidus, Kanthal handbook" },
+  { name:"Nikrothal 80 (NiCr)", rhoOhmCm:1.09e-4, density:8300, cp:450, k:15, jmax:1e7, emissivity:0.88, rhoFactor:[[20,1],[400,1.03],[800,1.05],[1200,1.07]], source:"Kanthal resistance materials handbook", model:"manufacturer Ct interpolation",
+    meltC:1400, meltKind:"melting", meltNote:"NiCr 80/20 melting range, Kanthal handbook" },
+  { name:"Inconel 601", rhoOhmCm:1.18e-4, density:8110, cp:448, k:11.2, jmax:1e7, rhoTable:[[20,1.18e-4],[100,1.192e-4],[200,1.207e-4],[300,1.220e-4],[400,1.229e-4],[500,1.239e-4],[600,1.247e-4],[700,1.249e-4],[800,1.249e-4],[900,1.259e-4],[1000,1.262e-4]], cpTable:[[20,448],[100,469],[200,498],[300,523],[400,548],[500,578],[600,603],[700,632],[800,657],[900,686],[1000,712]], kTable:[[20,11.2],[100,12.7],[200,14.3],[300,16.0],[400,17.7],[500,19.5],[600,21.0],[700,22.8],[800,24.4],[900,26.1],[1000,27.8]], source:"Special Metals Inconel 601 bulletin, Table 3", model:"manufacturer table interpolation",
+    meltC:1350, meltKind:"melting", meltNote:"Inconel 601 melting range, Special Metals bulletin" },
+  { name:"304 stainless steel", rhoOhmCm:7.2e-5, density:8000, cp:500, k:16.2, jmax:5e6, rhoAlpha:0.00094, source:"Mittal Table 1; standardized RT correction", model:"linear ρ(T); Cp,k constant",
+    meltC:1400, meltKind:"melting", meltNote:"304 stainless solidus, ASM Metals Handbook" },
+  { name:"Molybdenum", rhoOhmCm:5.34e-6, density:10220, cp:251, k:138, jmax:3e5, rhoAlpha:0.0046, source:"NIST resistivity compilation; Mittal Table 1", model:"linear ρ(T); Cp,k constant",
+    meltC:2623, meltKind:"melting", meltNote:"molybdenum melting point" },
+  { name:"Tungsten", rhoOhmCm:5.60e-6, density:19300, cp:134, k:164, jmax:3e7, rhoAlpha:0.0045, source:"NIST resistivity compilation; Mittal Table 1", model:"linear ρ(T); Cp,k constant",
+    meltC:3422, meltKind:"melting", meltNote:"tungsten melting point" },
+  { name:"Copper", rhoOhmCm:1.68e-6, density:8960, cp:385, k:400, jmax:1e7, rhoAlpha:0.00393, source:"NIST recommended data", model:"linear ρ(T); Cp,k constant",
+    meltC:1085, meltKind:"melting", meltNote:"copper melting point" },
+  { name:"Aluminum", rhoOhmCm:2.65e-6, density:2700, cp:897, k:237, jmax:5e9, rhoAlpha:0.00429, source:"NIST recommended data", model:"linear ρ(T); Cp,k constant",
+    meltC:660, meltKind:"melting", meltNote:"aluminum melting point" },
+  { name:"Titanium", rhoOhmCm:4.2e-5, density:4500, cp:523, k:17, jmax:4.5e6, rhoAlpha:0.0038, source:"Mittal Table 1; RT correction", model:"linear ρ(T); Cp,k constant",
+    meltC:1668, meltKind:"melting", meltNote:"titanium melting point" }
 ];
 
 export const kelvin = (c) => c + 273.15;
@@ -236,6 +249,26 @@ export function solveSteadyTemperature(x, g) {
   return (lo + hi) / 2;
 }
 
+// If the steady-state temperature clears the material's melting (or
+// decomposition/sublimation) point, report the single-parameter Vmax or
+// Imax ceiling that would hold Tss at that point instead, with everything
+// else unchanged. Either ceiling alone is sufficient; a user does not need
+// to lower both.
+export function meltWarning(x, g, m, tss) {
+  if (!finite(m.meltC) || !finite(tss) || tss <= 0) return null;
+  const meltK = kelvin(m.meltC);
+  if (tss <= meltK) return null;
+  const loss = enclosureHeatLoss(meltK, x, g).total;
+  const props = propertiesAt(m, meltK);
+  const resistance = props.rhoOhmCm * 0.01 * g.L / g.area;
+  return {
+    meltC: m.meltC,
+    meltKind: m.meltKind || "melting",
+    safeVoltage: Math.sqrt(Math.max(0, loss * resistance)),
+    safeCurrent: Math.sqrt(Math.max(0, loss / resistance))
+  };
+}
+
 export function calculate(x) {
   const errors = validateInput(x);
   if (errors.length) return { errors };
@@ -272,6 +305,7 @@ export function calculate(x) {
   const maxMaterialRamp = m.jmax * m.jmax * rhoE / (m.density * target.props.cp);
   const maxField = m.jmax * rhoE;
   const voltageAtJmax = maxField * g.L;
+  const melt = meltWarning(x, g, m, tss);
 
   return {
     errors: [], g, rhoE, sigma, mass, resistance, candidates, constraint,
@@ -280,7 +314,7 @@ export function calculate(x) {
     volumetricPowerMW, rampRate, tss, requiredPower, requiredVoltage,
     requiredCurrent, feasible, adiabaticTime, hEffective, bi, kcrit,
     uniform, maxMaterialRamp, maxField, voltageAtJmax,targetLoss,steadyLoss,
-    powerUse: power / x.pmax, material: m, input: x, initial, target
+    powerUse: power / x.pmax, material: m, input: x, initial, target, melt
   };
 }
 
@@ -298,19 +332,53 @@ export function allocateSegmentCells(segments, total) {
 
 export function build2DMesh(g, cfg) {
   const nr=cfg.nr||30,nz=cfg.nz||60,radius=g.D/2,hasGap=cfg.gap>1e-12,outerRadius=radius+cfg.gap+cfg.wallThickness;
-  const nAir=cfg.nAir||8,activeRadialCells=nr-nAir;
+  // The surrounding-air blanket reaches domainRatio x the outer radius. It used
+  // to be written as nr/(nr-nAir), which tied the *physical* domain to the cell
+  // count: refining the grid with a fixed nAir walked the far-field boundary
+  // inward (1.364 -> 1.071 from 30x60 to 120x240), so a refinement study moved
+  // the boundary condition instead of holding the problem fixed. State the reach
+  // directly instead. The 30/22 default is the historical value to the digit.
+  const domainRatio=cfg.domainRatio??30/22;
+  // Air resolution no longer changes the physics, only how well the log profile
+  // out to that boundary is resolved, so it can be cut back and graded. What is
+  // freed goes to the element, which carries both the source and the steep
+  // near-surface gradient the radiation boundary reads.
+  const nAir=cfg.nAir??Math.max(4,Math.round(nr*5/30)),activeRadialCells=nr-nAir;
+  // Left length-proportional deliberately. Down-weighting the wall to hand its
+  // cells to the element looks attractive on the shipped enclosure, where a 1 mm
+  // quartz shell is nearly isothermal — but quartz at k = 1.4 is the *highest*
+  // resistance per unit thickness in the stack, and starving it broke the
+  // multi-layer ln-resistance benchmark (0.8% -> 3.5% at L/D 100). The element
+  // gains its cells from the smaller air blanket instead, which costs nothing.
   const segments=[{key:"element",length:radius,min:8}];
   if(hasGap) segments.push({key:"gap",length:cfg.gap,min:1});
   segments.push({key:"wall",length:cfg.wallThickness,min:2});
   const counts=allocateSegmentCells(segments,activeRadialCells),byKey=Object.fromEntries(segments.map((segment,index)=>[segment.key,counts[index]]));
-  const nElement=byKey.element,nGap=byKey.gap||0,nWall=byKey.wall,nAirZ=cfg.nAirZ||8,nActiveZ=nz-2*nAirZ;
-  const domainRadius=outerRadius*nr/activeRadialCells,domainHeight=g.L*nz/nActiveZ,dz=domainHeight/nz;
+  const nElement=byKey.element,nGap=byKey.gap||0,nWall=byKey.wall,nAirZ=cfg.nAirZ??Math.max(4,Math.round(nz*8/60)),nActiveZ=nz-2*nAirZ;
+  const domainRadius=outerRadius*domainRatio,domainHeight=g.L*nz/nActiveZ,dz=domainHeight/nz;
   const edges=[0];
   const addSegment=(start,end,count)=>{for(let i=1;i<=count;i++)edges.push(start+(end-start)*i/count);};
+  // Geometric grading for the air: the radial profile out there is logarithmic,
+  // so cells near the wall carry the gradient and cells far out carry almost
+  // none. Grading lets a smaller nAir cover the same reach at lower error.
+  //
+  // The *total* stretch (last cell / first cell) is what is held fixed, not the
+  // cell-to-cell growth factor. A fixed growth factor compounds: at nAir = 20 a
+  // 1.35 ratio spans 600:1 across the blanket, which is both inaccurate and
+  // badly conditioned. Fixing the total instead keeps neighbouring cells close
+  // in size and makes refinement scale every air cell by the same factor, so the
+  // grid sequence stays a genuine refinement.
+  const addGradedSegment=(start,end,count,stretch)=>{
+    const growth=count>1?Math.pow(stretch,1/(count-1)):1;
+    const widths=[];let w=1,total=0;
+    for(let n=0;n<count;n++){widths.push(w);total+=w;w*=growth;}
+    let acc=start;
+    for(let n=0;n<count;n++){acc+=(end-start)*widths[n]/total;edges.push(n===count-1?end:acc);}
+  };
   addSegment(0,radius,nElement);
   if(hasGap) addSegment(radius,radius+cfg.gap,nGap);
   addSegment(radius+cfg.gap,outerRadius,nWall);
-  addSegment(outerRadius,domainRadius,nAir);
+  addGradedSegment(outerRadius,domainRadius,nAir,8);
   const centers=Array.from({length:nr},(_,i)=>(edges[i]+edges[i+1])/2);
   const zEdges=Array.from({length:nz+1},(_,j)=>-domainHeight/2+j*dz),zCenters=Array.from({length:nz},(_,j)=>(zEdges[j]+zEdges[j+1])/2);
   const activeStart=nAirZ,activeEnd=nAirZ+nActiveZ;
@@ -408,10 +476,31 @@ export function assemble2DSystem(T, x, g, cfg, material, mesh, op) {
     if(solidAir&&x.convection&&x.h>0)resistance+=1/x.h;
     return area/Math.max(resistance,1e-30);
   };
-  const addInterfaceRadiation=(p,code,tempK,area)=>{
+  // Surface radiation leaves from the *face*, but the unknown lives at the cell
+  // center, so the heat must first conduct through the half cell in between.
+  // Charging the cell-center temperature directly to the radiation law drops
+  // that half-cell resistance, which is a first-order error of size q̇·d/(2k) —
+  // the term that keeps the full nonlinear case out of the asymptotic range
+  // (docs/VERIFICATION.md §4). Put the two resistances in series instead, the
+  // same way pairConductance already treats interior faces, and evaluate the
+  // radiation coefficient at the resulting face temperature rather than at the
+  // cell center. Two fixed-point passes are enough: h_rad varies as T³ while
+  // the face correction itself is small, so the second pass moves the answer by
+  // well under the outer-loop tolerance.
+  const seriesRadiationConductance=(tempK,area,halfDistance,kCell,emissivity)=>{
+    const rCond=Math.max(halfDistance,0)/Math.max(kCell,1e-30);
+    let faceK=tempK;
+    for(let pass=0;pass<2;pass++){
+      const rRad=1/Math.max(radiationCoefficient(faceK,x.ambientK,emissivity),1e-30);
+      faceK=x.ambientK+(tempK-x.ambientK)*rRad/(rCond+rRad);
+    }
+    const rRad=1/Math.max(radiationCoefficient(faceK,x.ambientK,emissivity),1e-30);
+    return area/Math.max(rCond+rRad,1e-30);
+  };
+  const addInterfaceRadiation=(p,code,tempK,area,halfDistance,kCell)=>{
     if(code!==0&&code!==2)return;
     const emissivity=code===0?x.emissivity:cfg.wallEmissivity;
-    addBoundary(p,radiationCoefficient(tempK,x.ambientK,emissivity)*area,x.ambientK);
+    addBoundary(p,seriesRadiationConductance(tempK,area,halfDistance,kCell,emissivity),x.ambientK);
   };
   for(let j=0;j<mesh.nz;j++) for(let i=0;i<mesh.nr;i++) {
     const p=idx(i,j),code=mesh.materialAt(i,j),kp=cellK2D(code,T[j][i],material,cfg,x);
@@ -424,8 +513,8 @@ export function assemble2DSystem(T, x, g, cfg, material, mesh, op) {
       const q=idx(i+1,j),face=mesh.edges[i+1],area=2*Math.PI*face*(mesh.zEdges[j+1]-mesh.zEdges[j]),nextCode=mesh.materialAt(i+1,j),kn=cellK2D(nextCode,T[j][i+1],material,cfg,x);
       const G=pairConductance(area,face-mesh.centers[i],kp,mesh.centers[i+1]-face,kn,code,nextCode);
       addFace(p,q,G);
-      if(code===3&&nextCode===2)addInterfaceRadiation(q,nextCode,T[j][i+1],area);
-      if(code===2&&nextCode===3)addInterfaceRadiation(p,code,T[j][i],area);
+      if(code===3&&nextCode===2)addInterfaceRadiation(q,nextCode,T[j][i+1],area,mesh.centers[i+1]-face,kn);
+      if(code===2&&nextCode===3)addInterfaceRadiation(p,code,T[j][i],area,face-mesh.centers[i],kp);
     } else {
       const area=2*Math.PI*mesh.edges[mesh.nr]*(mesh.zEdges[j+1]-mesh.zEdges[j]);
       addBoundary(p,kp*area/Math.max(mesh.edges[mesh.nr]-mesh.centers[i],1e-30),x.ambientK);
@@ -440,10 +529,11 @@ export function assemble2DSystem(T, x, g, cfg, material, mesh, op) {
         addFace(p,q,G);
         if(elementGas&&cfg.endMode==="ambient") {
           const elementP=code===0?p:q,elementTemp=code===0?T[j][i]:T[j+1][i];
-          addInterfaceRadiation(elementP,0,elementTemp,area);
+          const elementHalf=code===0?face-mesh.zCenters[j]:mesh.zCenters[j+1]-face,elementK=code===0?kp:kn;
+          addInterfaceRadiation(elementP,0,elementTemp,area,elementHalf,elementK);
         }
-        if(code===3&&(nextCode===0||nextCode===2))addInterfaceRadiation(q,nextCode,T[j+1][i],area);
-        if((code===0||code===2)&&nextCode===3)addInterfaceRadiation(p,code,T[j][i],area);
+        if(code===3&&(nextCode===0||nextCode===2))addInterfaceRadiation(q,nextCode,T[j+1][i],area,mesh.zCenters[j+1]-face,kn);
+        if((code===0||code===2)&&nextCode===3)addInterfaceRadiation(p,code,T[j][i],area,face-mesh.zCenters[j],kp);
       }
     }
     if(j===0) addBoundary(p,kp*axialArea(i)/Math.max(mesh.zCenters[j]-mesh.zEdges[j],1e-30),x.ambientK);
@@ -452,9 +542,20 @@ export function assemble2DSystem(T, x, g, cfg, material, mesh, op) {
 
   if(mesh.nGap>0) {
     const iElement=mesh.nElement-1,iWall=mesh.nElement+mesh.nGap,elementRadius=mesh.radius,wallRadius=mesh.edges[iWall],areaPerRow=2*Math.PI*elementRadius*mesh.dz;
+    // Same half-cell correction as seriesRadiationConductance, applied to the
+    // element→wall gap exchange: the radiating surfaces sit on the cell faces,
+    // not at the two cell centers this face couples. On the shipped enclosure
+    // this is the element's dominant loss path (gapK = 0.03 W/m·K conducts
+    // almost nothing), so it carries most of the grid sensitivity. The half-cell
+    // resistances also appear on the parallel conduction branch through the gap
+    // cells; treating each branch as its own series chain slightly overcounts
+    // them, which is far smaller than dropping them from the radiation branch.
+    const elementHalf=Math.max(elementRadius-mesh.centers[iElement],0),wallHalf=Math.max(mesh.centers[iWall]-wallRadius,0);
     for(let j=mesh.activeStart;j<mesh.activeEnd;j++) {
       const p=idx(iElement,j),q=idx(iWall,j),hGapRad=gapRadiationCoefficient(T[j][iElement],T[j][iWall],x.emissivity,cfg.wallEmissivity,elementRadius,wallRadius);
-      addFace(p,q,hGapRad*areaPerRow);
+      const kElement=cellK2D(0,T[j][iElement],material,cfg,x),kWall=cellK2D(2,T[j][iWall],material,cfg,x);
+      const resistance=elementHalf/Math.max(kElement,1e-30)+1/Math.max(hGapRad,1e-30)+wallHalf/Math.max(kWall,1e-30);
+      addFace(p,q,areaPerRow/Math.max(resistance,1e-30));
     }
   }
 
@@ -565,7 +666,13 @@ export function solveThermal2D(x, zeroD, cfg, material) {
     maxStep=0;
     for(let j=0;j<mesh.nz;j++)for(let i=0;i<mesh.nr;i++){
       const old=T[j][i],solved=clamp(linear.x[j*mesh.nr+i],1,6000),updated=old+relaxation*(solved-old);
-      T[j][i]=updated;maxStep=Math.max(maxStep,Math.abs(updated-old));
+      // Measure the *un-relaxed* Picard step. Using |updated - old| instead
+      // folds the relaxation factor into the convergence test, so a case the
+      // stall detector damps to 0.08 stops with a true step 12.5x the stated
+      // tolerance while still reporting converged. Since the damping is path
+      // dependent, two grids then stop at two different accuracies, which shows
+      // up as a Richardson order that is not merely low but negative.
+      T[j][i]=updated;maxStep=Math.max(maxStep,Math.abs(solved-old));
     }
     // A fixed 0.62/0.86 relaxation schedule can settle into a period-2 limit cycle on
     // very stiff cases (extreme element L/D with strongly radiative boundaries): the
