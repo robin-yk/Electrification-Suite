@@ -43,10 +43,14 @@ export function defaultInput(overrides = {}, enclosureOverrides = {}) {
 }
 
 // Grid sequence that doubles resolution while keeping the physical domain
-// identical: domainRadius and domainHeight depend on nAir/nr and nAirZ/nz, so
-// those ratios must stay fixed.
+// identical. This used to pin nAir and nAirZ explicitly, because domainRadius
+// and domainHeight were derived from nAir/nr and nAirZ/nz and a fixed nAir would
+// have walked the far-field boundary inward on every refinement. build2DMesh
+// states the domain reach directly now and scales those counts itself, so
+// pinning them here only overrode the shipped mesh -- which meant this study was
+// measuring an allocation the page does not use.
 const gridLevels = (n) => Array.from({ length: n }, (_, level) => ({
-  nr: 30 << level, nz: 60 << level, nAir: 8 << level, nAirZ: 8 << level,
+  nr: 30 << level, nz: 60 << level,
 }));
 
 function solveCase(x, gridOverrides) {
