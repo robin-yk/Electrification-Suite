@@ -98,15 +98,27 @@ export function stage3a({ quick = false } = {}) {
   return rows;
 }
 
-export function stage3b({ quick = false } = {}) {
+// Materials differ in resistivity by orders of magnitude, so a fixed drive
+// current is not a fixed experiment: the first run of this stage put 12 A
+// through molybdenum and tungsten and left them sitting at 21.7 C with a 0.0 K
+// spread, then fitted a slope through those degenerate points as though they
+// carried information. Match the dissipated power instead, solving I = sqrt(P/R)
+// from each material's own resistance at the target.
+export function stage3b({ quick = false, watts = 400 } = {}) {
   const names = ["SiC", "Molybdenum", "Kanthal A-1", "Tungsten"];
   const emissivities = quick ? [0.8] : [0.3, 0.6, 0.9];
   const rows = [];
   for (const name of names) {
     const material = MATERIALS.find((m) => m.name === name);
     if (!material) continue;
-    for (const emissivity of emissivities)
-      rows.push(measure(input({ material, emissivity }), `${name} ε${emissivity}`));
+    for (const emissivity of emissivities) {
+      const probe = calculate(input({ material, emissivity }));
+      if (probe.errors.length) { rows.push({ label: `${name} ε${emissivity}`, failed: probe.errors.join("; ") }); continue; }
+      const iset = Math.sqrt(watts / Math.max(probe.resistance, 1e-30));
+      rows.push(measure(input({
+        material, emissivity, iset, imax: iset, vmax: 1e4, pmax: 1e5,
+      }), `${name} ε${emissivity} ${iset.toFixed(0)}A`));
+    }
   }
   return rows;
 }
@@ -160,9 +172,30 @@ function main() {
   const quick = process.argv.includes("--quick");
   console.log("## Stage 3 — the sweep\n");
   console.log("H1 slope = 1.00 ± 0.15 with R² > 0.9. H3: 3c must not move the slope.\n");
-  const a = report("3a — Bi_R scanned one factor at a time (SiC, L/D 30)", stage3a({ quick }));
-  const b = report("3b — material independence (L/D 30)", stage3b({ quick }));
-  const c = report("3c — aspect ratio: does a second group enter?", stage3c({ quick }));
+  const stage3aRows = stage3a({ quick }), stage3bRows = stage3b({ quick }), stage3cRows = stage3c({ quick });
+  const a = report("3a — Bi_R scanned one factor at a time (SiC, L/D 30)", stage3aRows);
+  const b = report("3b — material independence, power-matched (L/D 30)", stage3bRows);
+  const c = report("3c — aspect ratio: does a second group enter?", stage3cRows);
+
+  console.log("### End-effect factor f(L/D)\n");
+  // Bi_R/2 is the infinite-cylinder result. Normalising each 3c point by the
+  // long-element plateau leaves the correction the ends impose, which is the
+  // candidate second group stated in the pre-registration.
+  const c3 = stage3cRows.filter((r) => !r.failed && Number.isFinite(r.measured));
+  const byRatio = new Map();
+  for (const r of c3) {
+    const f = r.measured / Math.max(r.biRadius / 2, 1e-30);
+    if (!byRatio.has(r.aspectRatio)) byRatio.set(r.aspectRatio, []);
+    byRatio.get(r.aspectRatio).push(f);
+  }
+  const plateau = Math.max(...[...byRatio.values()].map((v) => v.reduce((s, x) => s + x, 0) / v.length));
+  const fRows = [...byRatio.entries()].sort((a, b) => a[0] - b[0]).map(([ratio, values]) => {
+    const mean = values.reduce((s, x) => s + x, 0) / values.length;
+    return [ratio, fix(mean, 4), fix(mean / plateau, 4), values.length];
+  });
+  console.log(markdownTable(["L/D", "measured / (Bi_R/2)", "f(L/D) = normalised", "n"], fRows) + "\n");
+  const spanF = fRows.length ? Number(fRows[fRows.length - 1][2]) / Math.max(Number(fRows[0][2]), 1e-30) : NaN;
+  console.log(`f varies by a factor of ${fix(spanF, 3)} across the aspect ratios swept, at Bi_R held by construction.\n`);
 
   console.log("### Verdict against the pre-registered hypotheses\n");
   const verdict = (name, fit) => {
@@ -172,11 +205,19 @@ function main() {
   };
   verdict("H1 (3a)", a);
   verdict("H1 across materials (3b)", b);
-  verdict("H3 (3c, aspect ratio)", c);
-  if (a && c) {
-    console.log(`\nSlope shift from the long-element scan to the aspect-ratio scan: `
-      + `${fix(a.slope, 3)} → ${fix(c.slope, 3)} (${fix(100 * (c.slope - a.slope) / Math.max(Math.abs(a.slope), 1e-30), 1)}%).`);
-    console.log(`A shift beyond the H1 band is the signature of a second dimensionless group.`);
+  // H3 is NOT a question about the pooled slope through 3c. Fitting one line
+  // through every aspect ratio averages the trend away and reports a pass on a
+  // set whose points differ systematically by more than the band: the first run
+  // of this file did exactly that. The hypothesis is that f(L/D) is flat, so
+  // test the spread of f, not the fit.
+  const flat = Number.isFinite(spanF) && Math.abs(spanF - 1) <= 0.15;
+  console.log(`- H3 (aspect ratio absent): f spans x${fix(spanF, 3)} across L/D`
+    + ` → ${flat ? "consistent with Bi_R alone" : "REJECTED — Bi_R alone does not predict"}`);
+  if (!flat) {
+    console.log(`\n  Bi_R/2 is the infinite-cylinder limit, and f <= 1 below it, so the`);
+    console.log(`  identity remains a conservative UPPER bound on the spread at every`);
+    console.log(`  aspect ratio swept. Short elements shed heat axially, which relieves`);
+    console.log(`  the radial gradient the lumped model cannot see.`);
   }
 }
 
