@@ -6,6 +6,18 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Removed
+
+- The microwave heating model, which is now its own repository. `apps/microwave/`,
+  its solver test, its three verification scripts, its SI note and thumbnail,
+  and the four microwave studies in `docs/VERIFICATION.md` and the microwave
+  section of `docs/LIMITS.md` all moved across with the 48 commits that touch
+  them, so its history came too. Nothing was deleted: this repository's history
+  still holds every one of those files, and `git checkout b9ae21b -- apps/microwave`
+  brings the tool back. What changed here is the scope: the suite is the Joule
+  2D solver and the RPH vs CJH visualizer, which is what the Application Note
+  describes.
+
 Thirty-three commits since 0.2.0. The Joule tool gained a transient march and
 a browser tab to drive it, rectangular elements are now solved as rectangles,
 the microwave solver gained a field solve and a Krylov linear solver and was
@@ -95,6 +107,15 @@ from the solver rather than drawn.
   over the on-window entirely.
 
 ### Fixed
+
+- `docs/VERIFICATION.md` studies 1 to 3 were stale. Commit `319e5a2` changed how
+  `build2DMesh` states its outer domain reach, which moves every study measured
+  against an infinite-length or unbounded analytic solution, and the report was
+  never re-run. The parabola mismatch at L/D = 20 is 6.4e-3, not 5.8e-3; the
+  annulus worst-layer error at L/D = 100 is 1.95%, not 0.8%; the manufactured
+  solution converges at 2.05 and 2.06 in L2, not 2.00 and 2.01, and at 1.77 and
+  1.90 in L-infinity, not 1.96 and 1.98. The conclusions hold, the numbers did
+  not. Study 4 was already current.
 
 - Fig. 3 panel e drew its first and last data point outside the axes. The x
   mapping padded `xs[0]` and `xs[last]` outward, which is only outward when

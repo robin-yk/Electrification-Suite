@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Interactive microwave heating, Joule heating, and RPH vs CJH dimensionless models for chemical process electrification by Yeonsu Kwak.">
+  <meta name="description" content="Interactive Joule heating and RPH vs CJH models for chemical process electrification by Yeonsu Kwak.">
   <title>Electrified Reactor Models | Yeonsu Kwak</title>
   <link rel="preload" href="assets/fonts/roboto-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="assets/fonts/roboto.css">
@@ -247,7 +247,6 @@
         <nav class="suite-nav" aria-label="Project navigation">
           <a class="nav-button" href="https://robin-yk.github.io/yeonsu.kwak/" target="_blank" rel="noopener">personal website</a>
           <button class="nav-button active" type="button" data-route="home">models</button>
-          <button class="nav-button" type="button" data-route="microwave">microwave</button>
           <button class="nav-button" type="button" data-route="joule">joule</button>
           <button class="nav-button" type="button" data-route="rphcjh">rph vs cjh</button>
         </nav>
@@ -257,17 +256,9 @@
     <main id="home" class="home">
       <div class="home-inner">
         <h1>Electrified <b>Reactor Models</b></h1>
-        <p class="home-lede">Three interactive physics models of electrified catalytic reactors that run entirely in your browser.<br><span class="home-note">Research software under active development. Use for reference; models and numbers may change.</span></p>
+        <p class="home-lede">Two interactive physics models of electrified catalytic reactors that run entirely in your browser.<br><span class="home-note">Research software under active development. Use for reference; models and numbers may change.</span></p>
 
         <div class="project-grid" aria-label="Select a project">
-          <button class="project-card" type="button" data-route="microwave">
-            <span class="project-fig"><img src="assets/thumbs/microwave.png" alt="Computed 2D microwave temperature field of a powder bed"></span>
-            <span class="project-card-body">
-              <h2>Microwave Heating 2D Model</h2>
-              <p>Steady powder-bed temperature field with dielectric response, calibrated against FBG measurements.</p>
-            </span>
-          </button>
-
           <button class="project-card" type="button" data-route="joule">
             <span class="project-fig"><img src="assets/thumbs/joule.png" alt="Computed axisymmetric temperature field of a Joule-heated element"></span>
             <span class="project-card-body">
@@ -313,12 +304,10 @@
       "use strict";
 
       const routeTitles = {
-        microwave: "Microwave Heating 2D Model",
         joule: "Joule Heating 2D Model",
         rphcjh: "RPH vs CJH Visualizer"
       };
       const routePaths = {
-        microwave: "apps/microwave/",
         joule: "apps/joule/",
         rphcjh: "apps/rphcjh/"
       };

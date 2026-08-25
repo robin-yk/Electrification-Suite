@@ -1,12 +1,11 @@
 # Electrification Suite
 
-Interactive, browser-based models of chemical process electrification (Joule heating, microwave heating, and rapid pulsed heating) by Yeonsu Kwak (Vlachos Lab, University of Delaware).
+Interactive, browser-based models of chemical process electrification (Joule heating and rapid pulsed heating) by Yeonsu Kwak (Vlachos Lab, University of Delaware).
 
 **Live site: https://robin-yk.github.io/Electrification-Suite/**. No install, no account, everything runs in your browser.
 
 ## Projects
 
-- **Microwave Heating 2D Model** (`apps/microwave/`): steady powder-bed temperature field with dielectric response, calibrated against experiments.
 - **Joule Heating 2D Model** (`apps/joule/`): material, geometry, and power-supply screening with an axisymmetric 2D thermal field, cross-checked against three published reactors.
 - **RPH vs CJH Visualizer** (`apps/rphcjh/`): when rapid pulsed heating protects a reaction intermediate and when it does not, against a continuous heater matched on average temperature, electrical power, or conversion.
 
@@ -27,7 +26,6 @@ Each tool's numeric core is a dependency-free, DOM-free ES module you can import
 
 ```js
 import { calculate, solveThermal2D, MATERIALS } from "./apps/joule/solver.js";
-import { solve2D, transportNumbers, materialProfiles } from "./apps/microwave/solver.js";
 import { arrheniusRate, pulseWaveform, idealTwoStateAverages } from "./apps/rphcjh/solver.js";
 ```
 
@@ -36,13 +34,13 @@ import { arrheniusRate, pulseWaveform, idealTwoStateAverages } from "./apps/rphc
 ## Testing
 
 ```bash
-npm test          # Node regression suite for all three solvers
+npm test          # Node regression suite for both solvers
 npm run test:e2e  # Playwright browser smoke test (needs Chromium)
 ```
 
 Both run in CI on every push, together with a build that verifies every page's files are packaged.
 
-Numerical verification of the 2D solvers (manufactured solutions, analytic benchmarks, and grid-convergence studies) is documented in [`docs/VERIFICATION.md`](docs/VERIFICATION.md) and reproducible via `npm run verify:joule` / `npm run verify:microwave`.
+Numerical verification of the 2D solvers (manufactured solutions, analytic benchmarks, and grid-convergence studies) is documented in [`docs/VERIFICATION.md`](docs/VERIFICATION.md) and reproducible via `npm run verify:joule`.
 
 Physical validation against published reactors is separate from that code verification: `npm run verify:crosscheck` regenerates every number in the Joule tool's cross-check tables headlessly, including the 0D / 2D / experiment comparison. Add `-- --write` to refresh `apps/joule/data/crosscheck-2d.json`, the precomputed 2D field solves the page loads instead of solving live.
 

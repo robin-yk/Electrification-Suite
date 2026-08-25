@@ -1,7 +1,7 @@
 {
   "name": "electrification",
   "version": "0.2.0",
-  "description": "Browser-based physics models of electrified catalytic reactors: microwave heating, Joule heating, and rapid-pulsed vs. continuous heating, each built on a dependency-free ES-module solver.",
+  "description": "Browser-based physics models of electrified catalytic reactors: Joule heating and rapid-pulsed vs. continuous heating, each built on a dependency-free ES-module solver.",
   "license": "MIT",
   "type": "module",
   "repository": {
@@ -10,12 +10,10 @@
   },
   "exports": {
     "./joule": "./apps/joule/solver.js",
-    "./microwave": "./apps/microwave/solver.js",
     "./rphcjh": "./apps/rphcjh/solver.js"
   },
   "files": [
     "apps/joule/solver.js",
-    "apps/microwave/solver.js",
     "apps/rphcjh/solver.js",
     "CHANGELOG.md",
     "CITATION.cff"
@@ -33,7 +31,6 @@
     "verify:joule-rphcjh": "node tools/verification/joule-rphcjh.mjs",
     "verify:zerod-limit": "node tools/verification/zerod-limit.mjs",
     "verify:zerod-sweep": "node tools/verification/zerod-sweep.mjs",
-    "verify:microwave": "node tools/verification/microwave.mjs",
     "verify:plates": "node docs/figures/check-plates.mjs"
   },
   "devDependencies": {

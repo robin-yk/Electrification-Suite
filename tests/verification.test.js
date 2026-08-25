@@ -5,7 +5,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { radialParabola as jouleParabola, annulusDrops, mmsStudy } from "../tools/verification/joule.mjs";
-import { radialParabola as microwaveParabola } from "../tools/verification/microwave.mjs";
 
 test("joule 2D: mid-plane radial profile matches the exact parabola, converging with L/D", () => {
   const near = jouleParabola(40), far = jouleParabola(80);
@@ -27,8 +26,3 @@ test("joule 2D: manufactured solution converges at second order", () => {
   assert.ok(rows[1].l2 < rows[0].l2, "L2 error must shrink under refinement");
 });
 
-test("microwave 2D: pure-conduction reduction matches the exact parabola, converging with H/D", () => {
-  const near = microwaveParabola(8), far = microwaveParabola(16);
-  assert.ok(near.worstRelative < 0.05, `H/D=8 mismatch ${near.worstRelative}`);
-  assert.ok(far.worstRelative < 0.01, `H/D=16 mismatch ${far.worstRelative}`);
-});

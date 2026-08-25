@@ -6,7 +6,6 @@ modules are the product; the pages are one caller and the tests are another.
 
 ```
 apps/joule/       Joule heating: 0D screening, axisymmetric 2D field, transient
-apps/microwave/   Microwave heating: powder bed, dielectric response, field solve
 apps/rphcjh/      Rapid pulsed vs continuous Joule heating
 tests/            Node regression suite; also the worked examples
 tools/verification/  Numerical verification studies, run by hand

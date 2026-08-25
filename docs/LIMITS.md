@@ -28,7 +28,6 @@ Several presets say the same thing about themselves:
 | --- | --- |
 | SiC | constant grade proxy, no ρ(T) |
 | SiSiC | 550 to 750 °C from Zheng et al. (2022); the room-temperature branch is a commercial-element proxy |
-| Reduced rutile TiO₂ (microwave) | "approximate digitization of the supplied curve; replace with the numerical source before publication use" |
 | CFP, 304 stainless, Mo, W, Ti | Mittal et al. (2025) Table 1, room temperature, constant |
 
 **Do not** quote an absolute temperature from any of these against a
@@ -135,33 +134,6 @@ electrode faces.
 **Do not** use this tool to study electrode contact heating or its local
 thermal effect.
 
-## Microwave 2D field
-
-### Verification is by analytic reduction, not a manufactured solution
-
-A full-domain manufactured solution is deliberately out of scope: the tube-gas
-and outside-air conductivities are temperature dependent by design and not
-overridable through public parameters, so a uniform-conductivity domain cannot
-be produced without editing shipped code. The implementation is verified
-against analytic pure conduction and grid refinement instead, and the shared
-finite-volume pattern is manufactured-solution verified in the Joule solver.
-
-### The dielectric response is fitted, not predicted
-
-ε′(T) and ε″(T) come from tabulated measurements, mixed to the bed with
-Looyenga or Maxwell-Garnett. Bed conductivity is fitted to FBG measurements
-through `k200`, `k500`, `k800` and a radiating-area factor.
-
-**Do not** transfer a calibration to a different powder, packing, or applicator
-geometry. The fit absorbs whatever the model does not represent.
-
-### The homogenization has a stated validity window
-
-`homogenizationValidity()` checks the unit cell against the macroscopic length
-and the wavelength. Outside that window the continuum treatment of the packed
-bed is not justified, and the check exists so that condition is visible rather
-than assumed.
-
 ## RPH vs CJH visualizer
 
 ### It is dimensionless and lumped
@@ -184,11 +156,10 @@ mechanism's yield.
 ## What none of these models do
 
 - Chemistry coupled to the thermal field. No reaction heat, no conversion
-  feeding back on temperature, in either 2D solver.
+  feeding back on temperature.
 - Mechanical stress, thermal expansion, or failure.
 - Buoyancy or forced convection inside the element.
 - Electrode, lead, or bus-bar thermal and electrical behaviour.
-- Transient anything in the microwave solver; it is steady state only.
 - Any claim about a specific commercial product.
 
 ## Tooling marked under development

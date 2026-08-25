@@ -5,7 +5,7 @@ Bug reports, questions, and pull requests are welcome via [GitHub Issues](https:
 ## Reporting a bug
 
 Please include:
-- Which page (`apps/microwave/`, `apps/joule/`, or `apps/rphcjh/`)
+- Which page (`apps/joule/` or `apps/rphcjh/`)
 - The inputs you used (material, geometry, operating conditions)
 - What you expected vs. what you observed
 
@@ -18,7 +18,7 @@ npm test         # regression tests for all three solvers
 npm run test:e2e # browser smoke test (needs Chromium; npx playwright install chromium)
 ```
 
-Each page's numeric core lives in a standalone, DOM-free ES module (`apps/joule/solver.js`, `apps/microwave/solver.js`, `apps/rphcjh/solver.js`) with its own test file under `tests/`. If you change solver behavior, add or update a test in the matching file. `npm run build` also verifies that `vite.config.js`'s `projectPages` list stays in sync with the files each page needs; if you add a new page or module, add it there too.
+Each page's numeric core lives in a standalone, DOM-free ES module (`apps/joule/solver.js`, `apps/rphcjh/solver.js`) with its own test file under `tests/`. If you change solver behavior, add or update a test in the matching file. `npm run build` also verifies that `vite.config.js`'s `projectPages` list stays in sync with the files each page needs; if you add a new page or module, add it there too.
 
 Please keep pull requests focused: one change (a bug fix, a new material, a new diagnostic) per PR, with a short description of what changed and why.
 

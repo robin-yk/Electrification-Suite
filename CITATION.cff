@@ -11,9 +11,8 @@ repository-code: "https://github.com/robin-yk/Electrification-Suite"
 url: "https://robin-yk.github.io/Electrification-Suite/"
 abstract: >-
   Browser-based interactive models of chemical process electrification:
-  a 2D microwave-heating powder-bed temperature model with dielectric
-  response and experimental calibration, a 2D Joule-heating model
-  with nonlinear thermal solving, and a dimensionless
+  a 2D Joule-heating model with nonlinear thermal solving and an
+  axisymmetric finite-volume field solve, and a dimensionless
   visualizer of ramped-vs-continuous (RPH vs CJH) Joule heating and its
   Jensen's-inequality effects on temperature-dependent kinetics and
   transport. All calculations run client-side with no backend.
@@ -21,7 +20,6 @@ keywords:
   - chemical engineering
   - process electrification
   - catalysis
-  - microwave heating
   - joule heating
   - reactor engineering
   - dimensionless analysis
