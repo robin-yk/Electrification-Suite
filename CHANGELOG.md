@@ -155,11 +155,10 @@ from the solver rather than drawn.
   order a reader meets it: what geometry raises the resistance, what that does
   to the steady temperature against a target, which shapes and which materials
   reach it, and then whether the element the design gives you can follow a
-  pulse. The panels are a to d for the design and e to f for the dynamics; the
-  continuous approach that used to be a panel of its own is an inset in e,
-  where it carries the point it was making, that the strip settles in under a
-  second and the enclosure around it takes minutes. The two remaining SI
-  figures move up: cross-checks S7 to S5, software structure S8 to S6.
+  pulse. The panels are a to d for the design and e to g for the dynamics: the
+  continuous drive, the pulse train against it at the same average power, and
+  the rod whose time constant is forty-two times the period. The two remaining
+  SI figures move up: cross-checks S7 to S5, software structure S8 to S6.
 
 - Palette. The five role hues are unchanged, but each now carries three values
   derived from it: the hue for lines and data, a 14 % tint for fills, and a

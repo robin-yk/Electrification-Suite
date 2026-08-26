@@ -825,8 +825,8 @@ export function defaultCase(DATA) {
 function dynamicsPanels(ns, DATA, dy) {
   const K = DATA.transient;
   let b = "";
-  const pw = 180, ph = 140, ptop = dy + 30, pbot = dy + 30 + 140;
-  const COL = [62, 305];
+  const pw = 128, ph = 140, ptop = dy + 30, pbot = dy + 30 + 140;
+  const COL = [50, 213, 376];
   const lin = (v, lo, hi, a, c) => a + (v - lo) / (hi - lo) * (c - a);
 
   function frame(col, series, xLabel, letter, yHiHint) {
@@ -836,7 +836,7 @@ function dynamicsPanels(ns, DATA, dy) {
     const X = (v) => lin(v, 0, xHi, x0 + 10, x0 + pw - 10);
     const Y = (v) => lin(v, 0, yHi, pbot - 10, ptop + 10);
     let o = rect(x0, ptop, pw, ph, { stroke: C.grey, fill: "#FFFFFF", sw: 0.8, rx: 0 });
-    o += T(x0 - 44, ptop - 8, letter, { size: 11, weight: "bold" });
+    o += T(x0 - 36, ptop - 8, letter, { size: 11, weight: "bold" });
     for (let t = 0; t <= yHi; t += yHi / 4) {
       o += line(x0, Y(t), x0 + pw, Y(t), { stroke: "#EAEAEA", sw: 0.4 });
       o += T(x0 - 4, Y(t) + 3, String(Math.round(t)), { size: 8, anchor: "end", fill: C.grey });
@@ -846,6 +846,9 @@ function dynamicsPanels(ns, DATA, dy) {
       o += T(X(v), pbot + 12, v.toFixed(xHi < 20 ? 1 : 0), { size: 8, anchor: "middle" });
     }
     o += T(x0 + pw / 2, pbot + 24, xLabel, { size: 8.5, anchor: "middle" });
+    /* the anchor is the baseline: rotated -90 the ascender runs 7.8 pt to the
+       left of it, and at a 35 pt panel gap that lands inside the frame of the
+       panel before. Offset 25, not 30, keeps the whole box in the gap. */
     o += '<text x="' + (x0 - 25) + '" y="' + ((ptop + pbot) / 2) + '" font-size="8.5" text-anchor="middle" transform="rotate(-90 ' + (x0 - 25) + ' ' + ((ptop + pbot) / 2) + ')">element average (°C)</text>';
     return { o, X, Y, x0, yHi };
   }
@@ -859,9 +862,19 @@ function dynamicsPanels(ns, DATA, dy) {
     Math.max.apply(null, K.pulse.map((q) => q[1])),
     Math.max.apply(null, K.cont.map((q) => q[1]))) / 100) * 100;
 
-  /* e. the same element and the same average power, delivered in pulses */
+  /* e. continuous drive, matched on average power */
   (function () {
-    const F = frame(0, K.pulse, "time (s)", "e", yTop);
+    const F = frame(0, K.cont, "time (s)", "e", yTop);
+    let o = F.o;
+    o += line(F.x0, F.Y(K.contSteadyC), F.x0 + pw, F.Y(K.contSteadyC), { stroke: C.grey, sw: 0.9, dash: "3 2" });
+    o += T(F.x0 + 6, F.Y(K.contSteadyC) - 5, "steady " + K.contSteadyC.toFixed(0) + " °C", { size: 8, fill: C.grey });
+    o += trace(F, K.cont, C.thermal, 1.5);
+    b += o;
+  })();
+
+  /* f. the same element and the same average power, delivered in pulses */
+  (function () {
+    const F = frame(1, K.pulse, "time (s)", "f", yTop);
     let o = F.o;
     const strip = pbot - 13;
     for (let t = 0; t < K.pulseEnd; t += K.period) {
@@ -871,42 +884,32 @@ function dynamicsPanels(ns, DATA, dy) {
     o += line(F.x0, strip + 7, F.x0 + pw, strip + 7, { stroke: C.scalar, sw: 0.6 });
     o += line(F.x0, F.Y(K.contSteadyC), F.x0 + pw, F.Y(K.contSteadyC), { stroke: C.grey, sw: 0.9, dash: "3 2" });
     o += trace(F, K.pulse, C.thermal, 1.2);
-    /* the inset carries the other time scale: the element follows the pulse
-       in under a second, the enclosure around it takes minutes to settle.
-       It sits in the band under the sawtooth troughs, which is empty. */
-    const iw = 78, ih = 42, ix = F.x0 + pw - iw - 6, iy = pbot - ih - 16;
-    const cx0 = Math.max.apply(null, K.cont.map((q) => q[0]));
-    const IX = (v) => lin(v, 0, cx0, ix + 3, ix + iw - 3);
-    const IY = (v) => lin(v, 0, yTop, iy + ih - 3, iy + 3);
-    o += rect(ix, iy, iw, ih, { stroke: C.edge, fill: "#FFFFFF", sw: 0.7 });
-    let d = "";
-    K.cont.forEach(function (q, k) { d += (k ? " L" : "M") + IX(q[0]) + "," + IY(q[1]); });
-    o += '<path d="' + d + '" fill="none" stroke="' + C.thermal + '" stroke-width="1"/>';
-    o += T(ix + iw / 2, iy - 3, "continuous, 0 to " + cx0.toFixed(0) + " s", { size: 8, anchor: "middle", fill: C.grey });
+    o += T(F.x0 + pw - 6, pbot - 52, "peak " + K.peakC.toFixed(0) + " °C", { size: 8.5, weight: "bold", anchor: "end", fill: SHADE.thermal });
+    o += T(F.x0 + pw - 6, pbot - 41, "mean " + K.cycleMeanC.toFixed(0) + " °C, swing " + K.swingK.toFixed(0) + " K", { size: 8.5, anchor: "end", fill: C.grey });
+    o += T(F.x0 + 6, pbot - 26, "dashed, continuous " + K.contSteadyC.toFixed(0) + " °C", { size: 8, fill: C.grey });
     b += o;
   })();
 
-  /* f. the other regime: a rod whose time constant is far above the period */
+  /* g. the other regime: a rod whose time constant is far above the period */
   (function () {
-    const F = frame(1, K.sic, "time (s)", "f");
+    const F = frame(2, K.sic, "time (s)", "g");
     let o = F.o;
     o += line(F.x0, F.Y(K.sicSteadyC), F.x0 + pw, F.Y(K.sicSteadyC), { stroke: C.grey, sw: 0.9, dash: "3 2" });
     o += T(F.x0 + 6, F.Y(K.sicSteadyC) - 5, "steady " + K.sicSteadyC.toFixed(0) + " °C", { size: 8, fill: C.grey });
     const tx = F.X(K.sicTau);
     o += line(tx, ptop + 10, tx, pbot - 10, { stroke: C.scalar, sw: 0.8, dash: "2 2" });
-    o += T(tx + 5, ptop + 88, "τ = " + K.sicTau.toFixed(0) + " s", { size: 8, fill: SHADE.scalar });
+    o += T(tx + 5, ptop + 86, "τ = " + K.sicTau.toFixed(0) + " s", { size: 8, fill: SHADE.scalar });
     o += trace(F, K.sic, C.thermal, 1.5);
     b += o;
   })();
 
   /* the drive conditions, under each panel rather than over its data */
-  b += T(COL[0], pbot + 38, (K.duty * 100).toFixed(0) + " % duty, " + K.period + " s period, " + K.pulseVolts + " V", { size: 8.5, weight: "bold", fill: SHADE.scalar });
-  b += T(COL[0], pbot + 48, "peak " + K.peakC.toFixed(0) + " °C, mean " + K.cycleMeanC.toFixed(0) +
-    " °C, swing " + K.swingK.toFixed(0) + " K", { size: 8, fill: C.grey });
-  b += T(COL[0], pbot + 58, "τ = " + K.cfpTau.toFixed(2) + " s, " + K.meanPower.toFixed(1) +
-    " W average; dashed, continuous " + K.contSteadyC.toFixed(0) + " °C", { size: 8, fill: C.grey });
-  b += T(COL[1], pbot + 38, K.sicLabel + ", switched on", { size: 8.5, weight: "bold", fill: SHADE.thermal });
-  b += T(COL[1], pbot + 48, "τ is " + (K.sicTau / K.period).toFixed(0) + "× the pulse period", { size: 8, fill: C.grey });
+  b += T(COL[0], pbot + 38, "continuous, " + K.contVolts.toFixed(2) + " V, " + K.contPower.toFixed(1) + " W", { size: 8.5, weight: "bold", fill: SHADE.thermal });
+  b += T(COL[0], pbot + 48, "settling set by the enclosure", { size: 8, fill: C.grey });
+  b += T(COL[1], pbot + 38, (K.duty * 100).toFixed(0) + " % duty, " + K.period + " s period, " + K.pulseVolts + " V", { size: 8.5, weight: "bold", fill: SHADE.scalar });
+  b += T(COL[1], pbot + 48, "τ = " + K.cfpTau.toFixed(2) + " s, " + K.meanPower.toFixed(1) + " W average", { size: 8, fill: C.grey });
+  b += T(COL[2], pbot + 38, K.sicLabel + ", switched on", { size: 8.5, weight: "bold", fill: SHADE.thermal });
+  b += T(COL[2], pbot + 48, "τ is " + (K.sicTau / K.period).toFixed(0) + "× the pulse period", { size: 8, fill: C.grey });
   return b;
 }
 
@@ -916,7 +919,7 @@ function dynamicsPanels(ns, DATA, dy) {
 /* results can be driven in pulses.                                     */
 /* ------------------------------------------------------------------ */
 export function demonstration(DATA) {
-  const ns = "m5", W = 505, H = 648;
+  const ns = "m5", W = 505, H = 634;
   return svgDoc(W, H, defs(ns) + designPanels(ns, DATA) + dynamicsPanels(ns, DATA, 396));
 }
 
