@@ -921,7 +921,7 @@ function dynamicsPanels(ns, DATA, dy) {
 /* results can be driven in pulses.                                     */
 /* ------------------------------------------------------------------ */
 export function demonstration(DATA) {
-  const ns = "m5", W = 505, H = 650;
+  const ns = "m5", W = 505, H = 660;
   return svgDoc(W, H, defs(ns) + designPanels(ns, DATA) + dynamicsPanels(ns, DATA, 402));
 }
 
@@ -1040,9 +1040,14 @@ function designPanels(ns, DATA) {
     });
     b += T(x0 + 123, y0 + 7, "ρ (Ω·cm)", { size: 8, anchor: "end", weight: "bold", fill: C.grey });
     b += T(x0 + 200, y0 + 7, "on the 20 A supply", { size: 8, anchor: "end", weight: "bold", fill: C.grey });
-    b += T(x0, y0 + 24 + rows.length * 16 + 10, "P = I² R and R ∝ ρ, so the supply cannot", { size: 8, fill: C.grey });
-    b += T(x0, y0 + 24 + rows.length * 16 + 20, "raise the power of a good conductor,", { size: 8, fill: C.grey });
-    b += T(x0, y0 + 24 + rows.length * 16 + 30, "whatever the shape.", { size: 8, fill: C.grey });
+    /* the mechanism, not a paraphrase of it: both routes to power carry the
+       same factor ρ, which is why a low resistivity fails either way */
+    ["At fixed volume R = ρL²/V, so P = I²R scales",
+     "with resistivity, and so does the current-",
+     "density ceiling P = j_{max}²ρV. Neither route",
+     "reaches the target at ρ four orders lower."].forEach(function (t, i) {
+      b += T(x0, y0 + 24 + rows.length * 16 + 10 + i * 10, t, { size: 8, fill: C.grey });
+    });
   })();
   return b;
 }
