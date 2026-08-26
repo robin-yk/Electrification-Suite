@@ -364,10 +364,19 @@ const sci = (v, d) => {
   return (v / Math.pow(10, e)).toFixed(d === undefined ? 1 : d) + " \u00d7 10<sup>\u2212" + Math.abs(e) + "</sup>";
 };
 const V = DATA.verification;
+const airCells = (function () {
+  const re = DATA.mesh.redges, n = DATA.mesh.nAir, out = [];
+  for (let i = re.length - 1 - n; i < re.length - 1; i++) out.push(re[i + 1] - re[i]);
+  return out;
+})();
 const TOKENS = {
   COMMIT,
   "v.closure": sci(Math.max.apply(null, V.physical.rows.map((r) => r.closure)), 0),
-  "v.residual": sci(Math.max.apply(null, V.physical.rows.map((r) => r.linearResidual)), 0)
+  "v.residual": sci(Math.max.apply(null, V.physical.rows.map((r) => r.linearResidual)), 0),
+  "mesh.ratio": DATA.mesh.ratio.toFixed(3),
+  "mesh.airInner": airCells[0].toFixed(3),
+  "mesh.airOuter": airCells[airCells.length - 1].toFixed(3),
+  "mesh.stretch": String(DATA.mesh.stretch)
 };
 let body = read("templates/head.html") + read("templates/body.html");
 for (const [k, v] of Object.entries(TOKENS)) body = body.replaceAll("{{" + k + "}}", v);
