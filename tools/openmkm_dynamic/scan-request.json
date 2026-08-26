@@ -1,10 +1,11 @@
 {
- "note": "Validation only: 200 seeded off-node points against the committed CJH grid's interpolation. The relabelled campaign is already in flight from the previous request; this run must not repeat it, so every other job is off and collect skips (no shard artifacts to gather).",
- "cases": 448,
+ "note": "Extend the CJH map to 1850 C and relabel the historic 192 transients inside the 1800 C materials-trust bound (139 survive, 53 above it are dropped) against the outflow-weighted baseline, without re-integrating any chemistry. 1800 is the author's stated property-confidence bound for CFP and the cp table's last measured row; the earlier 1400 C cap was the map's edge misread as a physical limit. Design, closure and validation are off; validation of the extended map runs next, after this run's collect commits the new grid.",
+ "cases": 0,
  "shards": 8,
  "run_design": false,
  "run_closure": false,
- "run_cjh_grid": false,
- "requested": "2026-08-26T21:55Z",
- "run_cjh_validate": true
+ "run_cjh_grid": true,
+ "requested": "2026-08-26T22:05Z",
+ "run_cjh_validate": false,
+ "run_relabel": true
 }

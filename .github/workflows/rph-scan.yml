@@ -48,6 +48,7 @@ jobs:
       run_closure: ${{ steps.read.outputs.run_closure }}
       run_cjh_grid: ${{ steps.read.outputs.run_cjh_grid }}
       run_cjh_validate: ${{ steps.read.outputs.run_cjh_validate }}
+      run_relabel: ${{ steps.read.outputs.run_relabel }}
     steps:
       - uses: actions/checkout@v4
       - id: read
@@ -60,12 +61,14 @@ jobs:
           closure=$(jq -r '.run_closure // false' $F)
           grid=$(jq -r '.run_cjh_grid // false' $F)
           validate=$(jq -r '.run_cjh_validate // false' $F)
+          relabel=$(jq -r '.run_relabel // false' $F)
           echo "cases=$cases" >> "$GITHUB_OUTPUT"
           echo "shards=$shards" >> "$GITHUB_OUTPUT"
           echo "run_design=$design" >> "$GITHUB_OUTPUT"
           echo "run_closure=$closure" >> "$GITHUB_OUTPUT"
           echo "run_cjh_grid=$grid" >> "$GITHUB_OUTPUT"
           echo "run_cjh_validate=$validate" >> "$GITHUB_OUTPUT"
+          echo "run_relabel=$relabel" >> "$GITHUB_OUTPUT"
           echo "cases=$cases shards=$shards run_design=$design run_closure=$closure run_cjh_grid=$grid"
           jq -r '.note // "(no note)"' $F
 
@@ -186,6 +189,37 @@ jobs:
           name: cjh-grid-validation
           path: tools/openmkm_dynamic/data/cjh-grid-validation.json
 
+  # Relabels the historic 192 transient cases against the weighted baseline
+  # without re-integrating any chemistry. The source is pinned to the commit
+  # that first landed them, so this job's input cannot shift under it no matter
+  # what later collect runs overwrite; fetch-depth 0 makes that commit
+  # reachable. The artifact is named like a design shard so the collect job's
+  # existing merge pattern picks it up as the design dataset.
+  relabel:
+    needs: plan
+    if: ${{ needs.plan.outputs.run_relabel == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r tools/cantera/requirements.txt
+      - name: Recompute the baselines under the stored transients
+        run: |
+          git show 9a5c71f:tools/openmkm_dynamic/data/design-physical.jsonl > /tmp/historic-192.jsonl
+          wc -l /tmp/historic-192.jsonl
+          python tools/openmkm_dynamic/run_relabel.py --source /tmp/historic-192.jsonl \
+            --output out/design-shard-relabel.jsonl
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: design-shard-relabel
+          path: out/
+
   design-scan:
     needs: plan
     if: ${{ needs.plan.outputs.run_design == 'true' }}
@@ -227,8 +261,8 @@ jobs:
   # merges them, writes a manifest with counts and the generating commit, and
   # pushes the result to main. contents: write is scoped to this job alone.
   collect:
-    needs: [plan, closure-diagnostic, cjh-grid, design-scan]
-    if: ${{ always() && !cancelled() && (needs.cjh-grid.result == 'success' || needs.design-scan.result == 'success' || needs.closure-diagnostic.result == 'success') }}
+    needs: [plan, closure-diagnostic, cjh-grid, design-scan, relabel]
+    if: ${{ always() && !cancelled() && (needs.cjh-grid.result == 'success' || needs.design-scan.result == 'success' || needs.closure-diagnostic.result == 'success' || needs.relabel.result == 'success') }}
     runs-on: ubuntu-latest
     permissions:
       contents: write

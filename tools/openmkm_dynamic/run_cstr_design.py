@@ -102,17 +102,15 @@ def subsample(trajectory, points_per_cycle, keep=40):
     }
 
 
-# The steady map the surrogate's baseline is read from spans 400-1400 C, and
-# GRI-Mech is already stretched at its top. The element decides its own peak
-# from (voltage, period, duty), and an unconstrained box put 103 of 192 peaks
-# above 1400 C -- up to 2520 C, outside the mechanism and outside anything the
-# CFP strip survives. The element ODE costs milliseconds, so infeasible points
-# are rejected up front and the Halton walk simply continues to the next index:
-# the kept set stays low-discrepancy over the FEASIBLE region instead of a box
-# that mostly is not. Cold excursions below the map are not rejected: below
-# 400 C the conversion is identically zero on every grid column, so the map
-# extends downward with X = 0 as fact, not assumption.
-PEAK_CAP_C = 1400.0
+# The cap is the materials-trust bound, not a physics wall and not the map's
+# edge. The CFP heat-capacity table's last measured row is 1800 C and the
+# element model's author places property confidence at least there; past it the
+# R(T) line and the constant emissivity are extrapolations of fits made far
+# below, and GRI-Mech's own stretch keeps widening. The steady map reaches
+# 1850 C so interpolation at the cap is bracketed. An earlier revision capped at
+# 1400 -- the map's then-edge -- which read as a physical limit and would have
+# discarded 50 finished transient cases the 1800 bound keeps.
+PEAK_CAP_C = 1800.0
 
 
 def design_feasible(point):

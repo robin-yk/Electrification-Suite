@@ -36,7 +36,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from run_cstr_case import build_params, CLOSURES          # noqa: E402
 from run_cstr_pilot import steady_state                   # noqa: E402
 
-T_LO_C, T_HI_C = 400.0, 1400.0
+# Extended from 1400 to 1850 C so the map covers the element envelope up to the
+# materials-trust bound: the CFP cp table's last measured row is 1800 C, the
+# author places property confidence "at least to 1800", and GRI-Mech's stretch
+# stays bounded there. 1850 keeps one bracketing node above the 1800 C cap so
+# interpolation at the cap never extrapolates.
+T_LO_C, T_HI_C = 400.0, 1850.0
 COARSE_STEP_C = 25.0
 FINE_STEP_C = 5.0
 TAU_LO_S, TAU_HI_S = 0.01, 10.0
