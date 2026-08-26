@@ -374,6 +374,7 @@ const airCells = (function () {
 })();
 const TOKENS = {
   COMMIT,
+  TITLE: "Joule Solver Figure Plates",
   "v.closure": sci(Math.max.apply(null, V.physical.rows.map((r) => r.closure)), 0),
   "v.residual": sci(Math.max.apply(null, V.physical.rows.map((r) => r.linearResidual)), 0),
   "mesh.ratio": DATA.mesh.ratio.toFixed(3),

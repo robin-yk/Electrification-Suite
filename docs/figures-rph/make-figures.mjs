@@ -132,3 +132,22 @@ writeFileSync(join(here, "figure-data.json"), JSON.stringify(DATA, null, 1) + "\
 console.log("wrote " + PLATES.map((x) => x.id).join(", ") + " at solver commit " + DATA.commit);
 console.log("  drive   peak " + DATA.drive.tPeak + " C, min " + DATA.drive.tMin + " C, avg " + DATA.drive.tAvg + " C");
 console.log("  compare RPH B " + DATA.compare.rph.B + " vs iso-X CJH B " + DATA.compare.cjh[2].B);
+
+// ---- assemble the page that publishes them
+const read = (f) => readFileSync(join(here, f), "utf8");
+const shared = (f) => readFileSync(join(here, "..", "figures", f), "utf8");
+const inlined = (src) => src
+  .replace(/^import [^;]+;\n/gm, "")
+  .replace(/^export (function|const) /gm, "$1 ");
+const TOKENS = { COMMIT: DATA.commit, TITLE: "RPH vs CJH Figure Plates" };
+let body = shared("templates/head.html") + read("templates/body.html");
+for (const [k, v] of Object.entries(TOKENS)) body = body.replaceAll("{{" + k + "}}", v);
+const unresolved = body.match(/\{\{[^}]+\}\}/g);
+if (unresolved) throw new Error("caption token not resolved: " + [...new Set(unresolved)].join(", "));
+const figMap = "const FIGS = {" + PLATES.map((x) => x.id + ": " + x.draw.name).join(", ") + "};\n";
+const page = body +
+  "<script>\nconst DATA = Object.freeze(" + JSON.stringify(DATA) + ");\n" +
+  inlined(shared("kit.mjs")) + inlined(read("draw.mjs")) + figMap +
+  shared("templates/wiring.js") + "</" + "script>\n";
+writeFileSync(join(here, "index.html"), page);
+console.log("  and index.html");

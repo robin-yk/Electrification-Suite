@@ -1,0 +1,61 @@
+<div class="wrap">
+<header>
+<p class="eyebrow">Figure source &#183; solver {{COMMIT}}</p>
+<h1>Rapid Pulsed against Continuous Joule Heating</h1>
+<p class="sub">Every plate on this page is drawn by <code>docs/figures-rph/make-figures.mjs</code> from <code>apps/rphcjh/solver.js</code>. No value is typed: the page holds one frozen data object, and the artwork and the captions both read from it.</p>
+<p class="stamp"><span>solver <b>{{COMMIT}}</b></span><span>width <b>178 mm</b></span><span>type <b>Arial, 8 pt floor</b></span></p>
+</header>
+
+<div class="note"><b>Reading these.</b> Open <i>SVG source</i>, select all, copy, and save the text as a file ending in <code>.svg</code>, then place that file in the manuscript. The vector copy stays sharp at any size and holds the type at a true 8 pt. <i>Render 600 dpi</i> rasterizes the same artwork into a canvas; right-click it and choose Save image as for a PNG.</div>
+
+<div class="key">
+<span><i style="background:#0072B2"></i>scalar electrical and the flat step</span>
+<span><i style="background:#D55E00"></i>thermal and the steep step</span>
+<span><i style="background:#009E73"></i>the reacting network</span>
+<span><i style="background:#6E6E6E"></i>held fixed, and inactive regions</span>
+</div>
+
+<figure id="rphFig1">
+<div class="figbar"><span class="figno">Fig. 1</span><span class="figwhere">Main text &#183; Software and user workflow</span><span class="figsize">178 mm</span></div>
+<div class="plate"></div>
+<div class="tools"><button data-src="rphFig1">Show SVG source</button><button data-png="rphFig1">Render 600 dpi</button><button data-copy="rphFig1">Copy SVG</button><span class="hint"></span></div>
+<textarea readonly spellcheck="false"></textarea><canvas></canvas>
+<div class="cap"><b>Fig. 1.</b> Browser workflow. The three stages are the order a user takes: whether time-averaging gains anything at a given activation energy, what waveform the element can actually produce at a chosen period and duty, and what the reacting network does with that waveform. Each stage hands the next the quantity named between them. Three further tabs support the sequence rather than extend it. All tabs call one DOM-free module, <code>apps/rphcjh/solver.js</code>, so the browser interface and the automated tests call identical functions. Tab names are those of the application at the stamped revision.</div>
+</figure>
+
+<figure id="rphFig2">
+<div class="figbar"><span class="figno">Fig. 2</span><span class="figwhere">Main text &#183; The drive and the two steps</span><span class="figsize">178 mm</span></div>
+<div class="plate"></div>
+<div class="tools"><button data-src="rphFig2">Show SVG source</button><button data-png="rphFig2">Render 600 dpi</button><button data-copy="rphFig2">Copy SVG</button><span class="hint"></span></div>
+<textarea readonly spellcheck="false"></textarea><canvas></canvas>
+<div class="cap"><b>Fig. 2.</b> The cycle the element delivers, and the two rate constants it swings between. (a) One period at the shipped default, 40 V on a 1 s period at 5 % duty, integrated on the lumped electro-thermal model of the carbon-fiber-paper element rather than imposed as a square wave. The shaded band is the on-phase; the element reaches its peak at the end of it and cools for the rest of the cycle, so the waveform is a sawtooth and not a square. (b) The two first-order steps of the network over the same temperature range, with the swing the drive produces shaded. Across that swing the formation step climbs about four decades and the destruction step about one. That difference, and not the average temperature, is what a pulse exploits.</div>
+</figure>
+
+<figure id="rphFig3">
+<div class="figbar"><span class="figno">Fig. 3</span><span class="figwhere">Main text &#183; What the pulsed run is compared against</span><span class="figsize">178 mm</span></div>
+<div class="plate"></div>
+<div class="tools"><button data-src="rphFig3">Show SVG source</button><button data-png="rphFig3">Render 600 dpi</button><button data-copy="rphFig3">Copy SVG</button><span class="hint"></span></div>
+<textarea readonly spellcheck="false"></textarea><canvas></canvas>
+<div class="cap"><b>Fig. 3.</b> The same pulsed run against three continuous baselines, because the basis decides the answer. Matched on time-average temperature or on average electrical power, the continuous run reaches almost no conversion and the pulsed run appears better by two orders of magnitude; both comparisons hide that the peak does the work, and neither is a claim worth making. Matched on conversion, which is the strictest basis and the only one that removes the slide along the selectivity-conversion curve, the continuous run needs 888 &#176;C and still ends with less of the intermediate. The two greyed rows are shown rather than dropped so that a reader can see which comparison any given claim rests on.</div>
+</figure>
+
+<figure id="rphFig4">
+<div class="figbar"><span class="figno">Fig. 4</span><span class="figwhere">Main text &#183; The window, and the control</span><span class="figsize">178 mm</span></div>
+<div class="plate"></div>
+<div class="tools"><button data-src="rphFig4">Show SVG source</button><button data-png="rphFig4">Render 600 dpi</button><button data-copy="rphFig4">Copy SVG</button><span class="hint"></span></div>
+<textarea readonly spellcheck="false"></textarea><canvas></canvas>
+<div class="cap"><b>Fig. 4.</b> Pulsing helps inside a window, and the window closes for a different reason at each end. (a) Yield of the intermediate relative to a continuous run at the same conversion, against pulse period at fixed voltage and duty. The gain peaks near a 1 s period and falls below one at long periods, where pulsing is a loss rather than a gain. The dashed curve is the control: the same network with its two activation energies set equal, so the structure is kept and only the separation of timescales is removed. It sits at unity wherever the element can follow, which is the statement that the separation, not the pulsing, is what produces the gain. (b) The temperatures behind both ends. Below about 0.2 s the element cannot swing and the pulsed case is a continuous case; above about 2 s the peak runs away and the intermediate is destroyed in the hot phase faster than it is formed. The lumped element model carries no melting, sublimation or oxidation limit, so the peak temperatures at the longest periods are the model's and not a claim about a real element.</div>
+</figure>
+
+<figure id="rphFig5">
+<div class="figbar"><span class="figno">Fig. 5</span><span class="figwhere">Main text &#183; Where the two-step network comes from</span><span class="figsize">178 mm</span></div>
+<div class="plate"></div>
+<div class="tools"><button data-src="rphFig5">Show SVG source</button><button data-png="rphFig5">Render 600 dpi</button><button data-copy="rphFig5">Copy SVG</button><span class="hint"></span></div>
+<textarea readonly spellcheck="false"></textarea><canvas></canvas>
+<div class="cap"><b>Fig. 5.</b> The two-step network against detailed chemistry. (a) Effective first-order rate constant for methane consumption from two mechanisms of very different size, computed offline in Cantera and shipped with the page. Their curves lie on top of one another, and the slopes fitted over the shaded window give effective activation energies within one per cent of each other and within four per cent of the value the two-step model uses. The agreement is evidence about the lumped kinetics, not about a shared implementation: the two mechanisms share no reactions beyond the elementary steps they both contain. (b) Steady one-dimensional plug-flow states from OpenMKM over the same element temperatures. Conversion climbs steeply while selectivity falls as conversion rises, which is the behaviour the two-step network reproduces. These steady states are also what a slow pulse blends between: the hot-zone residence time is milliseconds against pulse periods of order a second, so a pulsed run is close to the duty-weighted mixture of them.</div>
+</figure>
+
+<div class="note"><b>What is still missing.</b> The Supporting Information plates are not on this page yet: solver verification, the boundaries of the model, and the software structure. They will appear here at the same address.</div>
+
+<footer class="colophon">Artwork generated from apps/rphcjh/solver.js at commit {{COMMIT}} by docs/figures-rph/make-figures.mjs. The page does not run the solver; the values were computed from that commit and frozen into one data object, so a figure and the manuscript text cannot drift apart.</footer>
+</div>
