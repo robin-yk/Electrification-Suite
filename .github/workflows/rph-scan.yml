@@ -45,6 +45,8 @@ jobs:
       cases: ${{ steps.read.outputs.cases }}
       shards: ${{ steps.read.outputs.shards }}
       run_design: ${{ steps.read.outputs.run_design }}
+      run_closure: ${{ steps.read.outputs.run_closure }}
+      run_cjh_grid: ${{ steps.read.outputs.run_cjh_grid }}
     steps:
       - uses: actions/checkout@v4
       - id: read
@@ -54,14 +56,19 @@ jobs:
           cases='${{ inputs.cases }}';        [ -n "$cases" ]      || cases=$(jq -r '.cases // 64' $F)
           shards='${{ inputs.shards }}';      [ -n "$shards" ]     || shards=$(jq -r '.shards // 8' $F)
           design='${{ inputs.run_design }}';  [ -n "$design" ]     || design=$(jq -r '.run_design // true' $F)
+          closure=$(jq -r '.run_closure // false' $F)
+          grid=$(jq -r '.run_cjh_grid // false' $F)
           echo "cases=$cases" >> "$GITHUB_OUTPUT"
           echo "shards=$shards" >> "$GITHUB_OUTPUT"
           echo "run_design=$design" >> "$GITHUB_OUTPUT"
-          echo "cases=$cases shards=$shards run_design=$design"
+          echo "run_closure=$closure" >> "$GITHUB_OUTPUT"
+          echo "run_cjh_grid=$grid" >> "$GITHUB_OUTPUT"
+          echo "cases=$cases shards=$shards run_design=$design run_closure=$closure run_cjh_grid=$grid"
           jq -r '.note // "(no note)"' $F
 
   closure-diagnostic:
     needs: plan
+    if: ${{ needs.plan.outputs.run_closure == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 330
     steps:
@@ -117,6 +124,33 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: closure-diagnostic
+          path: out/
+
+  # The dense steady map the RPH surrogate stands on. Sharded over tau
+  # indices (i % shards), so every shard covers the full temperature range and
+  # a lost shard costs tau columns, not a temperature band.
+  cjh-grid:
+    needs: plan
+    if: ${{ needs.plan.outputs.run_cjh_grid == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r tools/cantera/requirements.txt
+      - name: Steady (T, tau) grid shard
+        run: |
+          mkdir -p out
+          python tools/openmkm_dynamic/run_cjh_grid.py             --tau-points 25 --shard ${{ matrix.shard }} --shards 5             --output "out/cjh-grid-shard-${{ matrix.shard }}.jsonl"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cjh-grid-shard-${{ matrix.shard }}
           path: out/
 
   design-scan:

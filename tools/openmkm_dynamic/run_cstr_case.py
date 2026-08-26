@@ -206,12 +206,14 @@ def run_case(mech, p):
                       f"({p['closure']}, prescribed T(t), mass-based tau)",
             "mechanism": "GRI-Mech 3.0",
             "generated": datetime.date.today().isoformat(),
+            # voltage_V and drive_cycles exist only under --waveform physical,
+            # so the comprehension takes what the case actually has.
             "inputs": {k: p[k] for k in
                        ("closure", "voltage_V", "drive_cycles",
                         "t_min_K", "t_peak_K", "period_s", "duty", "waveform",
                         "mean_temperature_K", "ramp_up_fraction",
                         "ramp_down_fraction", "pressure_Pa", "tau_s", "feed",
-                        "points_per_cycle")},
+                        "points_per_cycle") if k in p},
             "reactor_constraint": f"{p['closure']}_prescribed_T",
             "cycle_summary": {
                 "converged": last["boundary_residual"] < p["cycle_tolerance"],

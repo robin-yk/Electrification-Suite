@@ -39,14 +39,25 @@ from run_cstr_case import (build_params, run_case, mean_temperature,
                            waveform_temperature, RECORD_SPECIES)
 from run_cstr_pilot import quasi_steady_reference
 
-WAVEFORMS = ["trapezoid", "square", "sine", "double"]
-PRIMES = [2, 3, 5, 7, 11]
+# Four axes, all of them knobs a person can actually turn. The previous design
+# sampled seven -- T_peak, T_min, period, duty, two ramp fractions and a waveform
+# family -- treating as free inputs quantities the element's thermal mass in fact
+# decides. A fixed ramp *fraction* asks a 1 ms period to heat 750->1250 C in 50 us
+# and a 10 s period to take half a second over the same rise; no one element does
+# both, so that space contained states no hardware can occupy. The waveform is
+# now integrated from the element's own energy balance (--waveform physical), and
+# T_peak, T_min and the ramp shape are results recorded with each case.
+#
+# Voltage spans 25-55 V: at 25 V the element barely ignites the chemistry even
+# hot, at 55 V a 10 s pulse reaches 2440 C. Period against the element's thermal
+# time constant sets the swing, from 7 K at 10 ms (the element cannot follow;
+# effectively CJH) to 2300 K at 10 s.
+PRIMES = [2, 3, 5, 7]
 AXES = {
-    "period_s": (1e-3, 10.0, "log"),
+    "voltage": (25.0, 55.0, "linear"),
+    "period_s": (1e-2, 10.0, "log"),
+    "duty": (0.02, 0.40, "linear"),
     "tau_s": (1e-2, 1.0, "log"),
-    "duty": (0.05, 0.60, "linear"),
-    "t_peak_c": (1000.0, 1400.0, "linear"),
-    "t_min_c": (500.0, 900.0, "linear"),
 }
 # Cost guard: a 1 ms pulse washing out a 1 s residence time needs thousands of
 # cycles. Cap the work and record `converged` honestly rather than silently
@@ -70,8 +81,7 @@ def design_point(index):
         u = halton(index, base)
         point[name] = (math.exp(math.log(low) + u * math.log(high / low))
                        if scale == "log" else low + u * (high - low))
-    # families cycle by index so every shard covers all four
-    point["waveform"] = WAVEFORMS[index % len(WAVEFORMS)]
+    point["waveform"] = "physical"
     return point
 
 
@@ -94,11 +104,9 @@ def subsample(trajectory, points_per_cycle, keep=40):
 
 def run_design_case(ct, mech, index, closure="const-pressure"):
     point = design_point(index)
-    if point["t_min_c"] >= point["t_peak_c"] - 50:
-        point["t_min_c"] = point["t_peak_c"] - 50
     args = argparse.Namespace(
-        mechanism=mech, t_min_c=point["t_min_c"], t_peak_c=point["t_peak_c"],
-        duty=point["duty"], waveform=point["waveform"],
+        mechanism=mech, t_min_c=25.0, t_peak_c=1250.0,
+        duty=point["duty"], waveform="physical", voltage=point["voltage"],
         ramp_up_fraction=0.05, ramp_down_fraction=0.05, pressure_atm=1.0,
         residence_time_s=point["tau_s"], feed="CH4:1, CO2:1",
         points_per_cycle=POINTS_PER_CYCLE, min_cycles=10, max_cycles=MAX_CYCLES,

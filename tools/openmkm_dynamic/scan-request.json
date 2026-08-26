@@ -1,7 +1,9 @@
 {
-  "note": "Closure diagnostic: the five-period pilot puts the dynamic/quasi-steady ratio at 0.724 for a 10 s period, where a hundred residence times make quasi-steady exact by construction and the ratio must be 1. Running the same five periods under both closures decides whether that is the constant-pressure expansion cutting residence time when hot, or physics the surrogate has to learn. Design scan runs the 6-D Halton campaign alongside it at a size that fits one runner.",
-  "cases": 64,
+  "note": "Second campaign, redesigned from the pilot's lessons. The CJH grid is the dense steady CSTR map over (T, tau) -- same reactor and closure as the transient cases, which the 512-point OpenMKM PFR sweep is not -- 25 C spacing refined to 5 C across the ignition cliff, 25 log-spaced tau columns. The design scan drops the drawn trapezoid for the element's own integrated T(t): four axes (voltage, period, duty, tau), all knobs a person can turn, with T_peak/T_min/ramp recorded as results. 192 cases = 128 train / 32 validation / 32 held out. The earlier 7-axis trapezoid shards are superseded; the closure diagnostic already ran and is off.",
+  "cases": 192,
   "shards": 8,
   "run_design": true,
+  "run_closure": false,
+  "run_cjh_grid": true,
   "requested": "2026-08-26"
 }
