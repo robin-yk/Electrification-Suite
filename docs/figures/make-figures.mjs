@@ -354,7 +354,24 @@ writeFileSync(join(here, "figure-data.json"), JSON.stringify(DATA, null, 1) + "\
 const read = (f) => readFileSync(join(here, f), "utf8");
 const draw = read("draw.mjs").replace(/^export function /gm, "function ");
 const figMap = "const FIGS = {" + PLATES.map((p) => p.id + ": " + p.draw.name).join(", ") + "};\n";
-const page = (read("templates/head.html") + read("templates/body.html")).replaceAll("{{COMMIT}}", COMMIT) +
+// Captions quote measured values, so the captions read them from the same
+// object the artwork does. A caption number is never typed: it is a {{token}}
+// resolved here, and an unresolved token fails the build the way a NaN does.
+const sci = (v, d) => {
+  const e = Math.floor(Math.log10(Math.abs(v)));
+  return (v / Math.pow(10, e)).toFixed(d === undefined ? 1 : d) + " \u00d7 10<sup>\u2212" + Math.abs(e) + "</sup>";
+};
+const V = DATA.verification;
+const TOKENS = {
+  COMMIT,
+  "v.closure": sci(Math.max.apply(null, V.physical.rows.map((r) => r.closure)), 0),
+  "v.residual": sci(Math.max.apply(null, V.physical.rows.map((r) => r.linearResidual)), 0)
+};
+let body = read("templates/head.html") + read("templates/body.html");
+for (const [k, v] of Object.entries(TOKENS)) body = body.replaceAll("{{" + k + "}}", v);
+const unresolved = body.match(/\{\{[^}]+\}\}/g);
+if (unresolved) throw new Error("caption token not resolved: " + [...new Set(unresolved)].join(", "));
+const page = body +
   "<script>\nconst DATA = Object.freeze(" + JSON.stringify(DATA) + ");\n" +
   draw + figMap + read("templates/wiring.js") + "</" + "script>\n";
 writeFileSync(join(here, "index.html"), page);

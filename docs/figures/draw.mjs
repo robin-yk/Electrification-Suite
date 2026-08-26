@@ -587,11 +587,11 @@ export function workflow(DATA) {
 /* the panel and the caption carries the rest.                          */
 /* ------------------------------------------------------------------ */
 export function verification(DATA) {
-  const ns = "m3", W = 505, H = 430;
+  const ns = "m3", W = 505, H = 388;
   const V = DATA.verification;
   let b = defs(ns);
   const pw = 118, ph = 138;
-  const COL = [52, 215, 378], ROW = [30, 234];
+  const COL = [52, 215, 378], ROW = [30, 212];
   const lin = (v, lo, hi, a, c) => a + (v - lo) / (hi - lo) * (c - a);
   const lg = (v) => Math.log10(v);
   const marker = (kind, x, y, c) => kind === "circle"
@@ -646,7 +646,7 @@ export function verification(DATA) {
     o += T(x0 + pw / 2, pbot + 24, cfg.xLabel, { size: 8.5, anchor: "middle" });
     o += '<text x="' + (x0 - 30) + '" y="' + ((ptop + pbot) / 2) + '" font-size="8.5" text-anchor="middle" transform="rotate(-90 ' + (x0 - 30) + ' ' + ((ptop + pbot) / 2) + ')">' + cfg.yLabel + '</text>';
     (cfg.legend || []).forEach(function (l, k) {
-      const ly = ptop + 14 + k * 11;
+      const ly = cfg.legendBottom ? pbot - 22 + k * 11 : ptop + 14 + k * 11;
       if (l.marker) {
         const mx = x0 + (l.right ? pw - 10 : 10);
         o += marker(l.marker, mx, ly - 3, l.color);
@@ -657,50 +657,35 @@ export function verification(DATA) {
           { size: 8.5, weight: "bold", fill: l.color, anchor: l.right ? "end" : "start" });
       }
     });
-    (cfg.foot || []).forEach(function (t, k) { o += T(x0, pbot + 36 + k * 10, t, { size: 8, fill: C.grey }); });
     b += o;
   }
-  const sci1 = (v) => {
-    const e = Math.floor(Math.log10(Math.abs(v)));
-    return (v / Math.pow(10, e)).toFixed(1) + " \u00d7 10^{" + String(e).replace("-", "\u2212") + "}";
-  };
-
   plot({ col: 0, row: 0, xs: V.parabola.map((q) => q.ld), xPad: 1.18, xLabel: "cylinder L/D",
     yLabel: "mismatch vs analytic profile", decades: [-5, -2],
-    series: [{ vals: V.parabola.map((q) => q.worstRelative), color: C.thermal, marker: "circle" }],
-    foot: [sci1(V.parabola[0].worstRelative) + " at L/D " + V.parabola[0].ld,
-           sci1(V.parabola[2].worstRelative) + " at L/D " + V.parabola[2].ld] });
+    series: [{ vals: V.parabola.map((q) => q.worstRelative), color: C.thermal, marker: "circle" }] });
 
   plot({ col: 1, row: 0, xs: V.annulus.map((a) => a.ld), xPad: 1.18, xLabel: "cylinder L/D",
     yLabel: "worst layer error vs theory", decades: [-2, 0],
-    series: [{ vals: V.annulus.map((a) => a.worst), color: C.thermal, marker: "circle" }],
-    foot: [(100 * V.annulus[0].worst).toFixed(1) + " % at L/D " + V.annulus[0].ld,
-           (100 * V.annulus[2].worst).toFixed(2) + " % at L/D " + V.annulus[2].ld] });
+    series: [{ vals: V.annulus.map((a) => a.worst), color: C.thermal, marker: "circle" }] });
 
   plot({ col: 2, row: 0, xs: V.mms.map((r) => Number(r.grid.split("\u00d7")[0])), xPad: 1.22,
     xLabel: "radial cells", yLabel: "error vs manufactured solution (K)",
     decades: [-2, 1], guide: [32, 78, 8.0, 2],
     series: [{ vals: V.mms.map((r) => r.linf), color: C.thermal, marker: "square" },
              { vals: V.mms.map((r) => r.l2), color: C.thermal, marker: "circle" }],
+    legendBottom: true,
     legend: [{ label: "L\u221e", color: C.thermal, marker: "square" },
-             { label: "L2", color: C.thermal, marker: "circle" }],
-    foot: ["order  " + V.mms.slice(1).map((r) => r.orderL2.toFixed(2)).join(", ") + "  (L2)",
-           "order  " + V.mms.slice(1).map((r) => r.orderLinf.toFixed(2)).join(", ") + "  (L\u221e)"] });
+             { label: "L2", color: C.thermal, marker: "circle" }] });
 
   plot({ col: 0, row: 1, xs: V.electrical.map((r) => Number(r.grid.split("\u00d7")[0])), xPad: 1.22,
     xLabel: "radial cells", yLabel: "resistance error vs exact",
     decades: [-7, -4], guide: [34, 84, 2.4e-5, 2],
-    series: [{ vals: V.electrical.map((r) => r.error), color: C.field, marker: "square" }],
-    foot: ["order  " + V.electrical.slice(1).map((r) => r.order.toFixed(2)).join(", "),
-           "unit-potential solve"] });
+    series: [{ vals: V.electrical.map((r) => r.error), color: C.field, marker: "square" }] });
 
   plot({ col: 1, row: 1, xs: V.transient.rows.map((r) => r.dt), xPad: 1.35,
     xLabels: V.transient.rows.map((r) => r.dt.toFixed(2)),
     xLabel: "time step (s)", yLabel: "error vs reference step (K)",
     decades: [-1, 1], guide: [6.0, 1.3, 3.4, -1, "first order"],
-    series: [{ vals: V.transient.rows.map((r) => r.error), color: C.thermal, marker: "circle" }],
-    foot: ["order  " + V.transient.rows.slice(1).map((r) => r.order.toFixed(2)).join(", "),
-           "backward Euler, t = " + V.transient.tEnd + " s"] });
+    series: [{ vals: V.transient.rows.map((r) => r.error), color: C.thermal, marker: "circle" }] });
 
   (function () {
     const rows = V.physical.rows, ex = V.physical.extrapolated.avg;
@@ -712,9 +697,7 @@ export function verification(DATA) {
       series: [{ vals: rows.map((r) => r.maxC), color: C.thermal, marker: "square" },
                { vals: rows.map((r) => r.avgC), color: C.thermal, marker: "circle" }],
       legend: [{ label: "maximum", color: C.thermal, marker: "square", right: true },
-               { label: "average", color: C.thermal, marker: "circle", right: true }],
-      foot: ["order  " + V.physical.order.avg.toFixed(2) + "  average",
-             "order  " + V.physical.order.max.toFixed(2) + "  maximum"] });
+               { label: "average", color: C.thermal, marker: "circle", right: true }] });
   })();
 
   return svgDoc(W, H, b);

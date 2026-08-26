@@ -64,6 +64,18 @@ const report = await page.evaluate(() => {
       }
     }
 
+    /* two markers on top of each other: a legend key sitting on the data it
+       keys. Neither is text, so the text-on-text rule never sees it. */
+    const marks = all.filter(e => e.tagName === "circle" ||
+      (e.tagName === "rect" && P(e).w < 6 && P(e).h < 6 && P(e).w > 0)).map(e => ({ el: e, ...P(e) }));
+    const collide = [];
+    for (let i = 0; i < marks.length; i++) for (let j = i + 1; j < marks.length; j++) {
+      const a = marks[i], c = marks[j];
+      const ox = Math.min(a.r, c.r) - Math.max(a.l, c.l);
+      const oy = Math.min(a.b, c.b) - Math.max(a.t, c.t);
+      if (ox > 0.5 && oy > 0.5) collide.push({ x: +a.l.toFixed(1), y: +a.t.toFixed(1), by: +Math.min(ox, oy).toFixed(2) });
+    }
+
     const straddle = [];
     for (const f of frames) {
       const TOL = 0.75;                       /* stroke width and antialiasing */
@@ -88,7 +100,7 @@ const report = await page.evaluate(() => {
       if (ox > 1 && oy > a.h * 0.45) overlaps.push({ a: a.t.slice(0, 30), b: c.t.slice(0, 30), ox: +ox.toFixed(2) });
     }
     out.push({ id: fig.id, w: vb[2], h: vb[3], nText: texts.length, nFrames: frames.length,
-      clipped, straddle, stray, overlaps,
+      clipped, straddle, stray, collide, overlaps,
       nan: texts.filter(t => /NaN|undefined|Infinity/.test(t.t)).map(t => t.t),
       small: texts.filter(t => t.fs < 7.95).map(t => ({ t: t.t.slice(0, 26), fs: +t.fs.toFixed(2) })) });
   }
@@ -103,6 +115,7 @@ for (const r of report) {
   if (r.nan?.length) bits.push("NaN: " + r.nan.join(" | "));
   if (r.small?.length) bits.push("under 8 pt: " + JSON.stringify(r.small));
   if (r.clipped?.length) bits.push("off the sheet " + r.clipped.length + ": " + JSON.stringify(r.clipped.slice(0, 5)));
+  if (r.collide?.length) bits.push("marker on marker " + r.collide.length + ": " + JSON.stringify(r.collide.slice(0, 5)));
   if (r.stray?.length) bits.push("marker outside every panel " + r.stray.length + ": " + JSON.stringify(r.stray.slice(0, 6)));
   if (r.straddle?.length) bits.push("across a panel frame " + r.straddle.length + ": " + JSON.stringify(r.straddle.slice(0, 6)));
   if (r.overlaps?.length) bits.push("text on text " + r.overlaps.length + ": " + JSON.stringify(r.overlaps.slice(0, 6)));
@@ -116,4 +129,4 @@ await browser.close();
 
 /* a nonzero exit so this can gate a build the way the figure pipeline does */
 process.exitCode = report.some(r => r.fatal || r.nan?.length || r.small?.length ||
-  r.clipped?.length || r.straddle?.length || r.stray?.length || r.overlaps?.length) ? 1 : 0;
+  r.clipped?.length || r.straddle?.length || r.stray?.length || r.collide?.length || r.overlaps?.length) ? 1 : 0;
