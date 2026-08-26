@@ -1,0 +1,13 @@
+{
+ "generated": "2026-08-26",
+ "generating_commit": "1365e9575cf36396ecee196985793e305156cffd",
+ "workflow": "rph-scan.yml",
+ "datasets": [
+  {
+   "file": "design-physical.jsonl",
+   "rows": 32,
+   "sha256": "29346d2887c073d6b8cb0aa773126424da234891895304b8c5a3fee04a90e542"
+  }
+ ],
+ "status": "raw run output; promote to canonical/ with promote.py after validation"
+}
