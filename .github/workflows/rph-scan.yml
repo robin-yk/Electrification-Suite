@@ -55,13 +55,18 @@ jobs:
         name: Settings from the dispatch inputs, else the request file
         run: |
           F=tools/openmkm_dynamic/scan-request.json
-          cases='${{ inputs.cases }}';        [ -n "$cases" ]      || cases=$(jq -r '.cases // 64' $F)
-          shards='${{ inputs.shards }}';      [ -n "$shards" ]     || shards=$(jq -r '.shards // 8' $F)
-          design='${{ inputs.run_design }}';  [ -n "$design" ]     || design=$(jq -r '.run_design // true' $F)
-          closure=$(jq -r '.run_closure // false' $F)
-          grid=$(jq -r '.run_cjh_grid // false' $F)
-          validate=$(jq -r '.run_cjh_validate // false' $F)
-          relabel=$(jq -r '.run_relabel // false' $F)
+          # jq's // treats false as absent, so '.run_design // true' silently
+          # flipped an explicit false back to true -- which is how a
+          # validation-only request re-ran the full 448-index design scan.
+          # has() asks the question actually meant: was the key set at all.
+          flag() { jq -r "if has(\"$1\") then (.[\"$1\"]|tostring) else \"$2\" end" $F; }
+          cases='${{ inputs.cases }}';        [ -n "$cases" ]      || cases=$(flag cases 64)
+          shards='${{ inputs.shards }}';      [ -n "$shards" ]     || shards=$(flag shards 8)
+          design='${{ inputs.run_design }}';  [ -n "$design" ]     || design=$(flag run_design false)
+          closure=$(flag run_closure false)
+          grid=$(flag run_cjh_grid false)
+          validate=$(flag run_cjh_validate false)
+          relabel=$(flag run_relabel false)
           echo "cases=$cases" >> "$GITHUB_OUTPUT"
           echo "shards=$shards" >> "$GITHUB_OUTPUT"
           echo "run_design=$design" >> "$GITHUB_OUTPUT"
@@ -273,19 +278,21 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: gathered
-      - name: Merge shards and write the manifest
+      - name: Merge shards into this run's own directory
         env:
           GENERATING_SHA: ${{ github.sha }}
         run: |
           python - <<'MERGE'
           import hashlib, json, os, pathlib, datetime
           root = pathlib.Path("gathered")
-          out = pathlib.Path("tools/openmkm_dynamic/data")
+          sha = os.environ["GENERATING_SHA"][:7]
+          # Each run owns runs/<commit>/ and nothing else. The previous layout
+          # had every collect overwrite one set of shared filenames plus a
+          # manifest describing only the latest run -- so main was always a
+          # mid-state and the folder disagreed with its own manifest. Promotion
+          # to canonical/ is a human act, via promote.py, after validation.
+          out = pathlib.Path("tools/openmkm_dynamic/data/runs") / sha
           out.mkdir(parents=True, exist_ok=True)
-          # The commit that RAN the computation, not whatever main points at by
-          # the time this job checks out -- rev-parse HEAD here recorded a
-          # sibling session's unrelated commit as the generator once.
-          head = os.environ["GENERATING_SHA"]
 
           def merge(pattern, target):
               rows = []
@@ -307,26 +314,26 @@ jobs:
                   or merge("design-shard-*/design-shard-*.jsonl", "design-physical.jsonl"),
               merge("closure-diagnostic/**/pilot-*.jsonl", "closure-diagnostic.jsonl")
                   or merge("closure-diagnostic/pilot-*.jsonl", "closure-diagnostic.jsonl"),
+              merge("cjh-grid-validation/**/*.json", "cjh-grid-validation.json")
+                  or merge("cjh-grid-validation/*.json", "cjh-grid-validation.json"),
           ) if m]
           if not made:
               raise SystemExit("no shard files found under gathered/")
           manifest = {
               "generated": datetime.date.today().isoformat(),
-              "generating_commit": head,
+              "generating_commit": os.environ["GENERATING_SHA"],
               "workflow": "rph-scan.yml",
               "datasets": made,
-              "note": "Merged from the Actions artifacts of this run; shards are "
-                      "deterministic (identical digests across reruns), so a "
-                      "re-trigger reproduces these files byte for byte.",
+              "status": "raw run output; promote to canonical/ with promote.py after validation",
           }
-          (out / "campaign-manifest.json").write_text(json.dumps(manifest, indent=1) + "\n")
+          (out / "manifest.json").write_text(json.dumps(manifest, indent=1) + "\n")
           print(json.dumps(manifest, indent=1))
           MERGE
       - name: Commit to main
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add tools/openmkm_dynamic/data/
+          git add tools/openmkm_dynamic/data/runs/
           if git diff --cached --quiet; then echo "nothing new"; exit 0; fi
           git commit \
             -m "Commit the scan campaign outputs the artifacts held" \

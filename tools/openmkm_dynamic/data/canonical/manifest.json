@@ -1,0 +1,31 @@
+{
+ "promoted": "2026-08-26",
+ "rule": "only validated runs are promoted here; collect jobs write runs/<commit>/ and never touch this directory",
+ "datasets": {
+  "cjh-grid.jsonl": {
+   "rows": 2251,
+   "from_run": "45b4bb4",
+   "sha256": "74813fb8a9b1c604f02e87372b982cbc0f6f1f04f10b09a15a2d2b0cc438d412",
+   "range": "400-1850 C x tau 0.01-10 s, CH4:CO2=1:1, 1 atm, const-pressure CSTR, GRI-Mech 3.0",
+   "validation": "200 seeded off-node points vs fresh Cantera: p95 |dX| = 0.0005, max 0.0010 (gate 0.02) -- run 33015864752, over the 400-1400 C range; the 1400-1850 extension uses the identical generator and awaits its own off-node pass"
+  },
+  "design-physical.jsonl": {
+   "rows": 253,
+   "merged_from": {
+    "45b4bb4": 139,
+    "50d4738": 203
+   },
+   "overlap_resolved": "89 shared design indices kept from the relabelled set (identical transients, same labelling method)",
+   "sha256": "d7432e150062d633882ea69eead23876f2e1ec701f252df932cd15ce155f87f5",
+   "labels": "memory_gain = outflow-weighted X_dyn / outflow-weighted quasi-steady blend; element peaks within the 1800 C materials-trust bound",
+   "validation": "quasi-steady limit closes at 1.02 under this definition (10 s period); element drive reproduced bit-for-bit against apps/rphcjh/solver.js before relabelling"
+  },
+  "closure-diagnostic.jsonl": {
+   "rows": 10,
+   "from_run": "50d4738",
+   "sha256": "308bba2b1e9f333a69153630e26bc7fed602c0d938c96c5f9f428d6a6bc3e25e",
+   "validation": "five periods x two closures; the 10 s anomaly is resolved by the weighted baseline, not by the closure"
+  }
+ },
+ "training_split_note": "draw train/val/holdout from design-physical.jsonl with a fixed seed; the historic 128/32/32 split assumed 192 rows and must be redrawn"
+}

@@ -29,7 +29,7 @@ sys.path.insert(0, str(HERE))
 from run_cstr_pilot import steady_state          # noqa: E402
 from run_cjh_grid import base_params             # noqa: E402
 
-GRID = HERE / "data" / "cjh-grid.jsonl"
+GRID = HERE / "data" / "canonical" / "cjh-grid.jsonl"
 T_LO_C, T_HI_C = 400.0, 1850.0
 TAU_LO_S, TAU_HI_S = 0.01, 10.0
 EPS = 1e-9

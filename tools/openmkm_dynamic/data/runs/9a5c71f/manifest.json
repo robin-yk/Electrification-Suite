@@ -1,0 +1,18 @@
+{
+ "generated": "2026-08-26",
+ "generating_commit": "45b4bb4a4bf2c05c1e5f4ce6ef4bfbdaf4268eee",
+ "workflow": "rph-scan.yml",
+ "datasets": [
+  {
+   "file": "cjh-grid.jsonl",
+   "rows": 2251,
+   "sha256": "74813fb8a9b1c604f02e87372b982cbc0f6f1f04f10b09a15a2d2b0cc438d412"
+  },
+  {
+   "file": "design-physical.jsonl",
+   "rows": 139,
+   "sha256": "adbe2fea40f38e722b15ad5ad521fbfc90c171eb62f965c0d24cb6ed3f2feae8"
+  }
+ ],
+ "note": "Merged from the Actions artifacts of this run; shards are deterministic (identical digests across reruns), so a re-trigger reproduces these files byte for byte."
+}
