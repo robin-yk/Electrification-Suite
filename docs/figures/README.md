@@ -20,14 +20,13 @@ the figure source).
 | `fig2.svg` | Scalar total power and spatial power distribution | Main text, Fig. 2 | 178 mm |
 | `fig3.svg` | Numerical verification, three panels | Main text, Fig. 3 | 178 mm |
 | `fig4.svg` | Illustrative case: temperature field and power balance | Main text, Fig. 4 | 178 mm |
+| `fig5.svg` | Reaching a target: geometry, material, and whether it can be pulsed | proposed main text | 178 mm |
 | `figS1.svg` | Axisymmetric domain and material regions | SI, S1 and S3 | 178 mm |
 | `figS2.svg` | Matrix contribution classes | SI, S3.4 | 178 mm |
 | `figS3.svg` | Nested solver loop and order of computation | SI, S4 | 178 mm |
 | `figS4.svg` | Rectangular element to equivalent cylinder | SI, S7.3 | 178 mm |
-| `figS5.svg` | Transient operation: start-up and a pulse train | proposed SI | 178 mm |
-| `figS6.svg` | Design screening: geometry and material against the supply | proposed SI | 178 mm |
-| `figS7.svg` | Published-reactor cross-checks, as signed differences | proposed SI | 178 mm |
-| `figS8.svg` | Verification gates and modular architecture | proposed SI | 178 mm |
+| `figS5.svg` | Published-reactor cross-checks, as signed differences | proposed SI | 178 mm |
+| `figS6.svg` | Verification gates and modular architecture | proposed SI | 178 mm |
 
 ## Why it is generated
 

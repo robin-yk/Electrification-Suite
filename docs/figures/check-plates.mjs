@@ -49,7 +49,7 @@ const report = await page.evaluate(() => {
 
     /* a panel frame is a white-filled rect big enough to hold a plot */
     const frames = all.filter(e => e.tagName === "rect" && ["#FFFFFF", "none"].includes(e.getAttribute("fill")))
-      .map(e => ({ el: e, ...P(e) })).filter(f => f.w > 60 && f.h > 60 && f.w < vb[2] - 4);
+      .map(e => ({ el: e, ...P(e) })).filter(f => f.w > 60 && f.h > 35 && f.w < vb[2] - 4);   /* an inset counts too */
     /* a data marker belongs inside a panel. Straddling is not enough of a test:
        panel e of Fig. 3 put its first and last point wholly outside the axes,
        which crosses no boundary and so crosses nothing to detect. */

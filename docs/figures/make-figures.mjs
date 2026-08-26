@@ -19,7 +19,7 @@ import { geometry, equivalentCylinder, build2DMesh, calculate, solveThermal2D, s
 import { defaultInput } from "../../tools/verification/joule.mjs";
 import { cfpMaterial, cfpEnclosure, cfpInputs } from "../../tools/verification/joule-rphcjh.mjs";
 import { run as crossCheckRun } from "../../tools/verification/crosscheck.mjs";
-import { workflow, coupling, verification, defaultCase, transient, screening, crosscheck, architecture,
+import { workflow, coupling, verification, defaultCase, demonstration, crosscheck, architecture,
          meshDomain, matrixClasses, solverLoop, cylinderMapping } from "./draw.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -334,10 +334,9 @@ const PLATES = [
   { id: "fig2",  label: "Fig. 2",  draw: coupling },
   { id: "fig3",  label: "Fig. 3",  draw: verification },
   { id: "fig4",  label: "Fig. 4",  draw: defaultCase },
-  { id: "figS5", label: "Fig. S5", draw: transient },
-  { id: "figS6", label: "Fig. S6", draw: screening },
-  { id: "figS7", label: "Fig. S7", draw: crosscheck },
-  { id: "figS8", label: "Fig. S8", draw: architecture },
+  { id: "fig5",  label: "Fig. 5",  draw: demonstration },
+  { id: "figS5", label: "Fig. S5", draw: crosscheck },
+  { id: "figS6", label: "Fig. S6", draw: architecture },
   { id: "figS1", label: "Fig. S1", draw: meshDomain },
   { id: "figS2", label: "Fig. S2", draw: matrixClasses },
   { id: "figS3", label: "Fig. S3", draw: solverLoop },
