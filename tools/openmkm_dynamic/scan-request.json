@@ -1,11 +1,12 @@
 {
- "note": "Validate the extended map where it is newly extended: 200 seeded off-node points over the full 400-1850 C range, read from canonical/ as downstream code reads it. The 400-1400 portion already passed at p95 = 0.0005; this run earns (or denies) the 1400-1850 extension its promotion evidence. Everything else is off, and the flag reader now respects an explicit false.",
+ "note": "Round two, aimed: 32 transient cases in the resonant memory band where the first surrogate's two worst holdout errors live (X_dyn several times X_qs, period near the residence time, deep cold swings). The GP's own uncertainty does not flag that region, so refusal cannot cover for it; only data there can. Targets jittered from strong-memory anchors and ODE-verified inside the 1800 C bound by make_targets.py, seed 11.",
  "cases": 0,
  "shards": 8,
  "run_design": false,
  "run_closure": false,
  "run_cjh_grid": false,
- "requested": "2026-08-26T22:20Z",
- "run_cjh_validate": true,
- "run_relabel": false
+ "requested": "2026-08-26T22:40Z",
+ "run_cjh_validate": false,
+ "run_relabel": false,
+ "run_targets": true
 }

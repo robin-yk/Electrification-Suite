@@ -49,6 +49,7 @@ jobs:
       run_cjh_grid: ${{ steps.read.outputs.run_cjh_grid }}
       run_cjh_validate: ${{ steps.read.outputs.run_cjh_validate }}
       run_relabel: ${{ steps.read.outputs.run_relabel }}
+      run_targets: ${{ steps.read.outputs.run_targets }}
     steps:
       - uses: actions/checkout@v4
       - id: read
@@ -67,6 +68,7 @@ jobs:
           grid=$(flag run_cjh_grid false)
           validate=$(flag run_cjh_validate false)
           relabel=$(flag run_relabel false)
+          targets=$(flag run_targets false)
           echo "cases=$cases" >> "$GITHUB_OUTPUT"
           echo "shards=$shards" >> "$GITHUB_OUTPUT"
           echo "run_design=$design" >> "$GITHUB_OUTPUT"
@@ -74,6 +76,7 @@ jobs:
           echo "run_cjh_grid=$grid" >> "$GITHUB_OUTPUT"
           echo "run_cjh_validate=$validate" >> "$GITHUB_OUTPUT"
           echo "run_relabel=$relabel" >> "$GITHUB_OUTPUT"
+          echo "run_targets=$targets" >> "$GITHUB_OUTPUT"
           echo "cases=$cases shards=$shards run_design=$design run_closure=$closure run_cjh_grid=$grid"
           jq -r '.note // "(no note)"' $F
 
@@ -225,6 +228,33 @@ jobs:
           name: design-shard-relabel
           path: out/
 
+  # Second-round transient cases at explicit points, aimed by make_targets.py at
+  # whatever region the surrogate's holdout verdict named. Same machinery, same
+  # schema, same closure as the Halton campaign; only the sampling is aimed.
+  targets:
+    needs: plan
+    if: ${{ needs.plan.outputs.run_targets == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r tools/cantera/requirements.txt
+      - name: Run the targeted cases
+        run: |
+          mkdir -p out
+          python tools/openmkm_dynamic/run_cstr_design.py \
+            --targets tools/openmkm_dynamic/data/targets-round2.json \
+            --closure const-pressure --continue-on-error \
+            --output out/design-shard-targets.jsonl
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: design-shard-targets
+          path: out/
+
   design-scan:
     needs: plan
     if: ${{ needs.plan.outputs.run_design == 'true' }}
@@ -266,8 +296,8 @@ jobs:
   # merges them, writes a manifest with counts and the generating commit, and
   # pushes the result to main. contents: write is scoped to this job alone.
   collect:
-    needs: [plan, closure-diagnostic, cjh-grid, design-scan, relabel]
-    if: ${{ always() && !cancelled() && (needs.cjh-grid.result == 'success' || needs.design-scan.result == 'success' || needs.closure-diagnostic.result == 'success' || needs.relabel.result == 'success') }}
+    needs: [plan, closure-diagnostic, cjh-grid, design-scan, relabel, targets]
+    if: ${{ always() && !cancelled() && (needs.cjh-grid.result == 'success' || needs.design-scan.result == 'success' || needs.closure-diagnostic.result == 'success' || needs.relabel.result == 'success' || needs.targets.result == 'success') }}
     runs-on: ubuntu-latest
     permissions:
       contents: write

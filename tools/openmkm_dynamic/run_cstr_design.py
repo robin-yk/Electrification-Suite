@@ -120,8 +120,11 @@ def design_feasible(point):
     return drive["converged"] and drive["t_peak_c"] <= PEAK_CAP_C
 
 
-def run_design_case(ct, mech, index, closure="const-pressure"):
-    point = design_point(index)
+def run_design_case(ct, mech, index, closure="const-pressure", point=None):
+    # index < 0 marks a targeted case: the point is handed in rather than drawn
+    # from the Halton walk, so second-round batches aimed at a weak region run
+    # through the identical machinery and land in the identical schema.
+    point = dict(point) if point is not None else design_point(index)
     args = argparse.Namespace(
         mechanism=mech, t_min_c=25.0, t_peak_c=1250.0,
         duty=point["duty"], waveform="physical", voltage=point["voltage"],
@@ -165,6 +168,9 @@ def main():
     parser.add_argument("--output", type=Path,
                         default=HERE / "data" / "cstr-design-256.jsonl")
     parser.add_argument("--continue-on-error", action="store_true")
+    parser.add_argument("--targets", type=Path, default=None,
+                        help="JSON of explicit {voltage, period_s, duty, tau_s} cases; "
+                             "overrides the Halton walk entirely")
     parser.add_argument("--closure", default="const-pressure",
                         choices=["const-pressure", "const-volume"],
                         help="reactor closure; recorded with every case")
@@ -181,25 +187,36 @@ def main():
     args.output.parent.mkdir(parents=True, exist_ok=True)
     failures = args.output.with_suffix(args.output.suffix + ".failures.jsonl")
 
+    if args.targets:
+        spec = json.loads(args.targets.read_text())
+        # t_min_c doubles as the ambient the element cools toward under the
+        # physical waveform, and t_peak_c is overwritten by the ODE; both still
+        # need to exist for the shared plumbing.
+        work = [(-(k + 1), dict({kk: t[kk] for kk in ("voltage", "period_s", "duty", "tau_s")},
+                                t_min_c=25.0, t_peak_c=1250.0))
+                for k, t in enumerate(spec["targets"])]
+    else:
+        work = [(index, None) for index in range(args.start, args.start + args.cases)]
+
     with args.output.open("a") as stream:
-        for index in range(args.start, args.start + args.cases):
+        for index, target_point in work:
             if index in done:
                 continue
-            point = design_point(index)
+            point = dict(target_point) if target_point else design_point(index)
             if not design_feasible(point):
                 print(f"{index}: SKIP infeasible (element peak past {PEAK_CAP_C:.0f} C "
                       f"at {point['voltage']:.1f} V, P={point['period_s']:.3g} s, "
                       f"duty {point['duty']:.2f})")
                 continue
             try:
-                record = run_design_case(ct, args.mechanism, index, args.closure)
+                record = run_design_case(ct, args.mechanism, index, args.closure, target_point)
             except Exception as exc:                      # noqa: BLE001
                 print(f"{index}: FAILED {type(exc).__name__}: {exc}")
                 if not args.continue_on_error:
                     raise
                 with failures.open("a") as flog:
                     flog.write(json.dumps({
-                        "design_index": index, "inputs": design_point(index),
+                        "design_index": index, "inputs": point,
                         "error": f"{type(exc).__name__}: {exc}"}) + "\n")
                 continue
             stream.write(json.dumps(record, separators=(",", ":")) + "\n")

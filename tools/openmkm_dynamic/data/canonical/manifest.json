@@ -7,7 +7,7 @@
    "from_run": "45b4bb4",
    "sha256": "74813fb8a9b1c604f02e87372b982cbc0f6f1f04f10b09a15a2d2b0cc438d412",
    "range": "400-1850 C x tau 0.01-10 s, CH4:CO2=1:1, 1 atm, const-pressure CSTR, GRI-Mech 3.0",
-   "validation": "200 seeded off-node points vs fresh Cantera: p95 |dX| = 0.0005, max 0.0010 (gate 0.02) -- run 33015864752, over the 400-1400 C range; the 1400-1850 extension uses the identical generator and awaits its own off-node pass"
+   "validation": "200 seeded off-node points vs fresh Cantera over the FULL 400-1850 C range: p95 |dX| = 0.00033, max 0.00062 (gate 0.02) -- run 33017155560. The earlier 400-1400-only pass (p95 0.0005, run 33015864752) is superseded by this one."
   },
   "design-physical.jsonl": {
    "rows": 253,
@@ -27,5 +27,9 @@
    "validation": "five periods x two closures; the 10 s anomaly is resolved by the weighted baseline, not by the closure"
   }
  },
- "training_split_note": "draw train/val/holdout from design-physical.jsonl with a fixed seed; the historic 128/32/32 split assumed 192 rows and must be redrawn"
+ "training_split_note": "draw train/val/holdout from design-physical.jsonl with a fixed seed; the historic 128/32/32 split assumed 192 rows and must be redrawn",
+ "frozen": {
+  "date": "2026-08-26",
+  "statement": "training reads exactly these three files at these digests; any change to them restarts model selection"
+ }
 }
