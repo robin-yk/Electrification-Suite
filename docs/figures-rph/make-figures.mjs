@@ -9,7 +9,7 @@ import { SERIES_DEFAULTS, seriesRateConstants, steadySeriesCSTR, integrateSeries
          cjhTempForConversion, integratePulsedElement, steadyElementTemperature,
          sampledWaveform, arrheniusRate, transportCoefficient, velocity,
          idealTwoStateAverages, timeAverageTemperature } from "../../apps/rphcjh/solver.js";
-import { workflow, drive, comparison, window_, detailed, verification } from "./draw.mjs";
+import { workflow, drive, comparison, window_, detailed, verification, boundaries, architecture } from "./draw.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const p = (x, n = 4) => Number(x.toPrecision(n));
@@ -143,8 +143,14 @@ const DATA = {
     pfr: {
       engine: pfr.engine, mechanism: pfr.mechanism, feed: pfr.feed,
       note: pfr.quasi_steady_note,
+      // Below a tenth of a per cent conversion the selectivity is a ratio of
+      // mole fractions at the 1e-9 level and one of them can come back
+      // negative, so it is carried but flagged rather than plotted.
+      floorX: 1e-3,
       cases: pfr.cases.map((c) => ({ TC: c.element_T_C, X: p(c.ch4_conversion, 4),
-                                     S: p(c.c2_selectivity_carbon, 4) }))
+                                     S: p(c.c2_selectivity_carbon, 4),
+                                     CO: p(c.outlet_molefrac.CO, 4),
+                                     meaningful: c.ch4_conversion >= 1e-3 }))
     }
   },
   drive: {
@@ -173,7 +179,9 @@ const PLATES = [
   { id: "rphFig3", label: "Fig. 3", draw: comparison },
   { id: "rphFig4", label: "Fig. 4", draw: window_ },
   { id: "rphFig5", label: "Fig. 5", draw: detailed },
-  { id: "rphFigS1", label: "Fig. S1", draw: verification }
+  { id: "rphFigS1", label: "Fig. S1", draw: verification },
+  { id: "rphFigS2", label: "Fig. S2", draw: boundaries },
+  { id: "rphFigS3", label: "Fig. S3", draw: architecture }
 ];
 for (const plate of PLATES) {
   const svg = plate.draw(DATA);

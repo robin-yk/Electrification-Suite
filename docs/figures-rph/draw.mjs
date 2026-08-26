@@ -279,13 +279,23 @@ export function detailed(DATA) {
     o += T(x0 + pw / 2, pbot + 24, "element temperature (°C)", { size: 8.5, anchor: "middle" });
     o += '<text x="' + (x0 - 25) + '" y="' + ((ptop + pbot) / 2) + '" font-size="8.5" text-anchor="middle" transform="rotate(-90 ' + (x0 - 25) + ' ' + ((ptop + pbot) / 2) + ')">per cent</text>';
 
-    [["S", C.scalar, "C₂ selectivity"], ["X", C.thermal, "CH₄ conversion"]].forEach(function (spec) {
+    /* selectivity is only drawn where there is enough conversion for it to
+       mean anything; below that it is a ratio of vanishing mole fractions */
+    const useful = cs.filter((c) => c.meaningful);
+    const cut = useful[0].TC;
+    o += '<rect x="' + X(cs[0].TC) + '" y="' + (ptop + 1) + '" width="' + (X(cut) - X(cs[0].TC)) +
+      '" height="' + (ph - 2) + '" fill="#F4F4F4"/>';
+    o += T(x0 + 16, pbot - 32, "below 0.1 % conversion,", { size: 8, fill: C.grey });
+    o += T(x0 + 16, pbot - 22, "selectivity not drawn", { size: 8, fill: C.grey });
+    [[cs, "X", C.thermal], [useful, "S", C.scalar], [cs, "CO", C.gas]].forEach(function (spec) {
       let d = "";
-      cs.forEach(function (c, j) { d += (j ? " L" : "M") + X(c.TC) + "," + Y(c[spec[0]]); });
-      o += '<path d="' + d + '" fill="none" stroke="' + spec[1] + '" stroke-width="1.6"/>';
+      spec[0].forEach(function (c, j) { d += (j ? " L" : "M") + X(c.TC) + "," + Y(c[spec[1]]); });
+      o += '<path d="' + d + '" fill="none" stroke="' + spec[2] + '" stroke-width="1.6"/>';
     });
-    o += T(x0 + 14, Y(0.93) + 12, "C₂ selectivity", { size: 8.5, weight: "bold", fill: SHADE.scalar });
-    o += T(x0 + pw - 8, Y(0.62) - 6, "CH₄ conversion", { size: 8.5, weight: "bold", anchor: "end", fill: SHADE.thermal });
+    const last = cs[cs.length - 1];
+    o += T(x0 + pw - 8, Y(last.S) - 7, "C₂ selectivity", { size: 8.5, weight: "bold", anchor: "end", fill: SHADE.scalar });
+    o += T(x0 + pw - 8, Y(last.X) + 12, "CH₄ conversion", { size: 8.5, weight: "bold", anchor: "end", fill: SHADE.thermal });
+    o += T(x0 + pw - 8, Y(last.CO) + 12, "CO out", { size: 8.5, weight: "bold", anchor: "end", fill: SHADE.gas });
     b += o;
   })();
   return svgDoc(W, H, b);
@@ -393,5 +403,106 @@ export function verification(DATA) {
       against: "k₁ at the peak reaches " + sci(r.k1) + " s⁻¹, and x_{B} stays inside [0, 1]",
       n: 1, worstText: sci(r.drift) + " drift over a cycle"
     })));
+  return svgDoc(W, H, b);
+}
+
+/* ------------------------------------------------------------------ */
+/* Fig. S2. Where each layer of the model stops. Read left to right:   */
+/* what is solved, on what assumption, and what that forbids.          */
+/* ------------------------------------------------------------------ */
+export function boundaries(DATA) {
+  const ns = "rs2", W = 505, H = 314;
+  let b = defs(ns);
+  const LX = 22, EX = 488;
+  const rows = [
+    { layer: "The element", hue: C.thermal,
+      solved: "One temperature, integrated as m c_{p}(T) dT/dt = V²/R(T) − losses(T).",
+      because: "Measured spatial uniformity and a 210 µm thickness make it thermally thin.",
+      forbids: "Any question about gradients inside the element, or any element that is not thin." },
+    { layer: "The reactor", hue: C.gas,
+      solved: "An ideal CSTR at the element's temperature, with A → B → C first order in both steps.",
+      because: "The network is the smallest one that carries a selectivity to an intermediate.",
+      forbids: "Absolute yields. It isolates the averaging effect; it does not predict a mechanism." },
+    { layer: "The coupling", hue: C.scalar,
+      solved: "Temperature drives chemistry, one way.",
+      because: "Reaction heat is small against the electrical power at these conversions.",
+      forbids: "Anything where conversion feeds back on temperature, or a runaway." },
+    { layer: "The detailed check", hue: C.grey,
+      solved: "Steady one-dimensional plug flow, gas phase only, from committed offline runs.",
+      because: "Hot-zone residence is milliseconds against pulse periods of order a second.",
+      forbids: "Surface chemistry, and any transient the plug-flow states cannot be blended into." }
+  ];
+
+  b += T(LX, 22, "LAYER", { size: 8, weight: "bold", fill: C.grey });
+  b += T(LX + 104, 22, "WHAT IS SOLVED", { size: 8, weight: "bold", fill: C.grey });
+  b += line(LX, 27, EX, 27, { stroke: C.ink, sw: 0.9 });
+
+  let y = 44;
+  rows.forEach(function (r, i) {
+    if (i) b += line(LX, y - 13, EX, y - 13, { stroke: "#EAEAEA", sw: 0.5 });
+    b += '<rect x="' + LX + '" y="' + (y - 7) + '" width="4" height="46" fill="' + r.hue + '"/>';
+    b += T(LX + 10, y, r.layer, { size: 9, weight: "bold", fill: shadeOf(r.hue) });
+    b += T(LX + 104, y, r.solved, { size: 8.5 });
+    b += T(LX + 104, y + 13, "why that is allowed:  " + r.because, { size: 8, fill: C.grey });
+    b += T(LX + 104, y + 26, "so do not ask it:  " + r.forbids, { size: 8, fill: SHADE.thermal });
+    y += 62;
+  });
+  b += line(LX, y - 13, EX, y - 13, { stroke: C.ink, sw: 0.9 });
+  b += T(LX, y, "No layer carries oxidation, sublimation or a lifetime model, so a temperature", { size: 8.5, fill: C.grey });
+  b += T(LX, y + 11, "the element reaches here is not a temperature it survives.", { size: 8.5, fill: C.grey });
+  return svgDoc(W, H, b);
+}
+
+/* ------------------------------------------------------------------ */
+/* Fig. S3. The module the page and the tests both call, and the gates */
+/* a change passes. No tool or model is named: they date, the          */
+/* structure does not.                                                 */
+/* ------------------------------------------------------------------ */
+export function architecture(DATA) {
+  const ns = "rs3", W = 505, H = 250;
+  let b = defs(ns);
+  const boxA = (x, y, w, h, label, sub, colour) =>
+    rect(x, y, w, h, { stroke: C.edge, fill: TINT.grey, sw: 0.8 }) +
+    T(x + w / 2, y + (sub ? 14 : h / 2 + 3.2), label, { size: 9, weight: "bold", anchor: "middle", fill: colour || SHADE.grey }) +
+    (sub ? T(x + w / 2, y + 25, sub, { size: 8, anchor: "middle", fill: C.grey }) : "");
+
+  b += T(18, 22, "a", { size: 11, weight: "bold" });
+  const ay = 34, ah = 34;
+  b += boxA(18, ay, 104, ah, "Physical specification", "", SHADE.ink);
+  b += arrow(ns, "M122," + (ay + ah / 2) + " L136," + (ay + ah / 2), { color: "hair" });
+  b += boxA(137, ay, 82, ah, "Implementation", "assisted");
+  b += arrow(ns, "M219," + (ay + ah / 2) + " L233," + (ay + ah / 2), { color: "hair" });
+  b += boxA(234, ay, 96, ah, "Independent review", "a second model");
+  b += arrow(ns, "M330," + (ay + ah / 2) + " L344," + (ay + ah / 2), { color: "hair" });
+  b += rect(345, ay, 82, ah, { stroke: C.ink, fill: "#FFFFFF", sw: 1.1 });
+  b += T(386, ay + 14, "Verification", { size: 9, weight: "bold", anchor: "middle" });
+  b += T(386, ay + 25, "gates", { size: 9, weight: "bold", anchor: "middle" });
+  b += arrow(ns, "M427," + (ay + ah / 2) + " L441," + (ay + ah / 2), { color: "hair" });
+  b += rect(442, ay, 45, ah, { stroke: C.edge, fill: TINT.grey, sw: 0.8 });
+  b += T(464.5, ay + 14, "Release", { size: 9, weight: "bold", anchor: "middle", fill: SHADE.ink });
+  b += T(464.5, ay + 25, "versioned", { size: 8, anchor: "middle", fill: C.grey });
+  b += T(434, ay - 8, "pass", { size: 8, fill: C.grey });
+  b += arrow(ns, "M386," + (ay + ah + 2) + " L386,96 L178,96 L178," + (ay + ah + 1), { color: "hair", sw: 1, dash: "3 2" });
+  b += T(282, 93, "fail", { size: 8, anchor: "middle", fill: C.grey });
+
+  b += T(18, 128, "b", { size: 11, weight: "bold" });
+  const cx = 232, cy = 172, cw = 118, ch = 40;
+  b += rect(cx, cy, cw, ch, { stroke: C.ink, fill: "#FFFFFF", sw: 1.1 });
+  b += T(cx + cw / 2, cy + 17, "solver.js", { size: 10, weight: "bold", anchor: "middle", fill: SHADE.ink });
+  b += T(cx + cw / 2, cy + 29, "DOM-free numerical core", { size: 8, anchor: "middle", fill: C.grey });
+  [{ y: 140, label: "Kinetic parameters", note: "activation energies and rate constants" },
+   { y: 172, label: "Element and enclosure", note: "resistance, heat capacity, losses" },
+   { y: 204, label: "Browser interface", note: "inputs and outputs only" }].forEach(function (f) {
+    b += rect(18, f.y, 168, 24, { stroke: C.edge, fill: TINT.grey, sw: 0.8 });
+    b += T(26, f.y + 10, f.label, { size: 8.5, weight: "bold", fill: SHADE.grey });
+    b += T(26, f.y + 20, f.note, { size: 8, fill: C.grey });
+    b += arrow(ns, "M186," + (f.y + 12) + " L" + (cx - 2) + "," + (cy + ch / 2), { color: "hair", sw: 0.8 });
+  });
+  b += rect(18, 236, 168, 10, { stroke: C.edge, fill: "#FFFFFF", sw: 0.8, dash: "3 2" });
+  b += arrow(ns, "M" + (cx + cw) + "," + (cy + ch / 2) + " L" + (cx + cw + 14) + "," + (cy + ch / 2), { color: "hair" });
+  b += rect(cx + cw + 15, cy - 6, 108, ch + 12, { stroke: C.edge, fill: "#FFFFFF", sw: 0.8 });
+  ["periodic trajectories", "conversion and yield", "the continuous baseline", "these figures"].forEach(function (t, i) {
+    b += T(cx + cw + 23, cy + 6 + i * 11, t, { size: 8, fill: i === 0 ? C.ink : C.grey });
+  });
   return svgDoc(W, H, b);
 }

@@ -242,111 +242,154 @@
    "mechanism": "GRI-Mech 3.0",
    "feed": "CH4:1, CO2:1",
    "note": "hot-zone residence is milliseconds versus ~1 s pulse periods, so pulsed operation is the duty-weighted blend of these steady states",
+   "floorX": 0.001,
    "cases": [
     {
      "TC": 400,
      "X": 0,
-     "S": 0
+     "S": 0,
+     "CO": 2.756e-20,
+     "meaningful": false
     },
     {
      "TC": 450,
      "X": 0,
-     "S": 0
+     "S": 0,
+     "CO": 5.681e-20,
+     "meaningful": false
     },
     {
      "TC": 500,
      "X": 0,
-     "S": 0
+     "S": 0,
+     "CO": 1.969e-19,
+     "meaningful": false
     },
     {
      "TC": 550,
      "X": 0,
-     "S": 0
+     "S": 0,
+     "CO": 2.15e-17,
+     "meaningful": false
     },
     {
      "TC": 600,
      "X": 0,
-     "S": 0
+     "S": 0,
+     "CO": 1.899e-12,
+     "meaningful": false
     },
     {
      "TC": 650,
      "X": 0,
-     "S": 0
+     "S": 0,
+     "CO": 2.558e-14,
+     "meaningful": false
     },
     {
      "TC": 700,
      "X": 0,
-     "S": 0
+     "S": 0,
+     "CO": 6.259e-10,
+     "meaningful": false
     },
     {
      "TC": 750,
      "X": 0,
-     "S": 0
+     "S": 0,
+     "CO": 4.737e-10,
+     "meaningful": false
     },
     {
      "TC": 800,
      "X": 7.486e-7,
-     "S": 0.8495
+     "S": 0.8495,
+     "CO": 6.794e-10,
+     "meaningful": false
     },
     {
      "TC": 850,
      "X": 0.000005989,
-     "S": 0.9694
+     "S": 0.9694,
+     "CO": 6.71e-9,
+     "meaningful": false
     },
     {
      "TC": 900,
      "X": 0.00003855,
-     "S": 0.9935
+     "S": 0.9935,
+     "CO": 6.149e-8,
+     "meaningful": false
     },
     {
      "TC": 950,
      "X": 0.0002092,
-     "S": 0.9981
+     "S": 0.9981,
+     "CO": 4.588e-7,
+     "meaningful": false
     },
     {
      "TC": 1000,
      "X": 0.0009897,
-     "S": 0.9987
+     "S": 0.9987,
+     "CO": 0.000003202,
+     "meaningful": false
     },
     {
      "TC": 1050,
      "X": 0.004349,
-     "S": 0.9977
+     "S": 0.9977,
+     "CO": 0.00002652,
+     "meaningful": true
     },
     {
      "TC": 1100,
      "X": 0.01875,
-     "S": 0.9959
+     "S": 0.9959,
+     "CO": 0.0002597,
+     "meaningful": true
     },
     {
      "TC": 1150,
      "X": 0.07039,
-     "S": 0.9937
+     "S": 0.9937,
+     "CO": 0.00221,
+     "meaningful": true
     },
     {
      "TC": 1200,
      "X": 0.1902,
-     "S": 0.9913
+     "S": 0.9913,
+     "CO": 0.01198,
+     "meaningful": true
     },
     {
      "TC": 1250,
      "X": 0.3794,
-     "S": 0.9873
+     "S": 0.9873,
+     "CO": 0.04137,
+     "meaningful": true
     },
     {
      "TC": 1300,
      "X": 0.6015,
-     "S": 0.9793
+     "S": 0.9793,
+     "CO": 0.1004,
+     "meaningful": true
     },
     {
      "TC": 1350,
      "X": 0.7917,
-     "S": 0.9611
+     "S": 0.9611,
+     "CO": 0.1828,
+     "meaningful": true
     },
     {
      "TC": 1400,
      "X": 0.9024,
-     "S": 0.9197
+     "S": 0.9197,
+     "CO": 0.2597,
+     "meaningful": true
     }
    ]
   }
