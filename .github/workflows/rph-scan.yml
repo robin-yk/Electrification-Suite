@@ -1,0 +1,125 @@
+# Two dynamic-chemistry runs that need Cantera, which no development container
+# here carries. They run on an Actions runner instead, on demand.
+#
+#   closure-diagnostic  Ten cases. The five-period pilot measured the dynamic
+#                       answer departing from the quasi-steady blend by -28 % to
+#                       +50 %, and at a 10 s period -- a hundred residence times,
+#                       where quasi-steady is exact by construction -- the ratio
+#                       is 0.724 rather than 1. Either that is physics or it is
+#                       the reactor closure: constant pressure lets the gas
+#                       expand when hot, cutting the residence time exactly when
+#                       the chemistry runs. Running the same five periods under
+#                       both closures settles it, and whichever way it lands the
+#                       number belongs in the caveat rather than a shrug.
+#
+#   design-scan         The 6-D Halton campaign in run_cstr_design.py, sharded.
+#                       Its label is memory_gain = X_dyn / X_qs, so it trains a
+#                       correction on top of the steady map rather than relearning
+#                       the ignition cliff the steady map already has.
+name: RPH dynamic scan
+
+on:
+  workflow_dispatch:
+    inputs:
+      cases:
+        description: "design-scan cases in total"
+        default: "64"
+      shards:
+        description: "parallel shards for design-scan"
+        default: "8"
+      run_design:
+        description: "run the design scan as well as the closure diagnostic"
+        type: boolean
+        default: true
+
+jobs:
+  closure-diagnostic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r tools/cantera/requirements.txt
+      - name: Five periods under each closure
+        run: |
+          mkdir -p out
+          for closure in const-pressure const-volume; do
+            for period in 0.001 0.01 0.1 1.0 10.0; do
+              echo "::group::$closure period=$period"
+              python tools/openmkm_dynamic/run_cstr_case.py \
+                --closure "$closure" --period-s "$period" \
+                --t-min-c 750 --t-peak-c 1250 --duty 0.10 \
+                --residence-time-s 0.1 --points-per-cycle 200 \
+                --output "out/${closure}-p${period}.json"
+              echo "::endgroup::"
+            done
+          done
+      - name: Does the correction go to one in the quasi-steady limit?
+        run: |
+          python - <<'PY'
+          import json, pathlib
+          rows = []
+          for f in sorted(pathlib.Path("out").glob("*.json")):
+              d = json.loads(f.read_text())
+              closure = d["inputs"]["closure"]
+              c, q = d["cycle_summary"], d["quasi_steady_reference"]
+              rows.append((closure, d["inputs"]["period_s"],
+                           c["mean_ch4_conversion"], q["ch4_conversion"],
+                           c["mean_c2_selectivity_carbon"], q["c2_selectivity_carbon"],
+                           c["converged"], c["cycles_to_convergence"]))
+          print(f"{'closure':<16}{'period':>9}{'X_dyn':>10}{'X_qs':>10}{'ratio':>9}"
+                f"{'S_dyn':>9}{'S_qs':>9}  conv")
+          for closure, period, xd, xq, sd, sq, conv, ncyc in sorted(rows):
+              r = xd / xq if xq > 1e-15 else float("nan")
+              print(f"{closure:<16}{period:>9}{xd:>10.5f}{xq:>10.5f}{r:>9.3f}"
+                    f"{sd:>9.4f}{sq:>9.4f}  {conv} ({ncyc}cyc)")
+          print()
+          print("The 10 s row is the test: quasi-steady is exact at a hundred")
+          print("residence times, so its ratio must be 1. A closure that reaches")
+          print("it and one that does not is the whole answer.")
+          for closure in ("const-pressure", "const-volume"):
+              long = [r for r in rows if r[0] == closure and r[1] == 10.0]
+              if long:
+                  r = long[0][2] / long[0][3]
+                  print(f"  {closure:<16} ratio at 10 s = {r:.3f}"
+                        f"   ({'reaches 1' if abs(r-1) < 0.05 else 'does NOT reach 1'})")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: closure-diagnostic
+          path: out/
+
+  design-scan:
+    if: ${{ inputs.run_design }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r tools/cantera/requirements.txt
+      - name: Shard of the 6-D Halton design
+        run: |
+          TOTAL=${{ inputs.cases }}
+          SHARDS=${{ inputs.shards }}
+          PER=$(( (TOTAL + SHARDS - 1) / SHARDS ))
+          START=$(( ${{ matrix.shard }} * PER + 1 ))
+          if [ "$START" -gt "$TOTAL" ]; then echo "shard empty"; exit 0; fi
+          if [ $(( START + PER - 1 )) -gt "$TOTAL" ]; then PER=$(( TOTAL - START + 1 )); fi
+          echo "shard ${{ matrix.shard }}: cases $START..$(( START + PER - 1 ))"
+          mkdir -p out
+          python tools/openmkm_dynamic/run_cstr_design.py \
+            --cases "$PER" --start "$START" --continue-on-error \
+            --closure const-pressure \
+            --output "out/design-shard-${{ matrix.shard }}.jsonl"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: design-shard-${{ matrix.shard }}
+          path: out/

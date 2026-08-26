@@ -73,12 +73,30 @@ def waveform_temperature(phase, p):
     return lo
 
 
+# The closure is the choice this file used to make silently. Constant pressure
+# lets the gas expand as it heats, so at a fixed mass flow the residence time
+# falls when the element is hot; a fixed-volume tube instead swings its pressure
+# and holds the residence time. The companion experiment is a fixed-volume tube,
+# and the literature closure for it is constant mass with pressure swinging, so
+# the two are not interchangeable at the temperatures swept here (750-1250 C is
+# a 1.5x density change). Both are now selectable and the choice is recorded
+# with every case, because a surrogate trained on one cannot be read as the
+# other and nothing downstream can tell them apart after the fact.
+CLOSURES = {
+    "const-pressure": "IdealGasConstPressureReactor",
+    "const-volume": "IdealGasReactor",
+}
+
+
 def make_reactor(ct, mech, p):
     gas = ct.Solution(mech)
     gas.TPX = p["t_min_K"], p["pressure_Pa"], p["feed"]
     feed = ct.Solution(mech)
     feed.TPX = p["t_min_K"], p["pressure_Pa"], p["feed"]
-    reactor = ct.IdealGasConstPressureReactor(gas, energy="off", clone=False)
+    closure = p.get("closure", "const-pressure")
+    if closure not in CLOSURES:
+        raise SystemExit(f"unknown closure {closure!r}; choose from {sorted(CLOSURES)}")
+    reactor = getattr(ct, CLOSURES[closure])(gas, energy="off", clone=False)
     inlet = ct.Reservoir(feed)
     outlet = ct.Reservoir(feed)
     mfc_in = ct.MassFlowController(inlet, reactor, mdot=reactor.mass / p["tau_s"])
@@ -174,15 +192,16 @@ def run_case(mech, p):
                           for sp in ("CH3", "H", "OH")}
         return {
             "engine": f"cantera-{ct.__version__} transient CSTR "
-                      "(constant P, prescribed T(t), mass-based tau)",
+                      f"({p['closure']}, prescribed T(t), mass-based tau)",
             "mechanism": "GRI-Mech 3.0",
             "generated": datetime.date.today().isoformat(),
             "inputs": {k: p[k] for k in
-                       ("t_min_K", "t_peak_K", "period_s", "duty", "waveform",
+                       ("closure",
+                        "t_min_K", "t_peak_K", "period_s", "duty", "waveform",
                         "mean_temperature_K", "ramp_up_fraction",
                         "ramp_down_fraction", "pressure_Pa", "tau_s", "feed",
                         "points_per_cycle")},
-            "reactor_constraint": "constant_pressure_prescribed_T",
+            "reactor_constraint": f"{p['closure']}_prescribed_T",
             "cycle_summary": {
                 "converged": last["boundary_residual"] < p["cycle_tolerance"],
                 "cycles_to_convergence": len(cycles),
@@ -231,6 +250,7 @@ def build_params(args):
         "max_cycles": max_cycles,
         "cycle_tolerance": args.cycle_tolerance,
         "record_cycles": args.record_cycles,
+        "closure": getattr(args, "closure", "const-pressure"),
     }
     p["mean_temperature_K"] = mean_temperature(p)
     return p
@@ -254,6 +274,9 @@ def add_common_args(parser):
                         help="0 = auto from residence time / period")
     parser.add_argument("--cycle-tolerance", type=float, default=1e-7)
     parser.add_argument("--record-cycles", type=int, default=3)
+    parser.add_argument("--closure", default="const-pressure", choices=sorted(CLOSURES),
+                        help="const-pressure: gas expands, residence time falls when hot. "
+                             "const-volume: pressure swings, residence time held.")
 
 
 def main():

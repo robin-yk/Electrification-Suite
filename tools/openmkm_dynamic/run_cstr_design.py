@@ -92,7 +92,7 @@ def subsample(trajectory, points_per_cycle, keep=40):
     }
 
 
-def run_design_case(ct, mech, index):
+def run_design_case(ct, mech, index, closure="const-pressure"):
     point = design_point(index)
     if point["t_min_c"] >= point["t_peak_c"] - 50:
         point["t_min_c"] = point["t_peak_c"] - 50
@@ -102,7 +102,8 @@ def run_design_case(ct, mech, index):
         ramp_up_fraction=0.05, ramp_down_fraction=0.05, pressure_atm=1.0,
         residence_time_s=point["tau_s"], feed="CH4:1, CO2:1",
         points_per_cycle=POINTS_PER_CYCLE, min_cycles=10, max_cycles=MAX_CYCLES,
-        cycle_tolerance=1e-7, record_cycles=1, period_s=point["period_s"])
+        cycle_tolerance=1e-7, record_cycles=1, period_s=point["period_s"],
+        closure=closure)
     p = build_params(args)
     result = run_case(mech, p)
     qs = quasi_steady_reference(ct, mech, p, n_grid=9)
@@ -135,6 +136,9 @@ def main():
     parser.add_argument("--output", type=Path,
                         default=HERE / "data" / "cstr-design-256.jsonl")
     parser.add_argument("--continue-on-error", action="store_true")
+    parser.add_argument("--closure", default="const-pressure",
+                        choices=["const-pressure", "const-volume"],
+                        help="reactor closure; recorded with every case")
     args = parser.parse_args()
 
     import cantera as ct
@@ -153,7 +157,7 @@ def main():
             if index in done:
                 continue
             try:
-                record = run_design_case(ct, args.mechanism, index)
+                record = run_design_case(ct, args.mechanism, index, args.closure)
             except Exception as exc:                      # noqa: BLE001
                 print(f"{index}: FAILED {type(exc).__name__}: {exc}")
                 if not args.continue_on_error:
