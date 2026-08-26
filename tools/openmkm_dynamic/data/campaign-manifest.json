@@ -1,22 +1,22 @@
 {
  "generated": "2026-08-26",
- "generating_commit": "a28404c54e2c446717148dd34386c93472cc27d1",
+ "generating_commit": "50d4738b84ebfdb46b7493f4524c9ea457875b74",
  "workflow": "rph-scan.yml",
  "datasets": [
   {
    "file": "cjh-grid.jsonl",
    "rows": 1689,
-   "sha256": "e4a8e8acc31264d10cc8036f5d03cce139cfaa1bb25549949c0eec5a22c7c43a"
+   "sha256": "14d31e790325594a51377efaa18af4c5801a174a3e1128805a03464f63faa203"
   },
   {
    "file": "design-physical.jsonl",
-   "rows": 192,
-   "sha256": "07a71c2225963abc4cdab15996ff206fe8f650200b5351971838975a755d3d78"
+   "rows": 203,
+   "sha256": "b9ed5cbca5e20d87f9025b0a3309ea9163646fbcb29977f08e613615188f2255"
   },
   {
    "file": "closure-diagnostic.jsonl",
    "rows": 10,
-   "sha256": "ddf1d807339dbb5223a7d549624f6015c122ad844779b70f4c6a2accc6c1dcf8"
+   "sha256": "308bba2b1e9f333a69153630e26bc7fed602c0d938c96c5f9f428d6a6bc3e25e"
   }
  ],
  "note": "Merged from the Actions artifacts of this run; shards are deterministic (identical digests across reruns), so a re-trigger reproduces these files byte for byte."
