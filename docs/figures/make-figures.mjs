@@ -354,7 +354,10 @@ writeFileSync(join(here, "figure-data.json"), JSON.stringify(DATA, null, 1) + "\
 
 // ---- assemble the page that publishes them
 const read = (f) => readFileSync(join(here, f), "utf8");
-const draw = read("draw.mjs").replace(/^export function /gm, "function ");
+const inlined = (f) => read(f)
+  .replace(/^import [^;]+;\n/gm, "")
+  .replace(/^export (function|const) /gm, "$1 ");
+const draw = inlined("kit.mjs") + inlined("draw.mjs");
 const figMap = "const FIGS = {" + PLATES.map((p) => p.id + ": " + p.draw.name).join(", ") + "};\n";
 // Captions quote measured values, so the captions read them from the same
 // object the artwork does. A caption number is never typed: it is a {{token}}

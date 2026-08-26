@@ -44,7 +44,7 @@ const report = await page.evaluate(() => {
       if (worst > 0.5) clipped.push({ tag: el.tagName, text: (el.textContent || "").slice(0, 40),
         over: Object.fromEntries(Object.entries(over).filter(([, v]) => v > 0.5).map(([k, v]) => [k, +v.toFixed(2)])) });
       if (el.tagName === "text") { const t = (el.textContent || "").trim();
-        if (t) texts.push({ t, ...p, fs: parseFloat(getComputedStyle(el).fontSize) }); }
+        if (t) texts.push({ s: t, ...p, fs: parseFloat(getComputedStyle(el).fontSize) }); }
     }
 
     /* a panel frame is a white-filled rect big enough to hold a plot */
@@ -85,7 +85,7 @@ const report = await page.evaluate(() => {
       for (const r of rules) {
         const ox = Math.min(t.r, r.r) - Math.max(t.l, r.l);
         const oy = Math.min(t.b, r.b + 0.6) - Math.max(t.t, r.t - 0.6);
-        if (ox > 1 && oy > 0.8) { onRule.push({ t: t.t.slice(0, 34), by: +oy.toFixed(2) }); break; }
+        if (ox > 1 && oy > 0.8) { onRule.push({ t: t.s.slice(0, 34), by: +oy.toFixed(2) }); break; }
       }
     }
 
@@ -110,12 +110,12 @@ const report = await page.evaluate(() => {
       const a = texts[i], c = texts[j];
       const ox = Math.min(a.r, c.r) - Math.max(a.l, c.l);
       const oy = Math.min(a.b, c.b) - Math.max(a.t, c.t);
-      if (ox > 1 && oy > a.h * 0.45) overlaps.push({ a: a.t.slice(0, 30), b: c.t.slice(0, 30), ox: +ox.toFixed(2) });
+      if (ox > 1 && oy > a.h * 0.45) overlaps.push({ a: a.s.slice(0, 30), b: c.s.slice(0, 30), ox: +ox.toFixed(2) });
     }
     out.push({ id: fig.id, w: vb[2], h: vb[3], nText: texts.length, nFrames: frames.length,
       clipped, straddle, stray, collide, overlaps,
-      nan: texts.filter(t => /NaN|undefined|Infinity/.test(t.t)).map(t => t.t),
-      small: texts.filter(t => t.fs < 7.95).map(t => ({ t: t.t.slice(0, 26), fs: +t.fs.toFixed(2) })) });
+      nan: texts.filter(t => /NaN|undefined|Infinity/.test(t.s)).map(t => t.s),
+      small: texts.filter(t => t.fs < 7.95).map(t => ({ t: t.s.slice(0, 26), fs: +t.fs.toFixed(2) })) });
   }
   return out;
 });
