@@ -1,9 +1,10 @@
 {
- "note": "Relabelled campaign: the quasi-steady baseline is now outflow-weighted (1/T at constant pressure), which closes the 10 s quasi-steady limit at 1.02 where the mixed-definition label read 0.72 -- so every previous memory_gain was biased and is superseded. The design walk now rejects points whose element peak exceeds the 1400 C map-and-mechanism cap before spending Cantera time on them; 448 Halton indices are requested to keep roughly 200 feasible cases. Grid and diagnostic rerun so this run's collect job holds a complete, consistently-labelled set.",
+ "note": "Validation only: 200 seeded off-node points against the committed CJH grid's interpolation. The relabelled campaign is already in flight from the previous request; this run must not repeat it, so every other job is off and collect skips (no shard artifacts to gather).",
  "cases": 448,
  "shards": 8,
- "run_design": true,
- "run_closure": true,
- "run_cjh_grid": true,
- "requested": "2026-08-26T21:45Z"
+ "run_design": false,
+ "run_closure": false,
+ "run_cjh_grid": false,
+ "requested": "2026-08-26T21:55Z",
+ "run_cjh_validate": true
 }

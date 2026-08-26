@@ -47,6 +47,7 @@ jobs:
       run_design: ${{ steps.read.outputs.run_design }}
       run_closure: ${{ steps.read.outputs.run_closure }}
       run_cjh_grid: ${{ steps.read.outputs.run_cjh_grid }}
+      run_cjh_validate: ${{ steps.read.outputs.run_cjh_validate }}
     steps:
       - uses: actions/checkout@v4
       - id: read
@@ -58,11 +59,13 @@ jobs:
           design='${{ inputs.run_design }}';  [ -n "$design" ]     || design=$(jq -r '.run_design // true' $F)
           closure=$(jq -r '.run_closure // false' $F)
           grid=$(jq -r '.run_cjh_grid // false' $F)
+          validate=$(jq -r '.run_cjh_validate // false' $F)
           echo "cases=$cases" >> "$GITHUB_OUTPUT"
           echo "shards=$shards" >> "$GITHUB_OUTPUT"
           echo "run_design=$design" >> "$GITHUB_OUTPUT"
           echo "run_closure=$closure" >> "$GITHUB_OUTPUT"
           echo "run_cjh_grid=$grid" >> "$GITHUB_OUTPUT"
+          echo "run_cjh_validate=$validate" >> "$GITHUB_OUTPUT"
           echo "cases=$cases shards=$shards run_design=$design run_closure=$closure run_cjh_grid=$grid"
           jq -r '.note // "(no note)"' $F
 
@@ -158,6 +161,30 @@ jobs:
         with:
           name: cjh-grid-shard-${{ matrix.shard }}
           path: out/
+
+  # 200 seeded points BETWEEN the grid nodes, each solved by the same steady
+  # CSTR the grid used, against what interpolating the committed grid claims.
+  # The surrogate reads its baseline off this map, so the map's interpolation
+  # error is inherited by everything downstream; a grid is only ever checked at
+  # its own nodes unless a job like this asks otherwise.
+  cjh-validate:
+    needs: plan
+    if: ${{ needs.plan.outputs.run_cjh_validate == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r tools/cantera/requirements.txt
+      - name: Interpolation against fresh Cantera at 200 off-node points
+        run: python tools/openmkm_dynamic/run_cjh_validate.py --points 200
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cjh-grid-validation
+          path: tools/openmkm_dynamic/data/cjh-grid-validation.json
 
   design-scan:
     needs: plan
