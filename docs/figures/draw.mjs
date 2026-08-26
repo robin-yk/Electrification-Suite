@@ -156,7 +156,7 @@ export function solverLoop(DATA) {
   b += T(cx, 474, "PCG for a symmetric matrix,", { size: 8.5, anchor: "middle", fill: C.grey });
   b += T(cx, 484, "BiCGSTAB when gas transport breaks symmetry", { size: 8.5, anchor: "middle", fill: C.grey });
   b += arrow(ns, "M" + cx + ",490 L" + cx + ",505");
-  b += stage(sx, 506, sw, 28, "Relax the temperature field", "under-relaxed update", C.thermal, TINT.thermal);
+  b += stage(sx, 506, sw, 28, "Relax the temperature field", "", C.thermal, TINT.thermal);
   b += arrow(ns, "M" + cx + ",534 L" + cx + ",547");
   b += stage(sx, 548, sw, 30, "Convergence and energy closure", "field change, and the residual power balance", C.ink);
   b += arrow(ns, "M" + cx + ",578 L" + cx + ",593");
@@ -476,8 +476,8 @@ export function coupling(DATA) {
     items.forEach(function (it, i) {
       const x = xs[i];
       b += rect(x, y, bw, 28, { stroke: C.edge, fill: tint, sw: 0.8 });
-      b += T(x + bw / 2, y + 12, it[0], { size: 9.5, weight: "bold", anchor: "middle", fill: shadeOf(color) });
-      b += T(x + bw / 2, y + 23, it[1], { size: 8.5, anchor: "middle", fill: C.grey });
+      b += T(x + bw / 2, y + (it[1] ? 12 : 17.2), it[0], { size: 9.5, weight: "bold", anchor: "middle", fill: shadeOf(color) });
+      if (it[1]) b += T(x + bw / 2, y + 23, it[1], { size: 8.5, anchor: "middle", fill: C.grey });
       if (i < 3) b += arrow(ns, "M" + (x + bw) + "," + (y + 14) + " L" + (xs[i + 1] - 2) + "," + (y + 14),
         { color: Object.keys(C).find(function (k) { return C[k] === color; }), sw: 1 });
     });
@@ -489,7 +489,7 @@ export function coupling(DATA) {
     ["T_{avg}", "volume average"],
     ["ρ(T_{avg}),  R_{bulk}", "R_{total} = R_{bulk} + 2R_{c}"],
     ["I", "set by R_{total}"],
-    ["P_{bulk} = I² R_{bulk}", "scalar, in watts"]
+    ["P_{bulk} = I² R_{bulk}", ""]
   ]);
   /* the contact term is computed on the same current and then leaves */
   b += line(440, 54, 440, 62, { stroke: C.grey, sw: 0.8, dash: "2 2" });
@@ -499,20 +499,19 @@ export function coupling(DATA) {
   b += T(20, 106, "Field branch", { size: 10, weight: "bold", fill: SHADE.field });
   b += T(90, 106, "spatial distribution only, from the local temperature field", { size: 8.5, fill: C.grey });
   chain(114, C.field, TINT.field, [
-    ["T(r,z)", "temperature field"],
-    ["σ(T) = 1 / ρ(T)", "local conductivity"],
+    ["T(r,z)", ""],
+    ["σ(T) = 1 / ρ(T)", ""],
     ["∇·(σ ∇V) = 0", "unit potential"],
-    ["q‴_{unit}(r,z)", "distribution only"]
+    ["q‴_{unit}(r,z)", ""]
   ]);
 
   /* the join */
-  b += rect(110, 176, 360, 46, { stroke: C.ink, fill: "#FFFFFF", sw: 1.2 });
-  b += T(290, 194, "q‴(r,z)  =  P_{bulk} · q‴_{unit}(r,z) / ∫ q‴_{unit} dV", { size: 10.5, weight: "bold", anchor: "middle" });
-  b += T(290, 210, "scaled so the volume integral equals the scalar total", { size: 8.5, anchor: "middle", fill: C.grey });
-  b += arrow(ns, "M494,54 L500,54 L500,199 L472,199", { color: "scalar", sw: 1 });
-  b += arrow(ns, "M440,142 L440,174", { color: "field", sw: 1 });
+  b += rect(110, 178, 360, 28, { stroke: C.ink, fill: "#FFFFFF", sw: 1.1 });
+  b += T(290, 196, "q‴(r,z)  =  P_{bulk} · q‴_{unit}(r,z) / ∫ q‴_{unit} dV", { size: 10.5, weight: "bold", anchor: "middle" });
+  b += arrow(ns, "M494,54 L500,54 L500,192 L472,192", { color: "scalar", sw: 1 });
+  b += arrow(ns, "M440,142 L440,176", { color: "field", sw: 1 });
 
-  b += arrow(ns, "M290,222 L290,238", { color: "ink", sw: 1 });
+  b += arrow(ns, "M290,208 L290,238", { color: "ink", sw: 1 });
   b += rect(170, 240, 240, 30, { stroke: C.edge, fill: TINT.thermal, sw: 0.8 });
   b += T(290, 253, "Assemble and solve the thermal system", { size: 9.5, weight: "bold", anchor: "middle", fill: SHADE.thermal });
   b += T(290, 264, "q‴ is the source term in every element cell", { size: 8.5, anchor: "middle", fill: C.grey });
@@ -921,8 +920,8 @@ function dynamicsPanels(ns, DATA, dy) {
 /* results can be driven in pulses.                                     */
 /* ------------------------------------------------------------------ */
 export function demonstration(DATA) {
-  const ns = "m5", W = 505, H = 660;
-  return svgDoc(W, H, defs(ns) + designPanels(ns, DATA) + dynamicsPanels(ns, DATA, 402));
+  const ns = "m5", W = 505, H = 612;
+  return svgDoc(W, H, defs(ns) + designPanels(ns, DATA) + dynamicsPanels(ns, DATA, 354));
 }
 
 /* ------------------------------------------------------------------ */
@@ -1040,14 +1039,6 @@ function designPanels(ns, DATA) {
     });
     b += T(x0 + 123, y0 + 7, "ρ (Ω·cm)", { size: 8, anchor: "end", weight: "bold", fill: C.grey });
     b += T(x0 + 200, y0 + 7, "on the 20 A supply", { size: 8, anchor: "end", weight: "bold", fill: C.grey });
-    /* the mechanism, not a paraphrase of it: both routes to power carry the
-       same factor ρ, which is why a low resistivity fails either way */
-    ["At fixed volume R = ρL²/V, so P = I²R scales",
-     "with resistivity, and so does the current-",
-     "density ceiling P = j_{max}²ρV. Neither route",
-     "reaches the target at ρ four orders lower."].forEach(function (t, i) {
-      b += T(x0, y0 + 24 + rows.length * 16 + 10 + i * 10, t, { size: 8, fill: C.grey });
-    });
   })();
   return b;
 }
@@ -1116,7 +1107,7 @@ export function architecture(DATA) {
     (sub ? T(x + w / 2, y + 25, sub, { size: 8, anchor: "middle", fill: C.grey }) : "");
 
   const ay = 34, ah = 34;
-  b += boxA(18, ay, 104, ah, "Physical specification", "and its assumptions", SHADE.ink);
+  b += boxA(18, ay, 104, ah, "Physical specification", "", SHADE.ink);
   b += arrow(ns, "M122," + (ay + ah / 2) + " L136," + (ay + ah / 2), { color: "hair" });
   b += boxA(137, ay, 82, ah, "Implementation", "assisted", SHADE.grey);
   b += arrow(ns, "M219," + (ay + ah / 2) + " L233," + (ay + ah / 2), { color: "hair" });
