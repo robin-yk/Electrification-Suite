@@ -1,11 +1,11 @@
 {
- "note": "Extend the CJH map to 1850 C and relabel the historic 192 transients inside the 1800 C materials-trust bound (139 survive, 53 above it are dropped) against the outflow-weighted baseline, without re-integrating any chemistry. 1800 is the author's stated property-confidence bound for CFP and the cp table's last measured row; the earlier 1400 C cap was the map's edge misread as a physical limit. Design, closure and validation are off; validation of the extended map runs next, after this run's collect commits the new grid.",
+ "note": "Validate the extended map where it is newly extended: 200 seeded off-node points over the full 400-1850 C range, read from canonical/ as downstream code reads it. The 400-1400 portion already passed at p95 = 0.0005; this run earns (or denies) the 1400-1850 extension its promotion evidence. Everything else is off, and the flag reader now respects an explicit false.",
  "cases": 0,
  "shards": 8,
  "run_design": false,
  "run_closure": false,
- "run_cjh_grid": true,
- "requested": "2026-08-26T22:05Z",
- "run_cjh_validate": false,
- "run_relabel": true
+ "run_cjh_grid": false,
+ "requested": "2026-08-26T22:20Z",
+ "run_cjh_validate": true,
+ "run_relabel": false
 }
