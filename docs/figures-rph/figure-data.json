@@ -1,5 +1,64 @@
 {
  "commit": "c5a72bf",
+ "verify": {
+  "integrated": [
+   {
+    "q": "Full duty recovers the steady drive",
+    "against": "steady voltage-drive solve, 20 to 60 V",
+    "unit": "K",
+    "worst": 0.00040190443496612716,
+    "n": 4
+   },
+   {
+    "q": "Energy closes over one cycle",
+    "against": "electrical in against losses out",
+    "unit": "relative",
+    "worst": 0.0005777871285013255,
+    "n": 5
+   }
+  ],
+  "exact": [
+   {
+    "q": "Constant temperature recovers the analytic CSTR",
+    "against": "closed-form steady state, 900 to 1300 °C",
+    "unit": "mole fraction",
+    "worst": 2.9032332093947844e-14,
+    "n": 3
+   },
+   {
+    "q": "The conversion inversion round trips",
+    "against": "its own steady conversion, X 0.01 to 0.9",
+    "unit": "conversion",
+    "worst": 5.551115123125783e-16,
+    "n": 4
+   }
+  ],
+  "stiff": [
+   {
+    "volts": 40,
+    "tPeak": 985.5,
+    "k1": 1.24,
+    "drift": 3.3306690738754696e-16,
+    "bounded": true
+   },
+   {
+    "volts": 80,
+    "tPeak": 2287,
+    "k1": 341000000,
+    "drift": 1.942890293094024e-16,
+    "bounded": true
+   },
+   {
+    "volts": 120,
+    "tPeak": 4620,
+    "k1": 2650000000000,
+    "drift": 5.551115123125783e-17,
+    "bounded": true
+   }
+  ],
+  "stiffWorst": 3.3306690738754696e-16,
+  "stiffBounded": true
+ },
  "detailed": {
   "tGrid": [
    400,

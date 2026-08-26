@@ -345,3 +345,53 @@ export function workflow(DATA) {
   });
   return svgDoc(W, H, b);
 }
+
+/* ------------------------------------------------------------------ */
+/* Fig. S1. What each part of the solver is checked against. The split */
+/* is between what is integrated and what is exact by construction.    */
+/* ------------------------------------------------------------------ */
+export function verification(DATA) {
+  const ns = "rs1", W = 505, H = 300;
+  const V = DATA.verify;
+  let b = defs(ns);
+  const LX = 22, NX = 372, WX = 488;
+  const sci = (v) => {
+    if (v === 0) return "0";
+    const e = Math.floor(lg(Math.abs(v)));
+    return (v / Math.pow(10, e)).toFixed(1) + " × 10^{" + String(e).replace("-", "−") + "}";
+  };
+
+  b += T(LX, 22, "CHECK, AND WHAT IT IS CHECKED AGAINST", { size: 8, weight: "bold", fill: C.grey });
+  b += T(NX, 22, "CASES", { size: 8, weight: "bold", anchor: "end", fill: C.grey });
+  b += T(WX, 22, "WORST RESIDUAL", { size: 8, weight: "bold", anchor: "end", fill: C.grey });
+  b += line(LX, 27, WX, 27, { stroke: C.ink, sw: 0.9 });
+
+  /* the reference sits under the check rather than in a column of its own:
+     at this width a second column would run into the first */
+  let y = 44;
+  const section = (title, note, rows) => {
+    b += T(LX, y, title.toUpperCase(), { size: 8, weight: "bold", fill: SHADE.grey });
+    b += T(WX, y, note, { size: 8, anchor: "end", fill: C.grey });
+    b += line(LX, y + 5, WX, y + 5, { stroke: C.rule, sw: 0.6 });
+    y += 18;
+    rows.forEach(function (r) {
+      b += T(LX + 8, y, r.q, { size: 8.5 });
+      b += T(NX, y, String(r.n), { size: 8.5, anchor: "end", fill: C.grey });
+      b += T(WX, y, r.worstText, { size: 8.5, anchor: "end" });
+      b += T(LX + 8, y + 10, r.against, { size: 8, fill: C.grey });
+      y += 26;
+    });
+    y += 6;
+  };
+  section("Integrated with a finite step", "limited by the step",
+    V.integrated.map((r) => Object.assign({ worstText: sci(r.worst) + " " + r.unit }, r)));
+  section("Exact by construction", "limited by the arithmetic",
+    V.exact.map((r) => Object.assign({ worstText: sci(r.worst) + " " + r.unit }, r)));
+  section("Periodic under stress", "the fixed point returns to itself however fast the hot step runs",
+    V.stiff.map((r) => ({
+      q: r.volts + " V drive, peak " + r.tPeak.toFixed(0) + " °C",
+      against: "k₁ at the peak reaches " + sci(r.k1) + " s⁻¹, and x_{B} stays inside [0, 1]",
+      n: 1, worstText: sci(r.drift) + " drift over a cycle"
+    })));
+  return svgDoc(W, H, b);
+}

@@ -9,7 +9,7 @@ import { SERIES_DEFAULTS, seriesRateConstants, steadySeriesCSTR, integrateSeries
          cjhTempForConversion, integratePulsedElement, steadyElementTemperature,
          sampledWaveform, arrheniusRate, transportCoefficient, velocity,
          idealTwoStateAverages, timeAverageTemperature } from "../../apps/rphcjh/solver.js";
-import { workflow, drive, comparison, window_, detailed } from "./draw.mjs";
+import { workflow, drive, comparison, window_, detailed, verification } from "./draw.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const p = (x, n = 4) => Number(x.toPrecision(n));
@@ -72,6 +72,40 @@ for (let T = 500; T <= 1600; T += 25) {
   kGrid.push({ TC: T, k1: p(k1, 4), k2: p(k2, 4) });
 }
 
+// ---- verification: what each part of the solver is checked against, and how
+// closely. The split that matters is between the parts integrated with a
+// finite step and the parts that are exact by construction.
+const dutyOne = [20, 30, 40, 60].map(function (V) {
+  const p = integratePulsedElement({ voltage: V, period: 1, duty: 1 });
+  return Math.abs(p.tAvg - steadyElementTemperature({ voltage: V }));
+});
+const closure = [[30, 0.5, 0.02], [40, 1, 0.05], [40, 2, 0.1], [60, 5, 0.2], [40, 10, 0.5]]
+  .map(function (d) {
+    return Math.abs(integratePulsedElement({ voltage: d[0], period: d[1], duty: d[2] }).energyResidual);
+  });
+const cstr = [900, 1100, 1300].map(function (TC) {
+  const num = integrateSeriesCSTR({ period: 1, tempFn: () => TC });
+  const ana = steadySeriesCSTR(TC);
+  return Math.max(Math.abs(num.avgA - ana.xA), Math.abs(num.avgB - ana.xB));
+});
+const invert = [0.01, 0.1, 0.5, 0.9].map(function (X) {
+  return Math.abs(1 - steadySeriesCSTR(cjhTempForConversion(X)).xA - X);
+});
+// The mole balance is not a check here: the solver defines xC as 1 - xA - xB,
+// so it closes by construction and could never fail. What can fail is the
+// periodicity the two-pass construction claims, so that is what is measured:
+// start from the computed fixed point, walk one cycle, and see how far the
+// state returns.
+const stiff = [40, 80, 120].map(function (V) {
+  const el = integratePulsedElement({ voltage: V, period: 1, duty: 0.05 });
+  const r = integrateSeriesCSTR({ period: 1, tempFn: (ph) => sampledWaveform(el.samples, ph) });
+  const a = r.samples[0], z = r.samples[r.samples.length - 1];
+  return { volts: V, tPeak: p(el.tPeak), k1: p(seriesRateConstants(el.tPeak, SERIES_DEFAULTS).k1, 3),
+           drift: Math.max(Math.abs(z[1] - a[1]), Math.abs(z[2] - a[2])),
+           bounded: r.minB >= 0 && r.peakB <= 1 };
+});
+const worst = (a) => Math.max.apply(null, a);
+
 // The detailed-mechanism panels read the committed outputs of the offline
 // pipelines rather than recomputing them: Cantera for the effective activation
 // energy and OpenMKM for the steady PFR sweep. Both files carry their own
@@ -82,6 +116,23 @@ const pfr = readJSON("apps/rphcjh/data/openmkm-pfr.json");
 
 const DATA = {
   commit: solverCommit(),
+  verify: {
+    integrated: [
+      { q: "Full duty recovers the steady drive", against: "steady voltage-drive solve, 20 to 60 V",
+        unit: "K", worst: worst(dutyOne), n: dutyOne.length },
+      { q: "Energy closes over one cycle", against: "electrical in against losses out",
+        unit: "relative", worst: worst(closure), n: closure.length }
+    ],
+    exact: [
+      { q: "Constant temperature recovers the analytic CSTR", against: "closed-form steady state, 900 to 1300 °C",
+        unit: "mole fraction", worst: worst(cstr), n: cstr.length },
+      { q: "The conversion inversion round trips", against: "its own steady conversion, X 0.01 to 0.9",
+        unit: "conversion", worst: worst(invert), n: invert.length }
+    ],
+    stiff: stiff,
+    stiffWorst: worst(stiff.map((r) => r.drift)),
+    stiffBounded: stiff.every((r) => r.bounded)
+  },
   detailed: {
     tGrid: cantera.T_grid_C,
     eaWindow: cantera.ea_fit_window_C,
@@ -121,7 +172,8 @@ const PLATES = [
   { id: "rphFig2", label: "Fig. 2", draw: drive },
   { id: "rphFig3", label: "Fig. 3", draw: comparison },
   { id: "rphFig4", label: "Fig. 4", draw: window_ },
-  { id: "rphFig5", label: "Fig. 5", draw: detailed }
+  { id: "rphFig5", label: "Fig. 5", draw: detailed },
+  { id: "rphFigS1", label: "Fig. S1", draw: verification }
 ];
 for (const plate of PLATES) {
   const svg = plate.draw(DATA);
