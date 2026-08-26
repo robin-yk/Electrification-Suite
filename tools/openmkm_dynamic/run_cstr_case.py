@@ -19,8 +19,8 @@ Formulation: constant pressure, prescribed T(t) (energy equation off),
 fixed feed composition, instantaneous mass residence time tau: inlet and
 outlet mass flows track m(t)/tau every substep, so tau is well defined
 while the reactor mass follows rho(T) at constant P. Constant-volume
-(pressure-swing) operation is a documented follow-up once the companion
-paper's exact reactor constraint is confirmed.
+(pressure-swing) operation is selectable through --closure, and the choice is
+recorded with every case.
 """
 import argparse
 import datetime
@@ -29,6 +29,8 @@ import math
 import sys
 import warnings
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 RECORD_SPECIES = ["CH4", "CO2", "CO", "H2", "H2O",
                   "C2H2", "C2H4", "C2H6", "CH3", "H", "OH"]
@@ -47,6 +49,15 @@ def waveform_temperature(phase, p):
     lo, hi = p["t_min_K"], p["t_peak_K"]
     span = hi - lo
     family = p.get("waveform", "trapezoid")
+
+    if family == "physical":
+        # T(t) integrated from the element's own energy balance rather than
+        # drawn. build_params() caches the interpolator, because the ODE takes
+        # hundreds of cycles to reach its periodic state and this is called once
+        # per substep. The element model works in Celsius and everything here is
+        # Kelvin, so the conversion belongs at this boundary -- without it the
+        # cycle mean came out below the cycle minimum, which is how it was found.
+        return p["_profile"](phase) + 273.15
 
     if family == "sine":
         # raised cosine touching both endpoints and holding neither. `duty`
@@ -196,7 +207,7 @@ def run_case(mech, p):
             "mechanism": "GRI-Mech 3.0",
             "generated": datetime.date.today().isoformat(),
             "inputs": {k: p[k] for k in
-                       ("closure",
+                       ("closure", "voltage_V", "drive_cycles",
                         "t_min_K", "t_peak_K", "period_s", "duty", "waveform",
                         "mean_temperature_K", "ramp_up_fraction",
                         "ramp_down_fraction", "pressure_Pa", "tau_s", "feed",
@@ -252,6 +263,21 @@ def build_params(args):
         "record_cycles": args.record_cycles,
         "closure": getattr(args, "closure", "const-pressure"),
     }
+    if p["waveform"] == "physical":
+        # T_peak and T_min stop being inputs here: the element decides them from
+        # the voltage, the period and its own thermal mass. They are recorded as
+        # results so a case still reports the temperatures it actually reached.
+        from element_drive import integrate_pulsed_element, profile_function
+        drive = integrate_pulsed_element(
+            voltage=args.voltage, period=args.period_s, duty=args.duty,
+            ambient_c=args.t_min_c)
+        if not drive["converged"]:
+            raise SystemExit("element drive did not reach a periodic state")
+        p["_profile"] = profile_function(drive)
+        p["t_peak_K"] = drive["t_peak_c"] + 273.15
+        p["t_min_K"] = drive["t_min_c"] + 273.15
+        p["voltage_V"] = args.voltage
+        p["drive_cycles"] = drive["cycles"]
     p["mean_temperature_K"] = mean_temperature(p)
     return p
 
@@ -262,7 +288,10 @@ def add_common_args(parser):
     parser.add_argument("--t-peak-c", type=float, default=1250.0)
     parser.add_argument("--duty", type=float, default=0.10)
     parser.add_argument("--waveform", default="trapezoid",
-                        choices=["trapezoid", "square", "sine", "double"])
+                        choices=["trapezoid", "square", "sine", "double", "physical"])
+    parser.add_argument("--voltage", type=float, default=40.0,
+                        help="drive voltage; only used by --waveform physical, where "
+                             "it replaces --t-peak-c as the thing you actually set")
     parser.add_argument("--ramp-up-fraction", type=float, default=0.05)
     parser.add_argument("--ramp-down-fraction", type=float, default=0.05)
     parser.add_argument("--pressure-atm", type=float, default=1.0)
