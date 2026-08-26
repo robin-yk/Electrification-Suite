@@ -96,9 +96,9 @@ export function propertiesAt(material, tempK) {
 }
 
 // Maxwell-Eucken effective conductivity for a continuous solid skeleton holding
-// dispersed gas-filled pores. Exact at both limits (phi = 0 returns the solid,
-// phi = 1 returns the gas), and the same closure the microwave solver uses for
-// its packed bed, so the two apps homogenize by one method rather than two.
+// dispersed gas-filled pores. Chosen because it is exact at both limits: phi = 0
+// returns the solid and phi = 1 returns the gas, so the closure cannot be wrong
+// at the two points where the answer is known.
 export function maxwellEucken(kSolid, kGas, voidFraction) {
   const phi = clamp(voidFraction, 0, 1);
   return kSolid * (2*kSolid + kGas - 2*phi*(kSolid - kGas)) / (2*kSolid + kGas + phi*(kSolid - kGas));
@@ -126,8 +126,9 @@ export function maxwellEucken(kSolid, kGas, voidFraction) {
 // So this path activates only for a material that declares its k to be a
 // skeleton (dense-phase) value AND an input whose solidFraction is a genuine
 // porosity. No shipped material sets the flag; it exists so that adding one is a
-// deliberate act with a stated basis, the way the microwave solver back-solves a
-// skeleton value from a reference measurement before re-mixing.
+// deliberate act with a stated basis. The basis that would justify it is a
+// skeleton conductivity back-solved from a reference measurement of the same
+// body, which is then re-mixed here rather than assumed.
 //
 // The pore gas is the process gas, so it shares cfg.gapK with the gap and purge
 // regions instead of introducing a second gas model.
