@@ -183,6 +183,13 @@ from the solver rather than drawn.
   labelled "Geometry, wall, gas" whose contents are grey and green in every other
   plate. A software structure has no physical role, so it now has no role hue:
   neutral throughout, the gate and the core in ink, pass and fail by line style.
+- Fig. 5 panel d stated a range where it needed a reason. "Resistivity spans
+  5.6e-2 to 5.3e-6" left the reader to work out why that matters; the panel
+  now carries the resistivity on every row, so the two orders between the three
+  that reach the target and the three that do not are visible, with the
+  mechanism under it: P = I^2 R and R is proportional to rho. Panels e and f
+  named the drive without naming what was driven; they say CFP H23 strip now,
+  read from the material rather than typed.
 - Prose moved out of the artwork and into the captions, which is where a
   journal in this family puts it. Fig. S8 carried a two-line paragraph about
   the verification gates and a five-row table of what a change touches, both

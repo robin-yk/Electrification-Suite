@@ -904,10 +904,12 @@ function dynamicsPanels(ns, DATA, dy) {
   })();
 
   /* the drive conditions, under each panel rather than over its data */
-  b += T(COL[0], pbot + 38, "continuous, " + K.contVolts.toFixed(2) + " V, " + K.contPower.toFixed(1) + " W", { size: 8.5, weight: "bold", fill: SHADE.thermal });
-  b += T(COL[0], pbot + 48, "settling set by the enclosure", { size: 8, fill: C.grey });
-  b += T(COL[1], pbot + 38, (K.duty * 100).toFixed(0) + " % duty, " + K.period + " s period, " + K.pulseVolts + " V", { size: 8.5, weight: "bold", fill: SHADE.scalar });
-  b += T(COL[1], pbot + 48, "τ = " + K.cfpTau.toFixed(2) + " s, " + K.meanPower.toFixed(1) + " W average", { size: 8, fill: C.grey });
+  b += T(COL[0], pbot + 38, K.cfpLabel + ", continuous", { size: 8.5, weight: "bold", fill: SHADE.thermal });
+  b += T(COL[0], pbot + 48, K.contVolts.toFixed(2) + " V, " + K.contPower.toFixed(1) + " W", { size: 8, fill: C.grey });
+  b += T(COL[0], pbot + 58, "settling set by the enclosure", { size: 8, fill: C.grey });
+  b += T(COL[1], pbot + 38, K.cfpLabel + ", pulsed", { size: 8.5, weight: "bold", fill: SHADE.scalar });
+  b += T(COL[1], pbot + 48, (K.duty * 100).toFixed(0) + " % duty, " + K.period + " s period, " + K.pulseVolts + " V", { size: 8, fill: C.grey });
+  b += T(COL[1], pbot + 58, "τ = " + K.cfpTau.toFixed(2) + " s, " + K.meanPower.toFixed(1) + " W average", { size: 8, fill: C.grey });
   b += T(COL[2], pbot + 38, K.sicLabel + ", switched on", { size: 8.5, weight: "bold", fill: SHADE.thermal });
   b += T(COL[2], pbot + 48, "τ is " + (K.sicTau / K.period).toFixed(0) + "× the pulse period", { size: 8, fill: C.grey });
   return b;
@@ -919,8 +921,8 @@ function dynamicsPanels(ns, DATA, dy) {
 /* results can be driven in pulses.                                     */
 /* ------------------------------------------------------------------ */
 export function demonstration(DATA) {
-  const ns = "m5", W = 505, H = 634;
-  return svgDoc(W, H, defs(ns) + designPanels(ns, DATA) + dynamicsPanels(ns, DATA, 396));
+  const ns = "m5", W = 505, H = 650;
+  return svgDoc(W, H, defs(ns) + designPanels(ns, DATA) + dynamicsPanels(ns, DATA, 402));
 }
 
 /* ------------------------------------------------------------------ */
@@ -1000,7 +1002,7 @@ function designPanels(ns, DATA) {
 
   /* c. the same target, asked of three shapes */
   (function () {
-    const x0 = 52, y0 = 254;
+    const x0 = 52, y0 = 246;
     b += T(x0 - 36, y0 - 12, "c", { size: 11, weight: "bold" });
     b += T(x0, y0 - 12, ("shapes that reach " + S.targetC + " °C, in " + S.materialName).toUpperCase(), { size: 8, weight: "bold", fill: C.grey });
     b += line(x0, y0 - 6, x0 + 200, y0 - 6, { stroke: C.ink, sw: 0.8 });
@@ -1017,24 +1019,30 @@ function designPanels(ns, DATA) {
 
   /* d. and of six materials */
   (function () {
-    const x0 = 287, y0 = 254, rows = S.byMaterial;
+    const x0 = 287, y0 = 246, rows = S.byMaterial;
     b += T(x0 - 36, y0 - 12, "d", { size: 11, weight: "bold" });
     b += T(x0, y0 - 12, ("materials that reach " + S.targetC + " °C").toUpperCase(), { size: 8, weight: "bold", fill: C.grey });
     b += line(x0, y0 - 6, x0 + 200, y0 - 6, { stroke: C.ink, sw: 0.8 });
     rows.forEach(function (r, i) {
-      const y = y0 + 11 + i * 16;
+      const y = y0 + 24 + i * 16;
       const on = r.reaches;
       b += '<rect x="' + x0 + '" y="' + (y - 6.5) + '" width="7" height="7" fill="' +
         (on ? C.thermal : "#FFFFFF") + '" stroke="' + (on ? C.thermal : C.faint) + '" stroke-width="0.8"/>';
       b += T(x0 + 12, y, r.name, { size: 8.5, fill: on ? C.ink : C.faint });
+      /* the resistivity is the reason, so it sits on the row rather than
+         being summarised as a range underneath it */
+      b += T(x0 + 123, y, r.rho.toExponential(1).replace("e-", "×10^{−") + "}",
+        { size: 8, anchor: "end", fill: on ? C.grey : C.faint });
       b += T(x0 + 200, y, on ? "L/D " + r.ld.toFixed(1) + ",  " + r.R.toFixed(2) + " Ω"
-                             : "requires " + r.needs.current.toFixed(0) + " A at " + r.needs.voltage.toFixed(1) + " V" +
+                             : r.needs.current.toFixed(0) + " A at " + r.needs.voltage.toFixed(1) + " V" +
                                (r.needs.overJmax ? " †" : ""),
         { size: 8, anchor: "end", fill: on ? C.grey : C.faint });
     });
-    b += T(x0, y0 + 11 + rows.length * 16 + 9, "resistivity spans " +
-      rows[0].rho.toExponential(1).replace("e-", "×10^{−") + "} to " +
-      rows[rows.length - 1].rho.toExponential(1).replace("e-", "×10^{−") + "} Ω·cm", { size: 8, fill: C.grey });
+    b += T(x0 + 123, y0 + 7, "ρ (Ω·cm)", { size: 8, anchor: "end", weight: "bold", fill: C.grey });
+    b += T(x0 + 200, y0 + 7, "on the 20 A supply", { size: 8, anchor: "end", weight: "bold", fill: C.grey });
+    b += T(x0, y0 + 24 + rows.length * 16 + 10, "P = I² R and R ∝ ρ, so the supply cannot", { size: 8, fill: C.grey });
+    b += T(x0, y0 + 24 + rows.length * 16 + 20, "raise the power of a good conductor,", { size: 8, fill: C.grey });
+    b += T(x0, y0 + 24 + rows.length * 16 + 30, "whatever the shape.", { size: 8, fill: C.grey });
   })();
   return b;
 }

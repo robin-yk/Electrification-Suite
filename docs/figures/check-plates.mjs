@@ -76,6 +76,19 @@ const report = await page.evaluate(() => {
       if (ox > 0.5 && oy > 0.5) collide.push({ x: +a.l.toFixed(1), y: +a.t.toFixed(1), by: +Math.min(ox, oy).toFixed(2) });
     }
 
+    /* a rule is drawn to separate, so type must not sit on one. Gridlines are
+       thin and are excluded by the stroke-width test. */
+    const onRule = [];
+    const rules = all.filter(e => e.tagName === "line" && parseFloat(e.getAttribute("stroke-width") || "0") >= 0.8)
+      .map(e => P(e));
+    for (const t of texts) {
+      for (const r of rules) {
+        const ox = Math.min(t.r, r.r) - Math.max(t.l, r.l);
+        const oy = Math.min(t.b, r.b + 0.6) - Math.max(t.t, r.t - 0.6);
+        if (ox > 1 && oy > 0.8) { onRule.push({ t: t.t.slice(0, 34), by: +oy.toFixed(2) }); break; }
+      }
+    }
+
     const straddle = [];
     for (const f of frames) {
       const TOL = 0.75;                       /* stroke width and antialiasing */
@@ -117,6 +130,7 @@ for (const r of report) {
   if (r.clipped?.length) bits.push("off the sheet " + r.clipped.length + ": " + JSON.stringify(r.clipped.slice(0, 5)));
   if (r.collide?.length) bits.push("marker on marker " + r.collide.length + ": " + JSON.stringify(r.collide.slice(0, 5)));
   if (r.stray?.length) bits.push("marker outside every panel " + r.stray.length + ": " + JSON.stringify(r.stray.slice(0, 6)));
+  if (r.onRule?.length) bits.push("type sitting on a rule " + r.onRule.length + ": " + JSON.stringify(r.onRule.slice(0, 6)));
   if (r.straddle?.length) bits.push("across a panel frame " + r.straddle.length + ": " + JSON.stringify(r.straddle.slice(0, 6)));
   if (r.overlaps?.length) bits.push("text on text " + r.overlaps.length + ": " + JSON.stringify(r.overlaps.slice(0, 6)));
   console.log(`${r.id.padEnd(6)} ${r.w}x${r.h} texts=${r.nText} frames=${r.nFrames}  ${bits.length ? bits.join("\n        ") : "ok"}`);

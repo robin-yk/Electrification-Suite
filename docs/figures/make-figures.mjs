@@ -173,7 +173,10 @@ DATA.transient = {
   sic: sicStart.history.map((h) => [Number(h.t.toFixed(2)), Number((h.avgK - 273.15).toFixed(2))]),
   sicTau: p(elementTimeConstant(zeroD), 4),
   sicSteadyC: p(sicStart.avgK - 273.15, 6),
-  sicLabel: x.material.name + " rod"
+  sicLabel: x.material.name + " rod",
+  /* the strip has to name itself too, or panels e and f say what the drive was
+     without saying what was driven */
+  cfpLabel: cfpM.name.replace(/\s*\(effective\)$/, "") + " strip"
 };
 
 // The range has to reach past the optimum, or the sweep reports its own edge

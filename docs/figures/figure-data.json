@@ -6681,7 +6681,8 @@
   ],
   "sicTau": 42.45,
   "sicSteadyC": 846.721,
-  "sicLabel": "SiC rod"
+  "sicLabel": "SiC rod",
+  "cfpLabel": "CFP H23 strip"
  },
  "forms": [
   {
