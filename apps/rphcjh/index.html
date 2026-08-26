@@ -85,6 +85,11 @@
   }
   .section-title { margin: 0; color: var(--navy); font-size: clamp(24px, 2.4vw, 34px); line-height: 1.12; letter-spacing: -0.025em; }
   .section-lede { max-width: 820px; margin: 8px 0 20px; color: var(--muted); }
+  .panel-jump { margin: 0 0 20px; color: var(--muted); font-size: 13.5px; }
+  .panel-jump a { color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+  .panel-jump a:hover { color: var(--teal); }
+  .panel-divider { border: 0; border-top: 1px solid var(--line); margin: 46px 0 34px; }
+  .section-kicker[id] { scroll-margin-top: 76px; }
 
   .card { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
   .cite-box { background:#fff; border:1px solid var(--line); border-radius:10px; padding:16px; max-width:640px; }
@@ -306,7 +311,6 @@
     <button class="tab keep-case active" data-tab="abc" role="tab" aria-selected="true">A &rarr; B &rarr; C</button>
     <button class="tab" data-tab="animation" role="tab" aria-selected="false">Kinetic Effect</button>
     <button class="tab" data-tab="jensen" role="tab" aria-selected="false">When Pulsing Helps</button>
-    <button class="tab keep-case" data-tab="ratios" role="tab" aria-selected="false">&Lambda; and Da ratios</button>
     <button class="tab keep-case" data-tab="openmkm" role="tab" aria-selected="false">OpenMKM PFR</button>
     <button class="tab" data-tab="calculations" role="tab" aria-selected="false">Calculations</button>
     <button class="tab" data-tab="cite" role="tab" aria-selected="false">How to Cite</button>
@@ -475,7 +479,8 @@
 
 <!-- ============ JENSEN ============ -->
 <section id="jensen" class="panel" role="tabpanel">
-  <p class="section-kicker">Rate, transport, and velocity curvature, compared</p>
+  <p class="panel-jump"><a href="#jumpCurvature">Curvature</a> &middot; <a href="#jumpRatios">&Lambda; and Da ratios</a></p>
+  <p class="section-kicker" id="jumpCurvature">Rate, transport, and velocity curvature, compared</p>
   <h2 class="section-title">Curvature determines whether pulsing provides a benefit</h2>
   <p class="section-lede">
     A pulsed element spends a fraction d of each cycle at T<sub>peak</sub> and the rest at T<sub>min</sub>, so the
@@ -544,6 +549,53 @@
         </p>
       </div>
     </article>
+  </div>
+
+  <hr class="panel-divider">
+
+  <p class="section-kicker" id="jumpRatios">Dimensionless design space</p>
+  <h2 class="section-title">Conditions under which pulsing provides a benefit</h2>
+  <p class="section-lede">
+    Everything here is a ratio against a continuous heater at the same average temperature:
+    catalyst-specific prefactors cancel, so only E<sub>a</sub>, &beta;, and the temperatures matter.
+  </p>
+
+  <div class="kpi-grid" style="grid-template-columns:repeat(4,minmax(150px,1fr))">
+    <div class="kpi" id="rkpi1"><div class="kpi-label">R<sub>&Lambda;</sub> ideal square wave</div><div class="kpi-value" id="rIdealLam">&mdash;</div><div class="kpi-sub">two-state limit</div></div>
+    <div class="kpi" id="rkpi2"><div class="kpi-label">R<sub>exposure</sub> ideal square wave</div><div class="kpi-value" id="rIdealDa">&mdash;</div><div class="kpi-sub">two-state limit</div></div>
+    <div class="kpi" id="rkpi3"><div class="kpi-label">Break-even T<sub>peak</sub></div><div class="kpi-value" id="rBreakeven">&mdash;</div><div class="kpi-sub">relative exposure ratio = 1</div></div>
+    <div class="kpi" id="rkpi4"><div class="kpi-label">E<sub>a</sub> vs 2RT<sub>avg</sub></div><div class="kpi-value" id="rConvex">&mdash;</div><div class="kpi-sub">convexity test on k</div></div>
+  </div>
+
+  <div class="calc-grid">
+    <article class="card">
+      <div class="card-header"><h3>R<sub>exposure</sub> across the T<sub>peak</sub> sweep</h3></div>
+      <div class="card-body" style="padding:10px 12px 12px">
+        <svg class="chart" id="sweepPeak" viewBox="0 0 560 300" role="img" aria-label="Damkohler ratio versus peak temperature"></svg>
+        <div class="legend">
+          <span><i style="background:var(--red)"></i>R<sub>exposure</sub></span>
+          <span><i style="background:var(--blue)"></i>R<sub>&Lambda;</sub></span>
+          <span><i class="dash" style="color:var(--muted)"></i>break-even</span>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-header"><h3>Duty-cycle dependence</h3></div>
+      <div class="card-body" style="padding:10px 12px 12px">
+        <svg class="chart" id="sweepDuty" viewBox="0 0 560 300" role="img" aria-label="Damkohler ratio versus duty cycle"></svg>
+        <p class="chart-note">
+          Low duty cycle lowers T<sub>avg</sub>, so the ratio against that cooler reference rises even as
+          absolute throughput falls, which the ratio does not capture.
+        </p>
+      </div>
+    </article>
+  </div>
+
+  <div class="assumption">
+    <strong>The ratio alone does not determine practical benefit.</strong> It compares RPH against a <em>cooler</em>
+    continuous heater held at the RPH average temperature, not against continuous operation at T<sub>peak</sub>, the
+    comparison relevant when power is not limiting. There the case for pulsing rests on selectivity and element
+    lifetime, not on &Lambda; or Da.
   </div>
 </section>
 
@@ -715,52 +767,7 @@
 </section>
 
 <!-- ============ RATIOS ============ -->
-<section id="ratios" class="panel" role="tabpanel">
-  <p class="section-kicker">Dimensionless design space</p>
-  <h2 class="section-title">Conditions under which pulsing provides a benefit</h2>
-  <p class="section-lede">
-    Everything here is a ratio against a continuous heater at the same average temperature:
-    catalyst-specific prefactors cancel, so only E<sub>a</sub>, &beta;, and the temperatures matter.
-  </p>
 
-  <div class="kpi-grid" style="grid-template-columns:repeat(4,minmax(150px,1fr))">
-    <div class="kpi" id="rkpi1"><div class="kpi-label">R<sub>&Lambda;</sub> ideal square wave</div><div class="kpi-value" id="rIdealLam">&mdash;</div><div class="kpi-sub">two-state limit</div></div>
-    <div class="kpi" id="rkpi2"><div class="kpi-label">R<sub>exposure</sub> ideal square wave</div><div class="kpi-value" id="rIdealDa">&mdash;</div><div class="kpi-sub">two-state limit</div></div>
-    <div class="kpi" id="rkpi3"><div class="kpi-label">Break-even T<sub>peak</sub></div><div class="kpi-value" id="rBreakeven">&mdash;</div><div class="kpi-sub">relative exposure ratio = 1</div></div>
-    <div class="kpi" id="rkpi4"><div class="kpi-label">E<sub>a</sub> vs 2RT<sub>avg</sub></div><div class="kpi-value" id="rConvex">&mdash;</div><div class="kpi-sub">convexity test on k</div></div>
-  </div>
-
-  <div class="calc-grid">
-    <article class="card">
-      <div class="card-header"><h3>R<sub>exposure</sub> across the T<sub>peak</sub> sweep</h3></div>
-      <div class="card-body" style="padding:10px 12px 12px">
-        <svg class="chart" id="sweepPeak" viewBox="0 0 560 300" role="img" aria-label="Damkohler ratio versus peak temperature"></svg>
-        <div class="legend">
-          <span><i style="background:var(--red)"></i>R<sub>exposure</sub></span>
-          <span><i style="background:var(--blue)"></i>R<sub>&Lambda;</sub></span>
-          <span><i class="dash" style="color:var(--muted)"></i>break-even</span>
-        </div>
-      </div>
-    </article>
-    <article class="card">
-      <div class="card-header"><h3>Duty-cycle dependence</h3></div>
-      <div class="card-body" style="padding:10px 12px 12px">
-        <svg class="chart" id="sweepDuty" viewBox="0 0 560 300" role="img" aria-label="Damkohler ratio versus duty cycle"></svg>
-        <p class="chart-note">
-          Low duty cycle lowers T<sub>avg</sub>, so the ratio against that cooler reference rises even as
-          absolute throughput falls, which the ratio does not capture.
-        </p>
-      </div>
-    </article>
-  </div>
-
-  <div class="assumption">
-    <strong>The ratio alone does not determine practical benefit.</strong> It compares RPH against a <em>cooler</em>
-    continuous heater held at the RPH average temperature, not against continuous operation at T<sub>peak</sub>, the
-    comparison relevant when power is not limiting. There the case for pulsing rests on selectivity and element
-    lifetime, not on &Lambda; or Da.
-  </div>
-</section>
 
 <!-- ============ OPENMKM ============ -->
 <section id="openmkm" class="panel" role="tabpanel">
@@ -2276,6 +2283,7 @@ document.querySelectorAll(".tab").forEach(tab => {
     tab.classList.add("active");
     tab.setAttribute("aria-selected", "true");
     document.getElementById(tab.dataset.tab).classList.add("active");
+    window.scrollTo({ top: 0, behavior: "auto" });
     redrawAll();
   });
 });
