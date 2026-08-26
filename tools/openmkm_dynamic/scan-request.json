@@ -1,0 +1,7 @@
+{
+  "note": "Closure diagnostic: the five-period pilot puts the dynamic/quasi-steady ratio at 0.724 for a 10 s period, where a hundred residence times make quasi-steady exact by construction and the ratio must be 1. Running the same five periods under both closures decides whether that is the constant-pressure expansion cutting residence time when hot, or physics the surrogate has to learn. Design scan runs the 6-D Halton campaign alongside it at a size that fits one runner.",
+  "cases": 64,
+  "shards": 8,
+  "run_design": true,
+  "requested": "2026-08-26"
+}

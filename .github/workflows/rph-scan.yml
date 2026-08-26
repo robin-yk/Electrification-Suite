@@ -18,6 +18,10 @@
 #                       the ignition cliff the steady map already has.
 name: RPH dynamic scan
 
+# Dispatching this by hand needs actions:write, which the automation token here
+# does not carry, so a committed request file triggers it instead. Editing
+# tools/openmkm_dynamic/scan-request.json starts a run and leaves a record in the
+# history of what was asked for and why -- which a dispatch button does not.
 on:
   workflow_dispatch:
     inputs:
@@ -29,11 +33,35 @@ on:
         default: "8"
       run_design:
         description: "run the design scan as well as the closure diagnostic"
-        type: boolean
-        default: true
+        default: "true"
+  push:
+    paths:
+      - "tools/openmkm_dynamic/scan-request.json"
 
 jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      cases: ${{ steps.read.outputs.cases }}
+      shards: ${{ steps.read.outputs.shards }}
+      run_design: ${{ steps.read.outputs.run_design }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: read
+        name: Settings from the dispatch inputs, else the request file
+        run: |
+          F=tools/openmkm_dynamic/scan-request.json
+          cases='${{ inputs.cases }}';        [ -n "$cases" ]      || cases=$(jq -r '.cases // 64' $F)
+          shards='${{ inputs.shards }}';      [ -n "$shards" ]     || shards=$(jq -r '.shards // 8' $F)
+          design='${{ inputs.run_design }}';  [ -n "$design" ]     || design=$(jq -r '.run_design // true' $F)
+          echo "cases=$cases" >> "$GITHUB_OUTPUT"
+          echo "shards=$shards" >> "$GITHUB_OUTPUT"
+          echo "run_design=$design" >> "$GITHUB_OUTPUT"
+          echo "cases=$cases shards=$shards run_design=$design"
+          jq -r '.note // "(no note)"' $F
+
   closure-diagnostic:
+    needs: plan
     runs-on: ubuntu-latest
     timeout-minutes: 330
     steps:
@@ -92,7 +120,8 @@ jobs:
           path: out/
 
   design-scan:
-    if: ${{ inputs.run_design }}
+    needs: plan
+    if: ${{ needs.plan.outputs.run_design == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 330
     strategy:
@@ -107,8 +136,8 @@ jobs:
       - run: pip install -r tools/cantera/requirements.txt
       - name: Shard of the 6-D Halton design
         run: |
-          TOTAL=${{ inputs.cases }}
-          SHARDS=${{ inputs.shards }}
+          TOTAL=${{ needs.plan.outputs.cases }}
+          SHARDS=${{ needs.plan.outputs.shards }}
           PER=$(( (TOTAL + SHARDS - 1) / SHARDS ))
           START=$(( ${{ matrix.shard }} * PER + 1 ))
           if [ "$START" -gt "$TOTAL" ]; then echo "shard empty"; exit 0; fi
