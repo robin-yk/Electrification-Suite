@@ -9,7 +9,7 @@ import { SERIES_DEFAULTS, seriesRateConstants, steadySeriesCSTR, integrateSeries
          cjhTempForConversion, integratePulsedElement, steadyElementTemperature,
          sampledWaveform, arrheniusRate, transportCoefficient, velocity,
          idealTwoStateAverages, timeAverageTemperature } from "../../apps/rphcjh/solver.js";
-import { drive, comparison } from "./draw.mjs";
+import { workflow, drive, comparison, window_, detailed } from "./draw.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const p = (x, n = 4) => Number(x.toPrecision(n));
@@ -72,8 +72,30 @@ for (let T = 500; T <= 1600; T += 25) {
   kGrid.push({ TC: T, k1: p(k1, 4), k2: p(k2, 4) });
 }
 
+// The detailed-mechanism panels read the committed outputs of the offline
+// pipelines rather than recomputing them: Cantera for the effective activation
+// energy and OpenMKM for the steady PFR sweep. Both files carry their own
+// provenance, which is reproduced on the plate.
+const readJSON = (f) => JSON.parse(readFileSync(join(here, "..", "..", f), "utf8"));
+const cantera = readJSON("apps/rphcjh/data/cantera.json");
+const pfr = readJSON("apps/rphcjh/data/openmkm-pfr.json");
+
 const DATA = {
   commit: solverCommit(),
+  detailed: {
+    tGrid: cantera.T_grid_C,
+    eaWindow: cantera.ea_fit_window_C,
+    mechanisms: Object.values(cantera.mechanisms).map((m) => ({
+      name: m.name, species: m.n_species, reactions: m.n_reactions,
+      ea: p(m.Ea_eff_kJ_mol, 4), k: m.keff_1_s.map((v) => p(v, 4))
+    })),
+    pfr: {
+      engine: pfr.engine, mechanism: pfr.mechanism, feed: pfr.feed,
+      note: pfr.quasi_steady_note,
+      cases: pfr.cases.map((c) => ({ TC: c.element_T_C, X: p(c.ch4_conversion, 4),
+                                     S: p(c.c2_selectivity_carbon, 4) }))
+    }
+  },
   drive: {
     voltage: DRIVE.voltage, period: DRIVE.period, duty: DRIVE.duty,
     tPeak: p(pulsed.tPeak), tMin: p(pulsed.tMin), tAvg: p(pulsed.tAvg),
@@ -95,8 +117,11 @@ const DATA = {
 };
 
 const PLATES = [
+  { id: "rphFig1", label: "Fig. 1", draw: workflow },
   { id: "rphFig2", label: "Fig. 2", draw: drive },
-  { id: "rphFig3", label: "Fig. 3", draw: comparison }
+  { id: "rphFig3", label: "Fig. 3", draw: comparison },
+  { id: "rphFig4", label: "Fig. 4", draw: window_ },
+  { id: "rphFig5", label: "Fig. 5", draw: detailed }
 ];
 for (const plate of PLATES) {
   const svg = plate.draw(DATA);
