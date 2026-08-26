@@ -77,33 +77,38 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install -r tools/cantera/requirements.txt
+      # run_cstr_pilot.py, not run_cstr_case.py: the pilot computes and stores
+      # the quasi-steady reference beside each case, which the analysis needs and
+      # the bare case runner does not emit. The first attempt used the case
+      # runner, ran all ten Cantera integrations successfully, and then died in
+      # the analysis on the missing key -- with the artifact upload skipped, so
+      # four minutes of results were lost. Hence also if: always() below.
       - name: Five periods under each closure
         run: |
           mkdir -p out
           for closure in const-pressure const-volume; do
-            for period in 0.001 0.01 0.1 1.0 10.0; do
-              echo "::group::$closure period=$period"
-              python tools/openmkm_dynamic/run_cstr_case.py \
-                --closure "$closure" --period-s "$period" \
-                --t-min-c 750 --t-peak-c 1250 --duty 0.10 \
-                --residence-time-s 0.1 --points-per-cycle 200 \
-                --output "out/${closure}-p${period}.json"
-              echo "::endgroup::"
-            done
+            echo "::group::$closure"
+            python tools/openmkm_dynamic/run_cstr_pilot.py \
+              --closure "$closure" --points-per-cycle 200 \
+              --output "out/pilot-${closure}.jsonl"
+            echo "::endgroup::"
           done
       - name: Does the correction go to one in the quasi-steady limit?
         run: |
           python - <<'PY'
           import json, pathlib
           rows = []
-          for f in sorted(pathlib.Path("out").glob("*.json")):
-              d = json.loads(f.read_text())
-              closure = d["inputs"]["closure"]
-              c, q = d["cycle_summary"], d["quasi_steady_reference"]
-              rows.append((closure, d["inputs"]["period_s"],
-                           c["mean_ch4_conversion"], q["ch4_conversion"],
-                           c["mean_c2_selectivity_carbon"], q["c2_selectivity_carbon"],
-                           c["converged"], c["cycles_to_convergence"]))
+          for f in sorted(pathlib.Path("out").glob("pilot-*.jsonl")):
+              for line in f.read_text().splitlines():
+                  if not line.strip():
+                      continue
+                  d = json.loads(line)
+                  closure = d["inputs"]["closure"]
+                  c, q = d["cycle_summary"], d["quasi_steady_reference"]
+                  rows.append((closure, d["inputs"]["period_s"],
+                               c["mean_ch4_conversion"], q["ch4_conversion"],
+                               c["mean_c2_selectivity_carbon"], q["c2_selectivity_carbon"],
+                               c["converged"], c["cycles_to_convergence"]))
           print(f"{'closure':<16}{'period':>9}{'X_dyn':>10}{'X_qs':>10}{'ratio':>9}"
                 f"{'S_dyn':>9}{'S_qs':>9}  conv")
           for closure, period, xd, xq, sd, sq, conv, ncyc in sorted(rows):
@@ -122,6 +127,7 @@ jobs:
                         f"   ({'reaches 1' if abs(r-1) < 0.05 else 'does NOT reach 1'})")
           PY
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: closure-diagnostic
           path: out/

@@ -1,9 +1,9 @@
 {
-  "note": "Second campaign, redesigned from the pilot's lessons. The CJH grid is the dense steady CSTR map over (T, tau) -- same reactor and closure as the transient cases, which the 512-point OpenMKM PFR sweep is not -- 25 C spacing refined to 5 C across the ignition cliff, 25 log-spaced tau columns. The design scan drops the drawn trapezoid for the element's own integrated T(t): four axes (voltage, period, duty, tau), all knobs a person can turn, with T_peak/T_min/ramp recorded as results. 192 cases = 128 train / 32 validation / 32 held out. The earlier 7-axis trapezoid shards are superseded; the closure diagnostic already ran and is off.",
+  "note": "Retry of the closure diagnostic alone. The first attempt integrated all ten cases and then lost them: the analysis read quasi_steady_reference from the bare case runner's output, which never emits it (only the pilot does), and the artifact upload was gated on success. The job now drives run_cstr_pilot.py, which stores the reference beside each case, and uploads regardless. Grid and design are off because run 2 is already computing them.",
   "cases": 192,
   "shards": 8,
-  "run_design": true,
-  "run_closure": false,
-  "run_cjh_grid": true,
+  "run_design": false,
+  "run_closure": true,
+  "run_cjh_grid": false,
   "requested": "2026-08-26"
 }
