@@ -1,9 +1,9 @@
 {
-  "note": "Retry of the closure diagnostic alone. The first attempt integrated all ten cases and then lost them: the analysis read quasi_steady_reference from the bare case runner's output, which never emits it (only the pilot does), and the artifact upload was gated on success. The job now drives run_cstr_pilot.py, which stores the reference beside each case, and uploads regardless. Grid and design are off because run 2 is already computing them.",
-  "cases": 192,
-  "shards": 8,
-  "run_design": false,
-  "run_closure": true,
-  "run_cjh_grid": false,
-  "requested": "2026-08-26"
+ "note": "Re-run the full campaign so the new collect job can gather and commit the outputs; every shard is deterministic, so this reproduces the expiring artifacts byte for byte and lands them in the repository with a manifest.",
+ "cases": 192,
+ "shards": 8,
+ "run_design": true,
+ "run_closure": true,
+ "run_cjh_grid": true,
+ "requested": "2026-08-26T22:20Z"
 }
