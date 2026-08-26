@@ -666,24 +666,28 @@ export function verification(DATA) {
     yLabel: "worst layer error vs theory", decades: [-2, 0],
     series: [{ vals: V.annulus.map((a) => a.worst), color: C.thermal, marker: "circle" }] });
 
-  plot({ col: 2, row: 0, xs: V.mms.map((r) => Number(r.grid.split("\u00d7")[0])), xPad: 1.22,
+  V.mms.forEach(function (r) { r.n = Number(r.grid.split("\u00d7")[0]); });
+  V.electrical.forEach(function (r) { r.n = Number(r.grid.split("\u00d7")[0]); });
+  plot({ col: 2, row: 0, xs: V.mms.map((r) => r.n), xPad: 1.22,
     xLabel: "radial cells", yLabel: "error vs manufactured solution (K)",
-    decades: [-2, 1], guide: [32, 78, 8.0, 2],
+    decades: [-2, 1], guide: [V.mms[0].n, V.mms[V.mms.length - 1].n, V.mms[0].linf * 1.7, 2],
     series: [{ vals: V.mms.map((r) => r.linf), color: C.thermal, marker: "square" },
              { vals: V.mms.map((r) => r.l2), color: C.thermal, marker: "circle" }],
     legendBottom: true,
     legend: [{ label: "L\u221e", color: C.thermal, marker: "square" },
              { label: "L2", color: C.thermal, marker: "circle" }] });
 
-  plot({ col: 0, row: 1, xs: V.electrical.map((r) => Number(r.grid.split("\u00d7")[0])), xPad: 1.22,
+  plot({ col: 0, row: 1, xs: V.electrical.map((r) => r.n), xPad: 1.22,
     xLabel: "radial cells", yLabel: "resistance error vs exact",
-    decades: [-7, -4], guide: [34, 84, 2.4e-5, 2],
+    decades: [-7, -4], guide: [V.electrical[0].n, V.electrical[V.electrical.length - 1].n,
+                               V.electrical[0].error * 1.7, 2],
     series: [{ vals: V.electrical.map((r) => r.error), color: C.field, marker: "square" }] });
 
   plot({ col: 1, row: 1, xs: V.transient.rows.map((r) => r.dt), xPad: 1.35,
     xLabels: V.transient.rows.map((r) => r.dt.toFixed(2)),
     xLabel: "time step (s)", yLabel: "error vs reference step (K)",
-    decades: [-1, 1], guide: [6.0, 1.3, 3.4, -1, "first order"],
+    decades: [-1, 1], guide: [V.transient.rows[0].dt, V.transient.rows[V.transient.rows.length - 1].dt,
+                              V.transient.rows[0].error * 1.7, -1, "first order"],
     series: [{ vals: V.transient.rows.map((r) => r.error), color: C.thermal, marker: "circle" }] });
 
   (function () {
