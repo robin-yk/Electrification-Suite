@@ -96,14 +96,36 @@ def quasi_steady_reference(ct, mech, p, n_grid=13, n_phase=400):
         f = (T - grid_T[j]) / (grid_T[j + 1] - grid_T[j])
         return table[grid_T[j]][key] * (1 - f) + table[grid_T[j + 1]][key] * f
 
+    # Two averages, because the dynamic side and this reference must count the
+    # same thing. The transient runner reports an OUTFLOW-weighted outlet -- the
+    # cycle's collected product, which is what an experiment measures -- and at
+    # constant pressure the outflow is m/tau with m proportional to 1/T, so hot
+    # instants (expanded gas, less mass leaving) carry less weight. The old
+    # time-weighted blend counted them equally, and dividing one by the other
+    # manufactured a spurious 0.72 "memory loss" at a 10 s period -- a limit
+    # where quasi-steady is exact by construction and the ratio must be 1.
+    # Recomputing this reference with 1/T weighting closes that limit at 1.02
+    # (1.01 with a first-order washout lag), so the anomaly was the definition,
+    # not physics. Both are returned; the weighted one is the baseline a
+    # memory-gain label must divide by.
     xs = ss = 0.0
+    wx = ws = wsum = 0.0
     for k in range(n_phase):
         T = waveform_temperature((k + 0.5) / n_phase, p)
-        xs += interp(T, "ch4_conversion")
-        ss += interp(T, "ch4_conversion") * interp(T, "c2_selectivity_carbon")
+        x = interp(T, "ch4_conversion")
+        s2 = interp(T, "c2_selectivity_carbon")
+        xs += x
+        ss += x * s2
+        w = 1.0 / T if p.get("closure", "const-pressure") == "const-pressure" else 1.0
+        wx += w * x
+        ws += w * x * s2
+        wsum += w
     x_avg = xs / n_phase
+    x_weighted = wx / wsum
     return {"ch4_conversion": x_avg,
             "c2_selectivity_carbon": ss / xs if xs > 1e-15 else 0.0,
+            "ch4_conversion_outflow_weighted": x_weighted,
+            "c2_selectivity_outflow_weighted": ws / wx if wx > 1e-15 else 0.0,
             "endpoints": {"t_min": table[grid_T[0]], "t_peak": table[grid_T[-1]]}}
 
 

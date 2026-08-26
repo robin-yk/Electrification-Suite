@@ -102,6 +102,26 @@ def subsample(trajectory, points_per_cycle, keep=40):
     }
 
 
+# The steady map the surrogate's baseline is read from spans 400-1400 C, and
+# GRI-Mech is already stretched at its top. The element decides its own peak
+# from (voltage, period, duty), and an unconstrained box put 103 of 192 peaks
+# above 1400 C -- up to 2520 C, outside the mechanism and outside anything the
+# CFP strip survives. The element ODE costs milliseconds, so infeasible points
+# are rejected up front and the Halton walk simply continues to the next index:
+# the kept set stays low-discrepancy over the FEASIBLE region instead of a box
+# that mostly is not. Cold excursions below the map are not rejected: below
+# 400 C the conversion is identically zero on every grid column, so the map
+# extends downward with X = 0 as fact, not assumption.
+PEAK_CAP_C = 1400.0
+
+
+def design_feasible(point):
+    from element_drive import integrate_pulsed_element
+    drive = integrate_pulsed_element(voltage=point["voltage"],
+                                     period=point["period_s"], duty=point["duty"])
+    return drive["converged"] and drive["t_peak_c"] <= PEAK_CAP_C
+
+
 def run_design_case(ct, mech, index, closure="const-pressure"):
     point = design_point(index)
     args = argparse.Namespace(
@@ -116,7 +136,10 @@ def run_design_case(ct, mech, index, closure="const-pressure"):
     result = run_case(mech, p)
     qs = quasi_steady_reference(ct, mech, p, n_grid=9)
     cs = result["cycle_summary"]
-    x_dyn, x_qs = cs["mean_ch4_conversion"], qs["ch4_conversion"]
+    # The label divides like by like: the dynamic outlet is outflow-weighted,
+    # so the baseline must be the outflow-weighted blend, not the time average.
+    x_dyn = cs["mean_ch4_conversion"]
+    x_qs = qs["ch4_conversion_outflow_weighted"]
     return {
         "design_index": index,
         "engine": result["engine"],
@@ -163,6 +186,12 @@ def main():
     with args.output.open("a") as stream:
         for index in range(args.start, args.start + args.cases):
             if index in done:
+                continue
+            point = design_point(index)
+            if not design_feasible(point):
+                print(f"{index}: SKIP infeasible (element peak past {PEAK_CAP_C:.0f} C "
+                      f"at {point['voltage']:.1f} V, P={point['period_s']:.3g} s, "
+                      f"duty {point['duty']:.2f})")
                 continue
             try:
                 record = run_design_case(ct, args.mechanism, index, args.closure)

@@ -213,13 +213,18 @@ jobs:
         with:
           path: gathered
       - name: Merge shards and write the manifest
+        env:
+          GENERATING_SHA: ${{ github.sha }}
         run: |
           python - <<'MERGE'
-          import hashlib, json, pathlib, subprocess, datetime
+          import hashlib, json, os, pathlib, datetime
           root = pathlib.Path("gathered")
           out = pathlib.Path("tools/openmkm_dynamic/data")
           out.mkdir(parents=True, exist_ok=True)
-          head = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
+          # The commit that RAN the computation, not whatever main points at by
+          # the time this job checks out -- rev-parse HEAD here recorded a
+          # sibling session's unrelated commit as the generator once.
+          head = os.environ["GENERATING_SHA"]
 
           def merge(pattern, target):
               rows = []
