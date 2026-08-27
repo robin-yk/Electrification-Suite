@@ -65,7 +65,7 @@
 <div class="plate"></div>
 <div class="tools"><button data-src="rphFigS2">Show SVG source</button><button data-png="rphFigS2">Render 600 dpi</button><button data-copy="rphFigS2">Copy SVG</button><span class="hint"></span></div>
 <textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Fig. S2.</b> The consecutive network compared with detailed chemistry. (a) Effective first-order rate coefficient for methane consumption from two mechanisms of different size, with the interval used for the activation-energy fit shaded. (b) Steady one-dimensional plug-flow states from OpenMKM over the same element temperatures, gas phase only, for a 1:1 CH&#8324;/CO&#8322; feed. C&#8322; selectivity is shown only above 0.1 % conversion. These plug-flow calculations are a qualitative comparison; the quantitative quasi-steady reference is the constant-pressure CSTR map.</div>
+<div class="cap"><b>Fig. S2.</b> The consecutive network compared with detailed chemistry. (a) Effective first-order rate coefficient for methane consumption from two mechanisms of different size, with the interval used for the activation-energy fit shaded. (b) Steady one-dimensional plug-flow states from OpenMKM over the same element temperatures, gas phase only, for a 1:1 CH&#8324;/CO&#8322; feed. CO&#8322; conversion rises with CH&#8324; conversion, which is the dry-reforming route the co-feed opens. Carbon-basis C&#8322; selectivity is shown only above 0.1 % CH&#8324; conversion. These plug-flow calculations are a qualitative comparison; the quantitative quasi-steady reference is the constant-pressure CSTR map.</div>
 <div class="prov">Mechanism comparison and plug-flow states are committed offline runs, shipped with the page.</div>
 </figure>
 
@@ -79,30 +79,30 @@
 </figure>
 
 <figure id="rphFigS4">
-<div class="figbar"><span class="figno">Fig. S4</span><span class="figwhere">Supporting Information &#183; Fitted kernel and development criteria</span><span class="figsize">178 mm</span></div>
+<div class="figbar"><span class="figno">Fig. S4</span><span class="figwhere">Supporting Information &#183; Development and independent-test designs</span><span class="figsize">178 mm</span></div>
 <div class="plate"></div>
 <div class="tools"><button data-src="rphFigS4">Show SVG source</button><button data-png="rphFigS4">Render 600 dpi</button><button data-copy="rphFigS4">Copy SVG</button><span class="hint"></span></div>
 <textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Fig. S4.</b> The fitted correction, examined on the development set. (a) One length scale per input; a shorter bar denotes a stronger dependence. (b) Development-set error for the corrected model, the uncorrected quasi-steady approximation, and inverse-distance weighting over the same features, with the development criteria. Five criteria are applied here and four in the independent evaluation: the long-period consistency check is a development criterion only.</div>
-<div class="prov">Length scales and criteria are read from the fitted model bundle; no value on this plate is retyped.</div>
+<div class="cap"><b>Fig. S4.</b> Allocation of the periodic transient calculations. (a) The development campaign in the two coordinates that determine whether composition history appears: a low-discrepancy scan used for fitting, the subset set aside as the development test, and the simulations added afterward in the resonant band. The three sets are disjoint and together are every case integrated. The dashed line denotes the material-property boundary against which candidates are screened before any chemistry is calculated. (b) The independent test conditions against the same background. Brackets below give the four input ranges outside which no prediction is reported.</div>
+<div class="prov">Designs read from <code>canonical/design-physical.jsonl</code> and <code>canonical/final-validation-report.json</code>.</div>
 </figure>
 
 <figure id="rphFigS5">
-<div class="figbar"><span class="figno">Fig. S5</span><span class="figwhere">Supporting Information &#183; Numerical verification</span><span class="figsize">178 mm</span></div>
+<div class="figbar"><span class="figno">Fig. S5</span><span class="figwhere">Supporting Information &#183; Fitted kernel and development criteria</span><span class="figsize">178 mm</span></div>
 <div class="plate"></div>
 <div class="tools"><button data-src="rphFigS5">Show SVG source</button><button data-png="rphFigS5">Render 600 dpi</button><button data-copy="rphFigS5">Copy SVG</button><span class="hint"></span></div>
 <textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Fig. S5.</b> Solver verification, grouped by what limits each residual. Two quantities are integrated with a finite step and are limited by it. Two are exact by construction and are limited by floating-point arithmetic. The last group tests periodicity in the stiff limit; the two high-voltage drives are numerical tests whose peaks lie outside the material-property range and are not operating conditions.</div>
-<div class="prov">Every residual is computed when this page is built, not recorded from a previous run.</div>
+<div class="cap"><b>Fig. S5.</b> The fitted correction, examined on the development set. (a) One length scale per input; a shorter bar denotes a stronger dependence. (b) Development-set error for the corrected model, the uncorrected quasi-steady approximation, and inverse-distance weighting over the same features, with the development criteria. Five criteria are applied here and four in the independent evaluation: the long-period consistency check is a development criterion only.</div>
+<div class="prov">Length scales and criteria are read from the fitted model bundle; no value on this plate is retyped.</div>
 </figure>
 
 <figure id="rphFigS6">
-<div class="figbar"><span class="figno">Fig. S6</span><span class="figwhere">Supporting Information &#183; Development and independent-test designs</span><span class="figsize">178 mm</span></div>
+<div class="figbar"><span class="figno">Fig. S6</span><span class="figwhere">Supporting Information &#183; Numerical verification</span><span class="figsize">178 mm</span></div>
 <div class="plate"></div>
 <div class="tools"><button data-src="rphFigS6">Show SVG source</button><button data-png="rphFigS6">Render 600 dpi</button><button data-copy="rphFigS6">Copy SVG</button><span class="hint"></span></div>
 <textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Fig. S6.</b> Allocation of the periodic transient calculations. (a) The development campaign in the two coordinates that determine whether composition history appears: a low-discrepancy scan used for fitting, the subset set aside as the development test, and the simulations added afterward in the resonant band. The three sets are disjoint. (b) The independent test conditions against the same background. The dashed line denotes the material-property boundary against which candidates are screened before any chemistry is calculated.</div>
-<div class="prov">Designs read from <code>canonical/design-physical.jsonl</code> and <code>canonical/final-validation-report.json</code>.</div>
+<div class="cap"><b>Fig. S6.</b> Worst residual for each solver check, on one logarithmic axis. The checks fall into two populations about twelve decades apart. Two quantities are integrated with a finite step, which sets their floor. Two are exact by construction and are limited only by floating-point arithmetic. The last group tests periodicity in the stiff limit, where the fast step runs up to twelve orders faster than the cycle containing it. Open markers denote drives whose calculated peak lies outside the material-property range; these are numerical tests, not operating conditions. Case counts are given in parentheses.</div>
+<div class="prov">Every residual is computed when this page is built, not recorded from a previous run.</div>
 </figure>
 
 <figure id="rphFigS7">
@@ -110,7 +110,7 @@
 <div class="plate"></div>
 <div class="tools"><button data-src="rphFigS7">Show SVG source</button><button data-png="rphFigS7">Render 600 dpi</button><button data-copy="rphFigS7">Copy SVG</button><span class="hint"></span></div>
 <textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Fig. S7.</b> Applicability of each layer of the model. Each row states what is solved, the assumption that licenses it, and the question it therefore cannot answer. Rows are ordered outward from the heating element. The final line applies to all four rows.</div>
+<div class="cap"><b>Fig. S7.</b> The modelled arrangement and what it does not resolve. The element is treated as a single temperature inside an ideal constant-pressure stirred volume, with the inlet and outlet flows adjusted through the cycle to hold the instantaneous mass residence time fixed. Coupling runs in one direction only: the element temperature drives the chemistry, and reaction heat is not returned to the element. The plug-flow calculation sits outside this loop and is used for comparison, not for prediction. Items at right are excluded by these choices, colored to the part of the arrangement that excludes them.</div>
 <div class="prov">Scope statements are properties of the model as implemented in <code>apps/rphcjh/solver.js</code>.</div>
 </figure>
 
@@ -119,7 +119,7 @@
 <div class="plate"></div>
 <div class="tools"><button data-src="rphFigS8">Show SVG source</button><button data-png="rphFigS8">Render 600 dpi</button><button data-copy="rphFigS8">Copy SVG</button><span class="hint"></span></div>
 <textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Fig. S8.</b> The two model layers implemented in the browser application. The upper layer is the consecutive network in arbitrary units and provides the interpretable account of the pulsing window. The lower layer is detailed chemistry on a fixed feed and reports methane conversion only. Both layers are driven by the same calculated element trajectory. Small grey labels are the application's tab names at the stamped revision.</div>
+<div class="cap"><b>Fig. S8.</b> The two model layers implemented in the browser application. The upper layer is detailed chemistry on a fixed feed and reports methane conversion only; it is the layer the quantitative results come from. The lower layer is the consecutive network in arbitrary units and is interpretive: it accounts for the pulsing window and predicts no real yield. Both layers are driven by the same calculated element trajectory. Small grey labels are the application's tab names at the stamped revision.</div>
 <div class="prov">Every panel calls <code>apps/rphcjh/solver.js</code>; the predictor adds <code>apps/rphcjh/surrogate.js</code>, so the browser and the regression tests execute identical code.</div>
 </figure>
 

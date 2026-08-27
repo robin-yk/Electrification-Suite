@@ -300,15 +300,18 @@ export function detailed(DATA) {
       '" height="' + (ph - 2) + '" fill="#F4F4F4"/>';
     o += T(x0 + 16, pbot - 32, "below 0.1 % conversion,", { size: 8, fill: C.grey });
     o += T(x0 + 16, pbot - 22, "selectivity not drawn", { size: 8, fill: C.grey });
-    [[cs, "X", C.thermal], [useful, "S", C.scalar], [cs, "CO", C.gas]].forEach(function (spec) {
+    [[cs, "X", C.thermal], [useful, "S", C.scalar], [cs, "XCO2", C.gas]].forEach(function (spec) {
       let d = "";
       spec[0].forEach(function (c, j) { d += (j ? " L" : "M") + X(c.TC) + "," + Y(c[spec[1]]); });
       o += '<path d="' + d + '" fill="none" stroke="' + spec[2] + '" stroke-width="1.6"/>';
     });
     const last = cs[cs.length - 1];
-    o += T(x0 + pw - 8, Y(last.S) - 7, "C₂ selectivity", { size: 8.5, weight: "bold", anchor: "end", fill: SHADE.scalar });
+    /* at the right edge the selectivity and the conversion curves nearly meet,
+       so the selectivity names itself at the left of its drawn segment, where
+       it is flat and alone */
+    o += T(X(cut) + 4, Y(useful[0].S) + 12, "C₂ selectivity", { size: 8.5, weight: "bold", fill: SHADE.scalar });
     o += T(x0 + pw - 8, Y(last.X) + 12, "CH₄ conversion", { size: 8.5, weight: "bold", anchor: "end", fill: SHADE.thermal });
-    o += T(x0 + pw - 8, Y(last.CO) + 12, "CO out", { size: 8.5, weight: "bold", anchor: "end", fill: SHADE.gas });
+    o += T(x0 + pw - 8, Y(last.XCO2) + 12, "CO₂ conversion", { size: 8.5, weight: "bold", anchor: "end", fill: SHADE.gas });
     b += o;
   })();
   return svgDoc(W, H, b);
@@ -320,7 +323,7 @@ export function detailed(DATA) {
 /* revision.                                                            */
 /* ------------------------------------------------------------------ */
 export function workflow(DATA) {
-  const ns = "r1", W = 505, H = 332;
+  const ns = "r1", W = 505, H = 314;
   const E = DATA.gp;
   let b = defs(ns);
 
@@ -346,19 +349,10 @@ export function workflow(DATA) {
     return o;
   };
 
-  /* the toy: arbitrary units, but it is the layer that explains anything */
-  b += lane(20, 118, C.gas, "THE TWO-STEP TOY",
-    "why does pulsing help at all", [
-    { title: "Ideal rate averaging", tab: "When Pulsing Helps",
-      does: ["one activation energy and a duty",
-        "compares ⟨k⟩ against k(⟨T⟩)", "answers before anything is integrated"] },
-    { title: "Two-step network", tab: "A → B → C",
-      does: ["two steps with different activation energies",
-        "periodic CSTR on the drive's own T(t)", "intermediate yield at equal conversion"] }
-  ], "Arbitrary kinetics, so the yields are not a claim about any real chemistry. It is the interpretable layer.");
-
-  /* the predictor: real chemistry, and the only layer that gives a number */
-  b += lane(154, 118, C.thermal, "THE DETAILED-CHEMISTRY PREDICTOR",
+  /* The predictor leads. It is the layer the paper's result comes from; the
+     two-step network is the interpretation and is drawn shorter, in neutral
+     grey, so the plate does not imply the toy carries the contribution. */
+  b += lane(20, 118, C.thermal, "THE DETAILED-CHEMISTRY PREDICTOR",
     "how much methane actually converts", [
     { title: "Conversion prediction", tab: "Kinetic Effect",
       does: ["voltage, period, duty, residence time",
@@ -368,18 +362,26 @@ export function workflow(DATA) {
         "the independent test and its criteria", "the domain outside which nothing is reported"] }
   ], "GRI-Mech 3.0 on a fixed feed. Conversion only: no selectivity is predicted here, because none was validated.");
 
+  b += lane(154, 100, C.grey, "THE TWO-STEP NETWORK, INTERPRETIVE ONLY",
+    "why pulsing can help at all", [
+    { title: "Ideal rate averaging", tab: "When Pulsing Helps",
+      does: ["one activation energy and a duty", "compares ⟨k⟩ against k(⟨T⟩)"] },
+    { title: "Two-step network", tab: "A → B → C",
+      does: ["two steps with different activation energies", "intermediate yield at equal conversion"] }
+  ], "Arbitrary kinetics: the yields are not a claim about any real chemistry.");
+
   b += line(252, 138, 252, 154, { stroke: C.hair, sw: 0.8, dash: "2 2" });
   b += T(258, 150, "both layers drive off the same element T(t)", { size: 8, fill: C.grey });
 
-  b += rect(18, 282, 469, 28, { stroke: C.hair, fill: TINT.grey, sw: 0.8, dash: "3 2" });
-  b += T(28, 299, "SUPPORTING", { size: 8, weight: "bold", fill: C.grey });
+  b += rect(18, 264, 469, 28, { stroke: C.hair, fill: TINT.grey, sw: 0.8, dash: "3 2" });
+  b += T(28, 281, "SUPPORTING", { size: 8, weight: "bold", fill: C.grey });
   [["Calculations", "every equation the page evaluates"],
    ["How to Cite", "the paper this tool accompanies"]].forEach(function (t, i) {
     const x = 120 + i * 190;
-    b += T(x, 294, t[0], { size: 8.5, weight: "bold", fill: SHADE.grey });
-    b += T(x, 304, t[1], { size: 8, fill: C.grey });
+    b += T(x, 276, t[0], { size: 8.5, weight: "bold", fill: SHADE.grey });
+    b += T(x, 286, t[1], { size: 8, fill: C.grey });
   });
-  b += T(18, 326, "Every tab calls apps/rphcjh/solver.js, and the predictor adds apps/rphcjh/surrogate.js, so the browser and the tests run identical code.",
+  b += T(18, 308, "Every tab calls apps/rphcjh/solver.js, and the predictor adds apps/rphcjh/surrogate.js, so the browser and the tests run identical code.",
     { size: 8, fill: C.grey });
   return svgDoc(W, H, b);
 }
@@ -389,63 +391,77 @@ export function workflow(DATA) {
 /* is between what is integrated and what is exact by construction.    */
 /* ------------------------------------------------------------------ */
 export function verification(DATA) {
-  const ns = "rs1", W = 505, H = 300;
-  const V = DATA.verify;
+  /* One logarithmic axis, not a table. The point of this plate is that the
+     residuals fall into two populations twelve decades apart: what a finite
+     step limits, and what floating-point arithmetic limits. A column of
+     numbers makes a reader compare exponents; an axis shows it. */
+  const ns = "rs1", W = 505, H = 258;
+  const V = DATA.verify, cap = DATA.space.cap;
   let b = defs(ns);
-  const LX = 22, NX = 372, WX = 488;
+  const LX = 22, x0 = 200, pw = 285, ptop = 34, pbot = 214;
   const sci = (v) => {
     if (v === 0) return "0";
     const e = Math.floor(lg(Math.abs(v)));
     return (v / Math.pow(10, e)).toFixed(1) + " × 10^{" + String(e).replace("-", "−") + "}";
   };
 
-  b += T(LX, 22, "CHECK, AND WHAT IT IS CHECKED AGAINST", { size: 8, weight: "bold", fill: C.grey });
-  b += T(NX, 22, "CASES", { size: 8, weight: "bold", anchor: "end", fill: C.grey });
-  b += T(WX, 22, "WORST RESIDUAL", { size: 8, weight: "bold", anchor: "end", fill: C.grey });
-  b += line(LX, 27, WX, 27, { stroke: C.ink, sw: 0.9 });
+  const rows = [];
+  const push = (group, q, n, worst, unit, note) =>
+    rows.push({ group, q, n, worst, unit, note });
+  V.integrated.forEach((r) => push("step", r.q, r.n, r.worst, r.unit, r.against));
+  V.exact.forEach((r) => push("exact", r.q, r.n, r.worst, r.unit, r.against));
+  V.stiff.forEach((r) => push("stiff",
+    r.volts + " V drive, peak " + r.tPeak.toFixed(0) + " °C", 1, r.drift, "drift over a cycle",
+    "k₁ at the peak reaches " + sci(r.k1) + " s⁻¹", r.tPeak > cap));
+  V.stiff.forEach((r, i) => { rows[rows.length - V.stiff.length + i].beyond = r.tPeak > cap; });
 
-  /* the reference sits under the check rather than in a column of its own:
-     at this width a second column would run into the first */
-  let y = 44;
-  const section = (title, note, rows, sub) => {
-    b += T(LX, y, title.toUpperCase(), { size: 8, weight: "bold", fill: SHADE.grey });
-    b += T(WX, y, note, { size: 8, anchor: "end", fill: C.grey });
-    b += line(LX, y + 5, WX, y + 5, { stroke: C.rule, sw: 0.6 });
-    y += 18;
-    if (sub) { b += T(LX + 8, y, sub, { size: 8, fill: SHADE.thermal }); y += 13; }
-    rows.forEach(function (r) {
-      b += T(LX + 8, y, r.q, { size: 8.5 });
-      b += T(NX, y, String(r.n), { size: 8.5, anchor: "end", fill: C.grey });
-      b += T(WX, y, r.worstText, { size: 8.5, anchor: "end" });
-      b += T(LX + 8, y + 10, r.against, { size: 8, fill: C.grey });
-      y += 26;
+  const worsts = rows.map((r) => r.worst).filter((v) => v > 0);
+  const dLo = Math.floor(lg(Math.min.apply(null, worsts))) - 1;
+  const dHi = Math.ceil(lg(Math.max.apply(null, worsts))) + 1;
+  const X = (v) => lin(lg(v), dLo, dHi, x0 + 10, x0 + pw - 10);
+
+  b += rect(x0, ptop, pw, pbot - ptop, { stroke: C.grey, fill: "#FFFFFF", sw: 0.8, rx: 0 });
+  for (let d = dLo; d <= dHi; d += 4) {
+    b += line(X(Math.pow(10, d)), ptop, X(Math.pow(10, d)), pbot, { stroke: "#EAEAEA", sw: 0.4 });
+    b += T(X(Math.pow(10, d)), pbot + 12, "10^{" + String(d).replace("-", "−") + "}",
+      { size: 8, anchor: "middle", fill: C.grey });
+  }
+  b += T(x0 + pw / 2, pbot + 25, "worst residual", { size: 8.5, anchor: "middle" });
+
+  /* the two populations, named where they sit rather than in a legend */
+  const GROUPS = [
+    { key: "step", title: "Integrated with a finite step", note: "the step sets the floor" },
+    { key: "exact", title: "Exact by construction", note: "the arithmetic sets the floor" },
+    { key: "stiff", title: "Periodic under stress", note: "the fixed point returns to itself" }
+  ];
+  let y = ptop + 16;
+  GROUPS.forEach(function (g, gi) {
+    if (gi) { b += line(LX, y - 12, x0 + pw, y - 12, { stroke: C.rule, sw: 0.5 }); }
+    b += T(LX, y, g.title.toUpperCase(), { size: 8, weight: "bold", fill: SHADE.grey });
+    b += T(LX, y + 10, g.note, { size: 8, fill: C.grey });
+    let ry = y;
+    rows.filter((r) => r.group === g.key).forEach(function (r) {
+      /* the case count rides on the label; a column of its own left no room
+         for the longest check name before the axis begins */
+      b += T(LX + 8, ry + 22, r.q + "  (" + r.n + ")", { size: 8.5 });
+      const cx = X(r.worst), cy = ry + 19;
+      b += '<circle cx="' + cx.toFixed(1) + '" cy="' + cy + '" r="3"' +
+        (r.beyond ? ' fill="none" stroke="' + C.thermal + '" stroke-width="1.2"' : ' fill="' + C.thermal + '"') + '/>';
+      /* the two step-limited residuals sit near the right edge, so their value
+         is set inside the marker rather than off the sheet */
+      const right = cx > x0 + pw - 62;
+      b += T(cx + (right ? -6 : 6), cy + 3, sci(r.worst),
+        { size: 8, fill: C.grey, anchor: right ? "end" : "start" });
+      ry += 15;
     });
-    y += 6;
-  };
-  section("Integrated with a finite step", "limited by the step",
-    V.integrated.map((r) => Object.assign({ worstText: sci(r.worst) + " " + r.unit }, r)));
-  section("Exact by construction", "limited by the arithmetic",
-    V.exact.map((r) => Object.assign({ worstText: sci(r.worst) + " " + r.unit }, r)));
-  /* the high-voltage drives in this group reach peaks far outside the
-     material-property range and are not physical operating points. It is said
-     on the plate, in the accent colour, because a reader scanning the table
-     sees the temperature before any caption. The shipped drive sits in the
-     same group and is not named, so the sentence is built from the cap. */
-  section("Periodic under stress", "the fixed point returns to itself however fast the hot step runs",
-    V.stiff.map((r) => ({
-      q: r.volts + " V drive, peak " + r.tPeak.toFixed(0) + " °C",
-      against: "k₁ at the peak reaches " + sci(r.k1) + " s⁻¹, and x_{B} stays inside [0, 1]",
-      n: 1, worstText: sci(r.drift) + " drift over a cycle"
-    })),
-    /* the group also holds the shipped drive, whose peak is an ordinary
-       operating point. Name only the drives that actually exceed the bound,
-       read off the same cap the campaign screens against. */
-    (function () {
-      const over = V.stiff.filter((r) => r.tPeak > DATA.space.cap).map((r) => r.volts);
-      if (!over.length) return "";
-      return "The " + (over.length > 1 ? over.slice(0, -1).join(", ") + " and " + over[over.length - 1] : over[0]) +
-        " V drives are numerical tests. Their peaks are far outside the material-property range and are not operating points.";
-    })());
+    y = ry + 20;
+  });
+
+  /* the legend sits in the panel's empty upper left, where no residual falls */
+  b += '<circle cx="' + (x0 + 16) + '" cy="' + (ptop + 12) + '" r="3" fill="none" stroke="' +
+    C.thermal + '" stroke-width="1.2"/>';
+  b += T(x0 + 24, ptop + 15, "peak above " + cap + " °C: a numerical test,", { size: 8, fill: C.grey });
+  b += T(x0 + 24, ptop + 25, "not an operating condition", { size: 8, fill: C.grey });
   return svgDoc(W, H, b);
 }
 
@@ -454,45 +470,69 @@ export function verification(DATA) {
 /* what is solved, on what assumption, and what that forbids.          */
 /* ------------------------------------------------------------------ */
 export function boundaries(DATA) {
-  const ns = "rs2", W = 505, H = 314;
+  /* A schematic, not a table of prose. The scope of this model is a statement
+     about a physical arrangement: one temperature for the element, an ideal
+     stirred volume around it, coupling in one direction only, and a detailed
+     calculation that sits beside the loop rather than inside it. Drawing that
+     arrangement says in one look what three columns of sentences said in
+     twelve lines, and the exclusions become labels on the parts they exclude. */
+  const ns = "rs2", W = 505, H = 240;
   let b = defs(ns);
-  const LX = 22, EX = 488;
-  const rows = [
-    { layer: "The element", hue: C.thermal,
-      solved: "One temperature, integrated as m c_{p}(T) dT/dt = V²/R(T) − losses(T).",
-      because: "Measured spatial uniformity and a 210 µm thickness make it thermally thin.",
-      forbids: "Any question about gradients inside the element, or any element that is not thin." },
-    { layer: "The reactor", hue: C.gas,
-      solved: "An ideal CSTR at the element's temperature, with A → B → C first order in both steps.",
-      because: "The network is the smallest one that carries a selectivity to an intermediate.",
-      forbids: "Absolute yields. It isolates the averaging effect; it does not predict a mechanism." },
-    { layer: "The coupling", hue: C.scalar,
-      solved: "Temperature drives chemistry, one way.",
-      because: "Reaction heat is small against the electrical power at these conversions.",
-      forbids: "Anything where conversion feeds back on temperature, or a runaway." },
-    { layer: "The detailed check", hue: C.grey,
-      solved: "Steady one-dimensional plug flow, gas phase only, from committed offline runs.",
-      because: "Hot-zone residence is milliseconds against pulse periods of order a second.",
-      forbids: "Surface chemistry, and any transient the plug-flow states cannot be blended into." }
-  ];
+  const LX = 22;
 
-  b += T(LX, 22, "LAYER", { size: 8, weight: "bold", fill: C.grey });
-  b += T(LX + 104, 22, "WHAT IS SOLVED", { size: 8, weight: "bold", fill: C.grey });
-  b += line(LX, 27, EX, 27, { stroke: C.ink, sw: 0.9 });
+  /* ---- the reacting volume, with the element inside it ---- */
+  const rx = 70, ry = 44, rw = 228, rh = 100;
+  b += rect(rx, ry, rw, rh, { stroke: C.gas, fill: tintOf(C.gas), sw: 1, rx: 4 });
+  b += T(rx + 10, ry + 16, "IDEAL CSTR, CONSTANT PRESSURE", { size: 8, weight: "bold", fill: shadeOf(C.gas) });
+  b += T(rx + 10, ry + 28, "A → B → C, first order in both steps", { size: 8.5, fill: C.ink });
 
-  let y = 44;
-  rows.forEach(function (r, i) {
-    if (i) b += line(LX, y - 13, EX, y - 13, { stroke: "#EAEAEA", sw: 0.5 });
-    b += '<rect x="' + LX + '" y="' + (y - 7) + '" width="4" height="46" fill="' + r.hue + '"/>';
-    b += T(LX + 10, y, r.layer, { size: 9, weight: "bold", fill: shadeOf(r.hue) });
-    b += T(LX + 104, y, r.solved, { size: 8.5 });
-    b += T(LX + 104, y + 13, "why that is allowed:  " + r.because, { size: 8, fill: C.grey });
-    b += T(LX + 104, y + 26, "so do not ask it:  " + r.forbids, { size: 8, fill: SHADE.thermal });
-    y += 62;
+  const ex = rx + 26, ey = ry + 58, ew = rw - 52, eh = 26;
+  b += rect(ex, ey, ew, eh, { stroke: C.thermal, fill: tintOf(C.thermal), sw: 1, rx: 2 });
+  b += T(ex + ew / 2, ey + 11, "ELEMENT, ONE TEMPERATURE", { size: 8, weight: "bold", anchor: "middle", fill: shadeOf(C.thermal) });
+  b += T(ex + ew / 2, ey + 21, "m c_{p}(T) dT/dt = V²/R(T) − losses(T)", { size: 8, anchor: "middle", fill: C.ink });
+
+  /* one-way coupling, and the return path that is not modelled */
+  b += arrow(ns, "M" + (ex + ew / 2 - 40) + "," + (ey - 3) + " L" + (ex + ew / 2 - 40) + "," + (ry + 36),
+    { color: "thermal" });
+  b += T(ex + ew / 2 - 34, ry + 46, "T(t)", { size: 8, fill: SHADE.thermal });
+  /* the return path is drawn and then struck out: the omission is a modelling
+     choice and is easier to see as a crossed arrow than to read as a sentence */
+  b += line(ex + ew / 2 + 30, ry + 36, ex + ew / 2 + 30, ey - 3, { stroke: C.hair, sw: 0.9, dash: "2 2" });
+  b += line(ex + ew / 2 + 25, ry + 40, ex + ew / 2 + 35, ry + 50, { stroke: C.grey, sw: 1 });
+  b += line(ex + ew / 2 + 35, ry + 40, ex + ew / 2 + 25, ry + 50, { stroke: C.grey, sw: 1 });
+  b += T(ex + ew / 2 + 40, ry + 42, "no heat", { size: 8, fill: C.grey });
+  b += T(ex + ew / 2 + 40, ry + 52, "feedback", { size: 8, fill: C.grey });
+
+  /* the flow that sets the residence time */
+  b += arrow(ns, "M" + (rx - 40) + "," + (ry + rh / 2) + " L" + (rx - 4) + "," + (ry + rh / 2), { color: "hair" });
+  b += T(LX, ry + rh / 2 - 14, "1:1 CH₄/CO₂", { size: 8, fill: C.grey });
+  b += T(LX, ry + rh / 2 - 4, "at 1 atm", { size: 8, fill: C.grey });
+  b += arrow(ns, "M" + (rx + rw + 4) + "," + (ry + rh / 2) + " L" + (rx + rw + 34) + "," + (ry + rh / 2), { color: "hair" });
+  b += T(rx + rw + 8, ry + rh / 2 - 6, "τ fixed", { size: 8, fill: C.grey });
+
+  /* the detailed calculation sits beside the loop, not inside it */
+  b += rect(rx, ry + rh + 20, rw, 34, { stroke: C.hair, fill: TINT.grey, sw: 0.8, dash: "3 2" });
+  b += T(rx + 10, ry + rh + 34, "OFFLINE, FOR COMPARISON ONLY", { size: 8, weight: "bold", fill: C.grey });
+  b += T(rx + 10, ry + rh + 46, "steady 1-D plug flow, gas phase only", { size: 8.5, fill: C.ink });
+
+  /* ---- what each part does not resolve ---- */
+  const nx = 348;
+  b += T(nx, 22, "NOT RESOLVED", { size: 8, weight: "bold", fill: C.grey });
+  b += line(nx, 27, 488, 27, { stroke: C.ink, sw: 0.9 });
+  [[C.thermal, "Gradients inside the element,", "or any element that is not thin"],
+   [C.gas, "Absolute yields: the network", "isolates averaging, not mechanism"],
+   [C.scalar, "Conversion feeding back on", "temperature, and thermal runaway"],
+   [C.grey, "Surface chemistry, and any", "transient the plug flow cannot blend"]
+  ].forEach(function (r, i) {
+    const y = 44 + i * 36;
+    b += '<rect x="' + nx + '" y="' + (y - 8) + '" width="3" height="26" fill="' + r[0] + '"/>';
+    b += T(nx + 9, y, r[1], { size: 8, fill: C.ink });
+    b += T(nx + 9, y + 10, r[2], { size: 8, fill: C.ink });
   });
-  b += line(LX, y - 13, EX, y - 13, { stroke: C.ink, sw: 0.9 });
-  b += T(LX, y, "No layer carries oxidation, sublimation or a lifetime model, so a temperature", { size: 8.5, fill: C.grey });
-  b += T(LX, y + 11, "the element reaches here is not a temperature it survives.", { size: 8.5, fill: C.grey });
+
+  b += line(LX, H - 30, 488, H - 30, { stroke: C.rule, sw: 0.6 });
+  b += T(LX, H - 17, "No layer carries oxidation, sublimation or a lifetime model, so a temperature the element reaches here is not one it survives.",
+    { size: 8, fill: C.grey });
   return svgDoc(W, H, b);
 }
 
@@ -821,7 +861,7 @@ export function finalparity(DATA) {
 /* the campaign, selected by rule so it cannot be a flattering pick.   */
 /* ------------------------------------------------------------------ */
 export function method(DATA) {
-  const ns = "r9", W = 505, H = 330;
+  const ns = "r9", W = 505, H = 338;
   const E = DATA.example, G = DATA.gp;
   let b = defs(ns);
   const box = (x, y, w, h, title, lines, hue, fill) => {
@@ -836,15 +876,17 @@ export function method(DATA) {
 
   /* a. the label path: one drive, two conversions, one log-odds difference */
   b += T(18, 22, "a", { size: 11, weight: "bold" });
-  b += T(34, 22, "MAKING ONE TRAINING LABEL", { size: 8, weight: "bold", fill: C.grey });
-  b += T(487, 22, "worked on the campaign's strongest memory case", { size: 8, anchor: "end", fill: C.grey });
+  b += T(34, 22, "CONSTRUCTION OF ONE TRAINING LABEL", { size: 8, weight: "bold", fill: C.grey });
+  b += T(487, 22, "the largest departure in the development campaign", { size: 8, anchor: "end", fill: C.grey });
 
   const ay = 32;
+  /* the shared upstream is neutral: colour is spent only on the two readings
+     of the waveform, which is the one contrast this plate exists to show */
   b += box(18, ay, 108, 46, "Drive", [E.voltage + " V,  " + E.period + " s",
-                                      (100 * E.duty).toFixed(1) + " % duty"], C.scalar, TINT.scalar);
+                                      (100 * E.duty).toFixed(1) + " % duty"]);
   b += arrow(ns, "M126," + (ay + 23) + " L140," + (ay + 23), { color: "hair" });
   b += box(141, ay, 112, 46, "Element ODE", ["peak " + E.tPeak.toFixed(0) + " °C",
-                                             "minimum " + E.tMin.toFixed(0) + " °C"], C.thermal, TINT.thermal);
+                                             "minimum " + E.tMin.toFixed(0) + " °C"]);
   b += T(203, ay + 54, "T(t), integrated to a periodic state", { size: 8, fill: C.grey });
 
   /* the same waveform is read twice, which is the whole construction */
@@ -861,29 +903,30 @@ export function method(DATA) {
   const cy = by + 62;
   b += arrow(ns, "M84," + (by + 52) + " L84," + (cy - 2), { color: "hair", sw: 0.9 });
   b += arrow(ns, "M320," + (by + 52) + " L320," + (cy - 2), { color: "hair", sw: 0.9 });
-  b += rect(18, cy, 368, 30, { stroke: C.ink, fill: "#FFFFFF", sw: 1.1 });
+  b += rect(18, cy, 368, 30, { stroke: C.edge, fill: "#FFFFFF", sw: 0.8 });
   b += T(202, cy + 13, "label  δ  =  logit X_{dyn}  −  logit X_{qs}  =  " + E.delta.toFixed(2),
     { size: 9, weight: "bold", anchor: "middle" });
   b += T(202, cy + 24, "a ratio of odds, so a rare event and a common one are corrected on one scale",
     { size: 8, anchor: "middle", fill: C.grey });
 
   /* the numbers on the right, so the diagram carries its own arithmetic */
-  b += rect(396, ay, 91, cy + 30 - ay, { stroke: C.hair, fill: TINT.panel, sw: 0.8, dash: "3 2" });
+  b += rect(396, ay, 91, 104, { stroke: C.hair, fill: TINT.panel, sw: 0.8, dash: "3 2" });
   b += T(404, ay + 14, "THIS CASE", { size: 8, weight: "bold", fill: C.grey });
+  /* X_qs, X_dyn and the observed delta are already in the flow boxes; only
+     what the flow does not carry is listed here */
   [["period / τ", (E.period / E.tau).toFixed(1)], ["residence τ", E.tau + " s"],
-   ["X_{qs}", String(E.xQs)], ["X_{dyn}", String(E.xDyn)],
-   ["ratio", E.gain.toFixed(2) + "x"], ["δ observed", E.delta.toFixed(2)],
+   ["ratio", E.gain.toFixed(2) + "x"],
    ["δ predicted", E.deltaHat === null ? "n/a" : E.deltaHat.toFixed(2)],
    ["X predicted", E.xPred === null ? "n/a" : String(E.xPred)]].forEach(function (r, i) {
-    b += T(404, ay + 28 + i * 12, r[0], { size: 8, fill: C.grey });
-    b += T(479, ay + 28 + i * 12, r[1], { size: 8, anchor: "end", weight: i >= 6 ? "bold" : "normal",
-                                          fill: i >= 6 ? SHADE.thermal : C.ink });
+    b += T(404, ay + 30 + i * 13, r[0], { size: 8, fill: C.grey });
+    b += T(479, ay + 30 + i * 13, r[1], { size: 8, anchor: "end", weight: i >= 3 ? "bold" : "normal",
+                                          fill: i >= 3 ? SHADE.thermal : C.ink });
   });
 
   /* b. the model that turns five numbers into that correction */
   const dy = 218;
   b += T(18, dy, "b", { size: 11, weight: "bold" });
-  b += T(34, dy, "LEARNING AND APPLYING THE CORRECTION", { size: 8, weight: "bold", fill: C.grey });
+  b += T(34, dy, "FITTING AND APPLYING THE CORRECTION", { size: 8, weight: "bold", fill: C.grey });
   const ey = dy + 10;
   b += rect(18, ey, 128, 76, { stroke: C.edge, fill: "#FFFFFF", sw: 0.8 });
   b += T(82, ey + 13, "Five inputs", { size: 8.5, weight: "bold", anchor: "middle", fill: SHADE.ink });
@@ -891,7 +934,7 @@ export function method(DATA) {
     b += T(26, ey + 25 + i * 10, "· " + f.label, { size: 8, fill: C.grey });
   });
   b += arrow(ns, "M146," + (ey + 38) + " L160," + (ey + 38), { color: "hair" });
-  b += rect(161, ey, 132, 76, { stroke: C.ink, fill: "#FFFFFF", sw: 1.1 });
+  b += rect(161, ey, 132, 76, { stroke: C.edge, fill: "#FFFFFF", sw: 0.8 });
   b += T(227, ey + 14, "Gaussian process", { size: 9, weight: "bold", anchor: "middle" });
   G.kernel.split(", ").forEach(function (part, i) {
     b += T(227, ey + 25 + i * 10, part, { size: 8, anchor: "middle", fill: C.grey });
@@ -900,14 +943,14 @@ export function method(DATA) {
   b += T(227, ey + 57, "noise σ_{n} = " + G.sigmaN + " in log-odds", { size: 8, anchor: "middle", fill: C.grey });
   b += T(227, ey + 69, "returns the correction δ", { size: 8, anchor: "middle", weight: "bold", fill: SHADE.thermal });
   b += arrow(ns, "M293," + (ey + 38) + " L307," + (ey + 38), { color: "hair" });
-  b += rect(308, ey, 179, 76, { stroke: C.edge, fill: TINT.thermal, sw: 0.8 });
+  b += rect(308, ey, 179, 76, { stroke: C.edge, fill: "#FFFFFF", sw: 0.8 });
   b += T(397, ey + 14, "X_{pred} = σ( logit X_{qs} + δ )", { size: 9, weight: "bold", anchor: "middle", fill: SHADE.thermal });
   b += T(316, ey + 28, "The sigmoid cannot leave (0, 1), so no", { size: 8, fill: C.grey });
   b += T(316, ey + 38, "correction can return an impossible conversion.", { size: 8, fill: C.grey });
-  b += T(316, ey + 51, "A zero-mean prior sends δ to 0 away from the", { size: 8, fill: C.grey });
-  b += T(316, ey + 61, "data, which is also the long-period limit.", { size: 8, fill: C.grey });
+  b += T(316, ey + 51, "A zero-mean prior regularises unsupported", { size: 8, fill: C.grey });
+  b += T(316, ey + 61, "corrections toward zero.", { size: 8, fill: C.grey });
 
-  b += T(18, 308, "Scope of every number above: " + G.scope.feed + " at " + G.scope.pressure_atm +
+  b += T(18, 320, "Scope of every number above: " + G.scope.feed + " at " + G.scope.pressure_atm +
     " atm, " + G.scope.mechanism + ", " + G.scope.closure + ", element peak below " +
     G.scope.peak_cap_c + " °C.", { size: 8, fill: C.grey });
   return svgDoc(W, H, b);
@@ -926,7 +969,7 @@ export function gpdetail(DATA) {
   (function () {
     const x0 = 150, w = 230, ytop = 34, rowh = 22;
     let o = T(18, 22, "a", { size: 11, weight: "bold" });
-    o += T(34, 22, "WHAT THE FITTED KERNEL USES", { size: 8, weight: "bold", fill: C.grey });
+    o += T(34, 22, "FITTED LENGTH SCALES", { size: 8, weight: "bold", fill: C.grey });
     o += T(487, 22, "shorter bar, stronger dependence", { size: 8, anchor: "end", fill: C.grey });
     const hi = Math.ceil(Math.max.apply(null, G.features.map((f) => f.ell)));
     const X = (v) => lin(v, 0, hi, x0, x0 + w);
@@ -954,7 +997,7 @@ export function gpdetail(DATA) {
   (function () {
     const LX = 22, MX = 300, PX = 372, WX = 448, GX = 488, ytop = 228;
     let o = T(18, ytop - 18, "b", { size: 11, weight: "bold" });
-    o += T(34, ytop - 18, "MEASURED ON THE DEVELOPMENT TEST CASES", { size: 8, weight: "bold", fill: C.grey });
+    o += T(34, ytop - 18, "DEVELOPMENT-SET ERROR", { size: 8, weight: "bold", fill: C.grey });
     o += T(MX, ytop - 4, "MEAN", { size: 8, weight: "bold", anchor: "end", fill: C.grey });
     o += T(PX, ytop - 4, "P95", { size: 8, weight: "bold", anchor: "end", fill: C.grey });
     o += T(WX, ytop - 4, "MAX", { size: 8, weight: "bold", anchor: "end", fill: C.grey });
@@ -1060,11 +1103,21 @@ export function designspace(DATA) {
     b += o;
     /* the box the final model accepts, which is what the two clouds define */
     const LABELS = { voltage_V: "voltage (V)", period_s: "period (s)", duty: "duty", tau_s: "residence time (s)" };
-    b += T(18, pbot + 46, "OUTSIDE THIS BOX THE FINAL MODEL REPORTS NO PREDICTION", { size: 8, weight: "bold", fill: C.grey });
+    /* the envelope is four intervals, so it is drawn as four intervals: a
+       bracket with its ends labelled, rather than a row of bold numbers.
+       Nothing here can be plotted against the panels above, because the box
+       lives in the raw inputs and the panels are in two derived coordinates. */
+    b += T(18, pbot + 44, "APPLICABILITY ENVELOPE OF THE FINAL MODEL", { size: 8, weight: "bold", fill: C.grey });
+    b += T(487, pbot + 44, "no prediction is reported outside these four ranges", { size: 8, anchor: "end", fill: C.grey });
+    b += line(18, pbot + 49, 487, pbot + 49, { stroke: C.rule, sw: 0.6 });
     S.bounds.forEach(function (r, i) {
-      const x = 18 + i * 122;
-      b += T(x, pbot + 58, LABELS[r.name] || r.name, { size: 8, fill: C.grey });
-      b += T(x, pbot + 68, r.lo + "  to  " + r.hi, { size: 8.5, weight: "bold" });
+      const x = 22 + i * 120, w = 88, y = pbot + 66;
+      b += T(x, pbot + 61, LABELS[r.name] || r.name, { size: 8, fill: C.grey });
+      b += line(x, y, x + w, y, { stroke: C.grey, sw: 0.9 });
+      b += line(x, y - 3.5, x, y + 3.5, { stroke: C.grey, sw: 0.9 });
+      b += line(x + w, y - 3.5, x + w, y + 3.5, { stroke: C.grey, sw: 0.9 });
+      b += T(x, y + 13, String(r.lo), { size: 8 });
+      b += T(x + w, y + 13, String(r.hi), { size: 8, anchor: "end" });
     });
   })();
   return svgDoc(W, H, b);

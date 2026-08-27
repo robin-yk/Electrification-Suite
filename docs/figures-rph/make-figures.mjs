@@ -315,7 +315,7 @@ const DATA = {
         unit: "relative", worst: worst(closure), n: closure.length }
     ],
     exact: [
-      { q: "Constant temperature recovers the analytic CSTR", against: "closed-form steady state, 900 to 1300 °C",
+      { q: "Constant T recovers the analytic CSTR", against: "closed-form steady state, 900 to 1300 °C",
         unit: "mole fraction", worst: worst(cstr), n: cstr.length },
       { q: "The conversion inversion round trips", against: "its own steady conversion, X 0.01 to 0.9",
         unit: "conversion", worst: worst(invert), n: invert.length }
@@ -338,10 +338,23 @@ const DATA = {
       // mole fractions at the 1e-9 level and one of them can come back
       // negative, so it is carried but flagged rather than plotted.
       floorX: 1e-3,
-      cases: pfr.cases.map((c) => ({ TC: c.element_T_C, X: p(c.ch4_conversion, 4),
-                                     S: p(c.c2_selectivity_carbon, 4),
-                                     CO: p(c.outlet_molefrac.CO, 4),
-                                     meaningful: c.ch4_conversion >= 1e-3 }))
+      /* CO2 conversion, not the CO mole fraction the panel used to draw. The
+         two conversions share a denominator and can sit on one axis; a mole
+         fraction cannot, and putting it beside a carbon-basis selectivity let
+         the two curves sum past 100 per cent at 1200 C and above.
+
+         The outlet molar flow is not recorded, so it is recovered from the
+         carbon balance: carbon is conserved, the 1:1 feed carries 1 mol C per
+         mol fed, and the outlet carries CH4 + CO2 + CO + 2(C2) per mol out. */
+      cases: pfr.cases.map(function (c) {
+        const y = c.outlet_molefrac;
+        const cOut = y.CH4 + y.CO2 + y.CO + 2 * (y.C2H2 + y.C2H4 + y.C2H6);
+        const expand = 1 / cOut;
+        return { TC: c.element_T_C, X: p(c.ch4_conversion, 4),
+                 S: p(c.c2_selectivity_carbon, 4),
+                 XCO2: p(Math.max(0, 1 - 2 * y.CO2 * expand), 4),
+                 meaningful: c.ch4_conversion >= 1e-3 };
+      })
     }
   },
   drive: {
@@ -382,9 +395,11 @@ const PLATES = [
   { id: "rphFigS1", label: "Fig. S1", draw: drive },
   { id: "rphFigS2", label: "Fig. S2", draw: detailed },
   { id: "rphFigS3", label: "Fig. S3", draw: method },
-  { id: "rphFigS4", label: "Fig. S4", draw: gpdetail },
-  { id: "rphFigS5", label: "Fig. S5", draw: verification },
-  { id: "rphFigS6", label: "Fig. S6", draw: designspace },
+  /* the campaign comes before the kernel: a reader asks where the training
+     cases are before asking what the fit made of them */
+  { id: "rphFigS4", label: "Fig. S4", draw: designspace },
+  { id: "rphFigS5", label: "Fig. S5", draw: gpdetail },
+  { id: "rphFigS6", label: "Fig. S6", draw: verification },
   { id: "rphFigS7", label: "Fig. S7", draw: boundaries },
   { id: "rphFigS8", label: "Fig. S8", draw: workflow }
 ];
