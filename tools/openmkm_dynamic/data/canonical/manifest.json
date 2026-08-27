@@ -1,5 +1,5 @@
 {
- "promoted": "2026-08-26",
+ "promoted": "2026-08-27",
  "rule": "only validated runs are promoted here; collect jobs write runs/<commit>/ and never touch this directory",
  "datasets": {
   "cjh-grid.jsonl": {
@@ -33,6 +33,20 @@
    "from_run": "50d4738",
    "sha256": "308bba2b1e9f333a69153630e26bc7fed602c0d938c96c5f9f428d6a6bc3e25e",
    "validation": "five periods x two closures; the 10 s anomaly is resolved by the weighted baseline, not by the closure"
+  },
+  "final-validation.jsonl": {
+   "rows": 64,
+   "from_run": "d027d75",
+   "sha256": "972ebb5cdbde1618511436f0b132e979f26b11ff2acc5d873bd7f007414890e2",
+   "promoted": "2026-08-27",
+   "validation": "64 sealed cases vs fresh Cantera (targets sha 63c5114a): surrogate mean |dX| 0.0029, p95 0.0129, max 0.0201 against gates 0.02/0.05/0.10; CJH-only baseline mean 0.0479, so the correction is required, not decorative -- run 33028238488"
+  },
+  "final-validation-report.json": {
+   "rows": 532,
+   "from_run": "d027d75",
+   "sha256": "3c1d460620dac4a73ec986ba6c99796f778dd0e00a9373c1ecb7b46848a84b3e",
+   "promoted": "2026-08-27",
+   "validation": "64 sealed cases vs fresh Cantera (targets sha 63c5114a): surrogate mean |dX| 0.0029, p95 0.0129, max 0.0201 against gates 0.02/0.05/0.10; CJH-only baseline mean 0.0479, so the correction is required, not decorative -- run 33028238488"
   }
  },
  "training_split_note": "draw train/val/holdout from design-physical.jsonl with a fixed seed; the historic 128/32/32 split assumed 192 rows and must be redrawn",

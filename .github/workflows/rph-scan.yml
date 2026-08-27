@@ -357,8 +357,8 @@ jobs:
   # merges them, writes a manifest with counts and the generating commit, and
   # pushes the result to main. contents: write is scoped to this job alone.
   collect:
-    needs: [plan, closure-diagnostic, cjh-grid, design-scan, relabel, targets, final-evaluate]
-    if: ${{ always() && !cancelled() && (needs.cjh-grid.result == 'success' || needs.design-scan.result == 'success' || needs.closure-diagnostic.result == 'success' || needs.relabel.result == 'success' || needs.targets.result == 'success' || needs.final-evaluate.result == 'success' || needs.final-evaluate.result == 'failure') }}
+    needs: [plan, closure-diagnostic, cjh-grid, cjh-validate, design-scan, relabel, targets, final-evaluate]
+    if: ${{ always() && !cancelled() && (needs.cjh-grid.result == 'success' || needs.cjh-validate.result == 'success' || needs.design-scan.result == 'success' || needs.closure-diagnostic.result == 'success' || needs.relabel.result == 'success' || needs.targets.result == 'success' || needs.final-evaluate.result == 'success' || needs.final-evaluate.result == 'failure') }}
     runs-on: ubuntu-latest
     permissions:
       contents: write

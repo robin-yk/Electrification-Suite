@@ -1,13 +1,13 @@
 {
- "note": "Independent final test: 64 frozen physical-drive cases selected from unused Halton inputs without reading transient outputs, model predictions, uncertainties, or residuals. CFP ODE feasibility, the existing CJH map, and the published validity envelope are the only filters. Evaluate the current browser bundle once and never add these rows to training.",
+ "note": "Re-run the 200-point off-node CJH map validation so its per-point rows land in runs/ this time. The earlier pass (run 33017155560, p95 0.00033) only uploaded a CI artifact; the collect job never gated on cjh-validate, so the evidence behind the canonical grid's promotion line was unreachable from the repository. The figure pipeline needs the per-point errors to draw the map validation panel.",
  "cases": 0,
  "shards": 8,
  "run_design": false,
  "run_closure": false,
  "run_cjh_grid": false,
- "requested": "2026-08-27T00:44Z",
- "run_cjh_validate": false,
+ "requested": "2026-08-27T01:15Z",
+ "run_cjh_validate": true,
  "run_relabel": false,
  "run_targets": false,
- "run_final_validation": true
+ "run_final_validation": false
 }
