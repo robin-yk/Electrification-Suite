@@ -1,0 +1,18 @@
+{
+ "generated": "2026-08-27",
+ "generating_commit": "d027d75c88bbd8f55e0288771be46a1e8b0645f5",
+ "workflow": "rph-scan.yml",
+ "datasets": [
+  {
+   "file": "final-validation.jsonl",
+   "rows": 64,
+   "sha256": "972ebb5cdbde1618511436f0b132e979f26b11ff2acc5d873bd7f007414890e2"
+  },
+  {
+   "file": "final-validation-report.json",
+   "rows": 1,
+   "sha256": "3c1d460620dac4a73ec986ba6c99796f778dd0e00a9373c1ecb7b46848a84b3e"
+  }
+ ],
+ "status": "raw run output; promote to canonical/ with promote.py after validation"
+}
