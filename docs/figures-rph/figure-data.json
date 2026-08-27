@@ -1,6 +1,6 @@
 {
  "commit": "c5a72bf",
- "dataCommit": "f3d8089",
+ "dataCommit": "f4905cd",
  "map": {
   "tLo": 400,
   "tHi": 1850,
@@ -11875,7 +11875,25 @@
    "feed": "CH4:1, CO2:1",
    "pressure_atm": 1,
    "closure": "const-pressure",
-   "peak_cap_c": 1800
+   "peak_cap_c": 1800,
+   "input_bounds": {
+    "voltage_V": {
+     "min": 25,
+     "max": 54.8828125
+    },
+    "period_s": {
+     "min": 0.010288348789230463,
+     "max": 9.18254283565628
+    },
+    "duty": {
+     "min": 0.02,
+     "max": 0.39696000000000004
+    },
+    "tau_s": {
+     "min": 0.010291881895872476,
+     "max": 1
+    }
+   }
   }
  },
  "space": {
@@ -13284,24 +13302,28 @@
     1170
    ]
   ],
-  "axes": {
-   "voltage": [
-    25,
-    55
-   ],
-   "period": [
-    0.01,
-    10
-   ],
-   "duty": [
-    0.02,
-    0.4
-   ],
-   "tau": [
-    0.01,
-    1
-   ]
-  }
+  "bounds": [
+   {
+    "name": "voltage_V",
+    "lo": 25,
+    "hi": 54.9
+   },
+   {
+    "name": "period_s",
+    "lo": 0.0103,
+    "hi": 9.18
+   },
+   {
+    "name": "duty",
+    "lo": 0.02,
+    "hi": 0.397
+   },
+   {
+    "name": "tau_s",
+    "lo": 0.0103,
+    "hi": 1
+   }
+  ]
  },
  "final": {
   "n": 64,

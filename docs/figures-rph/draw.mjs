@@ -945,7 +945,7 @@ export function gpdetail(DATA) {
 /* sealed test sits relative to them.                                  */
 /* ------------------------------------------------------------------ */
 export function designspace(DATA) {
-  const ns = "rs5", W = 505, H = 250;
+  const ns = "rs5", W = 505, H = 282;
   const S = DATA.space;
   let b = defs(ns);
   const pw = 190, ph = 160, ptop = 30, pbot = 190;
@@ -1008,6 +1008,14 @@ export function designspace(DATA) {
     o += '<circle cx="' + (x0 + 14) + '" cy="' + (pbot - 26) + '" r="1.5" fill="' + C.grey + '" fill-opacity="0.35"/>';
     o += T(x0 + 22, pbot - 23, "training campaign, for reference", { size: 8, fill: C.grey });
     b += o;
+    /* the box the shipped model accepts, which is what the two clouds define */
+    const LABELS = { voltage_V: "voltage (V)", period_s: "period (s)", duty: "duty", tau_s: "residence time (s)" };
+    b += T(18, pbot + 46, "OUTSIDE THIS BOX THE SHIPPED MODEL REFUSES TO PREDICT", { size: 8, weight: "bold", fill: C.grey });
+    S.bounds.forEach(function (r, i) {
+      const x = 18 + i * 122;
+      b += T(x, pbot + 58, LABELS[r.name] || r.name, { size: 8, fill: C.grey });
+      b += T(x, pbot + 68, r.lo + "  to  " + r.hi, { size: 8.5, weight: "bold" });
+    });
   })();
   return svgDoc(W, H, b);
 }

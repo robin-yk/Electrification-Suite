@@ -258,7 +258,12 @@ const space = {
   aimed: design.filter((r) => r.design_index < 0)
     .map((r) => [p(r.inputs.period_s / r.inputs.tau_s, 3), p(r.inputs.t_peak_K - 273.15, 4)]),
   sealed: sealed.map((r) => [p(r.inputs.period_s / r.inputs.tau_s, 3), p(r.inputs.t_peak_K - 273.15, 4)]),
-  axes: { voltage: [25, 55], period: [0.01, 10], duty: [0.02, 0.40], tau: [0.01, 1] }
+  // The box the shipped model will accept, taken from the bundle rather than
+  // restated here: it is derived from the retained cases, so typing it would
+  // be a second copy that could disagree with the model actually loaded.
+  bounds: Object.entries(bundle.scope.input_bounds || {}).map(function (e) {
+    return { name: e[0], lo: p(e[1].min, 3), hi: p(e[1].max, 3) };
+  })
 };
 
 const DATA = {
