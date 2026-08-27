@@ -9,7 +9,9 @@ import { SERIES_DEFAULTS, seriesRateConstants, steadySeriesCSTR, integrateSeries
          cjhTempForConversion, integratePulsedElement, steadyElementTemperature,
          sampledWaveform, arrheniusRate, transportCoefficient, velocity,
          idealTwoStateAverages, timeAverageTemperature } from "../../apps/rphcjh/solver.js";
-import { workflow, drive, comparison, window_, detailed, verification, boundaries, architecture } from "./draw.mjs";
+import { predictRphConversion } from "../../apps/rphcjh/surrogate.js";
+import { workflow, drive, comparison, window_, detailed, verification, boundaries, architecture,
+         cjhmap, memory, finalparity } from "./draw.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const p = (x, n = 4) => Number(x.toPrecision(n));
@@ -19,6 +21,17 @@ function solverCommit() {
     const sha = execFileSync("git", ["log", "-1", "--format=%h", "--", "apps/rphcjh/solver.js"],
       { cwd: join(here, "..", ".."), encoding: "utf8" }).trim();
     const dirty = execFileSync("git", ["status", "--porcelain", "--", "apps/rphcjh/solver.js"],
+      { cwd: join(here, "..", ".."), encoding: "utf8" }).trim();
+    return sha ? sha + (dirty ? " + uncommitted changes" : "") : "unknown revision";
+  } catch { return "unknown revision"; }
+}
+
+function dataCommit() {
+  try {
+    const paths = ["tools/openmkm_dynamic/data/canonical", "apps/rphcjh/data"];
+    const sha = execFileSync("git", ["log", "-1", "--format=%h", "--"].concat(paths),
+      { cwd: join(here, "..", ".."), encoding: "utf8" }).trim();
+    const dirty = execFileSync("git", ["status", "--porcelain", "--"].concat(paths),
       { cwd: join(here, "..", ".."), encoding: "utf8" }).trim();
     return sha ? sha + (dirty ? " + uncommitted changes" : "") : "unknown revision";
   } catch { return "unknown revision"; }
@@ -114,8 +127,98 @@ const readJSON = (f) => JSON.parse(readFileSync(join(here, "..", "..", f), "utf8
 const cantera = readJSON("apps/rphcjh/data/cantera.json");
 const pfr = readJSON("apps/rphcjh/data/openmkm-pfr.json");
 
+// ---- the Cantera side: the CJH map, its off-node check, the design campaign
+// with the shipped correction run over it, and the sealed final test. All of
+// it reads canonical/ datasets, each promoted with the evidence named in
+// tools/openmkm_dynamic/data/canonical/manifest.json, and the correction is
+// computed through the identical inference module the browser imports.
+const readJSONL = (f) => readFileSync(join(here, "..", "..", f), "utf8")
+  .split("\n").filter((l) => l.trim()).map((l) => JSON.parse(l));
+
+const gridRows = readJSONL("tools/openmkm_dynamic/data/canonical/cjh-grid.jsonl");
+const gridVal = readJSON("tools/openmkm_dynamic/data/canonical/cjh-grid-validation.json");
+const taus = [...new Set(gridRows.map((r) => r.tau_s))].sort((a, b) => a - b);
+const columns = taus.map(function (tau) {
+  const pts = gridRows.filter((r) => r.tau_s === tau)
+    .sort((a, b) => a.T_C - b.T_C)
+    .map((r) => [r.T_C, p(Math.min(Math.max(r.ch4_conversion, 0), 1), 4)]);
+  return { tau, pts };
+});
+const locus = columns.map(function (c) {
+  for (let i = 1; i < c.pts.length; i++) {
+    const [t0, x0] = c.pts[i - 1], [t1, x1] = c.pts[i];
+    if (x0 < 0.5 && x1 >= 0.5) return { tau: c.tau, T: p(t0 + (0.5 - x0) / (x1 - x0) * (t1 - t0), 5) };
+  }
+  return null;
+}).filter(Boolean);
+
+const design = readJSONL("tools/openmkm_dynamic/data/canonical/design-physical.jsonl");
+const bundle = readJSON("apps/rphcjh/data/rph-surrogate.json");
+const holdoutSet = new Set(bundle.model.holdout_indices);
+const memCases = [];
+let deadZero = 0, refused = 0;
+for (const r of design) {
+  const o = r.outputs, i = r.inputs;
+  const xd = o.ch4_conversion, xq = o.quasi_steady_ch4_conversion;
+  if (xd < 1e-6 && xq < 1e-6) { deadZero++; continue; }
+  const pred = predictRphConversion(bundle.model, {
+    xQs: xq, periodS: i.period_s, tauS: i.tau_s, duty: i.duty,
+    tPeakC: i.t_peak_K - 273.15, tMinC: i.t_min_K - 273.15
+  });
+  if (!pred.valid) refused++;
+  memCases.push({
+    pt: p(i.period_s / i.tau_s, 4), gain: p(xd / xq, 4),
+    e0: p(Math.abs(xq - xd), 3),
+    e1: pred.valid ? p(Math.abs(pred.conversion - xd), 3) : null,
+    holdout: holdoutSet.has(r.design_index)
+  });
+}
+const gainBandCases = memCases.filter((c) => c.gain >= 2);
+const gpReport = bundle.model.holdout_report.find((m) => m.model.includes("GP"));
+const cjhReport = bundle.model.holdout_report.find((m) => m.model.includes("as-is"));
+
+const finalVal = readJSON("tools/openmkm_dynamic/data/canonical/final-validation-report.json");
+
 const DATA = {
   commit: solverCommit(),
+  dataCommit: dataCommit(),
+  map: {
+    tLo: gridRows.reduce((a, r) => Math.min(a, r.T_C), Infinity),
+    tHi: gridRows.reduce((a, r) => Math.max(a, r.T_C), -Infinity),
+    nodes: gridRows.length,
+    mechanism: gridRows[0].mechanism, feed: gridRows[0].feed,
+    taus: taus.map((t) => p(t, 4)),
+    columns, locus,
+    val: {
+      points: gridVal.summary.points, gate: 0.02,
+      median: p(gridVal.summary.median_abs_error, 3),
+      p95: p(gridVal.summary.p95_abs_error, 3),
+      max: p(gridVal.summary.max_abs_error, 3),
+      rows: gridVal.rows.map((r) => [p(r.T_C, 5), p(r.abs_error, 3)])
+    }
+  },
+  mem: {
+    cases: memCases, deadZero, refused,
+    live: memCases.length,
+    holdoutN: bundle.model.holdout_indices.length,
+    gainMax: memCases.reduce((a, c) => Math.max(a, c.gain), 0),
+    band: gainBandCases.length ? {
+      lo: p(gainBandCases.reduce((a, c) => Math.min(a, c.pt), Infinity), 3),
+      hi: p(gainBandCases.reduce((a, c) => Math.max(a, c.pt), 0), 3)
+    } : null,
+    hold: { mean: p(gpReport.mean, 3), p95: p(gpReport.p95, 3), max: p(gpReport.max, 3) },
+    holdCjh: { mean: p(cjhReport.mean, 3), p95: p(cjhReport.p95, 3), max: p(cjhReport.max, 3) }
+  },
+  final: {
+    n: finalVal.summary.points, verdict: finalVal.verdict,
+    mean: p(finalVal.summary.mean_abs_error, 3),
+    p95: p(finalVal.summary.p95_abs_error, 3),
+    max: p(finalVal.summary.max_abs_error, 3),
+    cjhMean: p(finalVal.summary.cjh_mean_abs_error, 3),
+    gates: finalVal.gates,
+    cases: finalVal.cases.map((c) => [p(c.cantera_conversion, 4), p(c.cjh_conversion, 4),
+                                      p(c.predicted_rph_conversion, 4)])
+  },
   verify: {
     integrated: [
       { q: "Full duty recovers the steady drive", against: "steady voltage-drive solve, 20 to 60 V",
@@ -179,6 +282,9 @@ const PLATES = [
   { id: "rphFig3", label: "Fig. 3", draw: comparison },
   { id: "rphFig4", label: "Fig. 4", draw: window_ },
   { id: "rphFig5", label: "Fig. 5", draw: detailed },
+  { id: "rphFig6", label: "Fig. 6", draw: cjhmap },
+  { id: "rphFig7", label: "Fig. 7", draw: memory },
+  { id: "rphFig8", label: "Fig. 8", draw: finalparity },
   { id: "rphFigS1", label: "Fig. S1", draw: verification },
   { id: "rphFigS2", label: "Fig. S2", draw: boundaries },
   { id: "rphFigS3", label: "Fig. S3", draw: architecture }
@@ -199,7 +305,29 @@ const shared = (f) => readFileSync(join(here, "..", "figures", f), "utf8");
 const inlined = (src) => src
   .replace(/^import [^;]+;\n/gm, "")
   .replace(/^export (function|const) /gm, "$1 ");
-const TOKENS = { COMMIT: DATA.commit, TITLE: "RPH vs CJH Figure Plates" };
+// Caption numbers are tokens filled from the same frozen data object the
+// artwork reads, so a caption cannot drift from its plate.
+const sci = (v) => {
+  if (v === 0) return "0";
+  const e = Math.floor(Math.log10(Math.abs(v)));
+  if (e >= -2 && e <= 0) return String(p(v, 2));
+  return (v / Math.pow(10, e)).toFixed(1) + " × 10<sup>" + String(e).replace("-", "&#8722;") + "</sup>";
+};
+const TOKENS = {
+  COMMIT: DATA.commit, DATACOMMIT: DATA.dataCommit, TITLE: "RPH vs CJH Figure Plates",
+  MAP_NODES: String(DATA.map.nodes).replace(/(\d)(\d{3})$/, "$1,$2"),
+  MAP_TAUS: String(DATA.map.taus.length),
+  VAL_N: String(DATA.map.val.points),
+  VAL_MED: sci(DATA.map.val.median), VAL_P95: sci(DATA.map.val.p95), VAL_MAX: sci(DATA.map.val.max),
+  MEM_N: String(DATA.mem.live), MEM_DEAD: String(DATA.mem.deadZero),
+  GAIN_MAX: DATA.mem.gainMax.toFixed(1),
+  HOLD_N: String(DATA.mem.holdoutN),
+  HOLD_MEAN: sci(DATA.mem.hold.mean), HOLD_P95: sci(DATA.mem.hold.p95), HOLD_MAX: sci(DATA.mem.hold.max),
+  HOLD_CJH_MEAN: sci(DATA.mem.holdCjh.mean),
+  FV_N: String(DATA.final.n), FV_VERDICT: DATA.final.verdict,
+  FV_MEAN: sci(DATA.final.mean), FV_P95: sci(DATA.final.p95), FV_MAX: sci(DATA.final.max),
+  FV_CJH: sci(DATA.final.cjhMean)
+};
 let body = shared("templates/head.html") + read("templates/body.html");
 for (const [k, v] of Object.entries(TOKENS)) body = body.replaceAll("{{" + k + "}}", v);
 const unresolved = body.match(/\{\{[^}]+\}\}/g);

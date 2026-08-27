@@ -506,3 +506,263 @@ export function architecture(DATA) {
   });
   return svgDoc(W, H, b);
 }
+
+/* ------------------------------------------------------------------ */
+/* Fig. 6. The steady CJH map the predictor reads, and the map checked */
+/* between its nodes, where interpolation actually happens.            */
+/* ------------------------------------------------------------------ */
+const sciT = (v) => {
+  if (v === 0) return "0";
+  const e = Math.floor(lg(Math.abs(v)));
+  if (e >= -2 && e <= 0) return String(Number(v.toPrecision(2)));
+  return (v / Math.pow(10, e)).toFixed(1) + " × 10^{" + String(e).replace("-", "−") + "}";
+};
+const heat = (v) => {
+  const r = Math.round(255 + (213 - 255) * v), g = Math.round(255 + (94 - 255) * v),
+        bl = Math.round(255 * (1 - v));
+  return "#" + [r, g, bl].map((c) => c.toString(16).padStart(2, "0").toUpperCase()).join("");
+};
+
+export function cjhmap(DATA) {
+  const ns = "r6", W = 505, H = 250;
+  const M = DATA.map;
+  let b = defs(ns);
+  const pw = 190, ph = 160, ptop = 30, pbot = 190;
+  const COL = [58, 300];
+
+  /* a. the map itself, cells at the grid's own nodes */
+  (function () {
+    const x0 = COL[0];
+    const ts = M.taus, n = ts.length;
+    const xe = [ts[0] / Math.sqrt(ts[1] / ts[0])];
+    for (let i = 1; i < n; i++) xe.push(Math.sqrt(ts[i - 1] * ts[i]));
+    xe.push(ts[n - 1] * Math.sqrt(ts[n - 1] / ts[n - 2]));
+    const X = (v) => lin(lg(v), lg(xe[0]), lg(xe[n]), x0, x0 + pw);
+    const Y = (v) => lin(v, M.tLo, M.tHi, pbot, ptop);
+    let o = "";
+    M.columns.forEach(function (c, ci) {
+      const xl = X(xe[ci]), xr = X(xe[ci + 1]);
+      const pts = c.pts;
+      for (let i = 0; i < pts.length; i++) {
+        const yTop = Y(i + 1 < pts.length ? (pts[i][0] + pts[i + 1][0]) / 2 : M.tHi);
+        const yBot = Y(i > 0 ? (pts[i - 1][0] + pts[i][0]) / 2 : M.tLo);
+        o += '<rect x="' + xl.toFixed(1) + '" y="' + yTop.toFixed(1) + '" width="' + (xr - xl).toFixed(1) +
+          '" height="' + (yBot - yTop).toFixed(1) + '" fill="' + heat(pts[i][1]) + '"/>';
+      }
+    });
+    /* the half-conversion locus; its 5 degree staircase is the refinement */
+    let d = "";
+    M.locus.forEach(function (l, i) { d += (i ? " L" : "M") + X(l.tau).toFixed(1) + "," + Y(l.T).toFixed(1); });
+    o += '<path d="' + d + '" fill="none" stroke="' + C.ink + '" stroke-width="1.2"/>';
+    o += T(X(M.locus[Math.floor(M.locus.length / 2)].tau), Y(M.locus[Math.floor(M.locus.length / 2)].T) - 7,
+      "X = 0.5", { size: 8, anchor: "middle", weight: "bold" });
+    o += rect(x0, ptop, pw, ph, { stroke: C.grey, fill: "none", sw: 0.8, rx: 0 });
+    o += T(x0 - 40, ptop - 8, "a", { size: 11, weight: "bold" });
+    [400, 800, 1200, 1600].forEach(function (t) {
+      o += T(x0 - 4, Y(t) + 3, String(t), { size: 8, anchor: "end", fill: C.grey });
+    });
+    [0.01, 0.1, 1, 10].forEach(function (v) {
+      o += T(X(v), pbot + 12, String(v), { size: 8, anchor: "middle" });
+    });
+    o += T(x0 + pw / 2, pbot + 24, "residence time (s)", { size: 8.5, anchor: "middle" });
+    o += '<text x="' + (x0 - 30) + '" y="' + ((ptop + pbot) / 2) + '" font-size="8.5" text-anchor="middle" transform="rotate(-90 ' + (x0 - 30) + ' ' + ((ptop + pbot) / 2) + ')">element temperature (°C)</text>';
+    /* colour scale, sitting on the zero-conversion corner of the map */
+    const cbx = x0 + pw - 70, cby = pbot - 20, cbw = 56;
+    for (let i = 0; i < 14; i++) {
+      o += '<rect x="' + (cbx + i * 4) + '" y="' + cby + '" width="4" height="7" fill="' + heat((i + 0.5) / 14) + '"/>';
+    }
+    o += rect(cbx, cby, cbw, 7, { stroke: C.grey, fill: "none", sw: 0.5, rx: 0 });
+    o += T(cbx - 3, cby + 6, "0", { size: 7.5, anchor: "end", fill: C.grey });
+    o += T(cbx + cbw + 3, cby + 6, "1", { size: 7.5, fill: C.grey });
+    o += T(cbx + cbw / 2, cby - 4, "CH₄ conversion", { size: 7.5, anchor: "middle", fill: C.grey });
+    b += o;
+  })();
+
+  /* b. the check between the nodes */
+  (function () {
+    const x0 = COL[1], V = M.val;
+    const X = (v) => lin(v, M.tLo, M.tHi, x0 + 12, x0 + pw - 12);
+    const Y = (v) => lin(lg(Math.max(v, 1e-9)), -9, -1, pbot - 10, ptop + 10);
+    let o = rect(x0, ptop, pw, ph, { stroke: C.grey, fill: "#FFFFFF", sw: 0.8, rx: 0 });
+    o += T(x0 - 40, ptop - 8, "b", { size: 11, weight: "bold" });
+    for (let d = -9; d <= -1; d += 2) {
+      o += line(x0, Y(Math.pow(10, d)), x0 + pw, Y(Math.pow(10, d)), { stroke: "#EAEAEA", sw: 0.4 });
+      o += T(x0 - 4, Y(Math.pow(10, d)) + 3, "10^{" + String(d).replace("-", "−") + "}", { size: 8, anchor: "end", fill: C.grey });
+    }
+    [400, 800, 1200, 1600].forEach(function (t) {
+      o += T(X(t), pbot + 12, String(t), { size: 8, anchor: "middle" });
+    });
+    o += T(x0 + pw / 2, pbot + 24, "off-node temperature (°C)", { size: 8.5, anchor: "middle" });
+    o += '<text x="' + (x0 - 30) + '" y="' + ((ptop + pbot) / 2) + '" font-size="8.5" text-anchor="middle" transform="rotate(-90 ' + (x0 - 30) + ' ' + ((ptop + pbot) / 2) + ')">|interpolated − Cantera|</text>';
+    o += line(x0, Y(V.gate), x0 + pw, Y(V.gate), { stroke: C.thermal, sw: 0.9, dash: "3 2" });
+    o += T(x0 + pw - 6, Y(V.gate) - 4, "promotion gate " + V.gate, { size: 8, anchor: "end", fill: SHADE.thermal });
+    o += line(x0, Y(V.p95), x0 + pw, Y(V.p95), { stroke: C.grey, sw: 0.8, dash: "3 2" });
+    o += T(x0 + pw - 6, Y(V.p95) - 4, "p95 of " + V.points + " points, " + sciT(V.p95), { size: 8, anchor: "end", fill: C.grey });
+    V.rows.forEach(function (r) {
+      o += '<circle cx="' + X(r[0]).toFixed(1) + '" cy="' + Y(r[1]).toFixed(1) + '" r="1.6" fill="' + C.scalar + '" fill-opacity="0.65"/>';
+    });
+    o += T(x0 + 8, pbot - 26, "floor: points differing by less than 10^{−9}", { size: 8, fill: C.grey });
+    b += o;
+  })();
+  return svgDoc(W, H, b);
+}
+
+/* ------------------------------------------------------------------ */
+/* Fig. 7. The memory effect in the transient campaign, and what the  */
+/* learned correction does to the quasi-steady shortfall.              */
+/* ------------------------------------------------------------------ */
+export function memory(DATA) {
+  const ns = "r7", W = 505, H = 250;
+  const M = DATA.mem;
+  let b = defs(ns);
+  const pw = 190, ph = 160, ptop = 30, pbot = 190;
+  const COL = [58, 300];
+
+  /* a. how far the transient leaves its quasi-steady baseline */
+  (function () {
+    const x0 = COL[0];
+    const X = (v) => lin(lg(v), -2, 3, x0 + 12, x0 + pw - 12);
+    const Y = (v) => lin(lg(Math.min(Math.max(v, 0.1), 10)), -1, 1, pbot - 10, ptop + 10);
+    let o = rect(x0, ptop, pw, ph, { stroke: C.grey, fill: "#FFFFFF", sw: 0.8, rx: 0 });
+    o += T(x0 - 40, ptop - 8, "a", { size: 11, weight: "bold" });
+    if (M.band) {
+      o += '<rect x="' + X(M.band.lo).toFixed(1) + '" y="' + (ptop + 1) + '" width="' +
+        (X(M.band.hi) - X(M.band.lo)).toFixed(1) + '" height="' + (ph - 2) + '" fill="#F4F4F4"/>';
+    }
+    [0.1, 0.3, 1, 3, 10].forEach(function (g) {
+      o += line(x0, Y(g), x0 + pw, Y(g), { stroke: "#EAEAEA", sw: 0.4 });
+      o += T(x0 - 4, Y(g) + 3, String(g), { size: 8, anchor: "end", fill: C.grey });
+    });
+    [0.01, 0.1, 1, 10, 100].forEach(function (v) {
+      o += T(X(v), pbot + 12, String(v), { size: 8, anchor: "middle" });
+    });
+    o += T(x0 + pw / 2, pbot + 24, "pulse period / residence time", { size: 8.5, anchor: "middle" });
+    o += '<text x="' + (x0 - 28) + '" y="' + ((ptop + pbot) / 2) + '" font-size="8.5" text-anchor="middle" transform="rotate(-90 ' + (x0 - 28) + ' ' + ((ptop + pbot) / 2) + ')">transient / quasi-steady conversion</text>';
+    o += line(x0, Y(1), x0 + pw, Y(1), { stroke: C.ink, sw: 0.9, dash: "3 2" });
+    o += T(x0 + pw - 6, Y(0.52), "quasi-steady, ratio 1", { size: 8, anchor: "end", fill: C.grey });
+    M.cases.forEach(function (c) {
+      o += '<circle cx="' + X(c.pt).toFixed(1) + '" cy="' + Y(c.gain).toFixed(1) + '" r="2" fill="' + C.thermal + '" fill-opacity="0.55"/>';
+    });
+    const top = M.cases.reduce((a, c) => (c.gain > a.gain ? c : a));
+    o += T(Math.min(X(top.pt) + 5, x0 + pw - 46), Y(top.gain) + 2, "up to " + M.gainMax.toFixed(1) + "x",
+      { size: 8.5, weight: "bold", fill: SHADE.thermal });
+    if (M.band) o += T((X(M.band.lo) + X(M.band.hi)) / 2, ptop + 12, "gain ≥ 2", { size: 8, anchor: "middle", fill: C.grey });
+    b += o;
+  })();
+
+  /* b. the correction against the shortfall it corrects */
+  (function () {
+    const x0 = COL[1];
+    const A = (v) => lg(Math.min(Math.max(v, 1e-7), 1));
+    const X = (v) => lin(A(v), -7, 0, x0 + 12, x0 + pw - 12);
+    const Y = (v) => lin(A(v), -7, 0, pbot - 10, ptop + 10);
+    let o = rect(x0, ptop, pw, ph, { stroke: C.grey, fill: "#FFFFFF", sw: 0.8, rx: 0 });
+    o += T(x0 - 40, ptop - 8, "b", { size: 11, weight: "bold" });
+    for (let d = -7; d <= 0; d += 2) {
+      o += line(x0, Y(Math.pow(10, d)), x0 + pw, Y(Math.pow(10, d)), { stroke: "#EAEAEA", sw: 0.4 });
+      o += T(x0 - 4, Y(Math.pow(10, d)) + 3, "10^{" + String(d).replace("-", "−") + "}", { size: 8, anchor: "end", fill: C.grey });
+      o += T(X(Math.pow(10, d)), pbot + 12, "10^{" + String(d).replace("-", "−") + "}", { size: 8, anchor: "middle" });
+    }
+    o += T(x0 + pw / 2, pbot + 24, "|X_{qs} − X_{dyn}|, the shortcut's error", { size: 8.5, anchor: "middle" });
+    o += '<text x="' + (x0 - 30) + '" y="' + ((ptop + pbot) / 2) + '" font-size="8.5" text-anchor="middle" transform="rotate(-90 ' + (x0 - 30) + ' ' + ((ptop + pbot) / 2) + ')">corrected prediction error</text>';
+    o += line(X(1e-7), Y(1e-7), X(1), Y(1), { stroke: C.ink, sw: 0.9, dash: "3 2" });
+    o += T(X(2e-2), Y(4e-2), "no improvement", { size: 8, anchor: "end", fill: C.grey });
+    M.cases.forEach(function (c) {
+      if (c.e1 === null || c.holdout) return;
+      o += '<circle cx="' + X(c.e0).toFixed(1) + '" cy="' + Y(c.e1).toFixed(1) + '" r="1.5" fill="' + C.grey + '" fill-opacity="0.45"/>';
+    });
+    M.cases.forEach(function (c) {
+      if (c.e1 === null || !c.holdout) return;
+      o += '<circle cx="' + X(c.e0).toFixed(1) + '" cy="' + Y(c.e1).toFixed(1) + '" r="2.2" fill="' + C.thermal + '" fill-opacity="0.85"/>';
+    });
+    o += '<circle cx="' + (x0 + 14) + '" cy="' + (ptop + 14) + '" r="2.2" fill="' + C.thermal + '"/>';
+    o += T(x0 + 20, ptop + 17, "held out, " + M.holdoutN + " cases", { size: 8, fill: SHADE.thermal });
+    o += '<circle cx="' + (x0 + 14) + '" cy="' + (ptop + 26) + '" r="1.5" fill="' + C.grey + '"/>';
+    o += T(x0 + 20, ptop + 29, "seen in fitting", { size: 8, fill: C.grey });
+    o += T(x0 + pw - 8, pbot - 24, "held-out mean " + sciT(M.hold.mean), { size: 8, anchor: "end", weight: "bold" });
+    o += T(x0 + pw - 8, pbot - 14, "p95 " + sciT(M.hold.p95) + ",  max " + sciT(M.hold.max), { size: 8, anchor: "end" });
+    b += o;
+  })();
+  return svgDoc(W, H, b);
+}
+
+/* ------------------------------------------------------------------ */
+/* Fig. 8. The sealed test: 64 cases frozen before any prediction      */
+/* existed, integrated once in Cantera, compared once.                 */
+/* ------------------------------------------------------------------ */
+export function finalparity(DATA) {
+  const ns = "r8", W = 505, H = 250;
+  const F = DATA.final;
+  let b = defs(ns);
+  const pw = 190, ph = 160, ptop = 30, pbot = 190;
+  const COL = [58, 300];
+
+  /* a. parity, the shortcut and the corrected prediction side by side */
+  (function () {
+    const x0 = COL[0];
+    const A = (v) => lg(Math.min(Math.max(v, 1e-6), 1));
+    const X = (v) => lin(A(v), -6, 0, x0 + 12, x0 + pw - 12);
+    const Y = (v) => lin(A(v), -6, 0, pbot - 10, ptop + 10);
+    let o = rect(x0, ptop, pw, ph, { stroke: C.grey, fill: "#FFFFFF", sw: 0.8, rx: 0 });
+    o += T(x0 - 40, ptop - 8, "a", { size: 11, weight: "bold" });
+    for (let d = -6; d <= 0; d += 2) {
+      o += line(x0, Y(Math.pow(10, d)), x0 + pw, Y(Math.pow(10, d)), { stroke: "#EAEAEA", sw: 0.4 });
+      o += T(x0 - 4, Y(Math.pow(10, d)) + 3, "10^{" + String(d).replace("-", "−") + "}", { size: 8, anchor: "end", fill: C.grey });
+      o += T(X(Math.pow(10, d)), pbot + 12, "10^{" + String(d).replace("-", "−") + "}", { size: 8, anchor: "middle" });
+    }
+    o += T(x0 + pw / 2, pbot + 24, "Cantera CH₄ conversion", { size: 8.5, anchor: "middle" });
+    o += '<text x="' + (x0 - 30) + '" y="' + ((ptop + pbot) / 2) + '" font-size="8.5" text-anchor="middle" transform="rotate(-90 ' + (x0 - 30) + ' ' + ((ptop + pbot) / 2) + ')">predicted CH₄ conversion</text>';
+    o += line(X(1e-6), Y(1e-6), X(1), Y(1), { stroke: C.ink, sw: 0.9, dash: "3 2" });
+    F.cases.forEach(function (c) {
+      o += '<circle cx="' + X(c[0]).toFixed(1) + '" cy="' + Y(c[1]).toFixed(1) + '" r="2" fill="none" stroke="' + C.grey + '" stroke-width="0.8" stroke-opacity="0.8"/>';
+    });
+    F.cases.forEach(function (c) {
+      o += '<circle cx="' + X(c[0]).toFixed(1) + '" cy="' + Y(c[2]).toFixed(1) + '" r="2" fill="' + C.thermal + '" fill-opacity="0.8"/>';
+    });
+    o += '<circle cx="' + (x0 + 14) + '" cy="' + (ptop + 14) + '" r="2" fill="' + C.thermal + '"/>';
+    o += T(x0 + 20, ptop + 17, "CJH map + learned correction", { size: 8, fill: SHADE.thermal });
+    o += '<circle cx="' + (x0 + 14) + '" cy="' + (ptop + 26) + '" r="2" fill="none" stroke="' + C.grey + '" stroke-width="0.8"/>';
+    o += T(x0 + 20, ptop + 29, "CJH map alone", { size: 8, fill: C.grey });
+    b += o;
+  })();
+
+  /* b. the same 64 errors as a distribution, against the gates */
+  (function () {
+    const x0 = COL[1];
+    const n = F.cases.length;
+    const X = (v) => lin(lg(Math.min(Math.max(v, 1e-8), 1)), -8, 0, x0 + 12, x0 + pw - 12);
+    const Y = (v) => lin(v, 0, 1, pbot - 10, ptop + 10);
+    let o = rect(x0, ptop, pw, ph, { stroke: C.grey, fill: "#FFFFFF", sw: 0.8, rx: 0 });
+    o += T(x0 - 40, ptop - 8, "b", { size: 11, weight: "bold" });
+    [0, 0.25, 0.5, 0.75, 1].forEach(function (f) {
+      o += line(x0, Y(f), x0 + pw, Y(f), { stroke: "#EAEAEA", sw: 0.4 });
+      o += T(x0 - 4, Y(f) + 3, f.toFixed(2), { size: 8, anchor: "end", fill: C.grey });
+    });
+    for (let d = -8; d <= 0; d += 2) {
+      o += T(X(Math.pow(10, d)), pbot + 12, "10^{" + String(d).replace("-", "−") + "}", { size: 8, anchor: "middle" });
+    }
+    o += T(x0 + pw / 2, pbot + 24, "absolute conversion error", { size: 8.5, anchor: "middle" });
+    o += '<text x="' + (x0 - 30) + '" y="' + ((ptop + pbot) / 2) + '" font-size="8.5" text-anchor="middle" transform="rotate(-90 ' + (x0 - 30) + ' ' + ((ptop + pbot) / 2) + ')">fraction of cases at or below</text>';
+    const cdf = (errs, colour, wdt, dash) => {
+      const s = errs.slice().sort((a, b) => a - b);
+      let d = "";
+      s.forEach(function (e, i) { d += (i ? " L" : "M") + X(e).toFixed(1) + "," + Y((i + 1) / n).toFixed(1); });
+      return '<path d="' + d + '" fill="none" stroke="' + colour + '" stroke-width="' + wdt + '"' +
+        (dash ? ' stroke-dasharray="' + dash + '"' : "") + '/>';
+    };
+    o += cdf(F.cases.map((c) => Math.abs(c[1] - c[0])), C.grey, 1.2, "3 2");
+    o += cdf(F.cases.map((c) => Math.abs(c[2] - c[0])), C.thermal, 1.6, "");
+    o += line(x0, Y(0.95), x0 + pw, Y(0.95), { stroke: "#CCCCCC", sw: 0.7, dash: "2 2" });
+    o += T(x0 + pw - 8, Y(0.95) + 9, "p95", { size: 7.5, anchor: "end", fill: C.grey });
+    o += line(X(0.05), ptop, X(0.05), pbot, { stroke: C.ink, sw: 0.7, dash: "2 2" });
+    o += T(X(0.05) - 3, ptop + 10, "p95 gate 0.05", { size: 7.5, anchor: "end", fill: C.grey });
+    o += line(x0 + 8, ptop + 14, x0 + 24, ptop + 14, { stroke: C.thermal, sw: 1.6 });
+    o += T(x0 + 28, ptop + 17, "with correction", { size: 8, fill: SHADE.thermal });
+    o += line(x0 + 8, ptop + 26, x0 + 24, ptop + 26, { stroke: C.grey, sw: 1.2, dash: "3 2" });
+    o += T(x0 + 28, ptop + 29, "CJH shortcut only", { size: 8, fill: C.grey });
+    o += T(x0 + pw - 8, pbot - 24, "mean " + sciT(F.mean) + " against " + sciT(F.cjhMean), { size: 8, anchor: "end", weight: "bold" });
+    o += T(x0 + pw - 8, pbot - 14, "verdict " + F.verdict + ", all four gates", { size: 8, anchor: "end" });
+    b += o;
+  })();
+  return svgDoc(W, H, b);
+}
