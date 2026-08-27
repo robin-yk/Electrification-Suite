@@ -302,57 +302,64 @@ export function detailed(DATA) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Fig. 1. What the browser tool computes, and what passes between the */
-/* stages. Tab names are those of the application at the stamped       */
-/* revision.                                                           */
+/* Fig. 1. The two model layers the application carries, and what each  */
+/* one is for. Tab names are those of the application at the stamped    */
+/* revision.                                                            */
 /* ------------------------------------------------------------------ */
 export function workflow(DATA) {
-  const ns = "r1", W = 505, H = 274;
+  const ns = "r1", W = 505, H = 332;
+  const E = DATA.gp;
   let b = defs(ns);
-  const stages = [
-    { c: C.scalar, tab: "When Pulsing Helps",
-      set: ["activation energy", "transport exponent β", "duty and the two states", "ramp fraction"],
-      out: ["⟨k⟩ against k(⟨T⟩)", "⟨h⟩, ⟨u⟩ the same way", "the ratios ⟨k/h⟩, ⟨k/u⟩", "is the gain real"],
-      hand: ["duty and swing", "worth trying"] },
-    { c: C.thermal, tab: "Kinetic Effect",
-      set: ["voltage, period, duty", "element and enclosure", "ambient and purge gas"],
-      out: ["the cycle it runs", "peak, minimum, average", "average electrical power", "per-cycle closure"],
-      hand: ["T(t) at periodic", "steady state"] },
-    { c: C.gas, tab: "A → B → C",
-      set: ["two activation energies", "two rate constants", "residence time", "the CJH matching basis"],
-      out: ["periodic x_{A}, x_{B}", "conversion and B yield", "selectivity", "the continuous baseline"] }
-  ];
-  /* the hand-off labels live between the panels, so the gaps have to be
-     wide enough to hold them; 64 pt of gap leaves 113 pt of panel */
-  const pw = 113, px = [18, 195, 372], py = 34, ph = 180;
-  stages.forEach(function (st, i) {
-    const x = px[i];
-    b += rect(x, py, pw, ph, { stroke: C.edge, fill: "#FFFFFF", sw: 0.8 });
-    b += '<rect x="' + x + '" y="' + py + '" width="' + pw + '" height="22" fill="' + tintOf(st.c) + '"/>';
-    b += line(x, py + 22, x + pw, py + 22, { stroke: st.c, sw: 1 });
-    b += T(x + pw / 2, py + 15, st.tab, { size: 10, weight: "bold", anchor: "middle", fill: shadeOf(st.c) });
-    b += T(x + 8, py + 38, "SETTING", { size: 8, weight: "bold", fill: C.grey });
-    st.set.forEach(function (t, k) { b += T(x + 8, py + 50 + k * 11, t, { size: 8.5 }); });
-    b += line(x + 8, py + 98, x + pw - 8, py + 98, { stroke: "#E8E8E8", sw: 0.6 });
-    b += T(x + 8, py + 112, "RETURNS", { size: 8, weight: "bold", fill: C.grey });
-    st.out.forEach(function (t, k) { b += T(x + 8, py + 124 + k * 11, t, { size: 8.5 }); });
-    if (st.hand) {
-      const mid = (x + pw + px[i + 1]) / 2;
-      b += arrow(ns, "M" + (x + pw + 2) + "," + (py + ph / 2) + " L" + (px[i + 1] - 2) + "," + (py + ph / 2),
-        { color: Object.keys(C).find((k) => C[k] === st.c), sw: 1 });
-      b += T(mid, py + ph / 2 - 14, st.hand[0], { size: 8, anchor: "middle", fill: C.grey });
-      b += T(mid, py + ph / 2 - 4, st.hand[1], { size: 8, anchor: "middle", fill: C.grey });
-    }
-  });
-  b += rect(18, 226, 469, 40, { stroke: C.hair, fill: TINT.panel, sw: 0.8, dash: "3 2" });
-  b += T(28, 240, "SUPPORTING TABS", { size: 8, weight: "bold", fill: C.grey });
-  [["OpenMKM PFR", "a detailed mechanism, same states"],
-   ["Calculations", "every equation the page evaluates"],
+
+  const lane = (y, h, hue, kicker, question, tabs, note) => {
+    let o = rect(18, y, 469, h, { stroke: C.edge, fill: "#FFFFFF", sw: 0.8 });
+    o += '<rect x="18" y="' + y + '" width="469" height="20" fill="' + tintOf(hue) + '"/>';
+    o += line(18, y + 20, 487, y + 20, { stroke: hue, sw: 1 });
+    o += T(28, y + 14, kicker, { size: 9, weight: "bold", fill: shadeOf(hue) });
+    o += T(477, y + 14, question, { size: 8.5, anchor: "end", fill: C.grey });
+    tabs.forEach(function (t, i) {
+      const x = 30 + i * 228;
+      o += rect(x, y + 30, 214, h - 58, { stroke: C.hair, fill: TINT.panel, sw: 0.7, dash: "" });
+      o += T(x + 8, y + 44, t.tab, { size: 9, weight: "bold", fill: shadeOf(hue) });
+      t.does.forEach(function (d, k) {
+        o += T(x + 8, y + 57 + k * 10, d, { size: 8, fill: C.grey });
+      });
+    });
+    o += T(28, y + h - 10, note, { size: 8, fill: C.grey });
+    return o;
+  };
+
+  /* the toy: arbitrary units, but it is the layer that explains anything */
+  b += lane(20, 118, C.gas, "THE TWO-STEP TOY",
+    "why does pulsing help at all", [
+    { tab: "When Pulsing Helps", does: ["one activation energy and a duty",
+        "compares ⟨k⟩ against k(⟨T⟩)", "answers before anything is integrated"] },
+    { tab: "A → B → C", does: ["periodic CSTR on the drive's own T(t)",
+        "conversion, intermediate yield, selectivity", "against a continuous run at equal conversion"] }
+  ], "Arbitrary kinetics, so the yields are not a claim about any real chemistry. This layer isolates the averaging effect.");
+
+  /* the predictor: real chemistry, and the only layer that gives a number */
+  b += lane(154, 118, C.thermal, "THE DETAILED-CHEMISTRY PREDICTOR",
+    "how much methane actually converts", [
+    { tab: "Kinetic Effect", does: ["voltage, period, duty, residence time",
+        "CJH conversion from the steady map", "RPH conversion from map plus correction"] },
+    { tab: "How RPH Is Predicted", does: ["the map, the transients, the frozen model",
+        "the sealed test and its verdict", "the boundary outside which it refuses"] }
+  ], "GRI-Mech 3.0 on a fixed feed. Conversion only: no selectivity is predicted here, because none was validated.");
+
+  b += line(252, 138, 252, 154, { stroke: C.hair, sw: 0.8, dash: "2 2" });
+  b += T(258, 150, "both layers drive off the same element T(t)", { size: 8, fill: C.grey });
+
+  b += rect(18, 282, 469, 28, { stroke: C.hair, fill: TINT.grey, sw: 0.8, dash: "3 2" });
+  b += T(28, 299, "SUPPORTING", { size: 8, weight: "bold", fill: C.grey });
+  [["Calculations", "every equation the page evaluates"],
    ["How to Cite", "the paper this tool accompanies"]].forEach(function (t, i) {
-    const x = 28 + i * 155;
-    b += T(x, 254, t[0], { size: 8.5, weight: "bold", fill: SHADE.grey });
-    b += T(x, 264, t[1], { size: 8, fill: C.grey });
+    const x = 120 + i * 190;
+    b += T(x, 294, t[0], { size: 8.5, weight: "bold", fill: SHADE.grey });
+    b += T(x, 304, t[1], { size: 8, fill: C.grey });
   });
+  b += T(18, 326, "Every tab calls apps/rphcjh/solver.js, and the predictor adds apps/rphcjh/surrogate.js, so the browser and the tests run identical code.",
+    { size: 8, fill: C.grey });
   return svgDoc(W, H, b);
 }
 
@@ -762,6 +769,244 @@ export function finalparity(DATA) {
     o += T(x0 + 28, ptop + 29, "CJH shortcut only", { size: 8, fill: C.grey });
     o += T(x0 + pw - 8, pbot - 24, "mean " + sciT(F.mean) + " against " + sciT(F.cjhMean), { size: 8, anchor: "end", weight: "bold" });
     o += T(x0 + pw - 8, pbot - 14, "verdict " + F.verdict + ", all four gates", { size: 8, anchor: "end" });
+    b += o;
+  })();
+  return svgDoc(W, H, b);
+}
+
+/* ------------------------------------------------------------------ */
+/* Fig. 9. How one training label is made, and how the correction is   */
+/* learned from it. The worked case is the strongest memory effect in  */
+/* the campaign, selected by rule so it cannot be a flattering pick.   */
+/* ------------------------------------------------------------------ */
+export function method(DATA) {
+  const ns = "r9", W = 505, H = 316;
+  const E = DATA.example, G = DATA.gp;
+  let b = defs(ns);
+  const box = (x, y, w, h, title, lines, hue, fill) => {
+    let o = rect(x, y, w, h, { stroke: C.edge, fill: fill || "#FFFFFF", sw: 0.8 });
+    o += T(x + w / 2, y + 13, title, { size: 8.5, weight: "bold", anchor: "middle",
+                                       fill: hue ? shadeOf(hue) : SHADE.ink });
+    (lines || []).forEach(function (t, i) {
+      o += T(x + w / 2, y + 25 + i * 10, t, { size: 8, anchor: "middle", fill: C.grey });
+    });
+    return o;
+  };
+
+  /* a. the label path: one drive, two conversions, one log-odds difference */
+  b += T(18, 22, "a", { size: 11, weight: "bold" });
+  b += T(34, 22, "MAKING ONE TRAINING LABEL", { size: 8, weight: "bold", fill: C.grey });
+  b += T(487, 22, "worked on the campaign's strongest memory case", { size: 8, anchor: "end", fill: C.grey });
+
+  const ay = 32;
+  b += box(18, ay, 108, 46, "Drive", [E.voltage + " V,  " + E.period + " s",
+                                      (100 * E.duty).toFixed(1) + " % duty"], C.scalar, TINT.scalar);
+  b += arrow(ns, "M126," + (ay + 23) + " L140," + (ay + 23), { color: "hair" });
+  b += box(141, ay, 112, 46, "Element ODE", ["peak " + E.tPeak.toFixed(0) + " °C",
+                                             "minimum " + E.tMin.toFixed(0) + " °C"], C.thermal, TINT.thermal);
+  b += T(203, ay + 54, "T(t), integrated to a periodic state", { size: 8, fill: C.grey });
+
+  /* the same waveform is read twice, which is the whole construction */
+  const by = ay + 76, split = ay + 60;
+  b += arrow(ns, "M197," + (ay + 46) + " L197," + split + " L84," + split + " L84," + (by - 2), { color: "hair", sw: 0.9 });
+  b += arrow(ns, "M197," + (ay + 46) + " L197," + split + " L320," + split + " L320," + (by - 2), { color: "hair", sw: 0.9 });
+  b += box(18, by, 132, 50, "Cantera transient CSTR", ["GRI-Mech 3.0, integrated",
+                                                       "X_{dyn} = " + E.xDyn], C.gas, TINT.gas);
+  b += box(254, by, 132, 50, "CJH map, phase by phase", ["outflow-weighted blend",
+                                                         "X_{qs} = " + E.xQs], C.scalar, TINT.scalar);
+  b += T(202, by + 22, "the same", { size: 8, anchor: "middle", fill: C.grey });
+  b += T(202, by + 32, "waveform", { size: 8, anchor: "middle", fill: C.grey });
+
+  const cy = by + 62;
+  b += arrow(ns, "M84," + (by + 52) + " L84," + (cy - 2), { color: "hair", sw: 0.9 });
+  b += arrow(ns, "M320," + (by + 52) + " L320," + (cy - 2), { color: "hair", sw: 0.9 });
+  b += rect(18, cy, 368, 30, { stroke: C.ink, fill: "#FFFFFF", sw: 1.1 });
+  b += T(202, cy + 13, "label  δ  =  logit X_{dyn}  −  logit X_{qs}  =  " + E.delta.toFixed(2),
+    { size: 9, weight: "bold", anchor: "middle" });
+  b += T(202, cy + 24, "a ratio of odds, so a rare event and a common one are corrected on one scale",
+    { size: 8, anchor: "middle", fill: C.grey });
+
+  /* the numbers on the right, so the diagram carries its own arithmetic */
+  b += rect(396, ay, 91, cy + 30 - ay, { stroke: C.hair, fill: TINT.panel, sw: 0.8, dash: "3 2" });
+  b += T(404, ay + 14, "THIS CASE", { size: 8, weight: "bold", fill: C.grey });
+  [["period / τ", (E.period / E.tau).toFixed(1)], ["residence τ", E.tau + " s"],
+   ["X_{qs}", String(E.xQs)], ["X_{dyn}", String(E.xDyn)],
+   ["ratio", E.gain.toFixed(2) + "x"], ["δ observed", E.delta.toFixed(2)],
+   ["δ predicted", E.deltaHat === null ? "n/a" : E.deltaHat.toFixed(2)],
+   ["X predicted", E.xPred === null ? "n/a" : String(E.xPred)]].forEach(function (r, i) {
+    b += T(404, ay + 28 + i * 12, r[0], { size: 8, fill: C.grey });
+    b += T(479, ay + 28 + i * 12, r[1], { size: 8, anchor: "end", weight: i >= 6 ? "bold" : "normal",
+                                          fill: i >= 6 ? SHADE.thermal : C.ink });
+  });
+
+  /* b. the model that turns five numbers into that correction */
+  const dy = 218;
+  b += T(18, dy, "b", { size: 11, weight: "bold" });
+  b += T(34, dy, "LEARNING AND APPLYING THE CORRECTION", { size: 8, weight: "bold", fill: C.grey });
+  const ey = dy + 10;
+  b += rect(18, ey, 128, 62, { stroke: C.edge, fill: "#FFFFFF", sw: 0.8 });
+  b += T(82, ey + 13, "Five inputs", { size: 8.5, weight: "bold", anchor: "middle", fill: SHADE.ink });
+  G.features.forEach(function (f, i) {
+    b += T(26, ey + 25 + i * 9, "· " + f.label, { size: 7.5, fill: C.grey });
+  });
+  b += arrow(ns, "M146," + (ey + 31) + " L160," + (ey + 31), { color: "hair" });
+  b += rect(161, ey, 132, 62, { stroke: C.ink, fill: "#FFFFFF", sw: 1.1 });
+  b += T(227, ey + 14, "Gaussian process", { size: 9, weight: "bold", anchor: "middle" });
+  b += T(227, ey + 25, G.kernel, { size: 7.5, anchor: "middle", fill: C.grey });
+  b += T(227, ey + 35, G.nTrain + " cases fitted, " + G.nHold + " held out", { size: 7.5, anchor: "middle", fill: C.grey });
+  b += T(227, ey + 45, "noise σ_{n} = " + G.sigmaN + " in log-odds", { size: 7.5, anchor: "middle", fill: C.grey });
+  b += T(227, ey + 56, "returns the correction δ", { size: 8, anchor: "middle", weight: "bold", fill: SHADE.thermal });
+  b += arrow(ns, "M293," + (ey + 31) + " L307," + (ey + 31), { color: "hair" });
+  b += rect(308, ey, 179, 62, { stroke: C.edge, fill: TINT.thermal, sw: 0.8 });
+  b += T(397, ey + 14, "X_{pred} = σ( logit X_{qs} + δ )", { size: 9, weight: "bold", anchor: "middle", fill: SHADE.thermal });
+  b += T(316, ey + 28, "The sigmoid cannot leave (0, 1), so no", { size: 7.5, fill: C.grey });
+  b += T(316, ey + 37, "correction can return an impossible conversion.", { size: 7.5, fill: C.grey });
+  b += T(316, ey + 49, "A zero-mean prior sends δ to 0 away from the", { size: 7.5, fill: C.grey });
+  b += T(316, ey + 58, "data, which is also the long-period limit.", { size: 7.5, fill: C.grey });
+
+  b += T(18, 308, "Scope of every number above: " + G.scope.feed + " at " + G.scope.pressure_atm +
+    " atm, " + G.scope.mechanism + ", " + G.scope.closure + ", element peak below " +
+    G.scope.peak_cap_c + " °C.", { size: 8, fill: C.grey });
+  return svgDoc(W, H, b);
+}
+
+/* ------------------------------------------------------------------ */
+/* Fig. S4. What the fitted kernel says each input is worth, and what  */
+/* the correction was measured against on data it never saw.           */
+/* ------------------------------------------------------------------ */
+export function gpdetail(DATA) {
+  const ns = "rs4", W = 505, H = 320;
+  const G = DATA.gp;
+  let b = defs(ns);
+
+  /* a. the length scales, which are the model's own statement of what it uses */
+  (function () {
+    const x0 = 150, w = 230, ytop = 34, rowh = 22;
+    let o = T(18, 22, "a", { size: 11, weight: "bold" });
+    o += T(34, 22, "WHAT THE FITTED KERNEL USES", { size: 8, weight: "bold", fill: C.grey });
+    o += T(487, 22, "shorter bar, stronger dependence", { size: 8, anchor: "end", fill: C.grey });
+    const hi = Math.ceil(Math.max.apply(null, G.features.map((f) => f.ell)));
+    const X = (v) => lin(v, 0, hi, x0, x0 + w);
+    G.features.forEach(function (f, i) {
+      const y = ytop + i * rowh;
+      const strong = f.ell <= 2.5;
+      o += T(x0 - 8, y + 9, f.label, { size: 8.5, anchor: "end" });
+      o += '<rect x="' + x0 + '" y="' + y + '" width="' + (X(f.ell) - x0).toFixed(1) +
+        '" height="11" fill="' + (strong ? C.thermal : C.grey) + '" fill-opacity="' + (strong ? 0.85 : 0.35) + '"/>';
+      o += T(X(f.ell) + 5, y + 9, f.ell.toFixed(2), { size: 8, fill: strong ? SHADE.thermal : C.grey });
+    });
+    const yb = ytop + G.features.length * rowh;
+    o += line(x0, yb, x0 + w, yb, { stroke: C.grey, sw: 0.8 });
+    [0, 2, 4, 6, 8].filter((v) => v <= hi).forEach(function (v) {
+      o += T(X(v), yb + 11, String(v), { size: 8, anchor: "middle", fill: C.grey });
+    });
+    o += T(x0 + w / 2, yb + 23, "length scale, in standard deviations of the input", { size: 8.5, anchor: "middle" });
+    o += T(18, yb + 38, "Duty is the one input the correction barely reads. That is not a defect: the element ODE has already",
+      { size: 8, fill: C.grey });
+    o += T(18, yb + 48, "spent duty producing the peak and minimum temperatures, which the model does read.", { size: 8, fill: C.grey });
+    b += o;
+  })();
+
+  /* b. the ladder, against gates written before any of these numbers existed */
+  (function () {
+    const LX = 22, MX = 300, PX = 372, WX = 448, GX = 488, ytop = 228;
+    let o = T(18, ytop - 18, "b", { size: 11, weight: "bold" });
+    o += T(34, ytop - 18, "MEASURED ON THE HELD-OUT CASES", { size: 8, weight: "bold", fill: C.grey });
+    o += T(MX, ytop - 4, "MEAN", { size: 8, weight: "bold", anchor: "end", fill: C.grey });
+    o += T(PX, ytop - 4, "P95", { size: 8, weight: "bold", anchor: "end", fill: C.grey });
+    o += T(WX, ytop - 4, "MAX", { size: 8, weight: "bold", anchor: "end", fill: C.grey });
+    o += line(LX, ytop + 1, GX, ytop + 1, { stroke: C.ink, sw: 0.9 });
+    let y = ytop + 15;
+    G.ladder.forEach(function (r, i) {
+      const best = i === G.ladder.length - 1;
+      o += T(LX, y, r.model, { size: 8.5, weight: best ? "bold" : "normal", fill: best ? SHADE.thermal : C.ink });
+      [[MX, r.mean], [PX, r.p95], [WX, r.max]].forEach(function (c) {
+        o += T(c[0], y, c[1].toFixed(4), { size: 8.5, anchor: "end",
+          weight: best ? "bold" : "normal", fill: best ? SHADE.thermal : C.grey });
+      });
+      y += 15;
+    });
+    o += line(LX, y - 10, GX, y - 10, { stroke: C.rule, sw: 0.6 });
+    o += T(LX, y + 2, "Gates, all fixed before the model was fitted:", { size: 8, fill: C.grey });
+    const names = Object.keys(G.gates);
+    names.forEach(function (k, i) {
+      const x = LX + (i % 3) * 160, yy = y + 14 + Math.floor(i / 3) * 11;
+      const pretty = k.replace(/<=/g, " ≤ ").replace(/>=/g, "≥ ").replace(/\s+/g, " ").trim();
+      o += T(x, yy, (G.gates[k] ? "pass" : "fail") + "  " + pretty, { size: 8,
+        fill: G.gates[k] ? SHADE.gas : SHADE.thermal, weight: "bold" });
+    });
+    b += o;
+  })();
+  return svgDoc(W, H, b);
+}
+
+/* ------------------------------------------------------------------ */
+/* Fig. S5. Where the campaign spent its Cantera runs, and where the   */
+/* sealed test sits relative to them.                                  */
+/* ------------------------------------------------------------------ */
+export function designspace(DATA) {
+  const ns = "rs5", W = 505, H = 250;
+  const S = DATA.space;
+  let b = defs(ns);
+  const pw = 190, ph = 160, ptop = 30, pbot = 190;
+  const COL = [58, 300];
+  const X0 = (x0) => (v) => lin(lg(v), -2, 3, x0 + 12, x0 + pw - 12);
+  const Y = (v) => lin(v, 300, 1900, pbot - 10, ptop + 10);
+
+  function frame(x0, letter, label) {
+    let o = rect(x0, ptop, pw, ph, { stroke: C.grey, fill: "#FFFFFF", sw: 0.8, rx: 0 });
+    o += T(x0 - 40, ptop - 8, letter, { size: 11, weight: "bold" });
+    [400, 800, 1200, 1600].forEach(function (t) {
+      o += line(x0, Y(t), x0 + pw, Y(t), { stroke: "#EAEAEA", sw: 0.4 });
+      o += T(x0 - 4, Y(t) + 3, String(t), { size: 8, anchor: "end", fill: C.grey });
+    });
+    [0.01, 0.1, 1, 10, 100].forEach(function (v) {
+      o += T(X0(x0)(v), pbot + 12, String(v), { size: 8, anchor: "middle" });
+    });
+    o += T(x0 + pw / 2, pbot + 24, "pulse period / residence time", { size: 8.5, anchor: "middle" });
+    o += '<text x="' + (x0 - 30) + '" y="' + ((ptop + pbot) / 2) + '" font-size="8.5" text-anchor="middle" transform="rotate(-90 ' + (x0 - 30) + ' ' + ((ptop + pbot) / 2) + ')">element peak temperature (°C)</text>';
+    /* the bound the element ODE screens against, before any chemistry is paid for */
+    o += line(x0, Y(S.cap), x0 + pw, Y(S.cap), { stroke: C.thermal, sw: 0.9, dash: "3 2" });
+    o += T(x0 + pw - 6, Y(S.cap) - 4, "materials bound " + S.cap + " °C", { size: 8, anchor: "end", fill: SHADE.thermal });
+    o += T(x0 + pw / 2, ptop - 8, label, { size: 8, anchor: "middle", fill: C.grey });
+    return o;
+  }
+  const dots = (x0, pts, colour, r, op, open) => {
+    const X = X0(x0);
+    return pts.map(function (q) {
+      return '<circle cx="' + X(q[0]).toFixed(1) + '" cy="' + Y(q[1]).toFixed(1) + '" r="' + r +
+        (open ? '" fill="none" stroke="' + colour + '" stroke-width="0.8"' : '" fill="' + colour + '" fill-opacity="' + op)
+        + '"/>';
+    }).join("");
+  };
+
+  /* a. the training campaign, and the round aimed at the band it missed */
+  (function () {
+    const x0 = COL[0];
+    let o = frame(x0, "a", "what the model was fitted on");
+    o += dots(x0, S.train, C.grey, 1.8, 0.45);
+    o += dots(x0, S.hold, C.scalar, 2.1, 0.85);
+    o += dots(x0, S.aimed, C.thermal, 2.4, 0.9);
+    [[C.grey, "Halton scan", S.train.length, 1.8, 0.45],
+     [C.scalar, "held out", S.hold.length, 2.1, 0.85],
+     [C.thermal, "round two, aimed", S.aimed.length, 2.4, 0.9]].forEach(function (l, i) {
+      const y = pbot - 34 + i * 11;
+      o += '<circle cx="' + (x0 + 14) + '" cy="' + (y - 3) + '" r="' + l[3] + '" fill="' + l[0] + '" fill-opacity="' + l[4] + '"/>';
+      o += T(x0 + 22, y, l[1] + ", " + l[2], { size: 8, fill: C.grey });
+    });
+    b += o;
+  })();
+
+  /* b. the sealed set, frozen by hash before any prediction existed */
+  (function () {
+    const x0 = COL[1];
+    let o = frame(x0, "b", "what it was finally tested on");
+    o += dots(x0, S.train.concat(S.hold, S.aimed), C.grey, 1.5, 0.18);
+    o += dots(x0, S.sealed, C.thermal, 2.2, 0.9);
+    o += '<circle cx="' + (x0 + 14) + '" cy="' + (pbot - 37) + '" r="2.2" fill="' + C.thermal + '"/>';
+    o += T(x0 + 22, pbot - 34, "sealed test, " + S.sealed.length, { size: 8, fill: SHADE.thermal });
+    o += '<circle cx="' + (x0 + 14) + '" cy="' + (pbot - 26) + '" r="1.5" fill="' + C.grey + '" fill-opacity="0.35"/>';
+    o += T(x0 + 22, pbot - 23, "training campaign, for reference", { size: 8, fill: C.grey });
     b += o;
   })();
   return svgDoc(W, H, b);

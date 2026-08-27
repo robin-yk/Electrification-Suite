@@ -11,7 +11,7 @@ import { SERIES_DEFAULTS, seriesRateConstants, steadySeriesCSTR, integrateSeries
          idealTwoStateAverages, timeAverageTemperature } from "../../apps/rphcjh/solver.js";
 import { predictRphConversion } from "../../apps/rphcjh/surrogate.js";
 import { workflow, drive, comparison, window_, detailed, verification, boundaries, architecture,
-         cjhmap, memory, finalparity } from "./draw.mjs";
+         cjhmap, memory, finalparity, method, gpdetail, designspace } from "./draw.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const p = (x, n = 4) => Number(x.toPrecision(n));
@@ -192,6 +192,74 @@ const gpReport = bundle.model.holdout_report.find((m) => m.model.includes("GP"))
 const cjhReport = bundle.model.holdout_report.find((m) => m.model.includes("as-is"));
 
 const finalVal = readJSON("tools/openmkm_dynamic/data/canonical/final-validation-report.json");
+const sealed = readJSONL("tools/openmkm_dynamic/data/canonical/final-validation.jsonl");
+
+// ---- the method plates: one real case carried through the label pipeline,
+// what the fitted kernel says about each input, and where the campaign put
+// its cases. The worked example is chosen by rule rather than picked, so it
+// cannot be a flattering case: the strongest memory effect in the set.
+const logit = (x) => Math.log(x / (1 - x));
+const example = (function () {
+  let best = null;
+  for (const r of design) {
+    const o = r.outputs, i = r.inputs;
+    if (o.quasi_steady_ch4_conversion < 1e-4 || o.ch4_conversion < 1e-4) continue;
+    const gain = o.ch4_conversion / o.quasi_steady_ch4_conversion;
+    if (!best || gain > best.gain) best = { r, gain };
+  }
+  const { r } = best, o = r.outputs, i = r.inputs;
+  const tPeakC = i.t_peak_K - 273.15, tMinC = i.t_min_K - 273.15;
+  const pred = predictRphConversion(bundle.model, {
+    xQs: o.quasi_steady_ch4_conversion, periodS: i.period_s, tauS: i.tau_s,
+    duty: i.duty, tPeakC, tMinC
+  });
+  return {
+    voltage: p(i.voltage_V, 3), period: p(i.period_s, 3), duty: p(i.duty, 3),
+    tau: p(i.tau_s, 3), tPeak: p(tPeakC, 4), tMin: p(tMinC, 3),
+    cycles: i.drive_cycles,
+    xDyn: p(o.ch4_conversion, 3), xQs: p(o.quasi_steady_ch4_conversion, 3),
+    delta: p(logit(o.ch4_conversion) - logit(o.quasi_steady_ch4_conversion), 3),
+    deltaHat: pred.valid ? p(pred.correctionLogOdds, 3) : null,
+    xPred: pred.valid ? p(pred.conversion, 3) : null,
+    gain: p(best.gain, 3)
+  };
+})();
+
+const FEATURE_LABELS = {
+  logit_x_qs: "logit X_{qs}, the baseline itself",
+  log10_period_over_tau: "log₁₀(period / residence time)",
+  duty: "duty",
+  t_peak_c: "element peak temperature",
+  t_min_c: "element minimum temperature"
+};
+const gp = {
+  kernel: "Matérn 5/2, one length scale per input",
+  nTrain: bundle.model.train_z.length,
+  nHold: bundle.model.holdout_indices.length,
+  dropped: bundle.model.dead_zero_dropped,
+  sigmaF: p(bundle.model.sigma_f, 3),
+  sigmaN: p(bundle.model.sigma_n, 3),
+  features: bundle.model.feature_names.map((n, j) => ({
+    name: n, label: FEATURE_LABELS[n] || n, ell: p(bundle.model.lengthscales[j], 3)
+  })),
+  ladder: bundle.model.holdout_report.map((m) => ({
+    model: m.model, mean: p(m.mean, 3), p95: p(m.p95, 3), max: p(m.max, 3)
+  })),
+  gates: bundle.model.gates,
+  scope: bundle.scope
+};
+
+const space = {
+  cap: bundle.scope.peak_cap_c,
+  train: design.filter((r) => !holdoutSet.has(r.design_index) && r.design_index > 0)
+    .map((r) => [p(r.inputs.period_s / r.inputs.tau_s, 3), p(r.inputs.t_peak_K - 273.15, 4)]),
+  hold: design.filter((r) => holdoutSet.has(r.design_index))
+    .map((r) => [p(r.inputs.period_s / r.inputs.tau_s, 3), p(r.inputs.t_peak_K - 273.15, 4)]),
+  aimed: design.filter((r) => r.design_index < 0)
+    .map((r) => [p(r.inputs.period_s / r.inputs.tau_s, 3), p(r.inputs.t_peak_K - 273.15, 4)]),
+  sealed: sealed.map((r) => [p(r.inputs.period_s / r.inputs.tau_s, 3), p(r.inputs.t_peak_K - 273.15, 4)]),
+  axes: { voltage: [25, 55], period: [0.01, 10], duty: [0.02, 0.40], tau: [0.01, 1] }
+};
 
 const DATA = {
   commit: solverCommit(),
@@ -223,6 +291,7 @@ const DATA = {
     hold: { mean: p(gpReport.mean, 3), p95: p(gpReport.p95, 3), max: p(gpReport.max, 3) },
     holdCjh: { mean: p(cjhReport.mean, 3), p95: p(cjhReport.p95, 3), max: p(cjhReport.max, 3) }
   },
+  example, gp, space,
   final: {
     n: finalVal.summary.points, verdict: finalVal.verdict,
     mean: p(finalVal.summary.mean_abs_error, 3),
@@ -299,9 +368,12 @@ const PLATES = [
   { id: "rphFig6", label: "Fig. 6", draw: cjhmap },
   { id: "rphFig7", label: "Fig. 7", draw: memory },
   { id: "rphFig8", label: "Fig. 8", draw: finalparity },
+  { id: "rphFig9", label: "Fig. 9", draw: method },
   { id: "rphFigS1", label: "Fig. S1", draw: verification },
   { id: "rphFigS2", label: "Fig. S2", draw: boundaries },
-  { id: "rphFigS3", label: "Fig. S3", draw: architecture }
+  { id: "rphFigS3", label: "Fig. S3", draw: architecture },
+  { id: "rphFigS4", label: "Fig. S4", draw: gpdetail },
+  { id: "rphFigS5", label: "Fig. S5", draw: designspace }
 ];
 for (const plate of PLATES) {
   const svg = plate.draw(DATA);
