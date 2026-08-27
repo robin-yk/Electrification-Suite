@@ -26,9 +26,23 @@ function solverCommit() {
   } catch { return "unknown revision"; }
 }
 
+// The files the plates actually open, named one by one rather than by their
+// directories: a stamp that moves when a neighbouring file changes claims a
+// revision the artwork never read, and this page's whole argument is that a
+// number and its provenance travel together.
+const DATA_FILES = [
+  "tools/openmkm_dynamic/data/canonical/cjh-grid.jsonl",
+  "tools/openmkm_dynamic/data/canonical/cjh-grid-validation.json",
+  "tools/openmkm_dynamic/data/canonical/design-physical.jsonl",
+  "tools/openmkm_dynamic/data/canonical/final-validation-report.json",
+  "apps/rphcjh/data/rph-surrogate.json",
+  "apps/rphcjh/data/cantera.json",
+  "apps/rphcjh/data/openmkm-pfr.json"
+];
+
 function dataCommit() {
   try {
-    const paths = ["tools/openmkm_dynamic/data/canonical", "apps/rphcjh/data"];
+    const paths = DATA_FILES;
     const sha = execFileSync("git", ["log", "-1", "--format=%h", "--"].concat(paths),
       { cwd: join(here, "..", ".."), encoding: "utf8" }).trim();
     const dirty = execFileSync("git", ["status", "--porcelain", "--"].concat(paths),
