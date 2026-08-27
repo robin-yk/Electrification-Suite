@@ -7,6 +7,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 CANON = HERE / "data" / "canonical"
 MODEL = HERE / "models" / "rph-surrogate.json"
+FINAL_VALIDATION = CANON / "final-validation-report.json"
 OUTPUT = HERE.parents[1] / "apps" / "rphcjh" / "data" / "rph-surrogate.json"
 
 
@@ -18,6 +19,11 @@ def main():
     model = json.loads(MODEL.read_text())
     if model.get("verdict") != "SHIP":
         raise SystemExit("refusing to export a surrogate that did not pass its gates")
+    validation = json.loads(FINAL_VALIDATION.read_text())
+    if validation.get("verdict") != "PASS":
+        raise SystemExit("refusing to export a surrogate that failed its independent test")
+    if validation.get("model_design_sha256") != model.get("canonical_design_sha256"):
+        raise SystemExit("independent test does not match the trained model")
 
     design = CANON / "design-physical.jsonl"
     grid_path = CANON / "cjh-grid.jsonl"
@@ -55,6 +61,12 @@ def main():
             "columns": packed,
         },
         "model": model,
+        "validation": {
+            "verdict": validation["verdict"],
+            "target_sha256": validation["target_sha256"],
+            "summary": validation["summary"],
+            "gates": validation["gates"],
+        },
     }
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT.write_text(json.dumps(bundle, separators=(",", ":")) + "\n")

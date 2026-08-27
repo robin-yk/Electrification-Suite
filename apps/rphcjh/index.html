@@ -209,6 +209,22 @@
   .fold .fold-body { padding: 2px 16px 13px; }
   .phys-summary { border: 1px solid var(--line); border-radius: 8px; background: #f6f9fb; padding: 9px 11px; font-size: 12px; line-height: 1.6; color: var(--muted); }
   .phys-summary strong { color: var(--navy); font-variant-numeric: tabular-nums; }
+  .chem-result { display: grid; gap: 14px; }
+  .chem-bars { display: grid; gap: 16px; }
+  .chem-bar-head { display: flex; justify-content: space-between; gap: 14px; margin-bottom: 6px; color: var(--navy); font-size: 13px; font-weight: 700; }
+  .chem-bar-head output { font-variant-numeric: tabular-nums; }
+  .chem-bar-track { height: 20px; overflow: hidden; border: 1px solid var(--line); border-radius: 4px; background: var(--soft); }
+  .chem-bar-fill { width: 0; height: 100%; transition: width 120ms ease-out; }
+  .chem-bar-fill.cjh { background: var(--blue); }
+  .chem-bar-fill.rph { background: var(--red); }
+  .chem-question { margin: 0; color: var(--navy); font-size: 17px; font-weight: 700; }
+  .chem-answer { margin: 5px 0 0; color: var(--muted); font-size: 13px; }
+  .prediction-flow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 26px; margin: 18px 0; counter-reset: prediction-step; }
+  .prediction-step { position: relative; padding: 18px; }
+  .prediction-step::before { counter-increment: prediction-step; content: counter(prediction-step); display: grid; place-items: center; width: 26px; height: 26px; margin-bottom: 12px; border-radius: 50%; background: var(--blue); color: #fff; font-size: 12px; font-weight: 700; }
+  .prediction-step:not(:last-child)::after { content: "→"; position: absolute; top: 48%; right: -21px; color: var(--muted); font-size: 22px; }
+  .prediction-step h3 { margin: 0 0 7px; color: var(--navy); font-size: 15px; }
+  .prediction-step p { margin: 0; color: var(--muted); font-size: 13px; }
 
   #reactorCanvas, #abcCanvas {
     display: block; width: 100%; height: auto; border-radius: 9px;
@@ -248,6 +264,8 @@
     .topbar-right { justify-items: start; }
     .topbar-meta { justify-content: flex-start; }
     .author-line { text-align: left; }
+    .prediction-flow { grid-template-columns: 1fr; gap: 12px; }
+    .prediction-step:not(:last-child)::after { display: none; }
   }
   @media (max-width: 640px) {
     .topbar-inner, main, footer { padding-left: 15px; padding-right: 15px; }
@@ -311,7 +329,7 @@
     <button class="tab keep-case active" data-tab="abc" role="tab" aria-selected="true">A &rarr; B &rarr; C</button>
     <button class="tab" data-tab="animation" role="tab" aria-selected="false">Kinetic Effect</button>
     <button class="tab" data-tab="jensen" role="tab" aria-selected="false">When Pulsing Helps</button>
-    <button class="tab keep-case" data-tab="openmkm" role="tab" aria-selected="false">OpenMKM PFR</button>
+    <button class="tab keep-case" data-tab="openmkm" role="tab" aria-selected="false">How RPH Is Predicted</button>
     <button class="tab" data-tab="calculations" role="tab" aria-selected="false">Calculations</button>
     <button class="tab" data-tab="cite" role="tab" aria-selected="false">How to Cite</button>
   </div>
@@ -320,7 +338,7 @@
 <main>
 
 <!-- ============ ANIMATION ============ -->
-<section id="animation" class="panel" role="tabpanel">
+<section id="kinetic-runtime" hidden aria-hidden="true">
   <p class="section-kicker">Pulsed versus continuous heating, compared in real time</p>
   <h2 class="section-title">Time-averaged kinetics under pulsed and continuous heating</h2>
 
@@ -359,14 +377,6 @@
               </select>
             </div>
             <div id="physSummary" class="phys-summary">Computed waveform appears here.</div>
-            <div class="slider-row">
-              <div class="slider-head"><label for="surrogateLogTau">Gas residence time</label><output id="surrogateTauOut">0.100 s</output></div>
-              <input id="surrogateLogTau" type="range" min="-2" max="0" step="0.05" value="-1">
-            </div>
-            <div id="surrogateSummary" class="phys-summary">Loading the Cantera-trained RPH predictor.</div>
-            <p class="chart-note" style="margin-top:7px">
-              Live CH<sub>4</sub> conversion uses the fast CJH map plus a learned RPH correction. Cantera is not run in the browser. Scope: CH<sub>4</sub>:CO<sub>2</sub> = 1:1, 1 atm, GRI-Mech 3.0.
-            </p>
           </div>
           <div class="slider-row">
             <div class="slider-head"><label for="duty">Duty cycle d</label><output id="dutyOut">0.10</output></div>
@@ -777,66 +787,118 @@
 <!-- ============ RATIOS ============ -->
 
 
-<!-- ============ OPENMKM ============ -->
-<section id="openmkm" class="panel" role="tabpanel">
-  <p class="section-kicker">Reactor-scale check with detailed chemistry</p>
-  <h2 class="section-title">Steady PFR sweep, computed with OpenMKM</h2>
+<!-- ============ KINETIC EFFECT ============ -->
+<section id="animation" class="panel" role="tabpanel">
+  <p class="section-kicker">Live detailed-chemistry comparison</p>
+  <h2 class="section-title">CJH vs RPH methane conversion</h2>
   <p class="section-lede">
-    The hot zone's residence time is milliseconds while pulses last on the order of a second, so the reactor is
-    quasi-steady at every instant of the pulse: pulsed operation is the duty-weighted blend of the steady states at
-    T<sub>peak</sub> and T<sub>min</sub>. Each point below is a steady OpenMKM plug-flow solution
-    (GRI-Mech 3.0, gas phase, CH<sub>4</sub>:CO<sub>2</sub> = 1:1) with the animation's axial profile:
-    cold feed in, Joule-heated plateau, quench, exit.
+    Move the four sliders to compare methane conversion at the same operating condition. Blue is CJH. Red is RPH.
   </p>
 
-  <div class="kpi-grid" style="grid-template-columns:repeat(4,minmax(150px,1fr))">
-    <div class="kpi" id="okpi1"><div class="kpi-label">X<sub>CH4</sub> pulsed</div><div class="kpi-value" id="omkmXPulsed">&mdash;</div><div class="kpi-sub">duty-weighted blend</div></div>
-    <div class="kpi" id="okpi2"><div class="kpi-label">X<sub>CH4</sub> CJH</div><div class="kpi-value" id="omkmXCjh">&mdash;</div><div class="kpi-sub" id="omkmXCjhSub">at the reference T</div></div>
-    <div class="kpi" id="okpi3"><div class="kpi-label">Conversion ratio</div><div class="kpi-value" id="omkmRatio">&mdash;</div><div class="kpi-sub">pulsed / CJH</div></div>
-    <div class="kpi" id="okpi4"><div class="kpi-label">S<sub>C2</sub> pulsed</div><div class="kpi-value" id="omkmSel">&mdash;</div><div class="kpi-sub" id="omkmSelSub">carbon basis</div></div>
+  <div class="anim-layout">
+    <aside class="anim-inputs" aria-label="Detailed chemistry inputs">
+      <div class="card">
+        <div class="card-header"><h2>RPH condition</h2><span class="status" id="chemStatus">loading&hellip;</span></div>
+        <div class="card-body">
+          <div class="slider-row">
+            <div class="slider-head"><label for="chemVoltage">Supply voltage</label><output id="chemVoltageOut">48.0 V</output></div>
+            <input id="chemVoltage" type="range" min="25" max="55" step="0.5" value="48">
+          </div>
+          <div class="slider-row">
+            <div class="slider-head"><label for="chemDuty">Duty cycle</label><output id="chemDutyOut">0.10</output></div>
+            <input id="chemDuty" type="range" min="0.02" max="0.40" step="0.01" value="0.10">
+          </div>
+          <div class="slider-row">
+            <div class="slider-head"><label for="chemLogPeriod">Pulse period</label><output id="chemPeriodOut">0.50 s</output></div>
+            <input id="chemLogPeriod" type="range" min="-2" max="1" step="0.05" value="-0.30">
+          </div>
+          <div class="slider-row">
+            <div class="slider-head"><label for="chemLogTau">Gas residence time</label><output id="chemTauOut">0.50 s</output></div>
+            <input id="chemLogTau" type="range" min="-2" max="0" step="0.05" value="-0.30">
+          </div>
+          <div id="chemDriveSummary" class="phys-summary">Computing the CFP temperature waveform.</div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="chem-result">
+      <div class="kpi-grid" style="grid-template-columns:repeat(4,minmax(150px,1fr));margin-bottom:0">
+        <div class="kpi"><div class="kpi-label">CJH conversion</div><div class="kpi-value" id="chemCjh">&mdash;</div><div class="kpi-sub">continuous condition</div></div>
+        <div class="kpi"><div class="kpi-label">RPH conversion</div><div class="kpi-value" id="chemRph">&mdash;</div><div class="kpi-sub">transient pulse condition</div></div>
+        <div class="kpi" id="chemDeltaKpi"><div class="kpi-label">RPH &minus; CJH</div><div class="kpi-value" id="chemDelta">&mdash;</div><div class="kpi-sub">conversion percentage points</div></div>
+        <div class="kpi"><div class="kpi-label">RPH / CJH</div><div class="kpi-value" id="chemRatio">&mdash;</div><div class="kpi-sub">conversion ratio</div></div>
+      </div>
+
+      <article class="card">
+        <div class="card-header"><h3>Same condition, two answers</h3></div>
+        <div class="card-body chem-bars">
+          <div>
+            <div class="chem-bar-head"><span>CJH conversion</span><output id="chemCjhBarOut">&mdash;</output></div>
+            <div class="chem-bar-track"><div class="chem-bar-fill cjh" id="chemCjhBar"></div></div>
+          </div>
+          <div>
+            <div class="chem-bar-head"><span>RPH conversion</span><output id="chemRphBarOut">&mdash;</output></div>
+            <div class="chem-bar-track"><div class="chem-bar-fill rph" id="chemRphBar"></div></div>
+          </div>
+          <div class="phys-summary" id="chemVerdict">Loading the detailed-chemistry model.</div>
+        </div>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<!-- ============ RPH PREDICTION METHOD ============ -->
+<section id="openmkm" class="panel" role="tabpanel">
+  <p class="section-kicker">What sits behind the red number</p>
+  <h2 class="section-title">How steady CJH chemistry becomes an RPH prediction</h2>
+  <p class="section-lede">
+    The browser does not run Cantera. Cantera was run offline to build the steady CJH map and the transient RPH answers.
+    A Gaussian-process model learned only the missing correction between those two calculations.
+  </p>
+
+  <div class="prediction-flow" aria-label="RPH prediction pipeline">
+    <article class="card prediction-step">
+      <h3>Build the CJH chemistry map</h3>
+      <p>Cantera solves steady constant-pressure CSTR cases across temperature and residence time. This gives the fast blue CJH estimate.</p>
+    </article>
+    <article class="card prediction-step">
+      <h3>Measure the RPH correction</h3>
+      <p>Offline transient Cantera runs show how much pulse memory moves conversion away from the steady-map estimate.</p>
+    </article>
+    <article class="card prediction-step">
+      <h3>Predict in the browser</h3>
+      <p>The current CJH estimate and pulse conditions enter the frozen GP. Its corrected output is the red predicted RPH conversion.</p>
+    </article>
   </div>
 
   <div class="calc-grid">
     <article class="card">
-      <div class="card-header"><h3>Outlet conversion and C<sub>2</sub> selectivity vs element temperature</h3><span class="status" id="omkmStatus" style="background:var(--soft);color:var(--muted)">loading&hellip;</span></div>
-      <div class="card-body" style="padding:10px 12px 12px">
-        <svg class="chart" id="omkmChart" viewBox="0 0 560 320" role="img" aria-label="Steady PFR methane conversion and C2 selectivity versus element temperature, with the pulsed blend and CJH reference marked"></svg>
-        <div class="legend">
-          <span><i style="background:var(--red)"></i>X<sub>CH4</sub> steady PFR</span>
-          <span><i style="background:var(--teal)"></i>S<sub>C2</sub> steady PFR</span>
-          <span><i style="background:#102a43"></i>T<sub>min</sub>, T<sub>peak</sub> states</span>
-          <span><i style="background:var(--blue)"></i>CJH reference</span>
-        </div>
-        <p class="chart-note">
-          The pulsed marker sits at T<sub>avg</sub> but <em>above</em> the conversion curve: the same Jensen gap as the
-          &Lambda;/Da tabs, now on a full reactor solution with detailed chemistry instead of a single lumped rate.
-        </p>
+      <div class="card-header"><h3>Independent Cantera test</h3><span class="status good">passed</span></div>
+      <div class="card-body">
+        <p class="chem-question">Does the shortcut recover RPH conversion on unseen cases?</p>
+        <p class="chem-answer" id="modelValidationSummary">Loading the independent test result.</p>
       </div>
     </article>
     <article class="card">
-      <div class="card-header"><h3>Steady outlet composition (mole fractions)</h3></div>
+      <div class="card-header"><h3>Exact model boundary</h3></div>
       <div class="card-body">
-        <table class="metric-table" id="omkmSlate"><tbody></tbody></table>
-        <p class="chart-note" style="margin-top:8px">
-          Columns are the three steady states the quasi-steady picture blends: the pulse endpoints and the CJH reference.
-          C<sub>2</sub>H<sub>2</sub> appearing at T<sub>peak</sub> but not at the CJH temperature is the tab's whole story.
-        </p>
+        <table class="metric-table">
+          <tbody>
+            <tr><th>Chemistry</th><td>GRI-Mech 3.0</td></tr>
+            <tr><th>Feed</th><td>CH<sub>4</sub>:CO<sub>2</sub> = 1:1</td></tr>
+            <tr><th>Pressure and reactor</th><td>1 atm, constant-pressure CSTR</td></tr>
+            <tr><th>Temperature drive</th><td>Physical CFP model</td></tr>
+            <tr><th>Prediction outside training range</th><td>Withheld</td></tr>
+          </tbody>
+        </table>
       </div>
     </article>
   </div>
 
   <div class="assumption">
-    <strong>Validity limits.</strong> The quasi-steady blend requires the hot-zone residence time (ms) to stay far below
-    the pulse period; it holds across this page's period slider but would fail for kHz pulsing. The chemistry is
-    gas-phase GRI-Mech 3.0, a combustion mechanism used here outside its validation range, so trends and the
-    convexity argument are meaningful, absolute conversions are not. Coke formation and surface chemistry are not modeled.
+    <strong>Interpretation limit.</strong> The red number predicts the transient Cantera model, not an experiment. GRI-Mech 3.0 omits C<sub>3+</sub>, coke, and surface chemistry. The current exported model predicts cycle-averaged methane conversion; it does not contain a time-resolved species trajectory.
   </div>
-
-  <p class="chart-note" id="omkmProvenance">
-    Engine: OpenMKM (Vlachos group, University of Delaware); Medasani, B., Kasiraju, S., &amp; Vlachos, D. G.
-    <em>OpenMKM: An Open-Source C++ Multiscale Modeling Simulator for Homogeneous and Heterogeneous Catalytic Reactions.</em>
-    JCIM 2023, 63(11), 3377&ndash;3391. Pipeline: <code>tools/openmkm/</code>.
-  </p>
 </section>
 
 <!-- ============ CALCULATIONS ============ -->
@@ -1071,7 +1133,8 @@ const state = {
   ea: 100, beta: 0.50,
   ea1: 400, ea2: 80, k1Ref: 30, k2Ref: 1, tauRes: 2.0,
   driveMode: "physical", voltage: 34, cjhRef: "tavg", abcBasis: "tavg", physical: null,
-  surrogateTau: 0.1, surrogateBundle: null, surrogateLoadFailed: false,
+  chem: { voltage: 48, duty: 0.10, period: 10 ** -0.30, tau: 10 ** -0.30, physical: null },
+  surrogateBundle: null, surrogateLoadFailed: false,
   running: false, t: 0, lastFrame: 0, cycles: 0,
   accK: 0, accH: 0, accU: 0, accKH: 0, accKU: 0, accT: 0, accTime: 0,
   trace: [], kHist: [], hHist: []
@@ -1106,40 +1169,6 @@ function cjhTemp(tAvgRun) {
   return tAvgRun !== undefined ? tAvgRun : idleAvgT();
 }
 
-function renderSurrogate() {
-  const box = document.getElementById("surrogateSummary");
-  if (!box) return;
-  if (state.surrogateLoadFailed) {
-    box.textContent = "Detailed-chemistry predictor unavailable.";
-    return;
-  }
-  if (!state.surrogateBundle) {
-    box.textContent = "Loading the Cantera-trained RPH predictor.";
-    return;
-  }
-  if (!state.physical) {
-    box.textContent = "Select the physical CFP drive to use the RPH predictor.";
-    return;
-  }
-  const prediction = predictRphFromDrive(state.surrogateBundle, {
-    drive: state.physical,
-    periodS: state.period,
-    tauS: state.surrogateTau,
-    duty: state.duty,
-  });
-  if (!prediction.valid) {
-    box.textContent = `RPH prediction withheld: ${prediction.reason}.`;
-    return;
-  }
-  const xCjh = prediction.quasiSteadyConversion;
-  const xRph = prediction.conversion;
-  const deltaPoints = 100 * (xRph - xCjh);
-  const gain = prediction.memoryGain === null ? "n/a" : `${prediction.memoryGain.toFixed(2)}x`;
-  box.innerHTML =
-    `CJH shortcut <strong>${(100 * xCjh).toFixed(1)}%</strong> &rarr; predicted RPH <strong>${(100 * xRph).toFixed(1)}%</strong><br>` +
-    `Learned pulse-memory correction <strong>${deltaPoints >= 0 ? "+" : ""}${deltaPoints.toFixed(1)} points</strong> &middot; RPH/CJH <strong>${gain}</strong>`;
-}
-
 let physTimer = null;
 function schedulePhysicalRecompute() {
   if (state.driveMode !== "physical") return;
@@ -1164,7 +1193,6 @@ function recomputePhysical() {
     (run.converged ? "" : " &middot; <em>not yet periodic</em>") +
     (run.tPeak > 1800 ? "<br><em>T<sub>peak</sub> is past the 1800 &deg;C IR/CFP limit; lower V or duty.</em>" : "");
   syncCjhTitle();
-  renderSurrogate();
   redrawAll();
 }
 function syncCjhTitle() {
@@ -2130,119 +2158,110 @@ function resetIntegration() {
 }
 
 /* ------------------------------------------------------------------ */
-/* openmkm tab                                                         */
+/* Cantera-trained CJH to RPH comparison                              */
 /* ------------------------------------------------------------------ */
-let omkmData = null;
+const formatSeconds = value => value < 0.1 ? value.toFixed(3) : value < 1 ? value.toFixed(2) : value.toFixed(1);
+const formatConversion = value => {
+  const percent = 100 * value;
+  if (percent < 0.01 && percent > 0) return percent.toExponential(1) + "%";
+  return percent.toFixed(percent < 1 ? 2 : 1) + "%";
+};
 
-function omkmInterp(TC) {
-  const cs = omkmData.cases;
-  const lo = cs[0].element_T_C, hi = cs[cs.length - 1].element_T_C;
-  const t = Math.min(Math.max(TC, lo), hi);
-  let i = 0;
-  while (i < cs.length - 2 && cs[i + 1].element_T_C <= t) i++;
-  const a = cs[i], b = cs[i + 1];
-  const f = (t - a.element_T_C) / (b.element_T_C - a.element_T_C);
-  const lerp = (u, v) => u + (v - u) * f;
-  const slate = {};
-  omkmData.species.forEach(sp => {
-    slate[sp] = lerp(a.outlet_molefrac[sp], b.outlet_molefrac[sp]);
-  });
-  return {
-    clamped: TC < lo || TC > hi,
-    x: lerp(a.ch4_conversion, b.ch4_conversion),
-    s: lerp(a.c2_selectivity_carbon, b.c2_selectivity_carbon),
-    slate
-  };
+function clearChemistryResult(message) {
+  ["chemCjh", "chemRph", "chemDelta", "chemRatio", "chemCjhBarOut", "chemRphBarOut"]
+    .forEach(id => { document.getElementById(id).textContent = "—"; });
+  document.getElementById("chemCjhBar").style.width = "0";
+  document.getElementById("chemRphBar").style.width = "0";
+  document.getElementById("chemVerdict").textContent = message;
+  document.getElementById("chemDeltaKpi").className = "kpi warn";
 }
 
-function renderOpenMKM() {
-  if (!omkmData) return;
-  const d = state.duty, tp = state.tPeak, tm = state.tMin;
-  const tRef = cjhTemp();
-  const hi = omkmInterp(tp), lo = omkmInterp(tm), cj = omkmInterp(tRef);
-  const tA = tAvgOf();
-
-  const xP = d * hi.x + (1 - d) * lo.x;
-  const wHi = d * hi.x, wLo = (1 - d) * lo.x;
-  const sP = (wHi + wLo) > 1e-12 ? (wHi * hi.s + wLo * lo.s) / (wHi + wLo) : 0;
-
-  const pct = v => (v * 100).toFixed(v >= 0.1 ? 1 : 2) + "%";
-  document.getElementById("omkmXPulsed").textContent = pct(xP);
-  document.getElementById("omkmXCjh").textContent = pct(cj.x);
-  document.getElementById("omkmXCjhSub").textContent = `CJH at ${tRef.toFixed(0)} °C` + (hi.clamped ? " · T_peak clamped to table" : "");
-  const ratio = cj.x > 1e-6 ? xP / cj.x : null;
-  document.getElementById("omkmRatio").textContent =
-    ratio === null ? (xP > 1e-6 ? "≫1" : "—") : ratio.toFixed(ratio >= 100 ? 0 : 2) + "×";
-  document.getElementById("omkmSel").textContent = (wHi + wLo) > 1e-12 ? pct(sP) : "—";
-  document.getElementById("omkmSelSub").textContent = cj.x > 1e-6 ? `CJH: ${pct(cj.s)}` : "carbon basis";
-  document.getElementById("okpi3").className = "kpi " + (ratio === null && xP > 1e-6 ? "good" : ratio !== null && ratio > 1.02 ? "good" : ratio !== null && ratio < 0.98 ? "bad" : "warn");
-
-  // sweep chart: both quantities live on the same 0..1 axis
-  const cs = omkmData.cases;
-  const xLo = cs[0].element_T_C, xHi = cs[cs.length - 1].element_T_C;
-  const f = frame(560, 320, { l: 52, r: 16, t: 16, b: 42 });
-  let svg = axes(f, {
-    xLo, xHi, yLo: 0, yHi: 1,
-    yTicks: ticks(0, 1, 4, v => (v * 100).toFixed(0) + "%"),
-    xTicks: ticks(xLo, xHi, 5, v => v.toFixed(0)),
-    xLabel: "element temperature (°C)", yLabel: "fraction"
+function renderChemistry() {
+  const status = document.getElementById("chemStatus");
+  if (state.surrogateLoadFailed) {
+    status.textContent = "unavailable";
+    status.className = "status warn";
+    clearChemistryResult("The detailed-chemistry data could not be loaded.");
+    return;
+  }
+  if (!state.surrogateBundle) {
+    clearChemistryResult("Loading the chemistry model.");
+    return;
+  }
+  if (!state.chem.physical) {
+    clearChemistryResult("Computing the physical temperature waveform.");
+    return;
+  }
+  const prediction = predictRphFromDrive(state.surrogateBundle, {
+    drive: state.chem.physical,
+    periodS: state.chem.period,
+    tauS: state.chem.tau,
+    duty: state.chem.duty,
   });
-  svg += path(cs.map(c => [c.element_T_C, c.ch4_conversion]), f, xLo, xHi, 0, 1, "#c53a3a", 2.4);
-  svg += path(cs.map(c => [c.element_T_C, c.c2_selectivity_carbon]), f, xLo, xHi, 0, 1, "#13795b", 2.4);
-  const xAt = v => f.x(Math.min(Math.max(v, xLo), xHi), xLo, xHi);
-  const yAt = v => f.y(v, 0, 1);
-  [[tm, lo.x], [tp, hi.x]].forEach(p => {
-    svg += `<circle cx="${xAt(p[0]).toFixed(1)}" cy="${yAt(p[1]).toFixed(1)}" r="4.5" fill="#102a43"/>`;
-  });
-  svg += `<circle cx="${xAt(tRef).toFixed(1)}" cy="${yAt(cj.x).toFixed(1)}" r="5" fill="#fff" stroke="#2c6e9b" stroke-width="2.4"/>`;
-  svg += `<line x1="${xAt(tA)}" y1="${f.pad.t}" x2="${xAt(tA)}" y2="${f.h - f.pad.b}" stroke="#b9c4cf" stroke-dasharray="3 4"/>`;
-  svg += `<circle cx="${xAt(tA).toFixed(1)}" cy="${yAt(xP).toFixed(1)}" r="5.5" fill="#c53a3a"/>`;
-  svg += `<text x="${xAt(tA).toFixed(1)}" y="${(yAt(xP) - 10).toFixed(1)}" text-anchor="middle" font-size="10" font-weight="bold" fill="#c53a3a">pulsed</text>`;
-  document.getElementById("omkmChart").innerHTML = svg;
+  if (!prediction.valid) {
+    status.textContent = "outside range";
+    status.className = "status warn";
+    clearChemistryResult(`Result unavailable: ${prediction.reason}. Change the inputs.`);
+    return;
+  }
 
-  // steady outlet slate at the three anchor temperatures
-  const fmtX = v => v >= 0.0005 ? v.toFixed(3) : v > 0 ? v.toExponential(1) : "0";
-  const head = `<tr><th>species</th><td>T<sub>min</sub> ${tm.toFixed(0)} °C</td><td>T<sub>peak</sub> ${tp.toFixed(0)} °C</td><td>CJH ${tRef.toFixed(0)} °C</td></tr>`;
-  document.querySelector("#omkmSlate tbody").innerHTML = head + omkmData.species
-    .map(sp => `<tr><th>${sp.replace(/(\d)/g, "<sub>$1</sub>")}</th><td>${fmtX(lo.slate[sp])}</td><td>${fmtX(hi.slate[sp])}</td><td>${fmtX(cj.slate[sp])}</td></tr>`)
-    .join("");
+  status.textContent = "inside range";
+  status.className = "status good";
+  const xCjh = prediction.quasiSteadyConversion;
+  const xRph = prediction.conversion;
+  const deltaPoints = 100 * (xRph - xCjh);
+  const ratio = prediction.memoryGain;
+  const cjhText = formatConversion(xCjh);
+  const rphText = formatConversion(xRph);
+  document.getElementById("chemCjh").textContent = cjhText;
+  document.getElementById("chemRph").textContent = rphText;
+  document.getElementById("chemDelta").textContent = `${deltaPoints >= 0 ? "+" : ""}${deltaPoints.toFixed(1)} pp`;
+  document.getElementById("chemRatio").textContent = ratio === null ? "n/a" : ratio.toFixed(2) + "×";
+  document.getElementById("chemCjhBarOut").textContent = cjhText;
+  document.getElementById("chemRphBarOut").textContent = rphText;
+  document.getElementById("chemCjhBar").style.width = `${Math.max(0, Math.min(100, 100 * xCjh))}%`;
+  document.getElementById("chemRphBar").style.width = `${Math.max(0, Math.min(100, 100 * xRph))}%`;
+  document.getElementById("chemDeltaKpi").className = "kpi " + (deltaPoints > 0.2 ? "good" : deltaPoints < -0.2 ? "bad" : "warn");
+  document.getElementById("chemVerdict").innerHTML =
+    `At this condition, CJH conversion is <strong>${cjhText}</strong> and RPH conversion is <strong>${rphText}</strong>.`;
 }
 
-fetch("data/openmkm-pfr.json")
-  .then(r => (r.ok ? r.json() : Promise.reject(new Error("HTTP " + r.status))))
-  .then(d => {
-    omkmData = d;
-    const st = document.getElementById("omkmStatus");
-    st.textContent = `${d.engine.split("(")[0].trim()} · ${d.mechanism}`;
-    st.className = "status good";
-    document.getElementById("omkmProvenance").innerHTML +=
-      ` Data generated ${d.generated}; feed ${d.feed} at ${d.pressure_atm} atm, ${d.geometry.flow_cm3_s} cm³/s.`;
-    renderOpenMKM();
-  })
-  .catch(() => {
-    const st = document.getElementById("omkmStatus");
-    st.textContent = "data unavailable";
-    st.className = "status warn";
-  });
+function recomputeChemistry() {
+  const c = state.chem;
+  const startC = steadyElementTemperature({ power: c.duty * c.voltage * c.voltage / cfpResistance(600) });
+  c.physical = integratePulsedElement({ voltage: c.voltage, period: c.period, duty: c.duty, startC });
+  document.getElementById("chemDriveSummary").innerHTML =
+    `Computed waveform: T<sub>peak</sub> <strong>${c.physical.tPeak.toFixed(0)} &deg;C</strong> &middot; ` +
+    `T<sub>min</sub> <strong>${c.physical.tMin.toFixed(0)} &deg;C</strong> &middot; ` +
+    `T<sub>avg</sub> <strong>${c.physical.tAvg.toFixed(0)} &deg;C</strong>` +
+    (c.physical.converged ? "" : "<br><em>The CFP waveform did not reach a periodic state.</em>");
+  renderChemistry();
+}
 
 fetch("data/rph-surrogate.json")
   .then(r => (r.ok ? r.json() : Promise.reject(new Error("HTTP " + r.status))))
   .then(bundle => {
     state.surrogateBundle = bundle;
-    renderSurrogate();
+    const v = bundle.validation;
+    if (v && v.verdict === "PASS") {
+      document.getElementById("modelValidationSummary").innerHTML =
+        `Yes, inside the tested range. On <strong>${v.summary.points} new Cantera cases</strong>, ` +
+        `the prediction had mean absolute error <strong>${(100 * v.summary.mean_abs_error).toFixed(2)} points</strong>, ` +
+        `95th-percentile error <strong>${(100 * v.summary.p95_abs_error).toFixed(2)} points</strong>, and ` +
+        `worst error <strong>${(100 * v.summary.max_abs_error).toFixed(2)} points</strong>.`;
+    }
+    renderChemistry();
   })
   .catch(() => {
     state.surrogateLoadFailed = true;
-    renderSurrogate();
+    renderChemistry();
   });
 
 function redrawAll() {
   syncOutputs();
-  renderSurrogate();
   renderJensen();
   renderRatios();
   renderAbc();
-  renderOpenMKM();
   if (!state.running) {
     document.getElementById("valTavg").textContent = idleAvgT().toFixed(0) + " °C";
     drawReactor(
@@ -2282,11 +2301,19 @@ bind("abcK1", "k1Ref", Number);
 bind("abcK2", "k2Ref", Number);
 bind("abcTau", "tauRes", Number);
 
-document.getElementById("surrogateLogTau").addEventListener("input", e => {
-  state.surrogateTau = 10 ** Number(e.target.value);
-  document.getElementById("surrogateTauOut").textContent = state.surrogateTau.toFixed(3) + " s";
-  renderSurrogate();
-});
+let chemTimer = null;
+const bindChemistry = (id, key, transform, outputId, format) => {
+  document.getElementById(id).addEventListener("input", e => {
+    state.chem[key] = transform(e.target.value);
+    document.getElementById(outputId).textContent = format(state.chem[key]);
+    clearTimeout(chemTimer);
+    chemTimer = setTimeout(recomputeChemistry, 50);
+  });
+};
+bindChemistry("chemVoltage", "voltage", Number, "chemVoltageOut", v => v.toFixed(1) + " V");
+bindChemistry("chemDuty", "duty", Number, "chemDutyOut", v => v.toFixed(2));
+bindChemistry("chemLogPeriod", "period", v => 10 ** Number(v), "chemPeriodOut", v => formatSeconds(v) + " s");
+bindChemistry("chemLogTau", "tau", v => 10 ** Number(v), "chemTauOut", v => formatSeconds(v) + " s");
 
 const IDEAL_NOTE = "Ramp 0 is the ideal square wave. Each ramp is constrained so the stated duty cycle remains the actual high-temperature fraction; the CJH reference stays matched at the exact waveform-average temperature.";
 const PHYSICAL_NOTE = "T(t) is integrated from the CFP element's energy balance, so peak and minimum temperatures are outputs, not settings. Model details in the Calculations tab.";
@@ -2352,6 +2379,7 @@ document.querySelectorAll(".tab").forEach(tab => {
 });
 
 recomputePhysical();
+recomputeChemistry();
 
 /* detailed-mechanism cross-check card: filled from the precomputed
    tools/cantera pipeline output; the page works unchanged without it */

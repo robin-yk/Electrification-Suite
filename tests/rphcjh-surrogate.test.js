@@ -10,6 +10,16 @@ import { integratePulsedElement } from "../apps/rphcjh/solver.js";
 const bundle = JSON.parse(readFileSync(
   new URL("../apps/rphcjh/data/rph-surrogate.json", import.meta.url), "utf8"));
 
+test("the web bundle carries the independent Cantera validation result", () => {
+  const report = JSON.parse(readFileSync(new URL(
+    "../tools/openmkm_dynamic/data/canonical/final-validation-report.json", import.meta.url), "utf8"));
+  assert.equal(bundle.validation.verdict, "PASS");
+  assert.deepEqual(bundle.validation.summary, report.summary);
+  assert.deepEqual(bundle.validation.gates, report.gates);
+  assert.equal(bundle.validation.target_sha256, report.target_sha256);
+  assert.equal(report.model_design_sha256, bundle.model.canonical_design_sha256);
+});
+
 test("the shipped GP reproduces the Python parity cases", () => {
   assert.equal(bundle.model.verdict, "SHIP");
   for (const row of bundle.model.parity_cases) {
