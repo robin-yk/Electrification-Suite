@@ -1,29 +1,20 @@
-# Dynamic pulsed-CSTR pipeline (transient ground truth)
+# Dynamic pulsed-CSTR pipeline and web surrogate
 
-> **STATUS: under development, not wired into the site. Blocked.**
+> **STATUS: model and web inference implemented. Independent final test pending.**
 >
-> Nothing here feeds any page in `apps/`; it is research tooling parked in
-> the repository so it can be picked up later. Two things must be settled
-> before any number produced here is quotable:
+> The canonical dataset contains 2,251 steady Cantera CSTR states and 285
+> transient physical-drive cases. After dropping 43 dead-zero cases, the GP
+> correction fits 194 cases and evaluates on 48 fixed development cases. It
+> passes the pre-stated conversion gates (mean 0.0027, p95 0.0105, max
+> 0.0276), and the dependency-free JavaScript inference path reproduces the
+> Python model. The 48 cases are not an untouched final test: their first
+> errors were used to aim the 32-case second round. Run a fresh independent
+> Cantera test before treating the web model as a final scientific result.
 >
-> 1. **Reactor closure is unverified.** The runner uses constant pressure
->    with equal inlet and outlet mass flows, i.e. constant mass and a
->    *breathing volume* (~1.5x over 750-1250 C). The companion experiment is
->    a fixed-volume tube, and the literature closure for that is fixed mass
->    with pressure swinging (tens of percent), which this does not
->    reproduce: the recorded pressure is flat at 1 atm. A variable-mass
->    constant-pressure formulation is separately known to go unphysical at
->    high pulse frequency (negative outlet flow, super-equilibrium
->    conversion); this runner cannot show that specific failure because both
->    mass flows are set equal and positive by construction, and the pilot
->    conversions stay far below equilibrium. That rules out one symptom, not
->    the closure question.
-> 2. **No memory test has been run.** Deviation from the quasi-steady blend
->    is not by itself evidence of chemical memory; Arrhenius convexity
->    produces it too. See the pilot section.
->
-> The engine split is deliberate and load-bearing: transient integration is
-> Cantera, steady anchors are OpenMKM. See "Why a CSTR" below.
+> The shipped scope is one computational model: constant-pressure CSTR,
+> CH4:CO2 = 1:1, 1 atm, GRI-Mech 3.0, physical CFP drive, and element peak at
+> or below 1800 C. This does not establish that constant pressure is the
+> experimental reactor closure.
 
 Generates the *transient* half of the ML dataset family: an ideal-gas CSTR
 under a prescribed trapezoidal temperature pulse train, integrated to
@@ -44,13 +35,12 @@ only. Arbitrary T(t) exists solely as the PFR's **spatial** `tprofile`.
 OpenMKM therefore cannot impose a pulse train on a CSTR without source
 modification.
 
-The transient integration consequently runs on **Cantera (pip, >=3.2)**
-with the same GRI-Mech 3.0 mechanism, and every record carries
+Both the transient integration and the dense steady CSTR map run on
+**Cantera (pip, >=3.2)** with GRI-Mech 3.0, and every transient record carries
 `engine: "cantera-3.2 transient CSTR"`. These trajectories are never
-labeled OpenMKM output. To keep the dataset family coherent, the pilot
-cross-anchors the steady endpoints: the same steady CSTR is solved by both
-Cantera and OpenMKM (`type: cstr`, isothermal, matched volume/flow) and the
-agreement is printed with every pilot run.
+labeled OpenMKM output. OpenMKM remains the separate steady-PFR reference.
+The pilot also cross-anchors selected steady CSTR endpoints between Cantera
+and OpenMKM (`type: cstr`, isothermal, matched volume/flow).
 
 ## Formulation
 
@@ -86,10 +76,37 @@ python tools/openmkm_dynamic/run_cstr_pilot.py \
     --output tools/openmkm_dynamic/data/cstr-period-pilot.jsonl \
     --omkm ~/openmkm-build/openmkm/src/build/omkm \
     --cantera-lib ~/openmkm-build/cantera-install/lib --resume
+
+# retrain against the fixed development split and package browser inference
+python tools/openmkm_dynamic/train_surrogate.py --holdout 48 --seed 7 \
+    --holdout-from tools/openmkm_dynamic/models/rph-surrogate.json
+python tools/openmkm_dynamic/export_web_surrogate.py
 ```
 
 Requires `pip install cantera` (any 3.x; version is stamped into every
 record). The pilot resumes by period value with `--resume`.
+
+## Independent final test
+
+The 48 development cases were used to aim the second training batch, so a
+fresh set is required for the final error claim. `make_final_validation.py`
+freezes 64 unused Halton conditions without reading transient chemistry,
+model predictions, uncertainty, or residuals. The file records a SHA256 seal
+over the exact floating-point input values.
+
+```bash
+python tools/openmkm_dynamic/make_final_validation.py \
+    --output tools/openmkm_dynamic/data/targets-final-validation.json
+
+# after the eight Cantera CI shards are merged
+node tools/openmkm_dynamic/evaluate_final_validation.mjs \
+    --data tools/openmkm_dynamic/data/final-validation.jsonl \
+    --output tools/openmkm_dynamic/data/final-validation-report.json
+```
+
+The evaluator imports the browser's own `surrogate.js`, checks the target
+seal and development-set disjointness, and applies the pre-stated gates once.
+Never append final-validation rows to `canonical/design-physical.jsonl`.
 
 ## Dataset family map
 
@@ -97,6 +114,9 @@ record). The pilot resumes by period value with `--resume`.
 |---|---|---|
 | `tools/openmkm/data/design-results-512.jsonl` | OpenMKM steady PFR | steady operating-space surrogate (T, P, flow, feed, geometry) |
 | `tools/openmkm_dynamic/data/cstr-period-pilot.jsonl` | Cantera transient CSTR | pulse-frequency dependence, radical memory, quasi-steady breakdown |
+| `tools/openmkm_dynamic/data/canonical/cjh-grid.jsonl` | Cantera steady CSTR | dense `(T, tau)` CJH baseline for the dynamic surrogate |
+| `tools/openmkm_dynamic/data/canonical/design-physical.jsonl` | Cantera transient CSTR | canonical RPH training and development-validation cases |
+| `apps/rphcjh/data/rph-surrogate.json` | generated CJH grid + GP | dependency-free browser inference bundle |
 | `apps/rphcjh/data/openmkm-pfr.json` | OpenMKM steady PFR | the visualizer's 1-D sweep |
 
 The steady 512-case design already returned `TEST_ML_SURROGATES` (local
@@ -105,12 +125,12 @@ dimension also needs learning: scale to a 256/512-case dynamic design only
 if the five pilot periods show a real deviation from the quasi-steady
 blend.
 
-## Pilot result (2026-08-14): recorded, NOT yet interpretable
+## Historical pilot result (2026-08-14)
 
-**Do not cite these numbers as evidence of chemical memory.** The reactor
-closure below is unverified against the companion paper (see the blocking
-issue in the status block at the top of this file), and the numbers are
-kept only so the diagnosis can be run against them.
+These original ratios used a time-weighted quasi-steady denominator while
+the transient conversion was outflow-weighted. They are retained as the
+historical pilot record, not as current surrogate labels. The canonical data
+uses the corrected outflow-weighted definition on both sides.
 
 T 750-1250 C, duty 0.10, ramps 5 %, tau = 0.1 s, 1 atm, CH4:CO2 = 1:1,
 GRI-3.0. Quasi-steady reference X = 0.0222. Engine anchor: Cantera and

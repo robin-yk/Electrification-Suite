@@ -1,12 +1,13 @@
 {
- "note": "Round two, aimed: 32 transient cases in the resonant memory band where the first surrogate's two worst holdout errors live (X_dyn several times X_qs, period near the residence time, deep cold swings). The GP's own uncertainty does not flag that region, so refusal cannot cover for it; only data there can. Targets jittered from strong-memory anchors and ODE-verified inside the 1800 C bound by make_targets.py, seed 11.",
+ "note": "Independent final test: 64 frozen physical-drive cases selected from unused Halton inputs without reading transient outputs, model predictions, uncertainties, or residuals. CFP ODE feasibility, the existing CJH map, and the published validity envelope are the only filters. Evaluate the current browser bundle once and never add these rows to training.",
  "cases": 0,
  "shards": 8,
  "run_design": false,
  "run_closure": false,
  "run_cjh_grid": false,
- "requested": "2026-08-26T22:40Z",
+ "requested": "2026-08-27T00:44Z",
  "run_cjh_validate": false,
  "run_relabel": false,
- "run_targets": true
+ "run_targets": false,
+ "run_final_validation": true
 }

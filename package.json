@@ -10,11 +10,13 @@
   },
   "exports": {
     "./joule": "./apps/joule/solver.js",
-    "./rphcjh": "./apps/rphcjh/solver.js"
+    "./rphcjh": "./apps/rphcjh/solver.js",
+    "./rphcjh-surrogate": "./apps/rphcjh/surrogate.js"
   },
   "files": [
     "apps/joule/solver.js",
     "apps/rphcjh/solver.js",
+    "apps/rphcjh/surrogate.js",
     "CHANGELOG.md",
     "CITATION.cff"
   ],

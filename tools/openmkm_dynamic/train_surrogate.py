@@ -30,6 +30,7 @@ max <= 0.10; mean error at least 30 % below control A; every prediction in
 Run: python tools/openmkm_dynamic/train_surrogate.py [--holdout 48] [--seed 7]
 """
 import argparse
+import hashlib
 import json
 import math
 import random
@@ -46,7 +47,10 @@ def logit(x):
 
 
 def sigmoid(v):
-    return 1 / (1 + math.exp(-v)) if v > -500 else 0.0
+    if v >= 0:
+        return 1 / (1 + math.exp(-v))
+    e = math.exp(v)
+    return e / (1 + e)
 
 
 def load_cases():
@@ -77,12 +81,13 @@ def load_cases():
     return rows, dead
 
 
-def standardize(rows):
-    d = len(rows[0]["features"])
-    mean = [sum(r["features"][j] for r in rows) / len(rows) for j in range(d)]
-    std = [max(1e-12, math.sqrt(sum((r["features"][j] - mean[j]) ** 2 for r in rows)
-                                / len(rows))) for j in range(d)]
-    for r in rows:
+def standardize(train, others=()):
+    """Fit feature scaling on training rows, then apply it everywhere."""
+    d = len(train[0]["features"])
+    mean = [sum(r["features"][j] for r in train) / len(train) for j in range(d)]
+    std = [max(1e-12, math.sqrt(sum((r["features"][j] - mean[j]) ** 2 for r in train)
+                                / len(train))) for j in range(d)]
+    for r in list(train) + list(others):
         r["z"] = [(r["features"][j] - mean[j]) / std[j] for j in range(d)]
     return mean, std
 
@@ -209,7 +214,7 @@ def evaluate(name, holdout, delta_of):
     n = len(errs)
     return {"model": name,
             "mean": sum(errs) / n,
-            "p95": errs_sorted[max(0, int(0.95 * n) - 1)],
+            "p95": errs_sorted[max(0, math.ceil(0.95 * n) - 1)],
             "max": errs_sorted[-1]}
 
 
@@ -218,11 +223,27 @@ def main():
     ap.add_argument("--holdout", type=int, default=48)
     ap.add_argument("--seed", type=int, default=7)
     ap.add_argument("--export", type=Path, default=HERE / "models" / "rph-surrogate.json")
+    ap.add_argument("--holdout-from", type=Path, default=None,
+                    help="previous model JSON whose sealed holdout_indices must be reused")
     args = ap.parse_args()
 
     rows, dead = load_cases()
-    mean, std = standardize(rows)
-    train, holdout = farthest_point_holdout(rows, args.holdout, args.seed)
+    if args.holdout_from:
+        sealed = set(json.loads(args.holdout_from.read_text())["holdout_indices"])
+        train = [r for r in rows if r["index"] not in sealed]
+        holdout = [r for r in rows if r["index"] in sealed]
+        missing = sorted(sealed - {r["index"] for r in holdout})
+        if missing:
+            raise SystemExit(f"sealed holdout indices missing from canonical data: {missing}")
+        if len(holdout) != len(sealed):
+            raise SystemExit("sealed holdout indices are not unique in canonical data")
+        mean, std = standardize(train, holdout)
+    else:
+        # Select the first sealed holdout in a common scaling, then refit the
+        # scaling on training data alone so holdout information enters no fit.
+        standardize(rows)
+        train, holdout = farthest_point_holdout(rows, args.holdout, args.seed)
+        mean, std = standardize(train, holdout)
     print(f"cases {len(rows)} (dead-zero dropped {dead}) -> train {len(train)}, holdout {len(holdout)}")
 
     gp, lm = fit_gp(train, args.seed)
@@ -257,16 +278,37 @@ def main():
     print("VERDICT:", "SHIP" if verdict else "DO NOT SHIP")
 
     args.export.parent.mkdir(parents=True, exist_ok=True)
+    data_path = CANON / "design-physical.jsonl"
+    feature_min = [min(r["features"][j] for r in rows) for j in range(len(mean))]
+    feature_max = [max(r["features"][j] for r in rows) for j in range(len(mean))]
+    parity_cases = []
+    for r in sorted(holdout, key=lambda row: row["index"])[:8]:
+        delta, _ = gp.predict(r["z"])
+        parity_cases.append({
+            "design_index": r["index"],
+            "features": r["features"],
+            "x_qs": r["x_qs"],
+            "predicted_delta": delta,
+            "predicted_conversion": sigmoid(logit(r["x_qs"]) + delta),
+        })
     args.export.write_text(json.dumps({
         "kind": "gp-matern52-ard on logit-difference correction",
         "feature_names": ["logit_x_qs", "log10_period_over_tau", "duty", "t_peak_c", "t_min_c"],
         "feature_mean": mean, "feature_std": std,
+        "feature_min": feature_min, "feature_max": feature_max,
         "lengthscales": gp.ls, "sigma_f": gp.sf, "sigma_n": gp.sn,
         "train_z": [r["z"] for r in train],
         "alpha": gp.alpha,
         "holdout_report": results, "gates": gates, "verdict": "SHIP" if verdict else "DO NOT SHIP",
         "holdout_indices": sorted(r["index"] for r in holdout),
+        "train_indices": sorted(r["index"] for r in train),
+        "parity_cases": parity_cases,
         "dead_zero_dropped": dead, "seed": args.seed,
+        "canonical_design_sha256": hashlib.sha256(data_path.read_bytes()).hexdigest(),
+        "holdout_reused_from": str(args.holdout_from) if args.holdout_from else None,
+        "evaluation_role": ("development validation after targeted acquisition; "
+                            "independent final test pending" if args.holdout_from else
+                            "initial development validation"),
     }, indent=1) + "\n")
     print(f"\nexported {args.export} ({args.export.stat().st_size/1024:.0f} KB)")
 

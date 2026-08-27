@@ -11,6 +11,7 @@ Run: python tools/openmkm_dynamic/promote.py <run-sha7> <dataset.jsonl>... \
        --evidence "200 off-node points, p95 0.0005 (run 33015864752)"
 """
 import argparse
+import collections
 import datetime
 import hashlib
 import json
@@ -28,6 +29,8 @@ def main():
     ap.add_argument("--evidence", required=True,
                     help="what validation earned this promotion; recorded verbatim")
     ap.add_argument("--force", action="store_true")
+    ap.add_argument("--append", action="store_true",
+                    help="append new, uniquely indexed JSONL rows to the canonical dataset")
     args = ap.parse_args()
     if not args.evidence.strip():
         raise SystemExit("an empty evidence string is not a validation")
@@ -47,18 +50,49 @@ def main():
         if not src.exists():
             raise SystemExit(f"{args.run} has no {name}")
         entry = manifest["datasets"].get(name)
-        if entry and not args.force:
+        if entry and not args.force and not args.append:
             raise SystemExit(f"{name} is already promoted (from {entry.get('from_run')}); "
                              "pass --force to replace it deliberately")
-        shutil.copy(src, CANON / name)
-        rows = sum(1 for l in src.read_text().splitlines() if l.strip())
-        manifest["datasets"][name] = {
-            "rows": rows, "from_run": args.run,
-            "sha256": hashlib.sha256(src.read_bytes()).hexdigest(),
-            "promoted": datetime.date.today().isoformat(),
-            "validation": args.evidence,
-        }
-        print(f"promoted {name}: {rows} rows from runs/{args.run}")
+        dst = CANON / name
+        if args.append:
+            if src.suffix != ".jsonl" or not dst.exists():
+                raise SystemExit("--append requires an existing canonical JSONL dataset")
+            old = [json.loads(line) for line in dst.read_text().splitlines() if line.strip()]
+            new = [json.loads(line) for line in src.read_text().splitlines() if line.strip()]
+            if not old or not new or any("design_index" not in row for row in old + new):
+                raise SystemExit("--append requires every row to carry design_index")
+            old_ids = {row["design_index"] for row in old}
+            new_ids = [row["design_index"] for row in new]
+            duplicates = sorted(({value for value, count in collections.Counter(new_ids).items()
+                                  if count > 1}) |
+                                (set(new_ids) & old_ids))
+            if duplicates:
+                raise SystemExit(f"refusing duplicate design_index values: {duplicates[:10]}")
+            merged = old + new
+            text = "".join(json.dumps(row, separators=(",", ":")) + "\n" for row in merged)
+            dst.write_text(text)
+            appended = list(entry.get("appended_runs", [])) if entry else []
+            appended.append({"run": args.run, "rows": len(new), "validation": args.evidence})
+            updated = dict(entry or {})
+            updated.update({
+                "rows": len(merged),
+                "sha256": hashlib.sha256(text.encode()).hexdigest(),
+                "promoted": datetime.date.today().isoformat(),
+                "appended_runs": appended,
+            })
+            manifest["datasets"][name] = updated
+            print(f"appended {len(new)} rows from runs/{args.run} to {name}: "
+                  f"{len(merged)} rows total")
+        else:
+            shutil.copy(src, dst)
+            rows = sum(1 for l in src.read_text().splitlines() if l.strip())
+            manifest["datasets"][name] = {
+                "rows": rows, "from_run": args.run,
+                "sha256": hashlib.sha256(src.read_bytes()).hexdigest(),
+                "promoted": datetime.date.today().isoformat(),
+                "validation": args.evidence,
+            }
+            print(f"promoted {name}: {rows} rows from runs/{args.run}")
     manifest["promoted"] = datetime.date.today().isoformat()
     manifest_path.write_text(json.dumps(manifest, indent=1) + "\n")
 

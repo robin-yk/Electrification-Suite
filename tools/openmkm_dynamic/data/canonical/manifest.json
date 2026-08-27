@@ -10,15 +10,23 @@
    "validation": "200 seeded off-node points vs fresh Cantera over the FULL 400-1850 C range: p95 |dX| = 0.00033, max 0.00062 (gate 0.02) -- run 33017155560. The earlier 400-1400-only pass (p95 0.0005, run 33015864752) is superseded by this one."
   },
   "design-physical.jsonl": {
-   "rows": 253,
+   "rows": 285,
    "merged_from": {
     "45b4bb4": 139,
     "50d4738": 203
    },
    "overlap_resolved": "89 shared design indices kept from the relabelled set (identical transients, same labelling method)",
-   "sha256": "d7432e150062d633882ea69eead23876f2e1ec701f252df932cd15ce155f87f5",
+   "sha256": "89dd4c3590e7c0706a8f19c89b34792c3361de7899a7174879ded2e0e0a0bdf4",
    "labels": "memory_gain = outflow-weighted X_dyn / outflow-weighted quasi-steady blend; element peaks within the 1800 C materials-trust bound",
-   "validation": "quasi-steady limit closes at 1.02 under this definition (10 s period); element drive reproduced bit-for-bit against apps/rphcjh/solver.js before relabelling"
+   "validation": "quasi-steady limit closes at 1.02 under this definition (10 s period); element drive reproduced bit-for-bit against apps/rphcjh/solver.js before relabelling",
+   "promoted": "2026-08-26",
+   "appended_runs": [
+    {
+     "run": "1365e95",
+     "rows": 32,
+     "validation": "32 targeted strong-memory cases from Actions run 33017710146; all 32 converged and element peaks 778-1779 C passed the 1800 C materials gate. The original 48 indices were kept out of fitting, but their errors aimed this batch, so they are development validation rather than an independent final test."
+    }
+   ]
   },
   "closure-diagnostic.jsonl": {
    "rows": 10,

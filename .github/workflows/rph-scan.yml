@@ -12,7 +12,7 @@
 #                       both closures settles it, and whichever way it lands the
 #                       number belongs in the caveat rather than a shrug.
 #
-#   design-scan         The 6-D Halton campaign in run_cstr_design.py, sharded.
+#   design-scan         The 4-D physical-drive Halton campaign, sharded.
 #                       Its label is memory_gain = X_dyn / X_qs, so it trains a
 #                       correction on top of the steady map rather than relearning
 #                       the ignition cliff the steady map already has.
@@ -50,6 +50,7 @@ jobs:
       run_cjh_validate: ${{ steps.read.outputs.run_cjh_validate }}
       run_relabel: ${{ steps.read.outputs.run_relabel }}
       run_targets: ${{ steps.read.outputs.run_targets }}
+      run_final_validation: ${{ steps.read.outputs.run_final_validation }}
     steps:
       - uses: actions/checkout@v4
       - id: read
@@ -69,6 +70,7 @@ jobs:
           validate=$(flag run_cjh_validate false)
           relabel=$(flag run_relabel false)
           targets=$(flag run_targets false)
+          final_validation=$(flag run_final_validation false)
           echo "cases=$cases" >> "$GITHUB_OUTPUT"
           echo "shards=$shards" >> "$GITHUB_OUTPUT"
           echo "run_design=$design" >> "$GITHUB_OUTPUT"
@@ -77,6 +79,7 @@ jobs:
           echo "run_cjh_validate=$validate" >> "$GITHUB_OUTPUT"
           echo "run_relabel=$relabel" >> "$GITHUB_OUTPUT"
           echo "run_targets=$targets" >> "$GITHUB_OUTPUT"
+          echo "run_final_validation=$final_validation" >> "$GITHUB_OUTPUT"
           echo "cases=$cases shards=$shards run_design=$design run_closure=$closure run_cjh_grid=$grid"
           jq -r '.note // "(no note)"' $F
 
@@ -255,6 +258,64 @@ jobs:
           name: design-shard-targets
           path: out/
 
+  # Untouched final test. These points were frozen without transient outputs or
+  # model residuals and are kept separate from canonical training data.
+  final-validation:
+    needs: plan
+    if: ${{ needs.plan.outputs.run_final_validation == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r tools/cantera/requirements.txt
+      - name: Run sealed final-test shard
+        run: |
+          mkdir -p out
+          python tools/openmkm_dynamic/run_cstr_design.py \
+            --targets tools/openmkm_dynamic/data/targets-final-validation.json \
+            --target-shard ${{ matrix.shard }} --target-shards 8 \
+            --closure const-pressure --continue-on-error \
+            --output out/final-validation-shard-${{ matrix.shard }}.jsonl
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: final-validation-shard-${{ matrix.shard }}
+          path: out/
+
+  final-evaluate:
+    needs: [plan, final-validation]
+    if: ${{ always() && !cancelled() && needs.plan.outputs.run_final_validation == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: final-validation-shard-*
+          path: gathered
+      - name: Merge all 64 cases
+        run: |
+          mkdir -p out
+          find gathered -name 'final-validation-shard-*.jsonl' -type f -print0 \
+            | sort -z | xargs -0 cat > out/final-validation.jsonl
+          test "$(wc -l < out/final-validation.jsonl)" -eq 64
+      - name: Evaluate the frozen browser model
+        run: |
+          node tools/openmkm_dynamic/evaluate_final_validation.mjs \
+            --data out/final-validation.jsonl \
+            --output out/final-validation-report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: final-validation
+          path: out/
+
   design-scan:
     needs: plan
     if: ${{ needs.plan.outputs.run_design == 'true' }}
@@ -270,7 +331,7 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install -r tools/cantera/requirements.txt
-      - name: Shard of the 6-D Halton design
+      - name: Shard of the 4-D Halton design
         run: |
           TOTAL=${{ needs.plan.outputs.cases }}
           SHARDS=${{ needs.plan.outputs.shards }}
@@ -296,8 +357,8 @@ jobs:
   # merges them, writes a manifest with counts and the generating commit, and
   # pushes the result to main. contents: write is scoped to this job alone.
   collect:
-    needs: [plan, closure-diagnostic, cjh-grid, design-scan, relabel, targets]
-    if: ${{ always() && !cancelled() && (needs.cjh-grid.result == 'success' || needs.design-scan.result == 'success' || needs.closure-diagnostic.result == 'success' || needs.relabel.result == 'success' || needs.targets.result == 'success') }}
+    needs: [plan, closure-diagnostic, cjh-grid, design-scan, relabel, targets, final-evaluate]
+    if: ${{ always() && !cancelled() && (needs.cjh-grid.result == 'success' || needs.design-scan.result == 'success' || needs.closure-diagnostic.result == 'success' || needs.relabel.result == 'success' || needs.targets.result == 'success' || needs.final-evaluate.result == 'success' || needs.final-evaluate.result == 'failure') }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -337,6 +398,17 @@ jobs:
               return {"file": target, "rows": len(rows),
                       "sha256": hashlib.sha256(text.encode()).hexdigest()}
 
+          def copy_one(pattern, target):
+              files = sorted(root.glob(pattern))
+              if not files:
+                  return None
+              if len(files) != 1:
+                  raise SystemExit(f"expected one {pattern}, found {len(files)}")
+              data = files[0].read_bytes()
+              (out / target).write_bytes(data)
+              return {"file": target, "rows": 1,
+                      "sha256": hashlib.sha256(data).hexdigest()}
+
           made = [m for m in (
               merge("cjh-grid-shard-*/**/cjh-grid-shard-*.jsonl", "cjh-grid.jsonl")
                   or merge("cjh-grid-shard-*/cjh-grid-shard-*.jsonl", "cjh-grid.jsonl"),
@@ -346,6 +418,12 @@ jobs:
                   or merge("closure-diagnostic/pilot-*.jsonl", "closure-diagnostic.jsonl"),
               merge("cjh-grid-validation/**/*.json", "cjh-grid-validation.json")
                   or merge("cjh-grid-validation/*.json", "cjh-grid-validation.json"),
+              merge("final-validation/**/final-validation.jsonl", "final-validation.jsonl")
+                  or merge("final-validation/final-validation.jsonl", "final-validation.jsonl"),
+              copy_one("final-validation/**/final-validation-report.json",
+                       "final-validation-report.json")
+                  or copy_one("final-validation/final-validation-report.json",
+                              "final-validation-report.json"),
           ) if m]
           if not made:
               raise SystemExit("no shard files found under gathered/")

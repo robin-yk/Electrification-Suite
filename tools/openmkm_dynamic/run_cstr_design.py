@@ -12,14 +12,15 @@ C2 selectivity, the matching quasi-steady reference (so the label
 across the cycle boundary, and a subsampled one-cycle trajectory of the
 chemical state.
 
-Sampled axes (6-D Halton, log where the axis spans timescales):
+Sampled axes (4-D Halton, log where the axis spans timescales):
 
-  period_s     1 ms .. 10 s      log    pulse timescale
-  tau_s        10 ms .. 1 s      log    washout timescale
-  duty         0.05 .. 0.60             hot fraction
-  t_peak_c     1000 .. 1400 C           where chemistry runs
-  t_min_c      500 .. 900 C             quench floor
-  waveform     trapezoid/square/sine/double  shape diversity
+  voltage      25 .. 55 V               electrical drive
+  period_s     10 ms .. 10 s      log    pulse timescale
+  duty         0.02 .. 0.40              hot fraction
+  tau_s        10 ms .. 1 s       log    washout timescale
+
+The CFP energy balance converts the first three controls into the temperature
+waveform. T_peak, T_min and ramp shape are outputs rather than free axes.
 
 Usage:
   python tools/openmkm_dynamic/run_cstr_design.py --cases 256 \\
@@ -171,6 +172,10 @@ def main():
     parser.add_argument("--targets", type=Path, default=None,
                         help="JSON of explicit {voltage, period_s, duty, tau_s} cases; "
                              "overrides the Halton walk entirely")
+    parser.add_argument("--target-shard", type=int, default=0,
+                        help="zero-based explicit-target shard")
+    parser.add_argument("--target-shards", type=int, default=1,
+                        help="number of explicit-target shards")
     parser.add_argument("--closure", default="const-pressure",
                         choices=["const-pressure", "const-volume"],
                         help="reactor closure; recorded with every case")
@@ -188,13 +193,17 @@ def main():
     failures = args.output.with_suffix(args.output.suffix + ".failures.jsonl")
 
     if args.targets:
+        if args.target_shards < 1 or not 0 <= args.target_shard < args.target_shards:
+            raise SystemExit("target shard must satisfy 0 <= shard < shards")
         spec = json.loads(args.targets.read_text())
         # t_min_c doubles as the ambient the element cools toward under the
         # physical waveform, and t_peak_c is overwritten by the ODE; both still
         # need to exist for the shared plumbing.
-        work = [(-(k + 1), dict({kk: t[kk] for kk in ("voltage", "period_s", "duty", "tau_s")},
-                                t_min_c=25.0, t_peak_c=1250.0))
-                for k, t in enumerate(spec["targets"])]
+        work = [(int(t.get("design_index", -(k + 1))),
+                 dict({kk: t[kk] for kk in ("voltage", "period_s", "duty", "tau_s")},
+                      t_min_c=25.0, t_peak_c=1250.0))
+                for k, t in enumerate(spec["targets"])
+                if k % args.target_shards == args.target_shard]
     else:
         work = [(index, None) for index in range(args.start, args.start + args.cases)]
 

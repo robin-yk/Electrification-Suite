@@ -359,6 +359,14 @@
               </select>
             </div>
             <div id="physSummary" class="phys-summary">Computed waveform appears here.</div>
+            <div class="slider-row">
+              <div class="slider-head"><label for="surrogateLogTau">Gas residence time</label><output id="surrogateTauOut">0.100 s</output></div>
+              <input id="surrogateLogTau" type="range" min="-2" max="0" step="0.05" value="-1">
+            </div>
+            <div id="surrogateSummary" class="phys-summary">Loading the Cantera-trained RPH predictor.</div>
+            <p class="chart-note" style="margin-top:7px">
+              Live CH<sub>4</sub> conversion uses the fast CJH map plus a learned RPH correction. Cantera is not run in the browser. Scope: CH<sub>4</sub>:CO<sub>2</sub> = 1:1, 1 atm, GRI-Mech 3.0.
+            </p>
           </div>
           <div class="slider-row">
             <div class="slider-head"><label for="duty">Duty cycle d</label><output id="dutyOut">0.10</output></div>
@@ -1053,6 +1061,7 @@ import {
   steadySeriesCSTR, integrateSeriesCSTR, seriesRateConstants, seriesStepCoeffs,
   cjhTempForConversion, lumpedLossPower, physicalDriveDefaults
 } from "./solver.js";
+import { predictRphFromDrive } from "./surrogate.js";
 
 /* ------------------------------------------------------------------ */
 /* constants and state                                                 */
@@ -1062,6 +1071,7 @@ const state = {
   ea: 100, beta: 0.50,
   ea1: 400, ea2: 80, k1Ref: 30, k2Ref: 1, tauRes: 2.0,
   driveMode: "physical", voltage: 34, cjhRef: "tavg", abcBasis: "tavg", physical: null,
+  surrogateTau: 0.1, surrogateBundle: null, surrogateLoadFailed: false,
   running: false, t: 0, lastFrame: 0, cycles: 0,
   accK: 0, accH: 0, accU: 0, accKH: 0, accKU: 0, accT: 0, accTime: 0,
   trace: [], kHist: [], hHist: []
@@ -1096,6 +1106,40 @@ function cjhTemp(tAvgRun) {
   return tAvgRun !== undefined ? tAvgRun : idleAvgT();
 }
 
+function renderSurrogate() {
+  const box = document.getElementById("surrogateSummary");
+  if (!box) return;
+  if (state.surrogateLoadFailed) {
+    box.textContent = "Detailed-chemistry predictor unavailable.";
+    return;
+  }
+  if (!state.surrogateBundle) {
+    box.textContent = "Loading the Cantera-trained RPH predictor.";
+    return;
+  }
+  if (!state.physical) {
+    box.textContent = "Select the physical CFP drive to use the RPH predictor.";
+    return;
+  }
+  const prediction = predictRphFromDrive(state.surrogateBundle, {
+    drive: state.physical,
+    periodS: state.period,
+    tauS: state.surrogateTau,
+    duty: state.duty,
+  });
+  if (!prediction.valid) {
+    box.textContent = `RPH prediction withheld: ${prediction.reason}.`;
+    return;
+  }
+  const xCjh = prediction.quasiSteadyConversion;
+  const xRph = prediction.conversion;
+  const deltaPoints = 100 * (xRph - xCjh);
+  const gain = prediction.memoryGain === null ? "n/a" : `${prediction.memoryGain.toFixed(2)}x`;
+  box.innerHTML =
+    `CJH shortcut <strong>${(100 * xCjh).toFixed(1)}%</strong> &rarr; predicted RPH <strong>${(100 * xRph).toFixed(1)}%</strong><br>` +
+    `Learned pulse-memory correction <strong>${deltaPoints >= 0 ? "+" : ""}${deltaPoints.toFixed(1)} points</strong> &middot; RPH/CJH <strong>${gain}</strong>`;
+}
+
 let physTimer = null;
 function schedulePhysicalRecompute() {
   if (state.driveMode !== "physical") return;
@@ -1120,6 +1164,7 @@ function recomputePhysical() {
     (run.converged ? "" : " &middot; <em>not yet periodic</em>") +
     (run.tPeak > 1800 ? "<br><em>T<sub>peak</sub> is past the 1800 &deg;C IR/CFP limit; lower V or duty.</em>" : "");
   syncCjhTitle();
+  renderSurrogate();
   redrawAll();
 }
 function syncCjhTitle() {
@@ -2180,8 +2225,20 @@ fetch("data/openmkm-pfr.json")
     st.className = "status warn";
   });
 
+fetch("data/rph-surrogate.json")
+  .then(r => (r.ok ? r.json() : Promise.reject(new Error("HTTP " + r.status))))
+  .then(bundle => {
+    state.surrogateBundle = bundle;
+    renderSurrogate();
+  })
+  .catch(() => {
+    state.surrogateLoadFailed = true;
+    renderSurrogate();
+  });
+
 function redrawAll() {
   syncOutputs();
+  renderSurrogate();
   renderJensen();
   renderRatios();
   renderAbc();
@@ -2224,6 +2281,12 @@ bind("abcEa2", "ea2", Number);
 bind("abcK1", "k1Ref", Number);
 bind("abcK2", "k2Ref", Number);
 bind("abcTau", "tauRes", Number);
+
+document.getElementById("surrogateLogTau").addEventListener("input", e => {
+  state.surrogateTau = 10 ** Number(e.target.value);
+  document.getElementById("surrogateTauOut").textContent = state.surrogateTau.toFixed(3) + " s";
+  renderSurrogate();
+});
 
 const IDEAL_NOTE = "Ramp 0 is the ideal square wave. Each ramp is constrained so the stated duty cycle remains the actual high-temperature fraction; the CJH reference stays matched at the exact waveform-average temperature.";
 const PHYSICAL_NOTE = "T(t) is integrated from the CFP element's energy balance, so peak and minimum temperatures are outputs, not settings. Model details in the Calculations tab.";
