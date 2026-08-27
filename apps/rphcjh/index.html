@@ -449,7 +449,7 @@
         </div>
       </div>
 
-      <div class="card reactor-shell">
+      <div class="card reactor-shell" id="kineticReactorVisual">
         <canvas id="reactorCanvas" width="1120" height="300" aria-label="Two animated Joule-heated reactors side by side: a pulsed RPH element on the left and a continuous CJH element held at the time-average temperature on the right"></canvas>
         <div class="reactor-caption">
           <span>Two reactors, same feed: the left element pulses between T<sub>min</sub> and T<sub>peak</sub>, the right is held at their time-average. Particle colour tracks the local gas temperature.</span>
@@ -844,6 +844,8 @@
         </div>
       </article>
 
+      <div id="chemReactorHost"></div>
+
     </div>
   </div>
 </section>
@@ -1133,7 +1135,7 @@ const state = {
   ea: 100, beta: 0.50,
   ea1: 400, ea2: 80, k1Ref: 30, k2Ref: 1, tauRes: 2.0,
   driveMode: "physical", voltage: 34, cjhRef: "tavg", abcBasis: "tavg", physical: null,
-  chem: { voltage: 48, duty: 0.10, period: 10 ** -0.30, tau: 10 ** -0.30, physical: null },
+  chem: { voltage: 48, duty: 0.10, period: 10 ** -0.30, tau: 10 ** -0.30, physical: null, lastValid: null },
   surrogateBundle: null, surrogateLoadFailed: false,
   running: false, t: 0, lastFrame: 0, cycles: 0,
   accK: 0, accH: 0, accU: 0, accKH: 0, accKU: 0, accT: 0, accTime: 0,
@@ -2176,7 +2178,17 @@ function clearChemistryResult(message) {
   document.getElementById("chemDeltaKpi").className = "kpi warn";
 }
 
-function renderChemistry() {
+function chemistryPrediction() {
+  if (!state.surrogateBundle || !state.chem.physical) return null;
+  return predictRphFromDrive(state.surrogateBundle, {
+    drive: state.chem.physical,
+    periodS: state.chem.period,
+    tauS: state.chem.tau,
+    duty: state.chem.duty,
+  });
+}
+
+function renderChemistry(prediction = chemistryPrediction()) {
   const status = document.getElementById("chemStatus");
   if (state.surrogateLoadFailed) {
     status.textContent = "unavailable";
@@ -2192,12 +2204,6 @@ function renderChemistry() {
     clearChemistryResult("Computing the physical temperature waveform.");
     return;
   }
-  const prediction = predictRphFromDrive(state.surrogateBundle, {
-    drive: state.chem.physical,
-    periodS: state.chem.period,
-    tauS: state.chem.tau,
-    duty: state.chem.duty,
-  });
   if (!prediction.valid) {
     status.textContent = "outside range";
     status.className = "status warn";
@@ -2226,22 +2232,105 @@ function renderChemistry() {
     `At this condition, CJH conversion is <strong>${cjhText}</strong> and RPH conversion is <strong>${rphText}</strong>.`;
 }
 
-function recomputeChemistry() {
+function computeChemistryDrive() {
   const c = state.chem;
   const startC = steadyElementTemperature({ power: c.duty * c.voltage * c.voltage / cfpResistance(600) });
-  c.physical = integratePulsedElement({ voltage: c.voltage, period: c.period, duty: c.duty, startC });
+  return integratePulsedElement({ voltage: c.voltage, period: c.period, duty: c.duty, startC });
+}
+
+function syncChemistryControls() {
+  const c = state.chem;
+  document.getElementById("chemVoltage").value = c.voltage;
+  document.getElementById("chemDuty").value = c.duty;
+  document.getElementById("chemLogPeriod").value = Math.log10(c.period);
+  document.getElementById("chemLogTau").value = Math.log10(c.tau);
+  document.getElementById("chemVoltageOut").textContent = c.voltage.toFixed(1) + " V";
+  document.getElementById("chemDutyOut").textContent = c.duty.toFixed(2);
+  document.getElementById("chemPeriodOut").textContent = formatSeconds(c.period) + " s";
+  document.getElementById("chemTauOut").textContent = formatSeconds(c.tau) + " s";
+}
+
+function constrainChemistryPeriodRange() {
+  const bundle = state.surrogateBundle;
+  if (!bundle) return;
+  const raw = bundle.scope.input_bounds;
+  const ratioIndex = bundle.model.feature_names.indexOf("log10_period_over_tau");
+  const tauLog = Math.log10(state.chem.tau);
+  const minLog = Math.max(Math.log10(raw.period_s.min), tauLog + bundle.model.feature_min[ratioIndex]);
+  const maxLog = Math.min(Math.log10(raw.period_s.max), tauLog + bundle.model.feature_max[ratioIndex]);
+  const periodInput = document.getElementById("chemLogPeriod");
+  periodInput.min = minLog;
+  periodInput.max = maxLog;
+  const currentLog = Math.log10(state.chem.period);
+  if (currentLog < minLog || currentLog > maxLog) {
+    state.chem.period = 10 ** Math.min(Math.max(currentLog, minLog), maxLog);
+  }
+}
+
+function applyChemistryInputBounds(bundle) {
+  const b = bundle.scope.input_bounds;
+  document.getElementById("chemVoltage").min = b.voltage_V.min;
+  document.getElementById("chemVoltage").max = b.voltage_V.max;
+  document.getElementById("chemDuty").min = b.duty.min;
+  document.getElementById("chemDuty").max = b.duty.max;
+  document.getElementById("chemLogTau").min = Math.log10(b.tau_s.min);
+  document.getElementById("chemLogTau").max = Math.log10(b.tau_s.max);
+  constrainChemistryPeriodRange();
+  syncChemistryControls();
+}
+
+function syncRuntimeToChemistry() {
+  const c = state.chem;
+  state.driveMode = "physical";
+  state.voltage = c.voltage;
+  state.duty = c.duty;
+  state.period = c.period;
+  state.physical = c.physical;
+  state.tPeak = Math.round(c.physical.tPeak);
+  state.tMin = Math.round(c.physical.tMin);
+  syncCjhTitle();
+  resetIntegration();
+}
+
+function recomputeChemistry() {
+  const c = state.chem;
+  c.physical = computeChemistryDrive();
+  let prediction = chemistryPrediction();
+  let snappedToRange = false;
+  if (prediction && !prediction.valid && c.lastValid) {
+    const valid = c.lastValid;
+    c.voltage = valid.voltage;
+    c.duty = valid.duty;
+    c.period = valid.period;
+    c.tau = valid.tau;
+    constrainChemistryPeriodRange();
+    syncChemistryControls();
+    c.physical = computeChemistryDrive();
+    prediction = chemistryPrediction();
+    snappedToRange = true;
+  }
   document.getElementById("chemDriveSummary").innerHTML =
     `Computed waveform: T<sub>peak</sub> <strong>${c.physical.tPeak.toFixed(0)} &deg;C</strong> &middot; ` +
     `T<sub>min</sub> <strong>${c.physical.tMin.toFixed(0)} &deg;C</strong> &middot; ` +
     `T<sub>avg</sub> <strong>${c.physical.tAvg.toFixed(0)} &deg;C</strong>` +
     (c.physical.converged ? "" : "<br><em>The CFP waveform did not reach a periodic state.</em>");
-  renderChemistry();
+  if (prediction && prediction.valid) {
+    c.lastValid = { voltage: c.voltage, duty: c.duty, period: c.period, tau: c.tau };
+    syncRuntimeToChemistry();
+  }
+  renderChemistry(prediction);
+  if (snappedToRange) {
+    const status = document.getElementById("chemStatus");
+    status.textContent = "range edge";
+    status.className = "status warn";
+  }
 }
 
 fetch("data/rph-surrogate.json")
   .then(r => (r.ok ? r.json() : Promise.reject(new Error("HTTP " + r.status))))
   .then(bundle => {
     state.surrogateBundle = bundle;
+    applyChemistryInputBounds(bundle);
     const v = bundle.validation;
     if (v && v.verdict === "PASS") {
       document.getElementById("modelValidationSummary").innerHTML =
@@ -2250,7 +2339,7 @@ fetch("data/rph-surrogate.json")
         `95th-percentile error <strong>${(100 * v.summary.p95_abs_error).toFixed(2)} points</strong>, and ` +
         `worst error <strong>${(100 * v.summary.max_abs_error).toFixed(2)} points</strong>.`;
     }
-    renderChemistry();
+    recomputeChemistry();
   })
   .catch(() => {
     state.surrogateLoadFailed = true;
@@ -2305,7 +2394,12 @@ let chemTimer = null;
 const bindChemistry = (id, key, transform, outputId, format) => {
   document.getElementById(id).addEventListener("input", e => {
     state.chem[key] = transform(e.target.value);
-    document.getElementById(outputId).textContent = format(state.chem[key]);
+    if (key === "tau") {
+      constrainChemistryPeriodRange();
+      syncChemistryControls();
+    } else {
+      document.getElementById(outputId).textContent = format(state.chem[key]);
+    }
     clearTimeout(chemTimer);
     chemTimer = setTimeout(recomputeChemistry, 50);
   });
@@ -2378,6 +2472,7 @@ document.querySelectorAll(".tab").forEach(tab => {
   });
 });
 
+document.getElementById("chemReactorHost").append(document.getElementById("kineticReactorVisual"));
 recomputePhysical();
 recomputeChemistry();
 

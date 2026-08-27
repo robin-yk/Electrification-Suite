@@ -29,6 +29,16 @@ def main():
     grid_path = CANON / "cjh-grid.jsonl"
     if model.get("canonical_design_sha256") != sha256(design):
         raise SystemExit("model was not trained on the current canonical design dataset")
+    design_rows = [json.loads(line) for line in design.read_text().splitlines()
+                   if line.strip()]
+    input_keys = ("voltage_V", "period_s", "duty", "tau_s")
+    input_bounds = {
+        key: {
+            "min": min(row["inputs"][key] for row in design_rows),
+            "max": max(row["inputs"][key] for row in design_rows),
+        }
+        for key in input_keys
+    }
 
     columns = {}
     for line in grid_path.read_text().splitlines():
@@ -47,6 +57,7 @@ def main():
             "pressure_atm": 1.0,
             "closure": "const-pressure",
             "peak_cap_c": 1800.0,
+            "input_bounds": input_bounds,
         },
         "provenance": {
             "canonical_design_sha256": sha256(design),

@@ -20,6 +20,18 @@ test("the web bundle carries the independent Cantera validation result", () => {
   assert.equal(report.model_design_sha256, bundle.model.canonical_design_sha256);
 });
 
+test("the web sliders use the exact canonical design bounds", () => {
+  const rows = readFileSync(new URL(
+    "../tools/openmkm_dynamic/data/canonical/design-physical.jsonl", import.meta.url), "utf8")
+    .trim().split("\n").map(JSON.parse);
+  for (const key of ["voltage_V", "period_s", "duty", "tau_s"]) {
+    const values = rows.map(row => row.inputs[key]);
+    assert.deepEqual(bundle.scope.input_bounds[key], {
+      min: Math.min(...values), max: Math.max(...values),
+    });
+  }
+});
+
 test("the shipped GP reproduces the Python parity cases", () => {
   assert.equal(bundle.model.verdict, "SHIP");
   for (const row of bundle.model.parity_cases) {
