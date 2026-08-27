@@ -1,15 +1,16 @@
 # Dynamic pulsed-CSTR pipeline and web surrogate
 
-> **STATUS: model and web inference implemented. Independent final test pending.**
+> **STATUS: model, web inference, and independent final test implemented.**
 >
 > The canonical dataset contains 2,251 steady Cantera CSTR states and 285
 > transient physical-drive cases. After dropping 43 dead-zero cases, the GP
 > correction fits 194 cases and evaluates on 48 fixed development cases. It
 > passes the pre-stated conversion gates (mean 0.0027, p95 0.0105, max
 > 0.0276), and the dependency-free JavaScript inference path reproduces the
-> Python model. The 48 cases are not an untouched final test: their first
-> errors were used to aim the 32-case second round. Run a fresh independent
-> Cantera test before treating the web model as a final scientific result.
+> Python model. A sealed 64-case final test then passed all four pre-stated
+> gates: mean absolute conversion error 0.00293, p95 0.01287, maximum 0.02015,
+> and at least 30% improvement over the CJH baseline. The exact cases and
+> predictions are stored in `data/canonical/final-validation-report.json`.
 >
 > The shipped scope is one computational model: constant-pressure CSTR,
 > CH4:CO2 = 1:1, 1 atm, GRI-Mech 3.0, physical CFP drive, and element peak at
@@ -107,6 +108,42 @@ node tools/openmkm_dynamic/evaluate_final_validation.mjs \
 The evaluator imports the browser's own `surrogate.js`, checks the target
 seal and development-set disjointness, and applies the pre-stated gates once.
 Never append final-validation rows to `canonical/design-physical.jsonl`.
+
+## Runtime benchmark
+
+The runtime comparison measures two complete, named calculation paths on the
+same machine. The Cantera path reruns a transient periodic CSTR through cycle
+convergence. It excludes the separate quasi-steady reference calculation. The
+browser path includes the element ODE, quasi-steady grid lookup, and Gaussian-
+process correction. It excludes file loading, JSON parsing, warm-up, and
+process startup.
+
+```bash
+# Cantera 3.2.0 environment
+python -m venv /tmp/cantera32
+/tmp/cantera32/bin/python -m pip install "cantera==3.2.0"
+
+# Six final-validation cases spanning 10 to 486 convergence cycles
+/tmp/cantera32/bin/python \
+  tools/openmkm_dynamic/benchmark_runtime_cantera.py \
+  --output tools/openmkm_dynamic/data/canonical/runtime-cantera-3.2.0.json
+
+# All 64 final-validation cases, 30 repeats after warm-up
+node tools/openmkm_dynamic/benchmark_runtime_browser.mjs \
+  tools/openmkm_dynamic/data/canonical/runtime-browser-node.json 30
+
+# Pair the six exact reruns with their browser medians
+python tools/openmkm_dynamic/summarize_runtime.py \
+  --cantera tools/openmkm_dynamic/data/canonical/runtime-cantera-3.2.0.json \
+  --browser tools/openmkm_dynamic/data/canonical/runtime-browser-node.json \
+  --output tools/openmkm_dynamic/data/canonical/runtime-comparison.json
+```
+
+`runtime-comparison.json` is the citable record for the measured speed ratio,
+software versions, hardware, conversion reproduction check, and final-test
+accuracy. Do not infer simple linear scaling from convergence-cycle count.
+Pulse period, residence time, and chemical stiffness also affect Cantera wall
+time.
 
 ## Dataset family map
 

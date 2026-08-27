@@ -1,0 +1,113 @@
+{
+  "generated_utc": "2026-08-27T17:23:59.344866+00:00",
+  "comparison": "Exact Cantera 3.2 transient CSTR wall time divided by the median wall time of the complete deterministic browser calculation path.",
+  "paired_cases": [
+    {
+      "design_index": 1000001,
+      "cycles_to_convergence": 10,
+      "period_s": 6.57912233912412,
+      "cantera_median_s": 19.251914624939673,
+      "browser_median_ms": 2.5354580000021087,
+      "speedup": 7593.071794099394,
+      "abs_conversion_reproduction_difference": 3.2307490016592055e-14
+    },
+    {
+      "design_index": 1000055,
+      "cycles_to_convergence": 23,
+      "period_s": 0.1779371899032406,
+      "cantera_median_s": 14.799276874982752,
+      "browser_median_ms": 5.900499999999738,
+      "speedup": 2508.1394585176527,
+      "abs_conversion_reproduction_difference": 6.128431095930864e-14
+    },
+    {
+      "design_index": 1000011,
+      "cycles_to_convergence": 51,
+      "period_s": 0.1458300331596616,
+      "cantera_median_s": 27.77861033298541,
+      "browser_median_ms": 7.1087920000009035,
+      "speedup": 3907.6414576459515,
+      "abs_conversion_reproduction_difference": 1.496580637194711e-13
+    },
+    {
+      "design_index": 1000043,
+      "cycles_to_convergence": 113,
+      "period_s": 0.03102368194946595,
+      "cantera_median_s": 16.68058445909992,
+      "browser_median_ms": 28.287124999998923,
+      "speedup": 589.6882224369056,
+      "abs_conversion_reproduction_difference": 1.0325074129013956e-14
+    },
+    {
+      "design_index": 1000042,
+      "cycles_to_convergence": 201,
+      "period_s": 0.013996334947832418,
+      "cantera_median_s": 67.81978708296083,
+      "browser_median_ms": 43.23808300000019,
+      "speedup": 1568.5197487354037,
+      "abs_conversion_reproduction_difference": 1.4654943925052066e-14
+    },
+    {
+      "design_index": 1000006,
+      "cycles_to_convergence": 486,
+      "period_s": 0.012650817174142388,
+      "cantera_median_s": 130.81643387500662,
+      "browser_median_ms": 53.651333000001614,
+      "speedup": 2438.269965724853,
+      "abs_conversion_reproduction_difference": 1.6986412276764895e-14
+    }
+  ],
+  "summary": {
+    "paired_case_count": 6,
+    "speedup_min": 589.6882224369056,
+    "speedup_median": 2473.2047121212527,
+    "speedup_max": 7593.071794099394,
+    "max_abs_conversion_reproduction_difference": 1.496580637194711e-13,
+    "cycle_count_vs_cantera_time_pearson_r": 0.9715666233314514,
+    "cycle_count_vs_cantera_time_r_squared": 0.9439417035716783,
+    "browser_all_cases": 64,
+    "browser_all_evaluations": 1920,
+    "browser_all_case_summary_ms": {
+      "mean": 11.590374180729157,
+      "median": 5.71979199999987,
+      "p95": 48.866125000000466,
+      "max": 106.17245800000092
+    }
+  },
+  "independent_final_validation": {
+    "verdict": "PASS",
+    "summary": {
+      "points": 64,
+      "mean_abs_error": 0.002933332143009829,
+      "p95_abs_error": 0.012871403374546689,
+      "max_abs_error": 0.020146041208281562,
+      "cjh_mean_abs_error": 0.0478715642828785
+    },
+    "gates": {
+      "mean<=0.02": true,
+      "p95<=0.05": true,
+      "max<=0.10": true,
+      ">=30% better than CJH": true
+    }
+  },
+  "environments": {
+    "cantera": {
+      "version": "3.2.0",
+      "python": "3.12.13 (main, Aug  7 2026, 02:15:23) [Clang 22.1.3 ]",
+      "platform": "macOS-26.5.1-arm64-arm-64bit",
+      "machine": "arm64"
+    },
+    "browser": {
+      "node": "v26.4.0",
+      "v8": "14.6.202.34-node.21",
+      "platform": "darwin",
+      "architecture": "arm64",
+      "processor": "Apple M1"
+    }
+  },
+  "interpretation_limits": [
+    "Wall-clock values depend on hardware and software versions.",
+    "The Cantera sample uses one or more complete reruns per selected case; the browser value uses the median of repeated evaluations after warm-up.",
+    "Convergence cycles do not determine runtime alone. Pulse period, residence time, and chemical stiffness also change integration cost."
+  ]
+}
