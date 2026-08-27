@@ -418,7 +418,10 @@ const TOKENS = {
   HOLD_CJH_MEAN: sci(DATA.mem.holdCjh.mean),
   FV_N: String(DATA.final.n), FV_VERDICT: DATA.final.verdict,
   FV_MEAN: sci(DATA.final.mean), FV_P95: sci(DATA.final.p95), FV_MAX: sci(DATA.final.max),
-  FV_CJH: sci(DATA.final.cjhMean)
+  FV_CJH: sci(DATA.final.cjhMean),
+  /* the iso-conversion baseline temperature, read off the same bundle the
+     plate draws its table from, so the caption cannot drift from panel c */
+  ISOX_T: DATA.compare.cjh[2].TC.toFixed(0)
 };
 let body = shared("templates/head.html") + read("templates/body.html");
 for (const [k, v] of Object.entries(TOKENS)) body = body.replaceAll("{{" + k + "}}", v);
