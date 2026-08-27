@@ -34,12 +34,12 @@
 </figure>
 
 <figure id="rphFig3">
-<div class="figbar"><span class="figno">Fig. 3</span><span class="figwhere">Main text &#183; Departure from quasi-steady behaviour</span><span class="figsize">178 mm</span></div>
+<div class="figbar"><span class="figno">Fig. 3</span><span class="figwhere">Main text &#183; Departure from quasi-steady behaviour and the regime criterion</span><span class="figsize">178 mm</span></div>
 <div class="plate"></div>
 <div class="tools"><button data-src="rphFig3">Show SVG source</button><button data-png="rphFig3">Render 600 dpi</button><button data-copy="rphFig3">Copy SVG</button><span class="hint"></span></div>
 <textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Fig. 3.</b> Departure from quasi-steady behavior and performance during model development. (a) Ratio of periodic transient conversion, X<sub>dyn</sub>, to the outflow-weighted quasi-steady conversion, X<sub>qs</sub>, against pulse period divided by residence time. Shading denotes the range spanned by cases with a ratio of two or more. (b) Corrected prediction error against the uncorrected quasi-steady error. The {{HOLD_N}} development-test cases were excluded from fitting.</div>
-<div class="prov">Data from <code>canonical/design-physical.jsonl</code>; errors computed through <code>apps/rphcjh/surrogate.js</code>, the module the browser imports. Reproduce with <code>tools/openmkm_dynamic/train_surrogate.py</code>.</div>
+<div class="cap"><b>Fig. 3.</b> Departure from quasi-steady behavior, the regime in which it occurs, and performance during model development. (a) Ratio of periodic transient conversion, X<sub>dyn</sub>, to the outflow-weighted quasi-steady conversion, X<sub>qs</sub>, against pulse period divided by residence time. The ratio returns to one at long period, which is the quasi-steady limit. Shading denotes the range spanned by cases with a ratio of two or more. (b) The same cases in two dimensionless groups: the Arrhenius swing number of the cycle and the period-to-residence-time ratio. The swing number, not the period ratio, is the variable that decides whether the departure occurs. The dashed region is the criterion read off the cases; it contains every case with a ratio of two or more, and the counts of cases it admits are given on the panel. (c) Corrected prediction error against the uncorrected quasi-steady error. The development-test cases were excluded from fitting. Both groups are defined below the panels.</div>
+<div class="prov">Data from <code>canonical/design-physical.jsonl</code>; errors computed through <code>apps/rphcjh/surrogate.js</code>, the module the browser imports. The swing number uses the effective activation energy fitted in Fig. S2a; because it is monotone in (1/T<sub>min</sub> &#8722; 1/T<sub>peak</sub>), the ordering of cases in (b) does not depend on that value and only the threshold does.</div>
 </figure>
 
 <figure id="rphFig4">
@@ -106,12 +106,12 @@
 </figure>
 
 <figure id="rphFigS7">
-<div class="figbar"><span class="figno">Fig. S7</span><span class="figwhere">Supporting Information &#183; Model applicability ranges</span><span class="figsize">178 mm</span></div>
+<div class="figbar"><span class="figno">Fig. S7</span><span class="figwhere">Supporting Information &#183; Model applicability, and the cost of the omitted lag</span><span class="figsize">178 mm</span></div>
 <div class="plate"></div>
 <div class="tools"><button data-src="rphFigS7">Show SVG source</button><button data-png="rphFigS7">Render 600 dpi</button><button data-copy="rphFigS7">Copy SVG</button><span class="hint"></span></div>
 <textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Fig. S7.</b> The modelled arrangement and what it does not resolve. The element is treated as a single temperature inside an ideal constant-pressure stirred volume, with the inlet and outlet flows adjusted through the cycle to hold the instantaneous mass residence time fixed. Coupling runs in one direction only: the element temperature drives the chemistry, and reaction heat is not returned to the element. The plug-flow calculation sits outside this loop and is used for comparison, not for prediction. Items at right are excluded by these choices, colored to the part of the arrangement that excludes them.</div>
-<div class="prov">Scope statements are properties of the model as implemented in <code>apps/rphcjh/solver.js</code>.</div>
+<div class="cap"><b>Fig. S7.</b> The modelled arrangement, and how far its headline result depends on the part it does not resolve. (a) The element is treated as a single temperature inside an ideal constant-pressure stirred volume, with the inlet and outlet flows adjusted through the cycle to hold the instantaneous mass residence time fixed. Coupling runs in one direction only: the element temperature drives the chemistry, and reaction heat is not returned to the element. The plug-flow calculation sits outside this loop and is used for comparison, not for prediction. Items at right are excluded by these choices, colored to the part of the arrangement that excludes them. (b) The reacting gas is prescribed to follow the calculated element temperature. A gas that lags the element spans a smaller Arrhenius swing number, and the largest departure observed rises monotonically with that number. The reported maximum ratio is therefore an upper bound, and a reader with an estimate of the thermal lag in their own configuration can read the corresponding bound from this panel. Bars give the largest ratio in each bin and the rule the median; case counts are given below each bin.</div>
+<div class="prov">Scope statements are properties of the model as implemented in <code>apps/rphcjh/solver.js</code>; the bins are computed from <code>canonical/design-physical.jsonl</code> when this page is built.</div>
 </figure>
 
 <figure id="rphFigS8">
@@ -142,7 +142,11 @@
 <tr><td class="q">Reacting cases in the campaign</td><td class="n">{{MEM_N}}</td><td>Departure from quasi-steady behavior</td></tr>
 <tr><td class="q">Cases treated as nonreactive</td><td class="n">{{MEM_DEAD}}</td><td>Departure from quasi-steady behavior</td></tr>
 <tr><td class="q">Largest transient / quasi-steady ratio</td><td class="n">{{GAIN_MAX}}</td><td>Abstract; departure; conclusions</td></tr>
-<tr><td class="q">Ratio &#8805; 2 spans, in P/&#964;</td><td class="n">{{BAND_LO}} to {{BAND_HI}}</td><td>Departure from quasi-steady behavior</td></tr>
+<tr><td class="q">Effective activation energy, swing number</td><td class="n">{{EA_EFF}} kJ/mol</td><td>Departure; Supporting Information</td></tr>
+<tr><td class="q">Regime criterion, swing number</td><td class="n">S &#8805; {{RG_S}}</td><td>Departure from quasi-steady behavior</td></tr>
+<tr><td class="q">Regime criterion, period ratio</td><td class="n">{{RG_PLO}} to {{RG_PHI}}</td><td>Departure from quasi-steady behavior</td></tr>
+<tr><td class="q">Cases the criterion admits</td><td class="n">{{RG_IN}} of {{MEM_N}}</td><td>Departure from quasi-steady behavior</td></tr>
+<tr><td class="q">Ratio &#8805; 2 cases it contains</td><td class="n">{{RG_CAP}} of {{RG_TOT}}</td><td>Departure from quasi-steady behavior</td></tr>
 <tr><td class="q">Development-test cases</td><td class="n">{{HOLD_N}}</td><td>Prediction of the dynamic correction</td></tr>
 <tr><td class="q">Development-test error, mean</td><td class="n">{{HOLD_MEAN}}</td><td>Prediction of the dynamic correction</td></tr>
 <tr><td class="q">Development-test error, p95</td><td class="n">{{HOLD_P95}}</td><td>Prediction of the dynamic correction</td></tr>

@@ -166,6 +166,10 @@ const locus = columns.map(function (c) {
   return null;
 }).filter(Boolean);
 
+/* the effective activation energy for methane consumption fitted from the
+   detailed mechanisms and drawn on Fig. S2a, and the gas constant in the same
+   units. Used only to give the Arrhenius swing number its scale. */
+const EA_EFF = Object.values(cantera.mechanisms)[0].Ea_eff_kJ_mol, R_KJ = 8.314462618e-3;
 const design = readJSONL("tools/openmkm_dynamic/data/canonical/design-physical.jsonl");
 const bundle = readJSON("apps/rphcjh/data/rph-surrogate.json");
 const holdoutSet = new Set(bundle.model.holdout_indices);
@@ -182,12 +186,46 @@ for (const r of design) {
   if (!pred.valid) refused++;
   memCases.push({
     pt: p(i.period_s / i.tau_s, 4), gain: p(xd / xq, 4),
+    /* the two dimensionless groups the regime map is drawn in.
+       swing is the Arrhenius number of the cycle, the natural logarithm of the
+       ratio of rate constants between the hot and cold instants. Its ranking of
+       cases does not depend on EA_EFF: swing is monotone in (1/Tmin - 1/Tpeak)
+       and the activation energy only sets the units of the threshold.
+       lnDa is the log Damköhler number of the quasi-steady baseline. For a
+       first-order CSTR, X = Da/(1+Da), so logit X is exactly ln Da. It is
+       already one of the five model inputs; naming it is the whole change. */
+    swing: p((EA_EFF / R_KJ) * (1 / i.t_min_K - 1 / i.t_peak_K), 4),
+    lnDa: p(Math.log(xq / (1 - xq)), 4),
     e0: p(Math.abs(xq - xd), 3),
     e1: pred.valid ? p(Math.abs(pred.conversion - xd), 3) : null,
     holdout: holdoutSet.has(r.design_index)
   });
 }
 const gainBandCases = memCases.filter((c) => c.gain >= 2);
+
+/* The regime criterion, read off the cases rather than chosen: the smallest
+   swing and the span in P/tau at which a ratio of two or more is ever reached.
+   Stated with how many cases it admits, so it is a screening rule and not a
+   claim that everything inside it departs from quasi-steady behaviour. */
+const regime = (function () {
+  const sMin = gainBandCases.reduce((a, c) => Math.min(a, c.swing), Infinity);
+  const ptLo = gainBandCases.reduce((a, c) => Math.min(a, c.pt), Infinity);
+  const ptHi = gainBandCases.reduce((a, c) => Math.max(a, c.pt), 0);
+  const inside = memCases.filter((c) => c.swing >= sMin && c.pt >= ptLo && c.pt <= ptHi);
+  return { ea: EA_EFF, sMin: p(sMin, 3), ptLo: p(ptLo, 3), ptHi: p(ptHi, 3),
+           inside: inside.length, captured: inside.filter((c) => c.gain >= 2).length,
+           total: gainBandCases.length, pool: memCases.length };
+})();
+
+/* How far the departure can go as a function of the swing. This is the bound
+   the headline ratio rests on: a reacting gas that does not follow the element
+   all the way sees a smaller swing, and moves down this ladder. */
+const swingLadder = [[0, 2], [2, 5], [5, 10], [10, 20], [20, 40], [40, 1e9]].map(function (e) {
+  const g = memCases.filter((c) => c.swing >= e[0] && c.swing < e[1]).map((c) => c.gain).sort((a, c) => a - c);
+  return { lo: e[0], hi: e[1] > 1e8 ? null : e[1], n: g.length,
+           max: g.length ? p(g[g.length - 1], 3) : null,
+           med: g.length ? p(g[Math.floor(g.length / 2)], 3) : null };
+}).filter((r) => r.n > 0);
 const gpReport = bundle.model.holdout_report.find((m) => m.model.includes("GP"));
 const cjhReport = bundle.model.holdout_report.find((m) => m.model.includes("as-is"));
 
@@ -293,6 +331,7 @@ const DATA = {
       lo: p(gainBandCases.reduce((a, c) => Math.min(a, c.pt), Infinity), 3),
       hi: p(gainBandCases.reduce((a, c) => Math.max(a, c.pt), 0), 3)
     } : null,
+    regime, swingLadder,
     hold: { mean: p(gpReport.mean, 3), p95: p(gpReport.p95, 3), max: p(gpReport.max, 3) },
     holdCjh: { mean: p(cjhReport.mean, 3), p95: p(cjhReport.p95, 3), max: p(cjhReport.max, 3) }
   },
@@ -457,10 +496,6 @@ const TOKENS = {
   /* the iso-conversion baseline temperature, read off the same bundle the
      plate draws its table from, so the caption cannot drift from panel c */
   ISOX_T: DATA.compare.cjh[2].TC.toFixed(0),
-  /* the span in period over residence time that the cases with a ratio of two
-     or more actually occupy, so the caption cannot describe a band the plate
-     does not shade */
-  BAND_LO: DATA.mem.band.lo.toFixed(2), BAND_HI: DATA.mem.band.hi.toFixed(0),
   /* the interval in which the swept peak crosses the materials bound. The
      ratio in Fig. 2a falls below one over the same interval, so the caption
      has to be able to name both ends rather than assert a design window */
@@ -469,6 +504,10 @@ const TOKENS = {
   CAP_HI_P: String(capCross.hi.period), CAP_HI_T: capCross.hi.tPeak.toFixed(0),
   /* the stiff group also holds the shipped drive, so the caption names only
      the drives whose peak actually exceeds the bound */
+  EA_EFF: DATA.mem.regime.ea.toFixed(0),
+  RG_S: String(DATA.mem.regime.sMin), RG_PLO: String(DATA.mem.regime.ptLo),
+  RG_PHI: String(DATA.mem.regime.ptHi), RG_IN: String(DATA.mem.regime.inside),
+  RG_CAP: String(DATA.mem.regime.captured), RG_TOT: String(DATA.mem.regime.total),
   STRESS_V: (function () {
     const o = DATA.verify.stiff.filter((r) => r.tPeak > DATA.space.cap).map((r) => r.volts);
     return o.length > 1 ? o.slice(0, -1).join(", ") + " and " + o[o.length - 1] : String(o[0]);

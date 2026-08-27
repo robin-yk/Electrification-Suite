@@ -476,11 +476,14 @@ export function boundaries(DATA) {
      calculation that sits beside the loop rather than inside it. Drawing that
      arrangement says in one look what three columns of sentences said in
      twelve lines, and the exclusions become labels on the parts they exclude. */
-  const ns = "rs2", W = 505, H = 240;
+  const ns = "rs2", W = 505, H = 406;
   let b = defs(ns);
   const LX = 22;
 
-  /* ---- the reacting volume, with the element inside it ---- */
+  b += T(LX, 22, "a", { size: 11, weight: "bold" });
+  b += T(LX + 16, 22, "THE MODELLED ARRANGEMENT", { size: 8, weight: "bold", fill: C.grey });
+
+  /* ---- a. the reacting volume, with the element inside it ---- */
   const rx = 70, ry = 44, rw = 228, rh = 100;
   b += rect(rx, ry, rw, rh, { stroke: C.gas, fill: tintOf(C.gas), sw: 1, rx: 4 });
   b += T(rx + 10, ry + 16, "IDEAL CSTR, CONSTANT PRESSURE", { size: 8, weight: "bold", fill: shadeOf(C.gas) });
@@ -530,8 +533,50 @@ export function boundaries(DATA) {
     b += T(nx + 9, y + 10, r[2], { size: 8, fill: C.ink });
   });
 
-  b += line(LX, H - 30, 488, H - 30, { stroke: C.rule, sw: 0.6 });
-  b += T(LX, H - 17, "No layer carries oxidation, sublimation or a lifetime model, so a temperature the element reaches here is not one it survives.",
+  b += line(LX, 214, 488, 214, { stroke: C.rule, sw: 0.6 });
+
+  /* ---- b. what the omitted temperature lag costs, in the one variable that
+       decides the departure. The gas is prescribed to follow the element, so a
+       real gas that lags sees a smaller swing and moves left along this ladder.
+       Drawing the largest ratio reached in each swing bin turns the headline
+       number into a bound a reader can evaluate for their own damping. ---- */
+  (function () {
+    const L = DATA.mem.swingLadder, x0 = 70, y0 = 264, pw = 300, ph = 92;
+    b += T(LX, y0 - 22, "b", { size: 11, weight: "bold" });
+    b += T(LX + 16, y0 - 22, "WHAT THE OMITTED LAG COSTS", { size: 8, weight: "bold", fill: C.grey });
+    b += T(488, y0 - 22, "a gas that does not follow the element sees a smaller S", { size: 8, anchor: "end", fill: C.grey });
+    const hi = Math.ceil(Math.max.apply(null, L.map((r) => r.max))) + 1;
+    const Y = (v) => lin(v, 0, hi, y0 + ph, y0 + 6);
+    b += rect(x0, y0, pw, ph, { stroke: C.grey, fill: "#FFFFFF", sw: 0.8, rx: 0 });
+    for (let g = 0; g <= hi; g += 2) {
+      b += line(x0, Y(g), x0 + pw, Y(g), { stroke: "#EAEAEA", sw: 0.4 });
+      b += T(x0 - 4, Y(g) + 3, String(g), { size: 8, anchor: "end", fill: C.grey });
+    }
+    b += line(x0, Y(1), x0 + pw, Y(1), { stroke: C.ink, sw: 0.8, dash: "3 2" });
+    const bw = pw / L.length;
+    L.forEach(function (r, i) {
+      const cx = x0 + i * bw;
+      b += rect(cx + 6, Y(r.max), bw - 12, Y(0) - Y(r.max), { fill: tintOf(C.thermal), stroke: C.thermal, sw: 0.8, rx: 0 });
+      b += line(cx + 6, Y(r.med), cx + bw - 6, Y(r.med), { stroke: SHADE.thermal, sw: 1.2 });
+      b += T(cx + bw / 2, Y(r.max) - 4, r.max.toFixed(2), { size: 8, anchor: "middle", weight: "bold", fill: SHADE.thermal });
+      b += T(cx + bw / 2, y0 + ph + 12, r.hi === null ? "≥ " + r.lo : r.lo + "–" + r.hi, { size: 8, anchor: "middle" });
+      b += T(cx + bw / 2, y0 + ph + 22, "n " + r.n, { size: 8, anchor: "middle", fill: C.grey });
+    });
+    b += T(x0 + pw / 2, y0 + ph + 35, "Arrhenius swing number  S", { size: 8.5, anchor: "middle" });
+    b += '<g transform="rotate(-90 ' + (x0 - 26) + ' ' + (y0 + ph / 2) + ')">' +
+      T(x0 - 26, y0 + ph / 2, "X_{dyn} / X_{qs}", { size: 8.5, anchor: "middle" }) + '</g>';
+    b += rect(x0 + pw + 14, y0 + 4, 16, 10, { fill: tintOf(C.thermal), stroke: C.thermal, sw: 0.8, rx: 0 });
+    b += T(x0 + pw + 34, y0 + 12, "largest in bin", { size: 8, fill: C.grey });
+    b += line(x0 + pw + 14, y0 + 26, x0 + pw + 30, y0 + 26, { stroke: SHADE.thermal, sw: 1.2 });
+    b += T(x0 + pw + 34, y0 + 29, "median", { size: 8, fill: C.grey });
+    b += T(x0 + pw + 14, y0 + 58, "The largest departure", { size: 8, fill: C.ink });
+    b += T(x0 + pw + 14, y0 + 68, "rises with S, so the", { size: 8, fill: C.ink });
+    b += T(x0 + pw + 14, y0 + 78, "headline ratio is an", { size: 8, fill: C.ink });
+    b += T(x0 + pw + 14, y0 + 88, "upper bound.", { size: 8, weight: "bold", fill: SHADE.thermal });
+  })();
+
+  /* the caveat belongs to the whole plate, so it sits under both panels */
+  b += T(LX, H - 10, "No layer carries oxidation, sublimation or a lifetime model, so a temperature the element reaches here is not one it survives.",
     { size: 8, fill: C.grey });
   return svgDoc(W, H, b);
 }
@@ -695,77 +740,131 @@ export function cjhmap(DATA) {
 /* learned correction does to the quasi-steady shortfall.              */
 /* ------------------------------------------------------------------ */
 export function memory(DATA) {
-  const ns = "r7", W = 505, H = 250;
-  const M = DATA.mem;
+  /* Three panels, because the departure has two axes and only one of them was
+     ever drawn. Panel a is the quasi-steady limit in P/tau, which the model
+     must recover and does. Panel b is the variable that actually decides the
+     departure: the Arrhenius swing number, the natural logarithm of the rate
+     constant ratio across the cycle. Panel c is what the correction does with
+     it. The regime rule in b is the portable part of this work: it is stated
+     in two dimensionless groups, so a reader can evaluate it for a system that
+     shares neither the mechanism nor the element. */
+  const ns = "r7", W = 505, H = 268;
+  const M = DATA.mem, RG = M.regime;
   let b = defs(ns);
-  const pw = 190, ph = 160, ptop = 30, pbot = 190;
-  const COL = [58, 300];
+  const pw = 126, ph = 150, ptop = 30, pbot = 180;
+  const COL = [46, 206, 366];
+  const ratio = (v) => lg(Math.min(Math.max(v, 0.1), 10));
+  /* the raw <text> form used elsewhere cannot carry _{...}: route the rotated
+     label through the same helper the rest of the plate uses */
+  const ylab = (x, s) => '<g transform="rotate(-90 ' + x + ' ' + ((ptop + pbot) / 2) + ')">' +
+    T(x, (ptop + pbot) / 2, s, { size: 8.5, anchor: "middle" }) + '</g>';
 
-  /* a. how far the transient leaves its quasi-steady baseline */
+  /* a. the quasi-steady limit, in the forcing-to-residence ratio */
   (function () {
     const x0 = COL[0];
     const X = (v) => lin(lg(v), -2, 3, x0 + 12, x0 + pw - 12);
-    const Y = (v) => lin(lg(Math.min(Math.max(v, 0.1), 10)), -1, 1, pbot - 10, ptop + 10);
+    const Y = (v) => lin(ratio(v), -1, 1, pbot - 10, ptop + 10);
     let o = rect(x0, ptop, pw, ph, { stroke: C.grey, fill: "#FFFFFF", sw: 0.8, rx: 0 });
-    o += T(x0 - 40, ptop - 8, "a", { size: 11, weight: "bold" });
+    o += T(x0 - 34, ptop - 8, "a", { size: 11, weight: "bold" });
     if (M.band) {
       o += '<rect x="' + X(M.band.lo).toFixed(1) + '" y="' + (ptop + 1) + '" width="' +
         (X(M.band.hi) - X(M.band.lo)).toFixed(1) + '" height="' + (ph - 2) + '" fill="#F4F4F4"/>';
     }
-    [0.1, 0.3, 1, 3, 10].forEach(function (g) {
+    [0.1, 1, 10].forEach(function (g) {
       o += line(x0, Y(g), x0 + pw, Y(g), { stroke: "#EAEAEA", sw: 0.4 });
       o += T(x0 - 4, Y(g) + 3, String(g), { size: 8, anchor: "end", fill: C.grey });
     });
-    [0.01, 0.1, 1, 10, 100].forEach(function (v) {
+    [0.01, 1, 100].forEach(function (v) {
       o += T(X(v), pbot + 12, String(v), { size: 8, anchor: "middle" });
     });
-    o += T(x0 + pw / 2, pbot + 24, "pulse period / residence time", { size: 8.5, anchor: "middle" });
-    o += '<text x="' + (x0 - 28) + '" y="' + ((ptop + pbot) / 2) + '" font-size="8.5" text-anchor="middle" transform="rotate(-90 ' + (x0 - 28) + ' ' + ((ptop + pbot) / 2) + ')">transient / quasi-steady conversion</text>';
+    o += T(x0 + pw / 2, pbot + 24, "P / τ", { size: 8.5, anchor: "middle" });
+    o += ylab(x0 - 26, "X_{dyn} / X_{qs}");
     o += line(x0, Y(1), x0 + pw, Y(1), { stroke: C.ink, sw: 0.9, dash: "3 2" });
-    o += T(x0 + pw - 6, Y(0.52), "quasi-steady, ratio 1", { size: 8, anchor: "end", fill: C.grey });
     M.cases.forEach(function (c) {
-      o += '<circle cx="' + X(c.pt).toFixed(1) + '" cy="' + Y(c.gain).toFixed(1) + '" r="2" fill="' + C.thermal + '" fill-opacity="0.55"/>';
+      o += '<circle cx="' + X(c.pt).toFixed(1) + '" cy="' + Y(c.gain).toFixed(1) + '" r="1.8" fill="' + C.thermal + '" fill-opacity="0.5"/>';
     });
-    const top = M.cases.reduce((a, c) => (c.gain > a.gain ? c : a));
-    o += T(Math.min(X(top.pt) + 5, x0 + pw - 46), Y(top.gain) + 2, "up to " + M.gainMax.toFixed(1) + "x",
-      { size: 8.5, weight: "bold", fill: SHADE.thermal });
-    if (M.band) o += T((X(M.band.lo) + X(M.band.hi)) / 2, ptop + 12, "X_{dyn} / X_{qs} ≥ 2", { size: 8, anchor: "middle", fill: C.grey });
+    o += T(x0 + pw - 6, Y(9.2), "up to " + M.gainMax.toFixed(1) + "x", { size: 8, weight: "bold", anchor: "end", fill: SHADE.thermal });
+    o += T(x0 + pw - 6, Y(0.45), "quasi-steady", { size: 8, anchor: "end", fill: C.grey });
     b += o;
   })();
 
-  /* b. the correction against the shortfall it corrects */
+  /* b. the regime map: the swing decides, and P/tau only gates */
   (function () {
     const x0 = COL[1];
+    const X = (v) => lin(lg(Math.max(v, 0.2)), -0.7, 2, x0 + 12, x0 + pw - 12);
+    const Y = (v) => lin(lg(v), -2, 3, pbot - 10, ptop + 10);
+    let o = rect(x0, ptop, pw, ph, { stroke: C.grey, fill: "#FFFFFF", sw: 0.8, rx: 0 });
+    o += T(x0 - 34, ptop - 8, "b", { size: 11, weight: "bold" });
+    /* the rule, drawn as the region it is */
+    const bx = X(RG.sMin), by = Y(RG.ptHi), bh = Y(RG.ptLo) - Y(RG.ptHi);
+    o += '<rect x="' + bx.toFixed(1) + '" y="' + by.toFixed(1) + '" width="' + (x0 + pw - bx).toFixed(1) +
+      '" height="' + bh.toFixed(1) + '" fill="' + tintOf(C.thermal) + '"/>';
+    o += line(bx, by, x0 + pw, by, { stroke: C.thermal, sw: 0.8, dash: "3 2" });
+    o += line(bx, by + bh, x0 + pw, by + bh, { stroke: C.thermal, sw: 0.8, dash: "3 2" });
+    o += line(bx, by, bx, by + bh, { stroke: C.thermal, sw: 0.8, dash: "3 2" });
+    [0.01, 1, 100].forEach(function (v) {
+      o += line(x0, Y(v), x0 + pw, Y(v), { stroke: "#EAEAEA", sw: 0.4 });
+      o += T(x0 - 4, Y(v) + 3, String(v), { size: 8, anchor: "end", fill: C.grey });
+    });
+    [1, 10, 100].forEach(function (v) {
+      o += T(X(v), pbot + 12, String(v), { size: 8, anchor: "middle" });
+    });
+    o += T(x0 + pw / 2, pbot + 24, "swing number  S", { size: 8.5, anchor: "middle" });
+    o += ylab(x0 - 26, "P / τ");
+    M.cases.forEach(function (c) {
+      if (c.gain >= 2) return;
+      o += '<circle cx="' + X(c.swing).toFixed(1) + '" cy="' + Y(c.pt).toFixed(1) + '" r="1.5" fill="' + C.grey + '" fill-opacity="0.4"/>';
+    });
+    M.cases.forEach(function (c) {
+      if (c.gain < 2) return;
+      o += '<circle cx="' + X(c.swing).toFixed(1) + '" cy="' + Y(c.pt).toFixed(1) + '" r="2.4" fill="' + C.thermal + '" fill-opacity="0.9"/>';
+    });
+    o += '<circle cx="' + (x0 + 14) + '" cy="' + (ptop + 12) + '" r="2.4" fill="' + C.thermal + '"/>';
+    o += T(x0 + 20, ptop + 15, "X_{dyn}/X_{qs} ≥ 2", { size: 8, fill: SHADE.thermal });
+    o += T(x0 + 8, pbot - 32, "S ≥ " + RG.sMin + ",  " + RG.ptLo + " ≤ P/τ ≤ " + RG.ptHi, { size: 8, fill: SHADE.thermal });
+    o += T(x0 + 8, pbot - 22, "holds all " + RG.total + ",  admits " + RG.inside + " of " + RG.pool, { size: 8, fill: C.grey });
+    b += o;
+  })();
+
+  /* c. the correction against the shortfall it corrects */
+  (function () {
+    const x0 = COL[2];
     const A = (v) => lg(Math.min(Math.max(v, 1e-7), 1));
     const X = (v) => lin(A(v), -7, 0, x0 + 12, x0 + pw - 12);
     const Y = (v) => lin(A(v), -7, 0, pbot - 10, ptop + 10);
     let o = rect(x0, ptop, pw, ph, { stroke: C.grey, fill: "#FFFFFF", sw: 0.8, rx: 0 });
-    o += T(x0 - 40, ptop - 8, "b", { size: 11, weight: "bold" });
-    for (let d = -7; d <= 0; d += 2) {
+    o += T(x0 - 34, ptop - 8, "c", { size: 11, weight: "bold" });
+    for (let d = -6; d <= 0; d += 3) {
       o += line(x0, Y(Math.pow(10, d)), x0 + pw, Y(Math.pow(10, d)), { stroke: "#EAEAEA", sw: 0.4 });
       o += T(x0 - 4, Y(Math.pow(10, d)) + 3, "10^{" + String(d).replace("-", "−") + "}", { size: 8, anchor: "end", fill: C.grey });
       o += T(X(Math.pow(10, d)), pbot + 12, "10^{" + String(d).replace("-", "−") + "}", { size: 8, anchor: "middle" });
     }
-    o += T(x0 + pw / 2, pbot + 24, "|X_{qs} − X_{dyn}|, quasi-steady error", { size: 8.5, anchor: "middle" });
-    o += '<text x="' + (x0 - 30) + '" y="' + ((ptop + pbot) / 2) + '" font-size="8.5" text-anchor="middle" transform="rotate(-90 ' + (x0 - 30) + ' ' + ((ptop + pbot) / 2) + ')">corrected prediction error</text>';
+    o += T(x0 + pw / 2, pbot + 24, "quasi-steady error", { size: 8.5, anchor: "middle" });
+    o += ylab(x0 - 26, "corrected error");
     o += line(X(1e-7), Y(1e-7), X(1), Y(1), { stroke: C.ink, sw: 0.9, dash: "3 2" });
-    o += T(X(2e-2), Y(4e-2), "no improvement", { size: 8, anchor: "end", fill: C.grey });
     M.cases.forEach(function (c) {
       if (c.e1 === null || c.holdout) return;
-      o += '<circle cx="' + X(c.e0).toFixed(1) + '" cy="' + Y(c.e1).toFixed(1) + '" r="1.5" fill="' + C.grey + '" fill-opacity="0.45"/>';
+      o += '<circle cx="' + X(c.e0).toFixed(1) + '" cy="' + Y(c.e1).toFixed(1) + '" r="1.4" fill="' + C.grey + '" fill-opacity="0.45"/>';
     });
     M.cases.forEach(function (c) {
       if (c.e1 === null || !c.holdout) return;
-      o += '<circle cx="' + X(c.e0).toFixed(1) + '" cy="' + Y(c.e1).toFixed(1) + '" r="2.2" fill="' + C.thermal + '" fill-opacity="0.85"/>';
+      o += '<circle cx="' + X(c.e0).toFixed(1) + '" cy="' + Y(c.e1).toFixed(1) + '" r="2.1" fill="' + C.thermal + '" fill-opacity="0.85"/>';
     });
-    o += '<circle cx="' + (x0 + 14) + '" cy="' + (ptop + 14) + '" r="2.2" fill="' + C.thermal + '"/>';
-    o += T(x0 + 20, ptop + 17, "development test, " + M.holdoutN + " cases", { size: 8, fill: SHADE.thermal });
-    o += '<circle cx="' + (x0 + 14) + '" cy="' + (ptop + 26) + '" r="1.5" fill="' + C.grey + '"/>';
-    o += T(x0 + 20, ptop + 29, "training cases", { size: 8, fill: C.grey });
-    o += T(x0 + pw - 8, pbot - 24, "development-test mean " + sciT(M.hold.mean), { size: 8, anchor: "end", weight: "bold" });
-    o += T(x0 + pw - 8, pbot - 14, "p95 " + sciT(M.hold.p95) + ",  max " + sciT(M.hold.max), { size: 8, anchor: "end" });
+    o += '<circle cx="' + (x0 + 14) + '" cy="' + (ptop + 12) + '" r="2.1" fill="' + C.thermal + '"/>';
+    o += T(x0 + 20, ptop + 15, "development test", { size: 8, fill: SHADE.thermal });
+    o += '<circle cx="' + (x0 + 14) + '" cy="' + (ptop + 24) + '" r="1.4" fill="' + C.grey + '"/>';
+    o += T(x0 + 20, ptop + 27, "training", { size: 8, fill: C.grey });
+    o += T(x0 + pw - 6, pbot - 18, "mean " + sciT(M.hold.mean), { size: 8, anchor: "end", weight: "bold" });
+    o += T(x0 + pw - 6, pbot - 8, "max " + sciT(M.hold.max), { size: 8, anchor: "end" });
     b += o;
   })();
+
+  /* the two groups defined once, on the plate that first uses them */
+  b += line(46, H - 34, 492, H - 34, { stroke: C.rule, sw: 0.6 });
+  b += T(46, H - 21, "S = (E_{a}/R)(1/T_{min} − 1/T_{peak}), the log of the rate-constant ratio over the cycle, E_{a} = " +
+    RG.ea.toFixed(0) + " kJ/mol from Fig. S2a.", { size: 8, fill: C.grey });
+  b += T(46, H - 10, "ln Da = logit X_{qs}: for a first-order stirred reactor the baseline is itself a Damköhler number, and is one of the model's five inputs.",
+    { size: 8, fill: C.grey });
   return svgDoc(W, H, b);
 }
 
