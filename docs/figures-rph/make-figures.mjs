@@ -10,7 +10,7 @@ import { SERIES_DEFAULTS, seriesRateConstants, steadySeriesCSTR, integrateSeries
          sampledWaveform, arrheniusRate, transportCoefficient, velocity,
          idealTwoStateAverages, timeAverageTemperature } from "../../apps/rphcjh/solver.js";
 import { predictRphConversion } from "../../apps/rphcjh/surrogate.js";
-import { workflow, drive, comparison, window_, detailed, verification, boundaries, architecture,
+import { workflow, drive, comparison, window_, consequence, detailed, verification, boundaries, architecture,
          cjhmap, memory, finalparity, method, gpdetail, designspace } from "./draw.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -365,20 +365,21 @@ const DATA = {
 };
 
 const PLATES = [
+  // Plan B ordering: the contribution starts at Fig. 2 rather than Fig. 7.
+  // The two-step toy is the rationale, not the result, so it moves to the SI.
   { id: "rphFig1", label: "Fig. 1", draw: workflow },
-  { id: "rphFig2", label: "Fig. 2", draw: drive },
-  { id: "rphFig3", label: "Fig. 3", draw: comparison },
-  { id: "rphFig4", label: "Fig. 4", draw: window_ },
-  { id: "rphFig5", label: "Fig. 5", draw: detailed },
-  { id: "rphFig6", label: "Fig. 6", draw: cjhmap },
-  { id: "rphFig7", label: "Fig. 7", draw: memory },
-  { id: "rphFig8", label: "Fig. 8", draw: finalparity },
-  { id: "rphFig9", label: "Fig. 9", draw: method },
-  { id: "rphFigS1", label: "Fig. S1", draw: verification },
-  { id: "rphFigS2", label: "Fig. S2", draw: boundaries },
-  { id: "rphFigS3", label: "Fig. S3", draw: architecture },
-  { id: "rphFigS4", label: "Fig. S4", draw: gpdetail },
-  { id: "rphFigS5", label: "Fig. S5", draw: designspace }
+  { id: "rphFig2", label: "Fig. 2", draw: cjhmap },
+  { id: "rphFig3", label: "Fig. 3", draw: memory },
+  { id: "rphFig4", label: "Fig. 4", draw: finalparity },
+  { id: "rphFig5", label: "Fig. 5", draw: consequence },
+  { id: "rphFigS1", label: "Fig. S1", draw: drive },
+  { id: "rphFigS2", label: "Fig. S2", draw: detailed },
+  { id: "rphFigS3", label: "Fig. S3", draw: method },
+  { id: "rphFigS4", label: "Fig. S4", draw: verification },
+  { id: "rphFigS5", label: "Fig. S5", draw: boundaries },
+  { id: "rphFigS6", label: "Fig. S6", draw: architecture },
+  { id: "rphFigS7", label: "Fig. S7", draw: gpdetail },
+  { id: "rphFigS8", label: "Fig. S8", draw: designspace }
 ];
 for (const plate of PLATES) {
   const svg = plate.draw(DATA);

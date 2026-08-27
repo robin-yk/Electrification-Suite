@@ -90,12 +90,14 @@ export function drive(DATA) {
 /* Fig. 3. What the pulsed run is compared against, and why the basis  */
 /* decides the answer.                                                 */
 /* ------------------------------------------------------------------ */
-export function comparison(DATA) {
+export function comparison(DATA, L) {
+  L = L || [""];
   const ns = "r3", W = 505, H = 216;
   const R = DATA.compare.rph, CJ = DATA.compare.cjh;
   let b = defs(ns);
   const LX = 22, TX = 252, XX = 312, BX = 374, SX = 448, EX = 488;
 
+  if (L[0]) b += T(LX - 22, 22, L[0], { size: 11, weight: "bold" });
   b += T(LX, 22, "COMPARED AGAINST", { size: 8, weight: "bold", fill: C.grey });
   b += T(TX, 22, "CJH T", { size: 8, weight: "bold", anchor: "end", fill: C.grey });
   b += T(XX, 22, "CONVERSION", { size: 8, weight: "bold", anchor: "end", fill: C.grey });
@@ -137,7 +139,8 @@ export function comparison(DATA) {
 /* Fig. 4. The window: what closes it from below, and what closes it   */
 /* from above, with the control that removes the effect entirely.      */
 /* ------------------------------------------------------------------ */
-export function window_(DATA) {
+export function window_(DATA, L) {
+  L = L || ["a", "b"];
   const ns = "r4", W = 505, H = 250;
   const S = DATA.sweep, K = DATA.control;
   let b = defs(ns);
@@ -167,7 +170,7 @@ export function window_(DATA) {
   (function () {
     const gains = S.map((r) => r.B / r.cjhB).concat(K.map((r) => r.B / r.cjhB));
     const hi = Math.ceil(Math.max.apply(null, gains) * 10) / 10;
-    const P = frame(COL[0], "a", "B yield, pulsed / continuous");
+    const P = frame(COL[0], L[0], "B yield, pulsed / continuous");
     const Y = (v) => lin(v, 0, hi, pbot - 10, ptop + 10);
     let o = P.o;
     for (let t = 0; t <= hi + 1e-9; t += hi / 4) {
@@ -192,7 +195,7 @@ export function window_(DATA) {
   /* b. why it closes: the swing the element can produce at that period */
   (function () {
     const hi = Math.ceil(Math.max.apply(null, S.map((r) => r.tPeak)) / 500) * 500;
-    const P = frame(COL[1], "b", "element temperature (°C)");
+    const P = frame(COL[1], L[1], "element temperature (°C)");
     const Y = (v) => lin(v, 0, hi, pbot - 10, ptop + 10);
     let o = P.o;
     for (let t = 0; t <= hi; t += hi / 4) {
@@ -579,9 +582,9 @@ export function cjhmap(DATA) {
       o += '<rect x="' + (cbx + i * 4) + '" y="' + cby + '" width="4" height="7" fill="' + heat((i + 0.5) / 14) + '"/>';
     }
     o += rect(cbx, cby, cbw, 7, { stroke: C.grey, fill: "none", sw: 0.5, rx: 0 });
-    o += T(cbx - 3, cby + 6, "0", { size: 7.5, anchor: "end", fill: C.grey });
-    o += T(cbx + cbw + 3, cby + 6, "1", { size: 7.5, fill: C.grey });
-    o += T(cbx + cbw / 2, cby - 4, "CH₄ conversion", { size: 7.5, anchor: "middle", fill: C.grey });
+    o += T(cbx - 3, cby + 6, "0", { size: 8, anchor: "end", fill: C.grey });
+    o += T(cbx + cbw + 3, cby + 6, "1", { size: 8, fill: C.grey });
+    o += T(cbx + cbw / 2, cby - 4, "CH₄ conversion", { size: 8, anchor: "middle", fill: C.grey });
     b += o;
   })();
 
@@ -760,9 +763,9 @@ export function finalparity(DATA) {
     o += cdf(F.cases.map((c) => Math.abs(c[1] - c[0])), C.grey, 1.2, "3 2");
     o += cdf(F.cases.map((c) => Math.abs(c[2] - c[0])), C.thermal, 1.6, "");
     o += line(x0, Y(0.95), x0 + pw, Y(0.95), { stroke: "#CCCCCC", sw: 0.7, dash: "2 2" });
-    o += T(x0 + pw - 8, Y(0.95) + 9, "p95", { size: 7.5, anchor: "end", fill: C.grey });
+    o += T(x0 + pw - 8, Y(0.95) + 9, "p95", { size: 8, anchor: "end", fill: C.grey });
     o += line(X(0.05), ptop, X(0.05), pbot, { stroke: C.ink, sw: 0.7, dash: "2 2" });
-    o += T(X(0.05) - 3, ptop + 10, "p95 gate 0.05", { size: 7.5, anchor: "end", fill: C.grey });
+    o += T(X(0.05) - 3, ptop + 10, "p95 gate 0.05", { size: 8, anchor: "end", fill: C.grey });
     o += line(x0 + 8, ptop + 14, x0 + 24, ptop + 14, { stroke: C.thermal, sw: 1.6 });
     o += T(x0 + 28, ptop + 17, "with correction", { size: 8, fill: SHADE.thermal });
     o += line(x0 + 8, ptop + 26, x0 + 24, ptop + 26, { stroke: C.grey, sw: 1.2, dash: "3 2" });
@@ -780,7 +783,7 @@ export function finalparity(DATA) {
 /* the campaign, selected by rule so it cannot be a flattering pick.   */
 /* ------------------------------------------------------------------ */
 export function method(DATA) {
-  const ns = "r9", W = 505, H = 316;
+  const ns = "r9", W = 505, H = 330;
   const E = DATA.example, G = DATA.gp;
   let b = defs(ns);
   const box = (x, y, w, h, title, lines, hue, fill) => {
@@ -844,25 +847,27 @@ export function method(DATA) {
   b += T(18, dy, "b", { size: 11, weight: "bold" });
   b += T(34, dy, "LEARNING AND APPLYING THE CORRECTION", { size: 8, weight: "bold", fill: C.grey });
   const ey = dy + 10;
-  b += rect(18, ey, 128, 62, { stroke: C.edge, fill: "#FFFFFF", sw: 0.8 });
+  b += rect(18, ey, 128, 76, { stroke: C.edge, fill: "#FFFFFF", sw: 0.8 });
   b += T(82, ey + 13, "Five inputs", { size: 8.5, weight: "bold", anchor: "middle", fill: SHADE.ink });
   G.features.forEach(function (f, i) {
-    b += T(26, ey + 25 + i * 9, "· " + f.label, { size: 7.5, fill: C.grey });
+    b += T(26, ey + 25 + i * 10, "· " + f.label, { size: 8, fill: C.grey });
   });
-  b += arrow(ns, "M146," + (ey + 31) + " L160," + (ey + 31), { color: "hair" });
-  b += rect(161, ey, 132, 62, { stroke: C.ink, fill: "#FFFFFF", sw: 1.1 });
+  b += arrow(ns, "M146," + (ey + 38) + " L160," + (ey + 38), { color: "hair" });
+  b += rect(161, ey, 132, 76, { stroke: C.ink, fill: "#FFFFFF", sw: 1.1 });
   b += T(227, ey + 14, "Gaussian process", { size: 9, weight: "bold", anchor: "middle" });
-  b += T(227, ey + 25, G.kernel, { size: 7.5, anchor: "middle", fill: C.grey });
-  b += T(227, ey + 35, G.nTrain + " cases fitted, " + G.nHold + " held out", { size: 7.5, anchor: "middle", fill: C.grey });
-  b += T(227, ey + 45, "noise σ_{n} = " + G.sigmaN + " in log-odds", { size: 7.5, anchor: "middle", fill: C.grey });
-  b += T(227, ey + 56, "returns the correction δ", { size: 8, anchor: "middle", weight: "bold", fill: SHADE.thermal });
-  b += arrow(ns, "M293," + (ey + 31) + " L307," + (ey + 31), { color: "hair" });
-  b += rect(308, ey, 179, 62, { stroke: C.edge, fill: TINT.thermal, sw: 0.8 });
+  G.kernel.split(", ").forEach(function (part, i) {
+    b += T(227, ey + 25 + i * 10, part, { size: 8, anchor: "middle", fill: C.grey });
+  });
+  b += T(227, ey + 47, G.nTrain + " cases fitted, " + G.nHold + " held out", { size: 8, anchor: "middle", fill: C.grey });
+  b += T(227, ey + 57, "noise σ_{n} = " + G.sigmaN + " in log-odds", { size: 8, anchor: "middle", fill: C.grey });
+  b += T(227, ey + 69, "returns the correction δ", { size: 8, anchor: "middle", weight: "bold", fill: SHADE.thermal });
+  b += arrow(ns, "M293," + (ey + 38) + " L307," + (ey + 38), { color: "hair" });
+  b += rect(308, ey, 179, 76, { stroke: C.edge, fill: TINT.thermal, sw: 0.8 });
   b += T(397, ey + 14, "X_{pred} = σ( logit X_{qs} + δ )", { size: 9, weight: "bold", anchor: "middle", fill: SHADE.thermal });
-  b += T(316, ey + 28, "The sigmoid cannot leave (0, 1), so no", { size: 7.5, fill: C.grey });
-  b += T(316, ey + 37, "correction can return an impossible conversion.", { size: 7.5, fill: C.grey });
-  b += T(316, ey + 49, "A zero-mean prior sends δ to 0 away from the", { size: 7.5, fill: C.grey });
-  b += T(316, ey + 58, "data, which is also the long-period limit.", { size: 7.5, fill: C.grey });
+  b += T(316, ey + 28, "The sigmoid cannot leave (0, 1), so no", { size: 8, fill: C.grey });
+  b += T(316, ey + 38, "correction can return an impossible conversion.", { size: 8, fill: C.grey });
+  b += T(316, ey + 51, "A zero-mean prior sends δ to 0 away from the", { size: 8, fill: C.grey });
+  b += T(316, ey + 61, "data, which is also the long-period limit.", { size: 8, fill: C.grey });
 
   b += T(18, 308, "Scope of every number above: " + G.scope.feed + " at " + G.scope.pressure_atm +
     " atm, " + G.scope.mechanism + ", " + G.scope.closure + ", element peak below " +
@@ -1017,5 +1022,19 @@ export function designspace(DATA) {
       b += T(x, pbot + 68, r.lo + "  to  " + r.hi, { size: 8.5, weight: "bold" });
     });
   })();
+  return svgDoc(W, H, b);
+}
+
+/* ------------------------------------------------------------------ */
+/* What the prediction buys a designer: the window pulsing wins inside, */
+/* and the baseline that claim has to be made against.                  */
+/* ------------------------------------------------------------------ */
+export function consequence(DATA) {
+  const ns = "rc", W = 505, H = 470;
+  const strip = (svg) => svg.replace(/^<svg[^>]*>/, "").replace(/<\/svg>$/, "")
+    .replace(/<rect width="505" height="\d+" fill="#FFFFFF"\/>/, "");
+  let b = '<rect width="' + W + '" height="' + H + '" fill="#FFFFFF"/>';
+  b += strip(window_(DATA, ["a", "b"]));
+  b += '<g transform="translate(0,250)">' + strip(comparison(DATA, ["c"])) + '</g>';
   return svgDoc(W, H, b);
 }
