@@ -365,27 +365,28 @@ const DATA = {
 };
 
 const PLATES = [
-  /* The reading order is the argument: what the model is, why pulsing could
-     help at all, what the detailed-chemistry baseline is, where that baseline
-     fails, and whether the correction survives an independent test. The
-     two-step network is the rationale rather than the result, so its window
-     sits second and the rest of it moves to the SI.
+  /* The main text is the manuscript's four figures, in its order: the pulsing
+     window and the basis of comparison, the quasi-steady reference and its
+     interpolation check, the departure from quasi-steady behaviour with the
+     development-set result, and the independent evaluation.
 
-     The software-architecture plate is deliberately absent. It documents the
-     repository rather than the chemistry; architecture() is kept for the
-     repository's own documentation and is not part of the figure set. */
-  { id: "rphFig1", label: "Fig. 1", draw: workflow },
-  { id: "rphFig2", label: "Fig. 2", draw: consequence },
-  { id: "rphFig3", label: "Fig. 3", draw: cjhmap },
-  { id: "rphFig4", label: "Fig. 4", draw: memory },
-  { id: "rphFig5", label: "Fig. 5", draw: finalparity },
+     The SI follows the order of the manuscript's Supporting Information
+     paragraph: electrothermal and reactor methods, the consecutive network
+     against detailed chemistry, the definition and the training of the
+     correction, numerical verification, the two designs, the applicability
+     ranges, and software provenance. */
+  { id: "rphFig1", label: "Fig. 1", draw: consequence },
+  { id: "rphFig2", label: "Fig. 2", draw: cjhmap },
+  { id: "rphFig3", label: "Fig. 3", draw: memory },
+  { id: "rphFig4", label: "Fig. 4", draw: finalparity },
   { id: "rphFigS1", label: "Fig. S1", draw: drive },
   { id: "rphFigS2", label: "Fig. S2", draw: detailed },
   { id: "rphFigS3", label: "Fig. S3", draw: method },
-  { id: "rphFigS4", label: "Fig. S4", draw: verification },
-  { id: "rphFigS5", label: "Fig. S5", draw: boundaries },
-  { id: "rphFigS6", label: "Fig. S6", draw: gpdetail },
-  { id: "rphFigS7", label: "Fig. S7", draw: designspace }
+  { id: "rphFigS4", label: "Fig. S4", draw: gpdetail },
+  { id: "rphFigS5", label: "Fig. S5", draw: verification },
+  { id: "rphFigS6", label: "Fig. S6", draw: designspace },
+  { id: "rphFigS7", label: "Fig. S7", draw: boundaries },
+  { id: "rphFigS8", label: "Fig. S8", draw: workflow }
 ];
 for (const plate of PLATES) {
   const svg = plate.draw(DATA);
@@ -408,7 +409,11 @@ const inlined = (src) => src
 const sci = (v) => {
   if (v === 0) return "0";
   const e = Math.floor(Math.log10(Math.abs(v)));
-  if (e >= -2 && e <= 0) return String(p(v, 2));
+  /* three figures in the decimal band, two in the exponent band. The
+     manuscript quotes 0.0276 and 0.020 for the two maxima; at two figures this
+     table would offer 0.028 and 0.02, and an author copying from it would
+     silently coarsen the text. */
+  if (e >= -2 && e <= 0) return String(p(v, 3));
   return (v / Math.pow(10, e)).toFixed(1) + " × 10<sup>" + String(e).replace("-", "&#8722;") + "</sup>";
 };
 /* the two swept periods that bracket the materials bound, read off the sweep
