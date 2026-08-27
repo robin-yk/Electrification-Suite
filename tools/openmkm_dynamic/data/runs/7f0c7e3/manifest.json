@@ -1,0 +1,13 @@
+{
+ "generated": "2026-08-27",
+ "generating_commit": "7f0c7e3b763b56f328fdb7bc902ecff8eec5af5a",
+ "workflow": "rph-scan.yml",
+ "datasets": [
+  {
+   "file": "cjh-grid-validation.json",
+   "rows": 1418,
+   "sha256": "ab99edd6ea7b3fd329b34c9a9803421046b77ae7467b47760845337c4008b99f"
+  }
+ ],
+ "status": "raw run output; promote to canonical/ with promote.py after validation"
+}
