@@ -210,13 +210,6 @@
   .phys-summary { border: 1px solid var(--line); border-radius: 8px; background: #f6f9fb; padding: 9px 11px; font-size: 12px; line-height: 1.6; color: var(--muted); }
   .phys-summary strong { color: var(--navy); font-variant-numeric: tabular-nums; }
   .chem-result { display: grid; gap: 14px; }
-  .chem-bars { display: grid; gap: 16px; }
-  .chem-bar-head { display: flex; justify-content: space-between; gap: 14px; margin-bottom: 6px; color: var(--navy); font-size: 13px; font-weight: 700; }
-  .chem-bar-head output { font-variant-numeric: tabular-nums; }
-  .chem-bar-track { height: 20px; overflow: hidden; border: 1px solid var(--line); border-radius: 4px; background: var(--soft); }
-  .chem-bar-fill { width: 0; height: 100%; transition: width 120ms ease-out; }
-  .chem-bar-fill.cjh { background: var(--blue); }
-  .chem-bar-fill.rph { background: var(--red); }
   .chem-question { margin: 0; color: var(--navy); font-size: 17px; font-weight: 700; }
   .chem-answer { margin: 5px 0 0; color: var(--muted); font-size: 13px; }
   .prediction-flow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 26px; margin: 18px 0; counter-reset: prediction-step; }
@@ -828,21 +821,6 @@
         <div class="kpi" id="chemDeltaKpi"><div class="kpi-label">RPH &minus; CJH</div><div class="kpi-value" id="chemDelta">&mdash;</div><div class="kpi-sub">conversion percentage points</div></div>
         <div class="kpi"><div class="kpi-label">RPH / CJH</div><div class="kpi-value" id="chemRatio">&mdash;</div><div class="kpi-sub">conversion ratio</div></div>
       </div>
-
-      <article class="card">
-        <div class="card-header"><h3>Same condition, two answers</h3></div>
-        <div class="card-body chem-bars">
-          <div>
-            <div class="chem-bar-head"><span>CJH conversion</span><output id="chemCjhBarOut">&mdash;</output></div>
-            <div class="chem-bar-track"><div class="chem-bar-fill cjh" id="chemCjhBar"></div></div>
-          </div>
-          <div>
-            <div class="chem-bar-head"><span>RPH conversion</span><output id="chemRphBarOut">&mdash;</output></div>
-            <div class="chem-bar-track"><div class="chem-bar-fill rph" id="chemRphBar"></div></div>
-          </div>
-          <div class="phys-summary" id="chemVerdict">Loading the detailed-chemistry model.</div>
-        </div>
-      </article>
 
       <div id="chemReactorHost"></div>
 
@@ -2169,12 +2147,9 @@ const formatConversion = value => {
   return percent.toFixed(percent < 1 ? 2 : 1) + "%";
 };
 
-function clearChemistryResult(message) {
-  ["chemCjh", "chemRph", "chemDelta", "chemRatio", "chemCjhBarOut", "chemRphBarOut"]
+function clearChemistryResult() {
+  ["chemCjh", "chemRph", "chemDelta", "chemRatio"]
     .forEach(id => { document.getElementById(id).textContent = "—"; });
-  document.getElementById("chemCjhBar").style.width = "0";
-  document.getElementById("chemRphBar").style.width = "0";
-  document.getElementById("chemVerdict").textContent = message;
   document.getElementById("chemDeltaKpi").className = "kpi warn";
 }
 
@@ -2193,21 +2168,21 @@ function renderChemistry(prediction = chemistryPrediction()) {
   if (state.surrogateLoadFailed) {
     status.textContent = "unavailable";
     status.className = "status warn";
-    clearChemistryResult("The detailed-chemistry data could not be loaded.");
+    clearChemistryResult();
     return;
   }
   if (!state.surrogateBundle) {
-    clearChemistryResult("Loading the chemistry model.");
+    clearChemistryResult();
     return;
   }
   if (!state.chem.physical) {
-    clearChemistryResult("Computing the physical temperature waveform.");
+    clearChemistryResult();
     return;
   }
   if (!prediction.valid) {
     status.textContent = "outside range";
     status.className = "status warn";
-    clearChemistryResult(`Result unavailable: ${prediction.reason}. Change the inputs.`);
+    clearChemistryResult();
     return;
   }
 
@@ -2223,13 +2198,7 @@ function renderChemistry(prediction = chemistryPrediction()) {
   document.getElementById("chemRph").textContent = rphText;
   document.getElementById("chemDelta").textContent = `${deltaPoints >= 0 ? "+" : ""}${deltaPoints.toFixed(1)} pp`;
   document.getElementById("chemRatio").textContent = ratio === null ? "n/a" : ratio.toFixed(2) + "×";
-  document.getElementById("chemCjhBarOut").textContent = cjhText;
-  document.getElementById("chemRphBarOut").textContent = rphText;
-  document.getElementById("chemCjhBar").style.width = `${Math.max(0, Math.min(100, 100 * xCjh))}%`;
-  document.getElementById("chemRphBar").style.width = `${Math.max(0, Math.min(100, 100 * xRph))}%`;
   document.getElementById("chemDeltaKpi").className = "kpi " + (deltaPoints > 0.2 ? "good" : deltaPoints < -0.2 ? "bad" : "warn");
-  document.getElementById("chemVerdict").innerHTML =
-    `At this condition, CJH conversion is <strong>${cjhText}</strong> and RPH conversion is <strong>${rphText}</strong>.`;
 }
 
 function computeChemistryDrive() {
