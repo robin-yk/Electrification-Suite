@@ -10,7 +10,7 @@ import { SERIES_DEFAULTS, seriesRateConstants, steadySeriesCSTR, integrateSeries
          sampledWaveform, arrheniusRate, transportCoefficient, velocity,
          idealTwoStateAverages, timeAverageTemperature } from "../../apps/rphcjh/solver.js";
 import { predictRphConversion } from "../../apps/rphcjh/surrogate.js";
-import { workflow, drive, comparison, window_, consequence, detailed, verification, boundaries, architecture,
+import { workflow, drive, comparison, window_, consequence, detailed, verification, boundaries,
          cjhmap, memory, finalparity, method, gpdetail, designspace } from "./draw.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -365,21 +365,27 @@ const DATA = {
 };
 
 const PLATES = [
-  // Plan B ordering: the contribution starts at Fig. 2 rather than Fig. 7.
-  // The two-step toy is the rationale, not the result, so it moves to the SI.
+  /* The reading order is the argument: what the model is, why pulsing could
+     help at all, what the detailed-chemistry baseline is, where that baseline
+     fails, and whether the correction survives an independent test. The
+     two-step network is the rationale rather than the result, so its window
+     sits second and the rest of it moves to the SI.
+
+     The software-architecture plate is deliberately absent. It documents the
+     repository rather than the chemistry; architecture() is kept for the
+     repository's own documentation and is not part of the figure set. */
   { id: "rphFig1", label: "Fig. 1", draw: workflow },
-  { id: "rphFig2", label: "Fig. 2", draw: cjhmap },
-  { id: "rphFig3", label: "Fig. 3", draw: memory },
-  { id: "rphFig4", label: "Fig. 4", draw: finalparity },
-  { id: "rphFig5", label: "Fig. 5", draw: consequence },
+  { id: "rphFig2", label: "Fig. 2", draw: consequence },
+  { id: "rphFig3", label: "Fig. 3", draw: cjhmap },
+  { id: "rphFig4", label: "Fig. 4", draw: memory },
+  { id: "rphFig5", label: "Fig. 5", draw: finalparity },
   { id: "rphFigS1", label: "Fig. S1", draw: drive },
   { id: "rphFigS2", label: "Fig. S2", draw: detailed },
   { id: "rphFigS3", label: "Fig. S3", draw: method },
   { id: "rphFigS4", label: "Fig. S4", draw: verification },
   { id: "rphFigS5", label: "Fig. S5", draw: boundaries },
-  { id: "rphFigS6", label: "Fig. S6", draw: architecture },
-  { id: "rphFigS7", label: "Fig. S7", draw: gpdetail },
-  { id: "rphFigS8", label: "Fig. S8", draw: designspace }
+  { id: "rphFigS6", label: "Fig. S6", draw: gpdetail },
+  { id: "rphFigS7", label: "Fig. S7", draw: designspace }
 ];
 for (const plate of PLATES) {
   const svg = plate.draw(DATA);
@@ -405,6 +411,15 @@ const sci = (v) => {
   if (e >= -2 && e <= 0) return String(p(v, 2));
   return (v / Math.pow(10, e)).toFixed(1) + " × 10<sup>" + String(e).replace("-", "&#8722;") + "</sup>";
 };
+/* the two swept periods that bracket the materials bound, read off the sweep
+   rather than eyeballed off the plate */
+const capCross = (function () {
+  const S = DATA.sweep, cap = DATA.space.cap;
+  for (let i = 1; i < S.length; i++) {
+    if (S[i - 1].tPeak <= cap && S[i].tPeak > cap) return { lo: S[i - 1], hi: S[i] };
+  }
+  throw new Error("the swept peak never crosses the materials bound; Fig. 2b needs rewording");
+})();
 const TOKENS = {
   COMMIT: DATA.commit, DATACOMMIT: DATA.dataCommit, TITLE: "RPH vs CJH Figure Plates",
   MAP_NODES: String(DATA.map.nodes).replace(/(\d)(\d{3})$/, "$1,$2"),
@@ -421,7 +436,23 @@ const TOKENS = {
   FV_CJH: sci(DATA.final.cjhMean),
   /* the iso-conversion baseline temperature, read off the same bundle the
      plate draws its table from, so the caption cannot drift from panel c */
-  ISOX_T: DATA.compare.cjh[2].TC.toFixed(0)
+  ISOX_T: DATA.compare.cjh[2].TC.toFixed(0),
+  /* the span in period over residence time that the cases with a ratio of two
+     or more actually occupy, so the caption cannot describe a band the plate
+     does not shade */
+  BAND_LO: DATA.mem.band.lo.toFixed(2), BAND_HI: DATA.mem.band.hi.toFixed(0),
+  /* the interval in which the swept peak crosses the materials bound. The
+     ratio in Fig. 2a falls below one over the same interval, so the caption
+     has to be able to name both ends rather than assert a design window */
+  CAP_C: String(DATA.space.cap),
+  CAP_LO_P: String(capCross.lo.period), CAP_LO_T: capCross.lo.tPeak.toFixed(0),
+  CAP_HI_P: String(capCross.hi.period), CAP_HI_T: capCross.hi.tPeak.toFixed(0),
+  /* the stiff group also holds the shipped drive, so the caption names only
+     the drives whose peak actually exceeds the bound */
+  STRESS_V: (function () {
+    const o = DATA.verify.stiff.filter((r) => r.tPeak > DATA.space.cap).map((r) => r.volts);
+    return o.length > 1 ? o.slice(0, -1).join(", ") + " and " + o[o.length - 1] : String(o[0]);
+  })()
 };
 let body = shared("templates/head.html") + read("templates/body.html");
 for (const [k, v] of Object.entries(TOKENS)) body = body.replaceAll("{{" + k + "}}", v);

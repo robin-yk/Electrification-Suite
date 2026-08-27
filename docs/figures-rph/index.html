@@ -132,39 +132,39 @@ footer{margin-top:72px;padding-top:20px;border-top:1px solid var(--rule-strong);
 <div class="plate"></div>
 <div class="tools"><button data-src="rphFig1">Show SVG source</button><button data-png="rphFig1">Render 600 dpi</button><button data-copy="rphFig1">Copy SVG</button><span class="hint"></span></div>
 <textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Fig. 1.</b> The two model layers the application carries. They answer different questions and are kept apart deliberately. The upper layer is a generic two-step network in arbitrary units: it cannot predict any real yield, and it is the only layer that explains why time-averaging can help at all, which is why the screening test and the selectivity comparison both live there. The lower layer is detailed chemistry on a fixed feed and predicts one quantity, methane conversion, for both continuous and pulsed operation at the same setting. It reports no selectivity, because no selectivity model has passed a test. Both layers are driven by the same integrated element temperature, so a waveform examined in one is the waveform used by the other. Tab names are those of the application at the stamped revision.</div>
+<div class="cap"><b>Fig. 1.</b> The two model layers the application carries. They answer different questions and are kept apart deliberately. The upper layer is a generic two-step network in arbitrary units. It cannot predict any real yield, and it provides the interpretable account of why temperature pulsing can alter intermediate yield, which is why the screening test and the selectivity comparison both live there. The lower layer is detailed chemistry on a fixed feed and predicts one quantity, methane conversion, for both continuous and pulsed operation at the same setting. It reports no selectivity, because no selectivity model has passed a test. Both layers are driven by the same integrated element temperature, so a waveform examined in one is the waveform used by the other. The small grey labels are the application's tab names at the stamped revision, given so that a reader can find each control.</div>
 </figure>
 
 <figure id="rphFig2">
-<div class="figbar"><span class="figno">Fig. 2</span><span class="figwhere">Main text &#183; The CJH map, and the map checked between its nodes</span><span class="figsize">178 mm</span></div>
+<div class="figbar"><span class="figno">Fig. 2</span><span class="figwhere">Main text &#183; The pulsing window and the basis of comparison</span><span class="figsize">178 mm</span></div>
 <div class="plate"></div>
 <div class="tools"><button data-src="rphFig2">Show SVG source</button><button data-png="rphFig2">Render 600 dpi</button><button data-copy="rphFig2">Copy SVG</button><span class="hint"></span></div>
 <textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Fig. 2.</b> The continuous baseline the predictor reads. (a) Steady CSTR conversion of CH&#8324; over element temperature and residence time: 2,251 Cantera solves on GRI-Mech 3.0, 1 atm, 1:1 CH&#8324; and CO&#8322; feed, at 25 &#176;C spacing refined to 5 &#176;C wherever a column crosses the ignition cliff, over 25 log-spaced residence-time columns. The line is the locus where conversion crosses one half; its staircase is the refinement doing its job, not noise. (b) The map checked where it is actually read, between the nodes: 200 seeded off-node points, each solved with the same steady CSTR the grid used and compared against logit-bilinear interpolation of the committed grid. Median 9.4 × 10<sup>&#8722;7</sup>, p95 3.4 × 10<sup>&#8722;4</sup>, worst 6.2 × 10<sup>&#8722;4</sup> in absolute conversion against the 0.02 promotion gate, so the baseline spends well under a tenth of the error budget the model on top of it is held to. Reproduce with <code>tools/openmkm_dynamic/run_cjh_validate.py</code>; data from <code>canonical/cjh-grid.jsonl</code> and <code>canonical/cjh-grid-validation.json</code>.</div>
+<div class="cap"><b>Fig. 2.</b> Pulsing helps inside a window, and only against the right baseline. (a) Yield of the intermediate relative to a continuous run at the same conversion, against pulse period at fixed voltage and duty. The gain peaks near a 1 s period and falls below one at long periods. The dashed curve is the control: the same network with its two activation energies set equal, so the structure is kept and only the separation of timescales is removed. It sits at unity wherever the element can follow, which is the statement that the separation, not the pulsing, produces the gain. (b) The temperatures behind both ends of the window. Below about 0.2 s the element cannot swing and the pulsed case is a continuous case. At the upper end the ratio falls below one, but the calculated peak leaves the material-property range over the same interval: it crosses the 1800 &#176;C bound between 2 s (1253 &#176;C) and 5 s (1863 &#176;C), shaded. The decline there is the mathematical response of a lumped element that carries no melting, sublimation or oxidation limit, so the upper edge of the window is not established as a feasible operating boundary. (c) The same pulsed run against three continuous baselines. Matched on time-average temperature or on electrical power the pulsed run appears better by two orders of magnitude; both comparisons emphasise the nonlinear contribution of the peak temperature without separating it from the change in overall conversion. Matching conversion removes the shift along the conversion-selectivity relation and gives the most direct comparison of intermediate preservation: the continuous run needs 888 &#176;C and still ends with less of the intermediate. The two greyed rows are shown rather than dropped so a reader can see which basis any claim rests on. Arbitrary kinetics throughout, as in Fig. 1.</div>
 </figure>
 
 <figure id="rphFig3">
-<div class="figbar"><span class="figno">Fig. 3</span><span class="figwhere">Main text &#183; The memory effect, and the learned correction</span><span class="figsize">178 mm</span></div>
+<div class="figbar"><span class="figno">Fig. 3</span><span class="figwhere">Main text &#183; The quasi-steady baseline and its interpolation check</span><span class="figsize">178 mm</span></div>
 <div class="plate"></div>
 <div class="tools"><button data-src="rphFig3">Show SVG source</button><button data-png="rphFig3">Render 600 dpi</button><button data-copy="rphFig3">Copy SVG</button><span class="hint"></span></div>
 <textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Fig. 3.</b> What the transient does that no steady blend can, and what the trained correction makes of it. (a) Transient CH&#8324; conversion over its outflow-weighted quasi-steady baseline for the 242 live cases of the physical-drive campaign, against pulse period over residence time. At long periods the ratio returns to one, which is the quasi-steady limit behaving as it must; the departure concentrates where the period sits within a factor of a few of the residence time with deep cold swings, and reaches 6.0x. The outflow weighting matters: at constant pressure the hot instants carry less of the collected product, and an equal-time blend at this axis's right edge would manufacture a spurious ratio of 0.72 where the true value is 1. 43 further cases with both sides below 10<sup>&#8722;6</sup> carry no information and are not drawn. (b) The corrected prediction's error against the shortcut's error it replaces, every point computed through the identical inference module the browser imports (<code>apps/rphcjh/surrogate.js</code>). The diagonal is no improvement. Cases seen in fitting sit low because a Gaussian process interpolates its own data; the 48 held-out cases, chosen by farthest-point coverage and untouched during fitting, are the evidence: mean 2.8 × 10<sup>&#8722;3</sup>, p95 0.012, max 0.028, against 0.034 for the uncorrected shortcut on the same cases. Reproduce with <code>tools/openmkm_dynamic/train_surrogate.py</code> on <code>canonical/design-physical.jsonl</code>.</div>
+<div class="cap"><b>Fig. 3.</b> The continuous baseline the predictor reads. (a) Steady CSTR conversion of CH&#8324; over element temperature and residence time: 2,251 Cantera solves on GRI-Mech 3.0, 1 atm, 1:1 CH&#8324; and CO&#8322; feed, at 25 &#176;C spacing refined to 5 &#176;C wherever a column crosses the steep conversion front, over 25 log-spaced residence-time columns. The line is the locus where conversion crosses one half; its staircase is the refinement doing its job, not noise. (b) The map checked where it is actually read, between the nodes: 200 seeded off-node points, each solved with the same steady CSTR the grid used and compared against logit-bilinear interpolation of the committed grid. Median 9.4 × 10<sup>&#8722;7</sup>, p95 3.4 × 10<sup>&#8722;4</sup>, worst 6.2 × 10<sup>&#8722;4</sup> in absolute conversion. The dashed line at 0.02 is the error criterion assigned to the complete prediction, not a threshold fitted to the interpolator, so the comparison states how much of that budget the baseline spends: under a tenth of it. Reproduce with <code>tools/openmkm_dynamic/run_cjh_validate.py</code>; data from <code>canonical/cjh-grid.jsonl</code> and <code>canonical/cjh-grid-validation.json</code>.</div>
 </figure>
 
 <figure id="rphFig4">
-<div class="figbar"><span class="figno">Fig. 4</span><span class="figwhere">Main text &#183; The sealed final test</span><span class="figsize">178 mm</span></div>
+<div class="figbar"><span class="figno">Fig. 4</span><span class="figwhere">Main text &#183; Departure from quasi-steady behaviour, and the correction</span><span class="figsize">178 mm</span></div>
 <div class="plate"></div>
 <div class="tools"><button data-src="rphFig4">Show SVG source</button><button data-png="rphFig4">Render 600 dpi</button><button data-copy="rphFig4">Copy SVG</button><span class="hint"></span></div>
 <textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Fig. 4.</b> The sealed test the shipped model is judged by. 64 physical-drive cases were frozen by content hash before any prediction existed, drawn from unused Halton inputs with only feasibility filters, never admitted to training, then integrated once in Cantera and compared once against the exact browser bundle. (a) Parity on a logarithmic axis spanning five decades of conversion. Open circles are the CJH map read at the drive's waveform with no correction; filled circles add the learned correction. The shortcut is systematically low wherever the memory effect is strong, and the correction moves those cases onto the diagonal without disturbing the ones that were already there. (b) The same 64 errors as a distribution. With the correction: mean 2.9 × 10<sup>&#8722;3</sup>, p95 0.013, max 0.02, inside all four gates stated before the test ran; the uncorrected shortcut's mean is 0.048 on the identical cases. Verdict PASS, printed by the evaluator, not asserted here. Reproduce with <code>tools/openmkm_dynamic/make_final_validation.py</code>; data from <code>canonical/final-validation-report.json</code>, promoted from CI run 33028238488.</div>
+<div class="cap"><b>Fig. 4.</b> What the transient does that no steady blend can, and what the trained correction makes of it. (a) Transient CH&#8324; conversion over its outflow-weighted quasi-steady baseline for the 242 reacting cases of the physical-drive campaign, against pulse period over residence time. At long periods the ratio returns to one, which is the quasi-steady limit behaving as it must. The departure is concentrated where the pulse period is of the same order as the residence time with deep cooling excursions: the cases at or above a ratio of two occupy 0.43 to 18 in period over residence time, shaded, with a median near 2, and the largest ratio is 6.0x. The outflow weighting matters: at constant pressure the hot instants carry less of the collected product, and an equal-time blend at this axis's right edge would manufacture a spurious ratio of 0.72 where the true value is 1. 43 further cases with both sides below 10<sup>&#8722;6</sup> are treated as nonreactive and are not drawn. (b) The corrected prediction's error against the error of the quasi-steady approximation it replaces, every point computed through the identical inference module the browser imports (<code>apps/rphcjh/surrogate.js</code>). The diagonal is no improvement. Training cases sit low because a Gaussian process interpolates its own data. The 48 development test cases, chosen by farthest-point coverage and untouched during fitting, quantify the improvement after targeted enrichment: mean 2.8 × 10<sup>&#8722;3</sup>, p95 0.012, max 0.028, against 0.034 for the uncorrected approximation on the same cases. These cases informed the campaign and are therefore development evidence; independent performance is reported in Fig. 5. Reproduce with <code>tools/openmkm_dynamic/train_surrogate.py</code> on <code>canonical/design-physical.jsonl</code>.</div>
 </figure>
 
 <figure id="rphFig5">
-<div class="figbar"><span class="figno">Fig. 5</span><span class="figwhere">Main text &#183; What the prediction buys a designer</span><span class="figsize">178 mm</span></div>
+<div class="figbar"><span class="figno">Fig. 5</span><span class="figwhere">Main text &#183; Independent evaluation of the final model</span><span class="figsize">178 mm</span></div>
 <div class="plate"></div>
 <div class="tools"><button data-src="rphFig5">Show SVG source</button><button data-png="rphFig5">Render 600 dpi</button><button data-copy="rphFig5">Copy SVG</button><span class="hint"></span></div>
 <textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Fig. 5.</b> Pulsing helps inside a window, and only against the right baseline. (a) Yield of the intermediate relative to a continuous run at the same conversion, against pulse period at fixed voltage and duty. The gain peaks near a 1 s period and falls below one at long periods, where pulsing is a loss. The dashed curve is the control: the same network with its two activation energies set equal, so the structure is kept and only the separation of timescales is removed. It sits at unity wherever the element can follow, which is the statement that the separation, not the pulsing, produces the gain. (b) The temperatures behind both ends of the window. Below about 0.2 s the element cannot swing and the pulsed case is a continuous case; above about 2 s the peak runs away and the intermediate is destroyed faster than it is formed. The lumped element carries no melting, sublimation or oxidation limit, so the peak temperatures at the longest periods are the model's and not a claim about a real element. (c) The same pulsed run against three continuous baselines. Matched on time-average temperature or on electrical power the pulsed run appears better by two orders of magnitude, and both comparisons hide that the peak does the work. Matched on conversion, the strictest basis and the only one that removes the slide along the selectivity-conversion curve, the continuous run needs 888 &#176;C and still ends with less of the intermediate. The two greyed rows are shown rather than dropped so a reader can see which basis any claim rests on.</div>
+<div class="cap"><b>Fig. 5.</b> Independent evaluation of the final dynamic correction. 64 physical-drive cases were selected from previously unused low-discrepancy inputs with only feasibility filters applied, fixed before the final model was evaluated, and excluded from all fitting and model-selection steps. (a) Predicted against transient Cantera methane conversion on a logarithmic axis spanning five decades. Open symbols are the quasi-steady approximation read at the drive's waveform; filled symbols add the learned correction. The approximation is systematically low wherever the departure of Fig. 4a is strong, and the correction moves those cases onto the diagonal without disturbing the ones that were already there. (b) Cumulative distribution of absolute conversion error over the same 64 cases. The corrected model gives a mean error of 2.9 × 10<sup>&#8722;3</sup>, a 95th-percentile error of 0.013 and a maximum error of 0.02, against a mean of 0.048 for the quasi-steady approximation. All four prescribed final-test criteria were satisfied; the reported metrics were generated by the committed evaluation script. The input set and model revision were recorded by content hash before evaluation. Reproduce with <code>tools/openmkm_dynamic/make_final_validation.py</code>; data from <code>canonical/final-validation-report.json</code>, promoted from CI run 33028238488.</div>
 </figure>
 
 <figure id="rphFigS1">
@@ -176,19 +176,19 @@ footer{margin-top:72px;padding-top:20px;border-top:1px solid var(--rule-strong);
 </figure>
 
 <figure id="rphFigS2">
-<div class="figbar"><span class="figno">Fig. S2</span><span class="figwhere">Supporting Information &#183; Where the two-step network comes from</span><span class="figsize">178 mm</span></div>
+<div class="figbar"><span class="figno">Fig. S2</span><span class="figwhere">Supporting Information &#183; Relation to detailed chemistry</span><span class="figsize">178 mm</span></div>
 <div class="plate"></div>
 <div class="tools"><button data-src="rphFigS2">Show SVG source</button><button data-png="rphFigS2">Render 600 dpi</button><button data-copy="rphFigS2">Copy SVG</button><span class="hint"></span></div>
 <textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Fig. S2.</b> The two-step network against detailed chemistry. (a) Effective first-order rate constant for methane consumption from two mechanisms of very different size, computed offline in Cantera and shipped with the page. Their curves lie on top of one another, and the slopes fitted over the shaded window give effective activation energies within one per cent of each other and within four per cent of the value the two-step model uses. The agreement is evidence about the lumped kinetics, not about a shared implementation: the two mechanisms share no reactions beyond the elementary steps they both contain. (b) Steady one-dimensional plug-flow states from OpenMKM over the same element temperatures, gas phase only, on a 1:1 methane and carbon dioxide feed. Conversion climbs steeply while C&#8322; selectivity falls as conversion rises, which is the behaviour the two-step network reproduces. The carbon that does not leave as C&#8322; leaves as CO, through the dry-reforming route the carbon dioxide co-feed opens, which is why the CO fraction climbs alongside conversion. Selectivity is drawn only above a tenth of a per cent conversion: below that it is a ratio of mole fractions at the 10<sup>&#8722;9</sup> level, and one of them can come back slightly negative from the integrator, so a curve there would be reporting arithmetic noise as chemistry. These steady states are also what a slow pulse blends between: the hot-zone residence time is milliseconds against pulse periods of order a second, so a pulsed run is close to the duty-weighted mixture of them.</div>
+<div class="cap"><b>Fig. S2.</b> The two-step network against detailed chemistry. (a) Effective first-order rate constant for methane consumption from two mechanisms of very different size, computed offline in Cantera and shipped with the page. Their curves lie on top of one another, and the slopes fitted over the shaded window give effective activation energies within one per cent of each other and within four per cent of the value the two-step model uses. The agreement indicates similar effective temperature sensitivity for methane consumption over the fitted interval, despite the different sizes and scopes of the two mechanisms. (b) Steady one-dimensional plug-flow states from OpenMKM over the same element temperatures, gas phase only, on a 1:1 methane and carbon dioxide feed. Conversion climbs steeply while C&#8322; selectivity falls as conversion rises, which is the behaviour the two-step network reproduces. CO becomes increasingly important among the reported products as conversion rises, consistent with the dry-reforming pathways the CO&#8322; co-feed opens; no closed carbon balance over all pools is claimed here. Selectivity is drawn only above a tenth of a per cent conversion: below that it is a ratio of mole fractions at the 10<sup>&#8722;9</sup> level, and one of them can come back slightly negative from the integrator, so a curve there would report arithmetic noise as chemistry. These plug-flow calculations are a qualitative detailed-chemistry comparison. The quantitative quasi-steady baseline the dynamic predictor reads is the constant-pressure CSTR map of Fig. 3, not these states.</div>
 </figure>
 
 <figure id="rphFigS3">
-<div class="figbar"><span class="figno">Fig. S3</span><span class="figwhere">Supporting Information &#183; How the correction is trained and applied</span><span class="figsize">178 mm</span></div>
+<div class="figbar"><span class="figno">Fig. S3</span><span class="figwhere">Supporting Information &#183; Construction of the dynamic correction</span><span class="figsize">178 mm</span></div>
 <div class="plate"></div>
 <div class="tools"><button data-src="rphFigS3">Show SVG source</button><button data-png="rphFigS3">Render 600 dpi</button><button data-copy="rphFigS3">Copy SVG</button><span class="hint"></span></div>
 <textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Fig. S3.</b> Where a training label comes from, and what is done with it. (a) A drive setting is integrated on the element model to a periodic T(t), and that one waveform is then read twice. Cantera integrates the transient CSTR through it and reports the outflow-weighted conversion the cycle actually delivers; the steady map of Fig. 2 is read at each phase of the same waveform and blended with the same outflow weighting. The label is the difference of their log-odds. Working in log-odds rather than in conversion is what lets a case near 10<sup>&#8722;5</sup> and a case near unity be corrected on one scale, and it is why nothing in the pipeline needs a separate treatment for small conversions. The numbers shown are the campaign's strongest memory case, selected by rule rather than chosen, so it is the hardest case in the set rather than a flattering one. (b) The correction is a Gaussian process over five inputs, and the prediction is the baseline's log-odds plus the correction, passed back through a sigmoid. Two properties follow from that form rather than from tuning: the sigmoid cannot return a conversion outside (0,&#8239;1), and a zero-mean prior sends the correction to zero where there is no data, which is also what the physics requires at long period. Voltage is absent from the inputs because the element model has already spent it producing the two temperatures that are present.</div>
+<div class="cap"><b>Fig. S3.</b> Where a training label comes from, and what is done with it. (a) A drive setting is integrated on the element model to a periodic T(t), and that one waveform is then read twice. Cantera integrates the transient CSTR through it and reports the outflow-weighted conversion the cycle actually delivers; the steady map of Fig. 3 is read at each phase of the same waveform and blended with the same outflow weighting. The label is the difference of their log-odds. Working in log-odds rather than in conversion is what lets a case near 10<sup>&#8722;5</sup> and a case near unity be corrected on one scale, and it avoids a singular ratio label at low but resolved conversion. Cases for which both calculations remain below 10<sup>&#8722;6</sup> are treated as nonreactive and excluded from fitting. The numbers shown are the campaign's strongest departure, selected by rule rather than chosen, so it is the hardest case in the set rather than a flattering one. (b) The correction is a Gaussian process over five inputs, and the prediction is the baseline's log-odds plus the correction, passed back through a sigmoid. The sigmoid form cannot return a conversion outside (0,&#8239;1). The zero-mean prior regularises unsupported corrections toward zero; recovery of the long-period quasi-steady limit is not imposed by that prior and is evaluated separately over the validated domain. Voltage is absent from the inputs because the element model has already spent it producing the two temperatures that are present.</div>
 </figure>
 
 <figure id="rphFigS4">
@@ -196,39 +196,31 @@ footer{margin-top:72px;padding-top:20px;border-top:1px solid var(--rule-strong);
 <div class="plate"></div>
 <div class="tools"><button data-src="rphFigS4">Show SVG source</button><button data-png="rphFigS4">Render 600 dpi</button><button data-copy="rphFigS4">Copy SVG</button><span class="hint"></span></div>
 <textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Fig. S4.</b> What each part of the solver is checked against, and how closely. The division is the informative part. Two quantities are integrated with a finite step and are limited by it: driving at full duty must reproduce the steady voltage-drive solve, and the electrical energy put in over one cycle must equal the energy lost over the same cycle. Two are exact by construction and are limited only by floating-point arithmetic: at a constant temperature the periodic solver must return the closed-form steady state of the same network, and the inversion that finds the continuous temperature for a target conversion must round trip through its own steady conversion. The last group stresses the stiff limit, where the fast step runs up to twelve orders faster than the cycle it sits in; what is measured there is the periodicity the two-pass construction claims, since the mole balance closes by definition and could not fail. Every residual on this plate is computed when the page is built, not recorded from a previous run.</div>
+<div class="cap"><b>Fig. S4.</b> What each part of the solver is checked against, and how closely. The division is the informative part. Two quantities are integrated with a finite step and are limited by it: driving at full duty must reproduce the steady voltage-drive solve, and the electrical energy put in over one cycle must equal the energy lost over the same cycle. Two are exact by construction and are limited only by floating-point arithmetic: at a constant temperature the periodic solver must return the closed-form steady state of the same network, and the inversion that finds the continuous temperature for a target conversion must round trip through its own steady conversion. The last group stresses the stiff limit, where the fast step runs up to twelve orders faster than the cycle it sits in; what is measured there is the periodicity the two-pass construction claims, since the mole balance closes by definition and could not fail. The 80 and 120 V drives in that group are numerical tests. Their peaks lie far outside the material-property range, they are not operating conditions, and they enter neither the physical interpretation nor the fitted correction. Every residual on this plate is computed when the page is built, not recorded from a previous run.</div>
 </figure>
 
 <figure id="rphFigS5">
-<div class="figbar"><span class="figno">Fig. S5</span><span class="figwhere">Supporting Information &#183; Where each layer stops</span><span class="figsize">178 mm</span></div>
+<div class="figbar"><span class="figno">Fig. S5</span><span class="figwhere">Supporting Information &#183; Scope and limitations</span><span class="figsize">178 mm</span></div>
 <div class="plate"></div>
 <div class="tools"><button data-src="rphFigS5">Show SVG source</button><button data-png="rphFigS5">Render 600 dpi</button><button data-copy="rphFigS5">Copy SVG</button><span class="hint"></span></div>
 <textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Fig. S5.</b> The four layers of the model, each with what it solves, the assumption that licenses it, and the question it therefore cannot answer. The rows are ordered outward from the element. Reading the third column is the point of the plate: a limitation stated without the assumption behind it reads as an apology, and an assumption stated without its consequence reads as a boast. The last line applies to all four rows and is the one most easily forgotten, since the solver will happily report a peak temperature that no element would survive.</div>
+<div class="cap"><b>Fig. S5.</b> The four layers of the model, each with what it solves, the assumption that licenses it, and the question it therefore cannot answer. The rows are ordered outward from the element. Reading the third column is the point of the plate: a limitation stated without the assumption behind it reads as an apology, and an assumption stated without its consequence reads as a boast. The last line applies to all four rows and is the one most easily forgotten, since the solver will report a peak temperature that no element would survive.</div>
 </figure>
 
 <figure id="rphFigS6">
-<div class="figbar"><span class="figno">Fig. S6</span><span class="figwhere">Supporting Information &#183; Software and development</span><span class="figsize">178 mm</span></div>
+<div class="figbar"><span class="figno">Fig. S6</span><span class="figwhere">Supporting Information &#183; Kernel length scales and development-set comparison</span><span class="figsize">178 mm</span></div>
 <div class="plate"></div>
 <div class="tools"><button data-src="rphFigS6">Show SVG source</button><button data-png="rphFigS6">Render 600 dpi</button><button data-copy="rphFigS6">Copy SVG</button><span class="hint"></span></div>
 <textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Fig. S6.</b> Verification-gated development and modular architecture. (a) A revision reaches the released application only after passing the repository's own gates: the regression suite, the per-cycle energy balance, the analytic recoveries of Fig. S4, and the periodicity of the stiff cases. Implementation and review were AI-assisted, with an independent second model used for cross-review; every physical and numerical decision was adjudicated by the human author. (b) The numerical core is a DOM-free module with no dependencies. The kinetic parameters, the element and enclosure description, and the browser interface each attach to it separately, so a rate constant can be changed, an element redescribed, or the interface reworked without rebuilding the application, and any change is checked by rerunning the same tests.</div>
+<div class="cap"><b>Fig. S6.</b> The fitted correction, examined rather than asserted. (a) One length scale per input, fitted rather than set. A short length scale means the correction changes quickly along that input, so the model is reading it; a long one means it is nearly ignored. The element peak temperature is read most strongly, then the baseline conversion and the ratio of period to residence time. Duty is close to ignored, which is the expected result rather than a defect: duty enters the problem through the element model, which has already converted it into the peak and minimum temperatures. (b) Development-set performance against two references and against the development criteria. Model A is the quasi-steady approximation used unchanged, which is what the correction has to beat; model B is inverse-distance weighting over the same features, included so that the gain cannot be attributed to interpolation alone. Five criteria appear here and four in Fig. 5: the four predictive-performance criteria were applied to both the development set and the independent test, and the long-period consistency check is a development criterion that formed no part of the independent test. All thresholds were fixed before the model was fitted, and an earlier version failed the maximum-error criterion at 0.127 and was not adopted; the targeted simulations added in response are drawn in Fig. S7a.</div>
 </figure>
 
 <figure id="rphFigS7">
-<div class="figbar"><span class="figno">Fig. S7</span><span class="figwhere">Supporting Information &#183; What the fitted model uses, and how it was scored</span><span class="figsize">178 mm</span></div>
+<div class="figbar"><span class="figno">Fig. S7</span><span class="figwhere">Supporting Information &#183; Allocation of transient simulations</span><span class="figsize">178 mm</span></div>
 <div class="plate"></div>
 <div class="tools"><button data-src="rphFigS7">Show SVG source</button><button data-png="rphFigS7">Render 600 dpi</button><button data-copy="rphFigS7">Copy SVG</button><span class="hint"></span></div>
 <textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Fig. S7.</b> The fitted correction, examined rather than asserted. (a) One length scale per input, fitted rather than set. A short length scale means the correction changes quickly along that input, so the model is reading it; a long one means it is nearly ignored. The element peak temperature is read most strongly, then the baseline conversion and the ratio of period to residence time. Duty is close to ignored, which is the expected result rather than a defect: duty enters the problem through the element model, which has already converted it into the peak and minimum temperatures. (b) Held-out performance against two references and against the acceptance gates. Model A is the quasi-steady shortcut used unchanged, which is what the correction has to beat; model B is inverse-distance weighting over the same features, included so that the gain cannot be attributed to interpolation alone. All gate thresholds were fixed before the model was fitted, and an earlier version of this model failed the maximum-error gate at 0.127 and was not shipped; the round of cases aimed at that failure is drawn in Fig. S8a.</div>
-</figure>
-
-<figure id="rphFigS8">
-<div class="figbar"><span class="figno">Fig. S8</span><span class="figwhere">Supporting Information &#183; Where the Cantera runs were spent</span><span class="figsize">178 mm</span></div>
-<div class="plate"></div>
-<div class="tools"><button data-src="rphFigS8">Show SVG source</button><button data-png="rphFigS8">Render 600 dpi</button><button data-copy="rphFigS8">Copy SVG</button><span class="hint"></span></div>
-<textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Fig. S8.</b> How the transient budget was allocated. (a) The cases the model was fitted on, in the two coordinates that decide whether memory appears at all. The bulk is a low-discrepancy scan over four axes, voltage, period, duty and residence time, with every candidate screened through the element model first: a setting whose peak exceeds the materials bound is rejected before any chemistry is paid for, which is why the cloud stops at that line rather than being trimmed afterwards. The held-out cases were selected by farthest-point coverage, not at random, so the test set spans the space instead of clustering where the scan happened to be dense. The aimed round was added after the first fitted model failed its maximum-error gate in the resonant band, and it targets that band specifically. (b) The sealed test set against the same background. Its cases were frozen by content hash before any prediction existed, drawn from unused scan indices with only feasibility filters applied, and never admitted to fitting. They cover the same region without repeating it, which is what makes Fig. 4 a test rather than a second look at the training data. Not every case drawn in (a) reaches the fit: 43 of them have both conversions below 10<sup>&#8722;6</sup>, carry no information about a correction, and are dropped rather than taught to the model as clamped log-odds, which is why the fitted count in Fig. S3 is smaller than the number of points here.</div>
+<div class="cap"><b>Fig. S7.</b> How the transient budget was allocated. (a) The development campaign in the two coordinates that decide whether a departure from quasi-steady behaviour appears at all. The three sets are disjoint and together are every case integrated. The bulk is a low-discrepancy scan over four axes, voltage, period, duty and residence time, with every candidate screened through the element model first: a setting whose peak exceeds the materials bound is rejected before any chemistry is paid for, which is why the cloud stops at that line rather than being trimmed afterwards. The development test cases were drawn out of that same scan by farthest-point coverage rather than at random, so they span the space instead of clustering where the scan happened to be dense, and they were set aside before fitting. The targeted simulations were added after the first fitted model failed its maximum-error criterion in the resonant band, and they target that band specifically. (b) The independent test set against the same background. Its cases were fixed by content hash before any prediction existed, drawn from unused scan indices with only feasibility filters applied, and never admitted to fitting. They cover the same region without repeating it, which is what makes Fig. 5 a test rather than a second look at the development data. Not every case drawn in (a) reaches the fit: 43 of them have both conversions below 10<sup>&#8722;6</sup>, carry no information about a correction, and are treated as nonreactive rather than taught to the model as clamped log-odds, which is why the fitted count in Fig. S3 is smaller than the number of points here.</div>
 </figure>
 
 <footer class="colophon">Artwork generated from apps/rphcjh/solver.js at commit c5a72bf by docs/figures-rph/make-figures.mjs. The page does not run the solver; the values were computed from that commit and frozen into one data object, so a figure and the manuscript text cannot drift apart.</footer>
@@ -332,7 +324,7 @@ const lin = (v, lo, hi, a, c) => a + (v - lo) / (hi - lo) * (c - a);
 const lg = (v) => Math.log10(v);
 
 /* ------------------------------------------------------------------ */
-/* Fig. 2. The drive the element actually delivers, and the two rate   */
+/* drive(). The drive the element actually delivers, and the two rate  */
 /* constants it swings between.                                        */
 /* ------------------------------------------------------------------ */
 function drive(DATA) {
@@ -413,7 +405,7 @@ function drive(DATA) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Fig. 3. What the pulsed run is compared against, and why the basis  */
+/* comparison(). What the pulsed run is compared against, and why the basis  */
 /* decides the answer.                                                 */
 /* ------------------------------------------------------------------ */
 function comparison(DATA, L) {
@@ -462,7 +454,7 @@ function comparison(DATA, L) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Fig. 4. The window: what closes it from below, and what closes it   */
+/* window_(). The window: what closes it from below, and what closes it  */
 /* from above, with the control that removes the effect entirely.      */
 /* ------------------------------------------------------------------ */
 function window_(DATA, L) {
@@ -524,6 +516,16 @@ function window_(DATA, L) {
     const P = frame(COL[1], L[1], "element temperature (°C)");
     const Y = (v) => lin(v, 0, hi, pbot - 10, ptop + 10);
     let o = P.o;
+    /* the element ODE carries no melting, sublimation or oxidation limit, so it
+       will report a peak of any size. Shade the band above the cap the campaign
+       screens against, so the long-period decline is not read as a design
+       window. Drawn before the grid so the rules stay visible through it. */
+    const cap = DATA.space.cap;
+    if (cap < hi) {
+      o += rect(COL[1], Y(hi), pw, Y(cap) - Y(hi), { fill: TINT.thermal, stroke: "none", sw: 0, rx: 0 });
+      o += line(COL[1], Y(cap), COL[1] + pw, Y(cap), { stroke: C.thermal, sw: 0.8, dash: "3 2" });
+      o += T(COL[1] + 6, Y(cap) - 5, "outside material-property range", { size: 8, fill: SHADE.thermal });
+    }
     for (let t = 0; t <= hi; t += hi / 4) {
       o += line(COL[1], Y(t), COL[1] + pw, Y(t), { stroke: "#EAEAEA", sw: 0.4 });
       o += T(COL[1] - 4, Y(t) + 3, String(Math.round(t)), { size: 8, anchor: "end", fill: C.grey });
@@ -540,7 +542,7 @@ function window_(DATA, L) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Fig. 5. Where the two-step network comes from: the effective        */
+/* detailed(). Where the two-step network comes from: the effective    */
 /* activation energy two detailed mechanisms report, and the steady    */
 /* PFR states a pulse blends between.                                  */
 /* ------------------------------------------------------------------ */
@@ -631,7 +633,7 @@ function detailed(DATA) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Fig. 1. The two model layers the application carries, and what each  */
+/* workflow(). The two model layers the application carries, and what each  */
 /* one is for. Tab names are those of the application at the stamped    */
 /* revision.                                                            */
 /* ------------------------------------------------------------------ */
@@ -649,7 +651,11 @@ function workflow(DATA) {
     tabs.forEach(function (t, i) {
       const x = 30 + i * 228;
       o += rect(x, y + 30, 214, h - 58, { stroke: C.hair, fill: TINT.panel, sw: 0.7, dash: "" });
-      o += T(x + 8, y + 44, t.tab, { size: 9, weight: "bold", fill: shadeOf(hue) });
+      /* the scientific name leads; the application's tab name is kept because
+         a reader reproducing this needs to find the control, but it is set
+         small and grey so it does not compete with what the layer computes */
+      o += T(x + 8, y + 44, t.title, { size: 9, weight: "bold", fill: shadeOf(hue) });
+      o += T(x + 206, y + 44, t.tab, { size: 8, anchor: "end", fill: C.grey });
       t.does.forEach(function (d, k) {
         o += T(x + 8, y + 57 + k * 10, d, { size: 8, fill: C.grey });
       });
@@ -661,19 +667,23 @@ function workflow(DATA) {
   /* the toy: arbitrary units, but it is the layer that explains anything */
   b += lane(20, 118, C.gas, "THE TWO-STEP TOY",
     "why does pulsing help at all", [
-    { tab: "When Pulsing Helps", does: ["one activation energy and a duty",
+    { title: "Ideal rate averaging", tab: "When Pulsing Helps",
+      does: ["one activation energy and a duty",
         "compares ⟨k⟩ against k(⟨T⟩)", "answers before anything is integrated"] },
-    { tab: "A → B → C", does: ["periodic CSTR on the drive's own T(t)",
-        "conversion, intermediate yield, selectivity", "against a continuous run at equal conversion"] }
-  ], "Arbitrary kinetics, so the yields are not a claim about any real chemistry. This layer isolates the averaging effect.");
+    { title: "Two-step network", tab: "A → B → C",
+      does: ["two steps with different activation energies",
+        "periodic CSTR on the drive's own T(t)", "intermediate yield at equal conversion"] }
+  ], "Arbitrary kinetics, so the yields are not a claim about any real chemistry. It is the interpretable layer.");
 
   /* the predictor: real chemistry, and the only layer that gives a number */
   b += lane(154, 118, C.thermal, "THE DETAILED-CHEMISTRY PREDICTOR",
     "how much methane actually converts", [
-    { tab: "Kinetic Effect", does: ["voltage, period, duty, residence time",
+    { title: "Conversion prediction", tab: "Kinetic Effect",
+      does: ["voltage, period, duty, residence time",
         "CJH conversion from the steady map", "RPH conversion from map plus correction"] },
-    { tab: "How RPH Is Predicted", does: ["the map, the transients, the frozen model",
-        "the sealed test and its verdict", "the boundary outside which it refuses"] }
+    { title: "Provenance of the model", tab: "How RPH Is Predicted",
+      does: ["the map, the transients, the frozen model",
+        "the independent test and its criteria", "the domain outside which nothing is reported"] }
   ], "GRI-Mech 3.0 on a fixed feed. Conversion only: no selectivity is predicted here, because none was validated.");
 
   b += line(252, 138, 252, 154, { stroke: C.hair, sw: 0.8, dash: "2 2" });
@@ -693,7 +703,7 @@ function workflow(DATA) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Fig. S1. What each part of the solver is checked against. The split */
+/* verification(). What each part of the solver is checked against. The split  */
 /* is between what is integrated and what is exact by construction.    */
 /* ------------------------------------------------------------------ */
 function verification(DATA) {
@@ -715,11 +725,12 @@ function verification(DATA) {
   /* the reference sits under the check rather than in a column of its own:
      at this width a second column would run into the first */
   let y = 44;
-  const section = (title, note, rows) => {
+  const section = (title, note, rows, sub) => {
     b += T(LX, y, title.toUpperCase(), { size: 8, weight: "bold", fill: SHADE.grey });
     b += T(WX, y, note, { size: 8, anchor: "end", fill: C.grey });
     b += line(LX, y + 5, WX, y + 5, { stroke: C.rule, sw: 0.6 });
     y += 18;
+    if (sub) { b += T(LX + 8, y, sub, { size: 8, fill: SHADE.thermal }); y += 13; }
     rows.forEach(function (r) {
       b += T(LX + 8, y, r.q, { size: 8.5 });
       b += T(NX, y, String(r.n), { size: 8.5, anchor: "end", fill: C.grey });
@@ -733,17 +744,31 @@ function verification(DATA) {
     V.integrated.map((r) => Object.assign({ worstText: sci(r.worst) + " " + r.unit }, r)));
   section("Exact by construction", "limited by the arithmetic",
     V.exact.map((r) => Object.assign({ worstText: sci(r.worst) + " " + r.unit }, r)));
+  /* the high-voltage drives in this group reach peaks far outside the
+     material-property range and are not physical operating points. It is said
+     on the plate, in the accent colour, because a reader scanning the table
+     sees the temperature before any caption. The shipped drive sits in the
+     same group and is not named, so the sentence is built from the cap. */
   section("Periodic under stress", "the fixed point returns to itself however fast the hot step runs",
     V.stiff.map((r) => ({
       q: r.volts + " V drive, peak " + r.tPeak.toFixed(0) + " °C",
       against: "k₁ at the peak reaches " + sci(r.k1) + " s⁻¹, and x_{B} stays inside [0, 1]",
       n: 1, worstText: sci(r.drift) + " drift over a cycle"
-    })));
+    })),
+    /* the group also holds the shipped drive, whose peak is an ordinary
+       operating point. Name only the drives that actually exceed the bound,
+       read off the same cap the campaign screens against. */
+    (function () {
+      const over = V.stiff.filter((r) => r.tPeak > DATA.space.cap).map((r) => r.volts);
+      if (!over.length) return "";
+      return "The " + (over.length > 1 ? over.slice(0, -1).join(", ") + " and " + over[over.length - 1] : over[0]) +
+        " V drives are numerical tests. Their peaks are far outside the material-property range and are not operating points.";
+    })());
   return svgDoc(W, H, b);
 }
 
 /* ------------------------------------------------------------------ */
-/* Fig. S2. Where each layer of the model stops. Read left to right:   */
+/* boundaries(). Where each layer of the model stops. Read left to right:  */
 /* what is solved, on what assumption, and what that forbids.          */
 /* ------------------------------------------------------------------ */
 function boundaries(DATA) {
@@ -790,7 +815,7 @@ function boundaries(DATA) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Fig. S3. The module the page and the tests both call, and the gates */
+/* architecture(). The module the page and the tests both call, and the gates  */
 /* a change passes. No tool or model is named: they date, the          */
 /* structure does not.                                                 */
 /* ------------------------------------------------------------------ */
@@ -844,7 +869,7 @@ function architecture(DATA) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Fig. 6. The steady CJH map the predictor reads, and the map checked */
+/* cjhmap(). The steady CJH map the predictor reads, and the map checked  */
 /* between its nodes, where interpolation actually happens.            */
 /* ------------------------------------------------------------------ */
 const sciT = (v) => {
@@ -931,7 +956,7 @@ function cjhmap(DATA) {
     o += T(x0 + pw / 2, pbot + 24, "off-node temperature (°C)", { size: 8.5, anchor: "middle" });
     o += '<text x="' + (x0 - 30) + '" y="' + ((ptop + pbot) / 2) + '" font-size="8.5" text-anchor="middle" transform="rotate(-90 ' + (x0 - 30) + ' ' + ((ptop + pbot) / 2) + ')">|interpolated − Cantera|</text>';
     o += line(x0, Y(V.gate), x0 + pw, Y(V.gate), { stroke: C.thermal, sw: 0.9, dash: "3 2" });
-    o += T(x0 + pw - 6, Y(V.gate) - 4, "promotion gate " + V.gate, { size: 8, anchor: "end", fill: SHADE.thermal });
+    o += T(x0 + pw - 6, Y(V.gate) - 4, "acceptance criterion, " + V.gate, { size: 8, anchor: "end", fill: SHADE.thermal });
     o += line(x0, Y(V.p95), x0 + pw, Y(V.p95), { stroke: C.grey, sw: 0.8, dash: "3 2" });
     o += T(x0 + pw - 6, Y(V.p95) - 4, "p95 of " + V.points + " points, " + sciT(V.p95), { size: 8, anchor: "end", fill: C.grey });
     V.rows.forEach(function (r) {
@@ -944,7 +969,7 @@ function cjhmap(DATA) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Fig. 7. The memory effect in the transient campaign, and what the  */
+/* memory(). The memory effect in the transient campaign, and what the  */
 /* learned correction does to the quasi-steady shortfall.              */
 /* ------------------------------------------------------------------ */
 function memory(DATA) {
@@ -982,7 +1007,7 @@ function memory(DATA) {
     const top = M.cases.reduce((a, c) => (c.gain > a.gain ? c : a));
     o += T(Math.min(X(top.pt) + 5, x0 + pw - 46), Y(top.gain) + 2, "up to " + M.gainMax.toFixed(1) + "x",
       { size: 8.5, weight: "bold", fill: SHADE.thermal });
-    if (M.band) o += T((X(M.band.lo) + X(M.band.hi)) / 2, ptop + 12, "gain ≥ 2", { size: 8, anchor: "middle", fill: C.grey });
+    if (M.band) o += T((X(M.band.lo) + X(M.band.hi)) / 2, ptop + 12, "X_{dyn} / X_{qs} ≥ 2", { size: 8, anchor: "middle", fill: C.grey });
     b += o;
   })();
 
@@ -999,7 +1024,7 @@ function memory(DATA) {
       o += T(x0 - 4, Y(Math.pow(10, d)) + 3, "10^{" + String(d).replace("-", "−") + "}", { size: 8, anchor: "end", fill: C.grey });
       o += T(X(Math.pow(10, d)), pbot + 12, "10^{" + String(d).replace("-", "−") + "}", { size: 8, anchor: "middle" });
     }
-    o += T(x0 + pw / 2, pbot + 24, "|X_{qs} − X_{dyn}|, the shortcut's error", { size: 8.5, anchor: "middle" });
+    o += T(x0 + pw / 2, pbot + 24, "|X_{qs} − X_{dyn}|, quasi-steady error", { size: 8.5, anchor: "middle" });
     o += '<text x="' + (x0 - 30) + '" y="' + ((ptop + pbot) / 2) + '" font-size="8.5" text-anchor="middle" transform="rotate(-90 ' + (x0 - 30) + ' ' + ((ptop + pbot) / 2) + ')">corrected prediction error</text>';
     o += line(X(1e-7), Y(1e-7), X(1), Y(1), { stroke: C.ink, sw: 0.9, dash: "3 2" });
     o += T(X(2e-2), Y(4e-2), "no improvement", { size: 8, anchor: "end", fill: C.grey });
@@ -1012,10 +1037,10 @@ function memory(DATA) {
       o += '<circle cx="' + X(c.e0).toFixed(1) + '" cy="' + Y(c.e1).toFixed(1) + '" r="2.2" fill="' + C.thermal + '" fill-opacity="0.85"/>';
     });
     o += '<circle cx="' + (x0 + 14) + '" cy="' + (ptop + 14) + '" r="2.2" fill="' + C.thermal + '"/>';
-    o += T(x0 + 20, ptop + 17, "held out, " + M.holdoutN + " cases", { size: 8, fill: SHADE.thermal });
+    o += T(x0 + 20, ptop + 17, "development test, " + M.holdoutN + " cases", { size: 8, fill: SHADE.thermal });
     o += '<circle cx="' + (x0 + 14) + '" cy="' + (ptop + 26) + '" r="1.5" fill="' + C.grey + '"/>';
-    o += T(x0 + 20, ptop + 29, "seen in fitting", { size: 8, fill: C.grey });
-    o += T(x0 + pw - 8, pbot - 24, "held-out mean " + sciT(M.hold.mean), { size: 8, anchor: "end", weight: "bold" });
+    o += T(x0 + 20, ptop + 29, "training cases", { size: 8, fill: C.grey });
+    o += T(x0 + pw - 8, pbot - 24, "development-test mean " + sciT(M.hold.mean), { size: 8, anchor: "end", weight: "bold" });
     o += T(x0 + pw - 8, pbot - 14, "p95 " + sciT(M.hold.p95) + ",  max " + sciT(M.hold.max), { size: 8, anchor: "end" });
     b += o;
   })();
@@ -1023,8 +1048,8 @@ function memory(DATA) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Fig. 8. The sealed test: 64 cases frozen before any prediction      */
-/* existed, integrated once in Cantera, compared once.                 */
+/* finalparity(). The independent test: cases fixed by hash before any  */
+/* prediction existed, integrated once in Cantera, compared once.      */
 /* ------------------------------------------------------------------ */
 function finalparity(DATA) {
   const ns = "r8", W = 505, H = 250;
@@ -1033,7 +1058,7 @@ function finalparity(DATA) {
   const pw = 190, ph = 160, ptop = 30, pbot = 190;
   const COL = [58, 300];
 
-  /* a. parity, the shortcut and the corrected prediction side by side */
+  /* a. parity, the quasi-steady approximation and the correction side by side */
   (function () {
     const x0 = COL[0];
     const A = (v) => lg(Math.min(Math.max(v, 1e-6), 1));
@@ -1091,20 +1116,25 @@ function finalparity(DATA) {
     o += line(x0, Y(0.95), x0 + pw, Y(0.95), { stroke: "#CCCCCC", sw: 0.7, dash: "2 2" });
     o += T(x0 + pw - 8, Y(0.95) + 9, "p95", { size: 8, anchor: "end", fill: C.grey });
     o += line(X(0.05), ptop, X(0.05), pbot, { stroke: C.ink, sw: 0.7, dash: "2 2" });
-    o += T(X(0.05) - 3, ptop + 10, "p95 gate 0.05", { size: 8, anchor: "end", fill: C.grey });
+    o += T(X(0.05) - 3, ptop + 10, "p95 criterion 0.05", { size: 8, anchor: "end", fill: C.grey });
     o += line(x0 + 8, ptop + 14, x0 + 24, ptop + 14, { stroke: C.thermal, sw: 1.6 });
     o += T(x0 + 28, ptop + 17, "with correction", { size: 8, fill: SHADE.thermal });
     o += line(x0 + 8, ptop + 26, x0 + 24, ptop + 26, { stroke: C.grey, sw: 1.2, dash: "3 2" });
-    o += T(x0 + 28, ptop + 29, "CJH shortcut only", { size: 8, fill: C.grey });
+    o += T(x0 + 28, ptop + 29, "quasi-steady, uncorrected", { size: 8, fill: C.grey });
     o += T(x0 + pw - 8, pbot - 24, "mean " + sciT(F.mean) + " against " + sciT(F.cjhMean), { size: 8, anchor: "end", weight: "bold" });
-    o += T(x0 + pw - 8, pbot - 14, "verdict " + F.verdict + ", all four gates", { size: 8, anchor: "end" });
+    /* four criteria here, five in Fig. S6: the long-period consistency check
+       is a development criterion and was never part of the final test, so the
+       two counts are stated separately rather than reconciled */
+    o += T(x0 + pw - 8, pbot - 14, F.verdict === "PASS"
+      ? "all four final-test criteria satisfied"
+      : "final-test criteria not satisfied", { size: 8, anchor: "end" });
     b += o;
   })();
   return svgDoc(W, H, b);
 }
 
 /* ------------------------------------------------------------------ */
-/* Fig. 9. How one training label is made, and how the correction is   */
+/* method(). How one training label is made, and how the correction is  */
 /* learned from it. The worked case is the strongest memory effect in  */
 /* the campaign, selected by rule so it cannot be a flattering pick.   */
 /* ------------------------------------------------------------------ */
@@ -1184,7 +1214,7 @@ function method(DATA) {
   G.kernel.split(", ").forEach(function (part, i) {
     b += T(227, ey + 25 + i * 10, part, { size: 8, anchor: "middle", fill: C.grey });
   });
-  b += T(227, ey + 47, G.nTrain + " cases fitted, " + G.nHold + " held out", { size: 8, anchor: "middle", fill: C.grey });
+  b += T(227, ey + 47, G.nTrain + " fitted, " + G.nHold + " development test", { size: 8, anchor: "middle", fill: C.grey });
   b += T(227, ey + 57, "noise σ_{n} = " + G.sigmaN + " in log-odds", { size: 8, anchor: "middle", fill: C.grey });
   b += T(227, ey + 69, "returns the correction δ", { size: 8, anchor: "middle", weight: "bold", fill: SHADE.thermal });
   b += arrow(ns, "M293," + (ey + 38) + " L307," + (ey + 38), { color: "hair" });
@@ -1202,7 +1232,7 @@ function method(DATA) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Fig. S4. What the fitted kernel says each input is worth, and what  */
+/* gpdetail(). What the fitted kernel says each input is worth, and what  */
 /* the correction was measured against on data it never saw.           */
 /* ------------------------------------------------------------------ */
 function gpdetail(DATA) {
@@ -1242,7 +1272,7 @@ function gpdetail(DATA) {
   (function () {
     const LX = 22, MX = 300, PX = 372, WX = 448, GX = 488, ytop = 228;
     let o = T(18, ytop - 18, "b", { size: 11, weight: "bold" });
-    o += T(34, ytop - 18, "MEASURED ON THE HELD-OUT CASES", { size: 8, weight: "bold", fill: C.grey });
+    o += T(34, ytop - 18, "MEASURED ON THE DEVELOPMENT TEST CASES", { size: 8, weight: "bold", fill: C.grey });
     o += T(MX, ytop - 4, "MEAN", { size: 8, weight: "bold", anchor: "end", fill: C.grey });
     o += T(PX, ytop - 4, "P95", { size: 8, weight: "bold", anchor: "end", fill: C.grey });
     o += T(WX, ytop - 4, "MAX", { size: 8, weight: "bold", anchor: "end", fill: C.grey });
@@ -1258,7 +1288,7 @@ function gpdetail(DATA) {
       y += 15;
     });
     o += line(LX, y - 10, GX, y - 10, { stroke: C.rule, sw: 0.6 });
-    o += T(LX, y + 2, "Gates, all fixed before the model was fitted:", { size: 8, fill: C.grey });
+    o += T(LX, y + 2, "Development criteria, all fixed before the model was fitted:", { size: 8, fill: C.grey });
     const names = Object.keys(G.gates);
     names.forEach(function (k, i) {
       const x = LX + (i % 3) * 160, yy = y + 14 + Math.floor(i / 3) * 11;
@@ -1272,8 +1302,8 @@ function gpdetail(DATA) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Fig. S5. Where the campaign spent its Cantera runs, and where the   */
-/* sealed test sits relative to them.                                  */
+/* designspace(). Where the campaign spent its Cantera runs, and where   */
+/* the independent test sits relative to them.                         */
 /* ------------------------------------------------------------------ */
 function designspace(DATA) {
   const ns = "rs5", W = 505, H = 282;
@@ -1314,34 +1344,41 @@ function designspace(DATA) {
   /* a. the training campaign, and the round aimed at the band it missed */
   (function () {
     const x0 = COL[0];
-    let o = frame(x0, "a", "what the model was fitted on");
+    let o = frame(x0, "a", "the development campaign");
     o += dots(x0, S.train, C.grey, 1.8, 0.45);
     o += dots(x0, S.hold, C.scalar, 2.1, 0.85);
     o += dots(x0, S.aimed, C.thermal, 2.4, 0.9);
-    [[C.grey, "Halton scan", S.train.length, 1.8, 0.45],
-     [C.scalar, "held out", S.hold.length, 2.1, 0.85],
-     [C.thermal, "round two, aimed", S.aimed.length, 2.4, 0.9]].forEach(function (l, i) {
-      const y = pbot - 34 + i * 11;
+    /* the three are disjoint, and the legend has to say so: the development
+       test was drawn out of the same scan, not sampled separately, and the
+       targeted round was added afterwards. Their sum is stated so a reader
+       can check it against the counts elsewhere in the set. */
+    [[C.grey, "scan, for training", S.train.length, 1.8, 0.45],
+     [C.scalar, "scan, set aside for test", S.hold.length, 2.1, 0.85],
+     [C.thermal, "targeted addition", S.aimed.length, 2.4, 0.9]].forEach(function (l, i) {
+      const y = pbot - 45 + i * 11;
       o += '<circle cx="' + (x0 + 14) + '" cy="' + (y - 3) + '" r="' + l[3] + '" fill="' + l[0] + '" fill-opacity="' + l[4] + '"/>';
       o += T(x0 + 22, y, l[1] + ", " + l[2], { size: 8, fill: C.grey });
     });
+    o += T(x0 + 14, pbot - 12, "disjoint sets, " +
+      (S.train.length + S.hold.length + S.aimed.length) + " cases integrated",
+      { size: 8, fill: SHADE.grey });
     b += o;
   })();
 
-  /* b. the sealed set, frozen by hash before any prediction existed */
+  /* b. the independent set, fixed by hash before any prediction existed */
   (function () {
     const x0 = COL[1];
-    let o = frame(x0, "b", "what it was finally tested on");
+    let o = frame(x0, "b", "the independent test set");
     o += dots(x0, S.train.concat(S.hold, S.aimed), C.grey, 1.5, 0.18);
     o += dots(x0, S.sealed, C.thermal, 2.2, 0.9);
     o += '<circle cx="' + (x0 + 14) + '" cy="' + (pbot - 37) + '" r="2.2" fill="' + C.thermal + '"/>';
-    o += T(x0 + 22, pbot - 34, "sealed test, " + S.sealed.length, { size: 8, fill: SHADE.thermal });
+    o += T(x0 + 22, pbot - 34, "independent test, " + S.sealed.length, { size: 8, fill: SHADE.thermal });
     o += '<circle cx="' + (x0 + 14) + '" cy="' + (pbot - 26) + '" r="1.5" fill="' + C.grey + '" fill-opacity="0.35"/>';
     o += T(x0 + 22, pbot - 23, "training campaign, for reference", { size: 8, fill: C.grey });
     b += o;
-    /* the box the shipped model accepts, which is what the two clouds define */
+    /* the box the final model accepts, which is what the two clouds define */
     const LABELS = { voltage_V: "voltage (V)", period_s: "period (s)", duty: "duty", tau_s: "residence time (s)" };
-    b += T(18, pbot + 46, "OUTSIDE THIS BOX THE SHIPPED MODEL REFUSES TO PREDICT", { size: 8, weight: "bold", fill: C.grey });
+    b += T(18, pbot + 46, "OUTSIDE THIS BOX THE FINAL MODEL REPORTS NO PREDICTION", { size: 8, weight: "bold", fill: C.grey });
     S.bounds.forEach(function (r, i) {
       const x = 18 + i * 122;
       b += T(x, pbot + 58, LABELS[r.name] || r.name, { size: 8, fill: C.grey });
@@ -1356,15 +1393,18 @@ function designspace(DATA) {
 /* and the baseline that claim has to be made against.                  */
 /* ------------------------------------------------------------------ */
 function consequence(DATA) {
-  const ns = "rc", W = 505, H = 470;
+  /* The two sources are 250 and 250 pt tall, but the table stops well short of
+     its own frame. Overlap them by 24 pt and cut the sheet where the table's
+     last rule sits, rather than shipping a hundred points of white. */
+  const ns = "rc", W = 505, OFF = 226, H = 386;
   const strip = (svg) => svg.replace(/^<svg[^>]*>/, "").replace(/<\/svg>$/, "")
     .replace(/<rect width="505" height="\d+" fill="#FFFFFF"\/>/, "");
   let b = '<rect width="' + W + '" height="' + H + '" fill="#FFFFFF"/>';
   b += strip(window_(DATA, ["a", "b"]));
-  b += '<g transform="translate(0,250)">' + strip(comparison(DATA, ["c"])) + '</g>';
+  b += '<g transform="translate(0,' + OFF + ')">' + strip(comparison(DATA, ["c"])) + '</g>';
   return svgDoc(W, H, b);
 }
-const FIGS = {rphFig1: workflow, rphFig2: cjhmap, rphFig3: memory, rphFig4: finalparity, rphFig5: consequence, rphFigS1: drive, rphFigS2: detailed, rphFigS3: method, rphFigS4: verification, rphFigS5: boundaries, rphFigS6: architecture, rphFigS7: gpdetail, rphFigS8: designspace};
+const FIGS = {rphFig1: workflow, rphFig2: consequence, rphFig3: cjhmap, rphFig4: memory, rphFig5: finalparity, rphFigS1: drive, rphFigS2: detailed, rphFigS3: method, rphFigS4: verification, rphFigS5: boundaries, rphFigS6: gpdetail, rphFigS7: designspace};
 
 /* ------------------------------------------------------------------ */
 /* Rendering and export.                                               */
