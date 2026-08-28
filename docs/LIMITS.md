@@ -98,9 +98,17 @@ mean is meaningful; the spread is not.
 
 ### The transient is first order in time
 
-Backward Euler, observed order 1.01 to 1.09 across four halvings of the step.
-First order is the intended trade: A-stability is what makes a
-browser-affordable step possible against a stiff radiation boundary.
+Backward Euler, observed order 0.97 and 0.99 on the two overlapping step
+triplets, approaching first order from below
+(`node tools/verification/joule-transient.mjs`). First order is the intended
+trade: A-stability is what makes a browser-affordable step possible against a
+stiff radiation boundary.
+
+The order is measured from consecutive solutions. Measured instead against the
+study's own fine reference it reads 1.01 to 1.09, which looks better than first
+order and is not: that reference is only eight times finer than the coarsest
+step compared to it, so its error inflates the slope by about the whole
+apparent excess. The reported figure is the one with no reference in it.
 
 The step-integrated drive means a coarse step carries the right cycle-averaged
 energy, but not the waveform.

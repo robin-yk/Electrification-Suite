@@ -1,5 +1,5 @@
 {
- "commit": "2d93fad",
+ "commit": "4ccf04c",
  "strip": {
   "L": 38,
   "W": 8,
@@ -7312,9 +7312,9 @@
   }
  ],
  "verification": {
-  "solverCommit": "2d93fad",
+  "solverCommit": "4ccf04c",
   "levels": 4,
-  "seconds": 938.75866241,
+  "seconds": 1880.571927802,
   "parabola": [
    {
     "ld": 20,
@@ -7401,25 +7401,33 @@
      "dt": 7.5,
      "avgK": 461.41082178346664,
      "error": 1.7779716699187702,
-     "order": null
+     "diff": null,
+     "order": null,
+     "orderVsReference": null
     },
     {
      "dt": 3.75,
      "avgK": 462.3030695383924,
      "error": 0.8857239149930365,
-     "order": 1.0053033585448716
+     "diff": 0.8922477549257337,
+     "order": null,
+     "orderVsReference": 1.0053033585448716
     },
     {
      "dt": 1.875,
      "avgK": 462.75748741119446,
      "error": 0.43130604219095403,
-     "order": 1.0381451458762587
+     "diff": 0.45441787280208246,
+     "order": 0.9734247872772969,
+     "orderVsReference": 1.0381451458762587
     },
     {
      "dt": 0.9375,
      "avgK": 462.98686707303284,
      "error": 0.2019263803525746,
-     "order": 1.0948825254172128
+     "diff": 0.22937966183837943,
+     "order": 0.9862820997683296,
+     "orderVsReference": 1.0948825254172128
     }
    ],
    "referenceK": 463.1887934533854,

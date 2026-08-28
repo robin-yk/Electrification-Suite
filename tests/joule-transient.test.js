@@ -85,20 +85,39 @@ test("solveTransient2D() relaxes to exactly the steady solveThermal2D answer", (
     `still storing ${last.storageRate} W at t = ${last.t} s`);
 });
 
-test("solveTransient2D() is first-order in dt, as backward Euler should be", () => {
+// The order is measured from consecutive solutions, not from their distance
+// to a fine reference. Differencing two solutions cancels the exact answer;
+// differencing their errors only cancels it if the reference is exact, and
+// this one is a solve of the same march. Measured against a 128-step
+// reference, the same runs report 1.014, 1.082 and 1.213, which reads as
+// better than first order and is not: it is the reference's own error
+// entering every difference. tools/verification/joule-transient.mjs prints
+// both columns and the arithmetic behind that claim.
+//
+// The upper bound of 1.00 is the part of this test that does work. A
+// backward-Euler march cannot beat first order, so an estimate above 1 means
+// either the scheme is not what it claims or the estimator is measuring
+// something other than the march, and both are the failure this test exists
+// to catch.
+test("solveTransient2D() is first-order in dt, measured without a reference", () => {
   const x = makeInput(LOSSY);
   const zeroD = calculate(x);
   const T_END = 60;   // mid-transient: far from both the start and the plateau
-  const reference = solveTransient2D(x, zeroD, LOSSY, sic, { dt: T_END / 128, steps: 128 });
 
-  const errors = [4, 8, 16].map((n) => {
-    const r = solveTransient2D(x, zeroD, LOSSY, sic, { dt: T_END / n, steps: n });
-    return Math.abs(r.avgK - reference.avgK);
-  });
-  for (let i = 1; i < errors.length; i++) {
-    const order = Math.log2(errors[i - 1] / errors[i]);
-    assert.ok(order > 0.8 && order < 1.4,
-      `observed time order ${order.toFixed(2)} is not first order`);
+  const avg = [4, 8, 16, 32].map((n) =>
+    solveTransient2D(x, zeroD, LOSSY, sic, { dt: T_END / n, steps: n }).avgK);
+
+  const diffs = [];
+  for (let i = 1; i < avg.length; i++) diffs.push(Math.abs(avg[i] - avg[i - 1]));
+
+  let previousOrder = 0;
+  for (let i = 1; i < diffs.length; i++) {
+    const order = Math.log2(diffs[i - 1] / diffs[i]);
+    assert.ok(order > 0.90 && order <= 1.00,
+      `observed time order ${order.toFixed(3)} is not first order`);
+    assert.ok(order > previousOrder,
+      `order ${order.toFixed(3)} did not approach 1 from below`);
+    previousOrder = order;
   }
 });
 

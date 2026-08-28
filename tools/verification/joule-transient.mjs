@@ -15,6 +15,20 @@
 //      construction; the point of measuring it is to confirm the claim rather
 //      than to discover a higher one.
 //
+//      The order is taken from the successive solutions themselves, not from
+//      their distance to the fine reference. The reference is only eight times
+//      finer than the coarsest step it is compared against, so its own error
+//      is a sizeable part of every difference measured from it, and it biases
+//      the apparent order upward by a growing amount. Substituting the exact
+//      first-order errors, log2(|h_i - h_ref| / |h_i+1 - h_ref|) with
+//      h_ref = tEnd/512, gives 1.02, 1.05 and 1.10 for a scheme that is
+//      exactly first order: the drift is the reference, not the march.
+//      Differencing consecutive solutions cancels the exact answer instead of
+//      approximating it, so no reference enters the slope. The distance to the
+//      reference is still reported, and is what Fig. 3(e) plots, because it is
+//      the honest magnitude of the error. It is only the slope that must not
+//      be read off it.
+//
 // Run: node tools/verification/joule-transient.mjs
 "use strict";
 import {
@@ -66,13 +80,20 @@ export function stepRefinement(tEnd = 60) {
   const xl = makeInput(LOSSY), zl = calculate(xl);
   const reference = solveTransient2D(xl, zl, LOSSY, sic, { dt: tEnd / 512, steps: 512 });
   const rows = [];
-  let previous = null;
+  let lastError = null, lastK = null, lastDiff = null;
   for (const n of [8, 16, 32, 64]) {
     const r = solveTransient2D(xl, zl, LOSSY, sic, { dt: tEnd / n, steps: n });
-    const err = Math.abs(r.avgK - reference.avgK);
-    rows.push({ dt: tEnd / n, avgK: r.avgK, error: err,
-                order: previous === null ? null : Math.log2(previous / err) });
-    previous = err;
+    const error = Math.abs(r.avgK - reference.avgK);
+    const diff = lastK === null ? null : Math.abs(r.avgK - lastK);
+    rows.push({
+      dt: tEnd / n, avgK: r.avgK, error, diff,
+      // Richardson on three consecutive solutions: the exact answer cancels,
+      // so this is the order of the march and not of the reference.
+      order: lastDiff === null || diff === null ? null : Math.log2(lastDiff / diff),
+      // Reported so the contamination stays visible rather than merely claimed.
+      orderVsReference: lastError === null ? null : Math.log2(lastError / error),
+    });
+    lastError = error; lastK = r.avgK; lastDiff = diff;
   }
   return { rows, referenceK: reference.avgK, tEnd };
 }
@@ -106,13 +127,22 @@ function main() {
   // ------------------------------------------------------------- study 3
   console.log("### 3. Time-step refinement at t = 60 s\n");
   const sr = stepRefinement(60);
-  console.log(markdownTable(["dt (s)", "T_avg (K)", "error vs dt/512 (K)", "observed order"],
+  console.log(markdownTable(
+    ["dt (s)", "T_avg (K)", "error vs dt/512 (K)", "observed order", "order vs reference"],
     sr.rows.map((r) => [fix(r.dt, 4), fix(r.avgK, 5), sci(r.error, 2),
-                        r.order === null ? "—" : fix(r.order, 2)])));
+                        r.order === null ? "—" : fix(r.order, 3),
+                        r.orderVsReference === null ? "—" : fix(r.orderVsReference, 3)])));
 
   console.log(`\nFirst order is the expected and intended result: backward Euler is A-stable,`);
   console.log(`which is what a browser-affordable step size needs on this stiff radiation`);
   console.log(`boundary, and the price is one order in time.`);
+  console.log(`\nThe observed order is taken from consecutive solutions, where the exact`);
+  console.log(`answer cancels. The last column is the same measurement taken against the`);
+  console.log(`dt/512 reference, and is printed only to record why it must not be used:`);
+  console.log(`that reference is eight times finer than the coarsest step compared to it,`);
+  console.log(`so its own error inflates the slope. A march that were exactly first order`);
+  console.log(`would report 1.02, 1.05 and 1.10 in that column from the contamination`);
+  console.log(`alone, which is most of the drift seen there.`);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) main();

@@ -70,4 +70,4 @@ console.log("physical", physical.rows.map((r) => r.grid + ":" + r.avgC.toFixed(2
 console.log("electric", electrical.map((r) => r.grid + ":" + r.error.toExponential(2)).join("  "), "| orders",
   electrical.slice(1).map((r) => r.order.toFixed(2)).join(", "));
 console.log("transient", transient.rows.map((r) => "dt" + r.dt.toFixed(2) + ":" + r.error.toPrecision(3)).join("  "), "| orders",
-  transient.rows.slice(1).map((r) => r.order.toFixed(2)).join(", "));
+  transient.rows.filter((r) => r.order !== null).map((r) => r.order.toFixed(3)).join(", "));
