@@ -534,6 +534,11 @@ const TOKENS = {
   RG_S: String(DATA.mem.regime.sMin), RG_PLO: String(DATA.mem.regime.ptLo),
   RG_PHI: String(DATA.mem.regime.ptHi), RG_IN: String(DATA.mem.regime.inside),
   RG_CAP: String(DATA.mem.regime.captured), RG_TOT: String(DATA.mem.regime.total),
+  EA1: String(DATA.kinetics.ea1),
+  LAD_N: (function () {
+    const n = DATA.mem.swingLadder.map((r) => r.n);
+    return n.slice(0, -1).join(", ") + " and " + n[n.length - 1];
+  })(),
   RT_MED: Math.round(DATA.cost.speedup.median).toLocaleString("en-US"),
   RT_MIN: Math.round(DATA.cost.speedup.min).toLocaleString("en-US"),
   RT_MAX: Math.round(DATA.cost.speedup.max).toLocaleString("en-US"),
