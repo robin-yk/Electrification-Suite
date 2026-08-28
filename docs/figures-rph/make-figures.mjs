@@ -169,7 +169,7 @@ const locus = columns.map(function (c) {
 
 /* the effective activation energy for methane consumption fitted from the
    detailed mechanisms and drawn on Fig. S2a, and the gas constant in the same
-   units. Used only to give the Arrhenius swing number its scale. */
+   units. Used only to give the log rate-constant swing its scale. */
 const EA_EFF = Object.values(cantera.mechanisms)[0].Ea_eff_kJ_mol, R_KJ = 8.314462618e-3;
 const design = readJSONL("tools/openmkm_dynamic/data/canonical/design-physical.jsonl");
 const bundle = readJSON("apps/rphcjh/data/rph-surrogate.json");
@@ -188,7 +188,7 @@ for (const r of design) {
   memCases.push({
     pt: p(i.period_s / i.tau_s, 4), gain: p(xd / xq, 4),
     /* the two dimensionless groups the regime map is drawn in.
-       swing is the Arrhenius number of the cycle, the natural logarithm of the
+       swing is the log rate-constant swing of the cycle, the natural logarithm of the
        ratio of rate constants between the hot and cold instants. Its ranking of
        cases does not depend on EA_EFF: swing is monotone in (1/Tmin - 1/Tpeak)
        and the activation energy only sets the units of the threshold.

@@ -540,7 +540,7 @@ export function boundaries(DATA) {
         { size: 8, anchor: "middle", weight: hot ? "bold" : "normal", fill: hot ? SHADE.thermal : C.ink });
       b += T(cx + bw / 2, y0 + ph + 12, r.hi === null ? "≥ " + r.lo : r.lo + "–" + r.hi, { size: 8, anchor: "middle" });
     });
-    b += T(x0 + pw / 2, y0 + ph + 25, "Arrhenius swing number  S", { size: 8.5, anchor: "middle" });
+    b += T(x0 + pw / 2, y0 + ph + 25, "log rate-constant swing  S", { size: 8.5, anchor: "middle" });
     b += '<g transform="rotate(-90 ' + (x0 - 26) + ' ' + (y0 + ph / 2) + ')">' +
       T(x0 - 26, y0 + ph / 2, "X_{dyn} / X_{qs}", { size: 8.5, anchor: "middle" }) + '</g>';
     b += rect(x0 + pw + 14, y0 + 4, 16, 10, { fill: TINT.grey, stroke: C.grey, sw: 0.8, rx: 0 });
@@ -713,7 +713,7 @@ export function memory(DATA) {
   /* Three panels, because the departure has two axes and only one of them was
      ever drawn. Panel a is the quasi-steady limit in P/tau, which the model
      must recover and does. Panel b is the variable that actually decides the
-     departure: the Arrhenius swing number, the natural logarithm of the rate
+     departure: the log rate-constant swing, the natural logarithm of the rate
      constant ratio across the cycle. Panel c is what the correction does with
      it. The regime rule in b is the portable part of this work: it is stated
      in two dimensionless groups, so a reader can evaluate it for a system that
@@ -779,7 +779,7 @@ export function memory(DATA) {
     [1, 10, 100].forEach(function (v) {
       o += T(X(v), pbot + 12, String(v), { size: 8, anchor: "middle" });
     });
-    o += T(x0 + pw / 2, pbot + 24, "swing number  S", { size: 8.5, anchor: "middle" });
+    o += T(x0 + pw / 2, pbot + 24, "log rate-constant swing  S", { size: 8.5, anchor: "middle" });
     o += ylab(x0 - 26, "P / τ");
     M.cases.forEach(function (c) {
       if (c.gain >= 2) return;
