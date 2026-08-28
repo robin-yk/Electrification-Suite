@@ -1238,3 +1238,61 @@ export function consequence(DATA) {
   b += '<g transform="translate(0,' + OFF + ')">' + strip(comparison(DATA, ["c"])) + '</g>';
   return svgDoc(W, H, b);
 }
+
+/* ------------------------------------------------------------------ */
+/* cost(). One condition on each calculation path, on one time axis.  */
+/* Every number is measured, from runtime-comparison.json; the plate   */
+/* names the machine because the seconds belong to it.                 */
+/* ------------------------------------------------------------------ */
+export function cost(DATA) {
+  const ns = "rs7", W = 505, H = 232;
+  const K = DATA.cost;
+  let b = defs(ns);
+  const x0 = 96, pw = 380, ptop = 34, pbot = 158;
+  const LO = -3, HI = 3;
+  const X = (v) => lin(lg(v), LO, HI, x0 + 6, x0 + pw - 6);
+  const pow = (d) => "10^{" + String(d).replace("-", "−") + "}";
+
+  b += rect(x0, ptop, pw, pbot - ptop, { stroke: C.grey, fill: "#FFFFFF", sw: 0.8, rx: 0 });
+  for (let d = LO; d <= HI; d += 1) {
+    b += line(X(Math.pow(10, d)), ptop, X(Math.pow(10, d)), pbot, { stroke: "#EFEFEF", sw: 0.4 });
+    b += T(X(Math.pow(10, d)), pbot + 12, pow(d), { size: 8, anchor: "middle" });
+  }
+  b += T(x0 + pw / 2, pbot + 24, "wall-clock seconds for one condition", { size: 8.5, anchor: "middle" });
+
+  /* transient Cantera: each timed case its own mark, so the spread is data,
+     not a whisker */
+  const yc = ptop + 34;
+  b += T(x0 - 6, yc - 14, "transient Cantera", { size: 8.5, anchor: "end", weight: "bold" });
+  b += T(x0 - 6, yc - 4, K.cantera.n + " sealed cases", { size: 8, anchor: "end", fill: C.grey });
+  b += line(X(K.cantera.min), yc, X(K.cantera.max), yc, { stroke: C.grey, sw: 0.8 });
+  K.cantera.cases.forEach(function (s) {
+    b += '<circle cx="' + X(s).toFixed(1) + '" cy="' + yc + '" r="2.6" fill="none" stroke="'
+      + C.grey + '" stroke-width="1"/>';
+  });
+  b += T(X(K.cantera.max) + 6, yc + 3, K.cantera.min.toFixed(0) + " to "
+    + K.cantera.max.toFixed(0) + " s", { size: 8, fill: C.grey });
+
+  /* the browser evaluation: median and p95 of the whole sealed set */
+  const yb = pbot - 34;
+  b += T(x0 - 6, yb - 14, "browser model", { size: 8.5, anchor: "end", weight: "bold", fill: SHADE.thermal });
+  b += T(x0 - 6, yb - 4, K.browser.cases + " sealed cases", { size: 8, anchor: "end", fill: C.grey });
+  b += line(X(K.browser.median / 1e3), yb, X(K.browser.max / 1e3), yb, { stroke: C.thermal, sw: 0.8 });
+  b += '<circle cx="' + X(K.browser.median / 1e3).toFixed(1) + '" cy="' + yb + '" r="3" fill="' + C.thermal + '"/>';
+  b += '<circle cx="' + X(K.browser.p95 / 1e3).toFixed(1) + '" cy="' + yb + '" r="2.6" fill="none" stroke="'
+    + C.thermal + '" stroke-width="1"/>';
+  b += T(X(K.browser.max / 1e3) + 6, yb + 3, "median " + K.browser.median.toFixed(1)
+    + " ms,  p95 " + K.browser.p95.toFixed(0) + " ms", { size: 8, fill: SHADE.thermal });
+
+  /* the gap between the rows is the result */
+  const xm = X(Math.sqrt(K.browser.median / 1e3 * K.cantera.min));
+  b += line(xm, yc + 10, xm, yb - 10, { stroke: C.ink, sw: 0.7, dash: "2 2" });
+  b += T(xm + 6, (yc + yb) / 2 - 2, Math.round(K.speedup.median).toLocaleString("en-US") + "× faster",
+    { size: 11, weight: "bold" });
+  b += T(xm + 6, (yc + yb) / 2 + 10, "case-matched, " + Math.round(K.speedup.min).toLocaleString("en-US")
+    + "× to " + Math.round(K.speedup.max).toLocaleString("en-US") + "×", { size: 8, fill: C.grey });
+
+  b += T(x0, H - 8, "Measured on " + K.machine + ". The seconds belong to that machine; "
+    + "the ratio is the result.", { size: 8, fill: C.grey });
+  return svgDoc(W, H, b);
+}

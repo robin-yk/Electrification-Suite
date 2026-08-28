@@ -11,7 +11,7 @@ import { SERIES_DEFAULTS, seriesRateConstants, steadySeriesCSTR, integrateSeries
          idealTwoStateAverages, timeAverageTemperature } from "../../apps/rphcjh/solver.js";
 import { predictRphConversion } from "../../apps/rphcjh/surrogate.js";
 import { workflow, drive, comparison, window_, consequence, detailed, verification, boundaries,
-         cjhmap, memory, finalparity, method, gpdetail, designspace } from "./draw.mjs";
+         cjhmap, memory, finalparity, method, gpdetail, designspace, cost } from "./draw.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const p = (x, n = 4) => Number(x.toPrecision(n));
@@ -35,6 +35,7 @@ const DATA_FILES = [
   "tools/openmkm_dynamic/data/canonical/cjh-grid-validation.json",
   "tools/openmkm_dynamic/data/canonical/design-physical.jsonl",
   "tools/openmkm_dynamic/data/canonical/final-validation-report.json",
+  "tools/openmkm_dynamic/data/canonical/runtime-comparison.json",
   "apps/rphcjh/data/rph-surrogate.json",
   "apps/rphcjh/data/cantera.json",
   "apps/rphcjh/data/openmkm-pfr.json"
@@ -304,6 +305,10 @@ const space = {
   })
 };
 
+const runtime = readJSON("tools/openmkm_dynamic/data/canonical/runtime-comparison.json");
+const rtB = runtime.summary.browser_all_case_summary_ms;
+const rtEnv = runtime.environments;
+
 const DATA = {
   commit: solverCommit(),
   dataCommit: dataCommit(),
@@ -334,6 +339,26 @@ const DATA = {
     regime, swingLadder,
     hold: { mean: p(gpReport.mean, 3), p95: p(gpReport.p95, 3), max: p(gpReport.max, 3) },
     holdCjh: { mean: p(cjhReport.mean, 3), p95: p(cjhReport.p95, 3), max: p(cjhReport.max, 3) }
+  },
+  cost: {
+    cantera: {
+      n: runtime.summary.paired_case_count,
+      cases: runtime.paired_cases.map((c) => p(c.cantera_median_s, 4)),
+      min: runtime.paired_cases.reduce((a, c) => Math.min(a, c.cantera_median_s), Infinity),
+      max: runtime.paired_cases.reduce((a, c) => Math.max(a, c.cantera_median_s), 0)
+    },
+    browser: {
+      cases: runtime.summary.browser_all_cases,
+      evals: runtime.summary.browser_all_evaluations,
+      median: p(rtB.median, 3), p95: p(rtB.p95, 3), max: p(rtB.max, 4)
+    },
+    speedup: {
+      min: p(runtime.summary.speedup_min, 4),
+      median: p(runtime.summary.speedup_median, 5),
+      max: p(runtime.summary.speedup_max, 5)
+    },
+    machine: rtEnv.browser.processor + ", Cantera " + rtEnv.cantera.version
+      + ", Node " + rtEnv.browser.node.replace("v", "")
   },
   example, gp, space,
   final: {
@@ -440,7 +465,8 @@ const PLATES = [
   { id: "rphFigS5", label: "Fig. S5", draw: gpdetail },
   { id: "rphFigS6", label: "Fig. S6", draw: verification },
   { id: "rphFigS7", label: "Fig. S7", draw: boundaries },
-  { id: "rphFigS8", label: "Fig. S8", draw: workflow }
+  { id: "rphFigS8", label: "Fig. S8", draw: workflow },
+  { id: "rphFigS9", label: "Fig. S9", draw: cost }
 ];
 for (const plate of PLATES) {
   const svg = plate.draw(DATA);
@@ -508,6 +534,13 @@ const TOKENS = {
   RG_S: String(DATA.mem.regime.sMin), RG_PLO: String(DATA.mem.regime.ptLo),
   RG_PHI: String(DATA.mem.regime.ptHi), RG_IN: String(DATA.mem.regime.inside),
   RG_CAP: String(DATA.mem.regime.captured), RG_TOT: String(DATA.mem.regime.total),
+  RT_MED: Math.round(DATA.cost.speedup.median).toLocaleString("en-US"),
+  RT_MIN: Math.round(DATA.cost.speedup.min).toLocaleString("en-US"),
+  RT_MAX: Math.round(DATA.cost.speedup.max).toLocaleString("en-US"),
+  RT_N: String(DATA.cost.cantera.n),
+  RT_B_MED: DATA.cost.browser.median.toFixed(1),
+  RT_B_N: String(DATA.cost.browser.cases),
+  RT_MACHINE: DATA.cost.machine,
   STRESS_V: (function () {
     const o = DATA.verify.stiff.filter((r) => r.tPeak > DATA.space.cap).map((r) => r.volts);
     return o.length > 1 ? o.slice(0, -1).join(", ") + " and " + o[o.length - 1] : String(o[0]);

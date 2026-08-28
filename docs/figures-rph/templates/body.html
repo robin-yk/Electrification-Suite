@@ -123,6 +123,15 @@
 <div class="prov">Every panel calls <code>apps/rphcjh/solver.js</code>; the predictor adds <code>apps/rphcjh/surrogate.js</code>, so the browser and the regression tests execute identical code.</div>
 </figure>
 
+<figure id="rphFigS9">
+<div class="figbar"><span class="figno">Fig. S9</span><span class="figwhere">Supporting Information &#183; Computational cost</span><span class="figsize">178 mm</span></div>
+<div class="plate"></div>
+<div class="tools"><button data-src="rphFigS9">Show SVG source</button><button data-png="rphFigS9">Render 600 dpi</button><button data-copy="rphFigS9">Copy SVG</button><span class="hint"></span></div>
+<textarea readonly spellcheck="false"></textarea><canvas></canvas>
+<div class="cap"><b>Fig. S9.</b> Wall-clock time to evaluate one operating condition on the two calculation paths, on a common logarithmic axis. Open circles are individual transient Cantera integrations of sealed final-test cases, rerun to convergence on one machine; the filled circle and open circle on the lower row are the median and 95th percentile of the browser model over the full sealed set on the same machine, timed after warm-up and excluding file loading. The quoted factor pairs each rerun case with its own browser timing. Both paths lengthen together as the pulse period shortens, so the case-matched range, not the single ratio, is the result.</div>
+<div class="prov">Measured values from <code>tools/openmkm_dynamic/data/canonical/runtime-comparison.json</code>, committed with the scripts that produced it; the plate reads the file it names.</div>
+</figure>
+
 <h2>Values quoted in the manuscript text</h2>
 <p class="lede">The captions above carry no numbers, because a journal caption does not. Every value the manuscript quotes is listed here instead, computed from the same frozen data object the plates are drawn from. Copying from this table, rather than from a previous draft, is what keeps the text and the artwork on the same solve.</p>
 
@@ -158,6 +167,11 @@
 <tr><td class="q">Independent-test error, maximum</td><td class="n">{{FV_MAX}}</td><td>Abstract; independent evaluation; conclusions</td></tr>
 <tr><td class="q">Quasi-steady mean error, same conditions</td><td class="n">{{FV_CJH}}</td><td>Abstract; independent evaluation; conclusions</td></tr>
 <tr><td class="q">Final-test verdict</td><td class="s">{{FV_VERDICT}}</td><td>Independent evaluation</td></tr>
+<tr><td class="q">Browser model speedup, case-matched median</td><td class="n">{{RT_MED}}&#215;</td><td>Computational cost</td></tr>
+<tr><td class="q">Browser model speedup, case-matched range</td><td class="n">{{RT_MIN}}&#215; to {{RT_MAX}}&#215;</td><td>Computational cost</td></tr>
+<tr><td class="q">Paired transient reruns</td><td class="n">{{RT_N}}</td><td>Computational cost</td></tr>
+<tr><td class="q">Browser evaluation, median over {{RT_B_N}} cases</td><td class="n">{{RT_B_MED}} ms</td><td>Computational cost</td></tr>
+<tr><td class="q">Runtime measurement machine</td><td class="n">{{RT_MACHINE}}</td><td>Computational cost</td></tr>
 <tr><td class="q">Stress-test drives outside the range</td><td class="n">{{STRESS_V}} V</td><td>Numerical verification</td></tr>
 </tbody>
 </table></div>

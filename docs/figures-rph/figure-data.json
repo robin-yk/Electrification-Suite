@@ -1,6 +1,6 @@
 {
  "commit": "c5a72bf",
- "dataCommit": "f4905cd",
+ "dataCommit": "e5cc403",
  "map": {
   "tLo": 400,
   "tHi": 1850,
@@ -12331,6 +12331,34 @@
    "p95": 0.235,
    "max": 0.364
   }
+ },
+ "cost": {
+  "cantera": {
+   "n": 6,
+   "cases": [
+    19.25,
+    14.8,
+    27.78,
+    16.68,
+    67.82,
+    130.8
+   ],
+   "min": 14.799276874982752,
+   "max": 130.81643387500662
+  },
+  "browser": {
+   "cases": 64,
+   "evals": 1920,
+   "median": 5.72,
+   "p95": 48.9,
+   "max": 106.2
+  },
+  "speedup": {
+   "min": 589.7,
+   "median": 2473.2,
+   "max": 7593.1
+  },
+  "machine": "Apple M1, Cantera 3.2.0, Node 26.4.0"
  },
  "example": {
   "voltage": 42.2,
