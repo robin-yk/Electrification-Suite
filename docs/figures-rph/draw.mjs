@@ -1117,19 +1117,43 @@ export function designspace(DATA) {
   let b = defs(ns);
   const pw = 190, ph = 160, ptop = 30, pbot = 190;
   const COL = [58, 300];
-  const X0 = (x0) => (v) => lin(lg(v), -2, 3, x0 + 12, x0 + pw - 12);
-  const Y = (v) => lin(v, 300, 1900, pbot - 10, ptop + 10);
+
+  /* Both panels show the same campaign, so both take one scale, and the scale
+     is read off the points rather than typed: an axis that cannot come to
+     disagree with the data it carries. The pad is a fraction of the span, so
+     the outermost points are not drawn against the frame. */
+  const every = S.train.concat(S.hold, S.aimed, S.sealed);
+  const spanOf = function (vals, pad) {
+    const lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
+    const g = (hi - lo) * pad;
+    return [lo - g, hi + g];
+  };
+  const XD = spanOf(every.map((q) => lg(q[0])), 0.05);
+  const YD = spanOf(every.map((q) => q[1]).concat([S.cap]), 0.04);
+  const X0 = (x0) => (v) => lin(lg(v), XD[0], XD[1], x0 + 12, x0 + pw - 12);
+  const Y = (v) => lin(v, YD[0], YD[1], pbot - 10, ptop + 10);
+
+  /* Ticks are whatever the axis actually reaches. The x rule the reader is
+     looking for is the decade at one, where the pulse period equals the
+     residence time, so that one is drawn as a reference and the rest as grid. */
+  const DECADES = [];
+  for (let e = Math.ceil(XD[0]); e <= Math.floor(XD[1]); e++) DECADES.push(e);
+  const YTICKS = [];
+  for (let t = Math.ceil(YD[0] / 400) * 400; t <= YD[1]; t += 400) YTICKS.push(t);
 
   function frame(x0, letter) {
     let o = rect(x0, ptop, pw, ph, { stroke: C.grey, fill: "#FFFFFF", sw: 0.8, rx: 0 });
     o += T(x0 - 40, ptop - 8, letter, { size: 11, weight: "bold" });
-    [400, 800, 1200, 1600].forEach(function (t) {
+    YTICKS.forEach(function (t) {
       o += line(x0, Y(t), x0 + pw, Y(t), { stroke: "#EAEAEA", sw: 0.4 });
       o += T(x0 - 4, Y(t) + 3, String(t), { size: 8, anchor: "end", fill: C.grey });
     });
-    [0.01, 0.1, 1, 10, 100].forEach(function (v) {
-      o += T(X0(x0)(v), pbot + 12, String(v), { size: 8, anchor: "middle" });
+    DECADES.forEach(function (e) {
+      const v = Math.pow(10, e), x = X0(x0)(v), ref = e === 0;
+      o += line(x, ptop, x, pbot, { stroke: ref ? "#C6C6C6" : "#EAEAEA", sw: ref ? 0.7 : 0.4 });
+      o += T(x, pbot + 12, String(v), { size: 8, anchor: "middle" });
     });
+    o += T(X0(x0)(1) - 3.5, pbot - 2, "P = \u03c4", { size: 8, anchor: "end", fill: SHADE.grey });
     o += T(x0 + pw / 2, pbot + 24, "pulse period / residence time", { size: 8.5, anchor: "middle" });
     o += '<text x="' + (x0 - 30) + '" y="' + ((ptop + pbot) / 2) + '" font-size="8.5" text-anchor="middle" transform="rotate(-90 ' + (x0 - 30) + ' ' + ((ptop + pbot) / 2) + ')">element peak temperature (°C)</text>';
     /* the bound the element ODE screens against, before any chemistry is paid for */
@@ -1157,6 +1181,10 @@ export function designspace(DATA) {
        test was drawn out of the same scan, not sampled separately, and the
        targeted round was added afterwards. Their sum is stated so a reader
        can check it against the counts elsewhere in the set. */
+    /* the campaign now fills the panel, so the legend sits over the cloud.
+       Back it with translucent white: the text reads, the points it covers
+       are still there to be seen. */
+    o += '<rect x="' + (x0 + 8) + '" y="' + (pbot - 53) + '" width="140" height="45" fill="#FFFFFF" fill-opacity="0.72"/>';
     [[C.grey, "scan, for training", S.train.length, 1.8, 0.45],
      [C.scalar, "scan, set aside for test", S.hold.length, 2.1, 0.85],
      [C.thermal, "targeted addition", S.aimed.length, 2.4, 0.9]].forEach(function (l, i) {
@@ -1176,6 +1204,7 @@ export function designspace(DATA) {
     let o = frame(x0, "b");
     o += dots(x0, S.train.concat(S.hold, S.aimed), C.grey, 1.5, 0.18);
     o += dots(x0, S.sealed, C.thermal, 2.2, 0.9);
+    o += '<rect x="' + (x0 + 8) + '" y="' + (pbot - 44) + '" width="152" height="26" fill="#FFFFFF" fill-opacity="0.72"/>';
     o += '<circle cx="' + (x0 + 14) + '" cy="' + (pbot - 37) + '" r="2.2" fill="' + C.thermal + '"/>';
     o += T(x0 + 22, pbot - 34, "independent test, " + S.sealed.length, { size: 8, fill: SHADE.thermal });
     o += '<circle cx="' + (x0 + 14) + '" cy="' + (pbot - 26) + '" r="1.5" fill="' + C.grey + '" fill-opacity="0.35"/>';
