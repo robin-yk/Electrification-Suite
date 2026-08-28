@@ -7255,10 +7255,11 @@
    "detail": "FeCrAl tube, 500 × 6.0 × 0.35 mm",
    "rows": [
     {
-     "q": "resistance",
-     "unit": "Ω",
-     "reported": 0.117,
-     "model": 0.1201
+     "q": "maximum temperature",
+     "unit": "°C",
+     "diffUnit": "K",
+     "reported": 800,
+     "model": 787.4
     },
     {
      "q": "power at 65 A",
@@ -7267,10 +7268,10 @@
      "model": 463.7
     },
     {
-     "q": "maximum temperature",
-     "unit": "°C",
-     "reported": 800,
-     "model": 787.4
+     "q": "resistance",
+     "unit": "Ω",
+     "reported": 0.117,
+     "model": 0.1201
     }
    ]
   },
@@ -7289,12 +7290,6 @@
      "unit": "A",
      "reported": 34.7,
      "model": 32.8
-    },
-    {
-     "q": "power at 14.10 V",
-     "unit": "W",
-     "reported": 489.3,
-     "model": 462.5
     }
    ]
   },

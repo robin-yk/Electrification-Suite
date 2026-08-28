@@ -297,30 +297,39 @@ DATA.screening = { sweep, best, byMaterial, targetC: TARGET_C, ldHi: LD_HI,
 // side is read from the papers and is the only place in this build where a
 // number is typed, because there is nowhere else it could come from. Each
 // carries its citation.
+//
+// Rows run predicted quantity first, then the electrical quantities the model
+// had to reproduce to reach it. Zheng's power at 14.10 V is not a row: at a
+// fixed applied voltage it is the current row multiplied by that voltage, so
+// it restates one disagreement instead of adding a second check. Both forms
+// gave the same 5.48 %, which is what exposed the redundancy.
 const cc = crossCheckRun();
 const pick = (id) => cc.evaluated.find((e) => e.id === id).results;
 const wis = pick("wismann").main, zh = pick("zheng"), kw = pick("kwak");
 const expo = (a2, b2) => Math.log((b2.tss - 273.15) / (a2.tss - 273.15)) /
                          Math.log(b2.steadyLoss.total / a2.steadyLoss.total);
 DATA.crosscheck = [
-  { source: "Wismann et al. 2019", detail: "FeCrAl tube, 500 × 6.0 × 0.35 mm",
+  { source: "Wismann et al. 2019", detail: "FeCrAl tube, 500 \u00d7 6.0 \u00d7 0.35 mm",
     rows: [
-      { q: "resistance", unit: "Ω", reported: 0.117, model: p(wis.resistance, 4) },
+      { q: "maximum temperature", unit: "\u00b0C", diffUnit: "K", reported: 800, model: p(wis.tss - 273.15, 4) },
       { q: "power at 65 A", unit: "W", reported: 495, model: p(wis.steadyLoss.total, 4) },
-      { q: "maximum temperature", unit: "°C", reported: 800, model: p(wis.tss - 273.15, 4) }
+      { q: "resistance", unit: "\u03a9", reported: 0.117, model: p(wis.resistance, 4) }
     ] },
-  { source: "Zheng et al. 2023", detail: "SiSiC foam, 99 × 32 mm, φ = 0.88",
+  { source: "Zheng et al. 2023", detail: "SiSiC foam, 99 \u00d7 32 mm, \u03c6 = 0.88",
     rows: [
       { q: "current at 13.04 V", unit: "A", reported: 30.26, model: p(zh.v1304.operatingCurrent, 4) },
-      { q: "current at 14.10 V", unit: "A", reported: 34.70, model: p(zh.v1410.operatingCurrent, 4) },
-      { q: "power at 14.10 V", unit: "W", reported: 489.3, model: p(zh.v1410.steadyLoss.total, 4) }
+      { q: "current at 14.10 V", unit: "A", reported: 34.70, model: p(zh.v1410.operatingCurrent, 4) }
     ] },
-  { source: "Kwak et al. 2025", detail: "carbon-fiber strip, 38 × 8 × 0.21 mm",
+  { source: "Kwak et al. 2025", detail: "carbon-fiber strip, 38 \u00d7 8 \u00d7 0.21 mm",
     rows: [
-      { q: "T–P exponent", unit: "", reported: 0.3525, model: p(expo(kw.v16, kw.v31), 3) }
+      { q: "T\u2013P exponent", unit: "", reported: 0.3525, model: p(expo(kw.v16, kw.v31), 3) }
     ] }
 ];
 
+// Ranked once here so the caption quotes the same differences the bars draw.
+const ccRanked = DATA.crosscheck.flatMap((g) => g.rows.map((r) => ({
+  source: g.source, q: r.q, pct: Math.abs(100 * (r.model - r.reported) / r.reported)
+}))).sort((a, b) => b.pct - a.pct);
 // The verification study is expensive, so it is measured by
 // make-verification-data.mjs and read back here. Its absence is fatal rather
 // than silently skipped: a missing measurement must not become a missing plate.
@@ -380,7 +389,11 @@ const TOKENS = {
   "mesh.ratio": DATA.mesh.ratio.toFixed(3),
   "mesh.airInner": airCells[0].toFixed(3),
   "mesh.airOuter": airCells[airCells.length - 1].toFixed(3),
-  "mesh.stretch": String(DATA.mesh.stretch)
+  "mesh.stretch": String(DATA.mesh.stretch),
+  "cc.worst": ccRanked[0].pct.toFixed(1),
+  "cc.worstQ": ccRanked[0].q,
+  "cc.worstSource": ccRanked[0].source,
+  "cc.next": ccRanked[1].pct.toFixed(1)
 };
 let body = read("templates/head.html") + read("templates/body.html");
 for (const [k, v] of Object.entries(TOKENS)) body = body.replaceAll("{{" + k + "}}", v);

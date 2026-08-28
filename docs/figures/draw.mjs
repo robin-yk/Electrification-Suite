@@ -962,17 +962,21 @@ function designPanels(ns, DATA) {
 /* Fig. S7. The three published reactors, as signed differences.        */
 /* ------------------------------------------------------------------ */
 export function crosscheck(DATA) {
-  const ns = "s7", W = 505, H = 236;
+  const ns = "s7", W = 505, H = 202;
   const G = DATA.crosscheck;
   let b = defs(ns);
-  const LX = 22, RX = 222, MX = 282, BX = 316, BW = 172, CX = BX + BW / 2;
-  const SPAN = 10;                     /* the bar axis runs to ±10 % */
+  const LX = 22, RX = 214, MX = 274, BX = 312, BW = 176, CX = BX + BW / 2;
+  const SPAN = 10;                     /* the bar axis runs to \u00b110 % */
   const X = (pct) => CX + (pct / SPAN) * (BW / 2);
+  /* the bar is the percentage; the label is the difference in the row's own
+     units, because 12.6 K reads as agreement where 1.58 % beside a 5 % line
+     does not. Three significant figures, trailing zeros dropped. */
+  const signed = (v) => (v > 0 ? "+" : "\u2212") + Number(Math.abs(v).toPrecision(3));
 
   b += T(LX, 22, "QUANTITY", { size: 8, weight: "bold", fill: C.grey });
   b += T(RX, 22, "REPORTED", { size: 8, weight: "bold", anchor: "end", fill: C.grey });
   b += T(MX, 22, "MODEL", { size: 8, weight: "bold", anchor: "end", fill: C.grey });
-  b += T(CX, 22, "SIGNED DIFFERENCE", { size: 8, weight: "bold", anchor: "middle", fill: C.grey });
+  b += T(CX, 22, "DIFFERENCE", { size: 8, weight: "bold", anchor: "middle", fill: C.grey });
   b += line(LX, 27, 488, 27, { stroke: C.ink, sw: 0.9 });
 
   let y = 42;
@@ -981,28 +985,33 @@ export function crosscheck(DATA) {
     b += T(MX, y, grp.detail, { size: 8, anchor: "end", fill: C.faint });
     y += 13;
     grp.rows.forEach(function (r) {
-      const diff = 100 * (r.model - r.reported) / r.reported;
-      const w = Math.abs(X(diff) - CX);
+      const pct = 100 * (r.model - r.reported) / r.reported;
+      const w = Math.abs(X(pct) - CX);
+      const u = r.diffUnit === undefined ? r.unit : r.diffUnit;
       b += T(LX + 8, y, r.q, { size: 8.5 });
       b += T(RX, y, r.reported + (r.unit ? " " + r.unit : ""), { size: 8.5, anchor: "end", fill: C.grey });
       b += T(MX, y, r.model + (r.unit ? " " + r.unit : ""), { size: 8.5, anchor: "end" });
-      b += '<rect x="' + (diff < 0 ? CX - w : CX) + '" y="' + (y - 6.5) + '" width="' + Math.max(w, 0.6) +
-        '" height="8" fill="' + (Math.abs(diff) > 5 ? C.thermal : C.grey) + '" fill-opacity="0.85"/>';
-      b += T(diff < 0 ? CX - w - 4 : CX + w + 4, y, (diff > 0 ? "+" : "−") + Math.abs(diff).toFixed(2) + " %",
-        { size: 8, anchor: diff < 0 ? "end" : "start", fill: C.grey });
+      b += '<rect x="' + (pct < 0 ? CX - w : CX) + '" y="' + (y - 6.5) + '" width="' + Math.max(w, 0.6) +
+        '" height="8" fill="' + (Math.abs(pct) > 5 ? C.thermal : C.grey) + '" fill-opacity="0.85"/>';
+      b += T(pct < 0 ? CX - w - 4 : CX + w + 4, y, signed(r.model - r.reported) + (u ? " " + u : ""),
+        { size: 8, anchor: pct < 0 ? "end" : "start", fill: C.grey });
       y += 15;
     });
     if (gi < G.length - 1) { b += line(LX, y - 6, 488, y - 6, { stroke: "#EAEAEA", sw: 0.5 }); y += 6; }
   });
 
-  /* the difference axis, drawn under the bars it scales */
+  /* the difference axis. Only zero and the \u00b15 % threshold carry a rule; the
+     outer ticks label the scale without adding two more lines to read past. */
   const ay = y + 2;
   [-10, -5, 0, 5, 10].forEach(function (t) {
-    b += line(X(t), 34, X(t), ay, { stroke: t === 0 ? C.ink : "#DDDDDD", sw: t === 0 ? 0.9 : 0.5, dash: t === 0 ? "" : "2 2" });
-    b += T(X(t), ay + 11, (t > 0 ? "+" : t < 0 ? "−" : "") + Math.abs(t) + " %", { size: 8, anchor: "middle", fill: C.grey });
+    if (Math.abs(t) < SPAN) {
+      b += line(X(t), 34, X(t), ay, { stroke: t === 0 ? C.ink : "#DDDDDD", sw: t === 0 ? 0.9 : 0.5, dash: t === 0 ? "" : "2 2" });
+    }
+    b += T(X(t), ay + 11, (t > 0 ? "+" : t < 0 ? "\u2212" : "") + Math.abs(t) + " %", { size: 8, anchor: "middle", fill: C.grey });
   });
   b += line(X(-SPAN), ay, X(SPAN), ay, { stroke: C.grey, sw: 0.7 });
-  b += T(LX, ay + 11, "orange beyond ±5 %, grey within", { size: 8, fill: C.grey });
+  b += T(LX, ay + 11, "bars are percent of reported, orange beyond \u00b15 %; labels are absolute",
+    { size: 8, fill: C.grey });
   return svgDoc(W, H, b);
 }
 
