@@ -237,7 +237,7 @@ footer{margin-top:72px;padding-top:20px;border-top:1px solid var(--rule-strong);
 <div class="plate"></div>
 <div class="tools"><button data-src="rphFigS8">Show SVG source</button><button data-png="rphFigS8">Render 600 dpi</button><button data-copy="rphFigS8">Copy SVG</button><span class="hint"></span></div>
 <textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Fig. S8.</b> The calculation chain behind every reported prediction. Operating inputs are converted by the element energy balance into a temperature trajectory; the steady detailed-chemistry map turns that trajectory into the quasi-steady conversion; the fitted correction turns the quasi-steady value into the dynamic one. The chain runs on GRI-Mech 3.0 with a fixed 1:1 CH&#8324;/CO&#8322; feed and reports conversion only; no selectivity is predicted, because none was validated. The dashed layer is the interpretive two-step network in arbitrary units, driven by the same temperature trajectory: it accounts for the pulsing window and predicts no real yield.</div>
+<div class="cap"><b>Fig. S8.</b> The three layers of the model, and what they share. (a) At prediction time, operating inputs are integrated through the element energy balance to a periodic trajectory; the steady detailed-chemistry map reads that trajectory into the quasi-steady conversion, and the fitted correction turns it into the dynamic one. This chain runs on GRI-Mech 3.0 with a fixed 1:1 CH&#8324;/CO&#8322; feed and reports conversion only; no selectivity is predicted, because none was validated. (b) The correction was fitted once, offline: the transient reactor integrated on the same trajectory supplies the truth, its log-odds difference from the same baseline is the target, and the fitted map from the five inputs to that target is what layer (a) evaluates. (c) The interpretive two-step network shares the trajectory, accounts for the pulsing window in arbitrary units, and claims no real yield.</div>
 <div class="prov">Every panel calls <code>apps/rphcjh/solver.js</code>; the predictor adds <code>apps/rphcjh/surrogate.js</code>, so the browser and the regression tests execute identical code.</div>
 </figure>
 
@@ -709,35 +709,85 @@ function detailed(DATA) {
 /* revision.                                                            */
 /* ------------------------------------------------------------------ */
 function workflow(DATA) {
-  /* The calculation chain, and nothing else. Tab names, provenance and the
-     validation story live in the caption and in the page text; a figure that
-     carries them reads as documentation, not as science. */
-  const ns = "r1", W = 505, H = 220;
+  /* Three lanes: what runs at prediction time, what was fitted once
+     offline, and the interpretive layer that shares the trajectory but
+     claims only trends. The dashed vertical links carry the three facts
+     the lanes share; everything else is caption material. */
+  const ns = "r1", W = 505, H = 312;
+  const E = DATA.drive;
   let b = defs(ns);
-  const bx = 132, bw = 240, bh = 34, gap = 16;
-  const steps = [
-    { title: "Operating inputs", sub: "V, period, duty, residence time", hue: null },
-    { title: "Element thermal model", sub: "T(t)", hue: null },
-    { title: "Detailed-chemistry map", sub: "X_{qs}", hue: null },
-    { title: "GP correction", sub: "X_{dyn}", hue: C.thermal }
-  ];
-  let y = 18;
-  steps.forEach(function (t, i) {
-    b += rect(bx, y, bw, bh, { stroke: t.hue || C.grey, fill: t.hue ? tintOf(t.hue) : "#FFFFFF",
-      sw: t.hue ? 1 : 0.8, rx: 2 });
-    b += T(bx + bw / 2, y + 14, t.title, { size: 9, weight: "bold", anchor: "middle",
-      fill: t.hue ? shadeOf(t.hue) : C.ink });
-    b += T(bx + bw / 2, y + 26, t.sub, { size: 8.5, anchor: "middle", fill: t.hue ? shadeOf(t.hue) : C.grey });
-    if (i < steps.length - 1) {
-      b += arrow(ns, "M" + (bx + bw / 2) + "," + (y + bh + 2) + " L" + (bx + bw / 2) + "," + (y + bh + gap - 2),
-        { color: "hair" });
-    }
-    y += bh + gap;
-  });
-  /* the interpretive layer is beside the chain, dashed and small */
-  b += rect(384, 93, 104, 34, { stroke: C.hair, fill: "none", sw: 0.8, dash: "3 2", rx: 2 });
-  b += T(436, 107, "Interpretive model", { size: 8.5, anchor: "middle", fill: C.grey });
-  b += T(436, 119, "A → B → C", { size: 8.5, anchor: "middle", fill: C.grey });
+  const box = (x, y, w, h, title, lines, hue) => {
+    let o = rect(x, y, w, h, { stroke: hue || C.grey, fill: hue ? tintOf(hue) : "#FFFFFF",
+      sw: hue ? 1 : 0.8, rx: 2 });
+    o += T(x + w / 2, y + 13, title, { size: 8.5, weight: "bold", anchor: "middle",
+      fill: hue ? shadeOf(hue) : C.ink });
+    lines.forEach(function (t, k) {
+      o += T(x + w / 2, y + 25 + k * 11, t, { size: 8, anchor: "middle", fill: C.grey });
+    });
+    return o;
+  };
+
+  /* ---- a. the runtime chain ---- */
+  b += T(18, 22, "a", { size: 11, weight: "bold" });
+  b += T(34, 22, "Runtime prediction", { size: 8.5, weight: "bold", fill: C.grey });
+  const ay = 32, ah = 58;
+  b += box(18, ay, 84, ah, "Operating", ["inputs", "V, period, duty, τ"], null);
+  b += arrow(ns, "M104," + (ay + ah / 2) + " L110," + (ay + ah / 2), { color: "hair" });
+  b += box(112, ay, 106, ah, "Element energy", ["balance", "m c_{p}(T) dT/dt =", "V²/R(T) − losses(T)"], null);
+  b += arrow(ns, "M220," + (ay + ah / 2) + " L226," + (ay + ah / 2), { color: "hair" });
+  /* the trajectory itself, drawn from the integrated samples */
+  (function () {
+    const x0 = 228, pw = 74, ptop = ay + 6, pbot = ay + ah - 8;
+    const tLo = 0, tHi = Math.ceil(E.tPeak / 500) * 500;
+    const X = (v) => lin(v, 0, 2, x0, x0 + pw);
+    const Y = (v) => lin(v, tLo, tHi, pbot, ptop);
+    let o = rect(x0, ptop, pw, pbot - ptop, { stroke: C.grey, fill: "#FFFFFF", sw: 0.7, rx: 0 });
+    let d = "";
+    [0, 1].forEach(function (cyc) {
+      E.samples.forEach(function (q) {
+        d += (d ? " L" : "M") + X(cyc + q[0]).toFixed(1) + "," + Y(q[1]).toFixed(1);
+      });
+    });
+    o += '<path d="' + d + '" fill="none" stroke="' + C.thermal + '" stroke-width="1.1"/>';
+    o += T(x0 + pw / 2, pbot + 10, "periodic T(t)", { size: 8, anchor: "middle", fill: shadeOf(C.thermal) });
+    b += o;
+  })();
+  b += arrow(ns, "M304," + (ay + ah / 2) + " L310," + (ay + ah / 2), { color: "hair" });
+  b += box(312, ay, 88, ah, "Detailed", ["chemistry", "GRI-Mech 3.0", "X_{qs}"], C.scalar);
+  b += arrow(ns, "M402," + (ay + ah / 2) + " L408," + (ay + ah / 2), { color: "hair" });
+  b += box(410, ay, 77, ah, "GP correction", ["δ_{pred}(z)", "X_{pred}"], C.thermal);
+  b += T(487, ay + ah + 14, "z = [ logit X_{qs},  log₁₀(P/τ),  duty,  T_{peak},  T_{min} ]",
+    { size: 8, anchor: "end", fill: C.grey });
+  b += T(487, ay + ah + 25, "X_{pred} = σ( logit X_{qs} + δ_{pred} )", { size: 8, anchor: "end", fill: C.grey });
+
+  /* ---- b. the offline fit that produced the correction ---- */
+  const by = 152;
+  b += T(18, by - 6, "b", { size: 11, weight: "bold" });
+  b += T(34, by - 6, "Offline correction fit", { size: 8.5, weight: "bold", fill: C.grey });
+  const bh = 50;
+  b += box(112, by, 106, bh, "Transient CSTR", ["same T(t)", "X_{dyn}, the truth"], C.gas);
+  b += arrow(ns, "M220," + (by + bh / 2) + " L240," + (by + bh / 2), { color: "hair" });
+  b += box(242, by, 128, bh, "Correction target", ["δ_{true} = logit X_{dyn}", "− logit X_{qs}"], C.thermal);
+  b += arrow(ns, "M372," + (by + bh / 2) + " L392," + (by + bh / 2), { color: "hair" });
+  b += box(394, by, 93, bh, "Fit GP", ["194 fit, 48 test", "z → δ_{pred}"], null);
+
+  /* what the lanes share, drawn where they share it */
+  const link = (x, y1, y2, label, lx) => {
+    let o = line(x, y1, x, y2, { stroke: SHADE.thermal, sw: 0.8, dash: "3 2" });
+    o += T(lx || x + 5, (y1 + y2) / 2 + 3, label, { size: 8, fill: SHADE.thermal });
+    return o;
+  };
+  b += line(265, ay + ah + 16, 165, by - 4, { stroke: SHADE.thermal, sw: 0.8, dash: "3 2" });
+  b += T(196, (ay + ah + by) / 2 + 10, "same trajectory", { size: 8, anchor: "end", fill: SHADE.thermal });
+  b += link(356, ay + ah + 30, by - 4, "same baseline");
+  b += link(448, ay + ah + 30, by - 4, "fitted once");
+
+  /* ---- c. the layer that explains, and claims nothing further ---- */
+  const cy2 = 246;
+  b += T(18, cy2 + 10, "c", { size: 11, weight: "bold" });
+  b += rect(112, cy2, 258, 40, { stroke: C.hair, fill: "none", sw: 0.8, dash: "3 2", rx: 2 });
+  b += T(241, cy2 + 16, "Interpretive model,  A → B → C", { size: 8.5, weight: "bold", anchor: "middle", fill: C.grey });
+  b += T(241, cy2 + 29, "same T(t),  trends only", { size: 8, anchor: "middle", fill: C.grey });
   return svgDoc(W, H, b);
 }
 
