@@ -477,81 +477,6 @@ export function verification(DATA) {
 }
 
 /* ------------------------------------------------------------------ */
-/* boundaries(). Where each layer of the model stops. Read left to right:  */
-/* what is solved, on what assumption, and what that forbids.          */
-/* ------------------------------------------------------------------ */
-export function boundaries(DATA) {
-  /* A schematic, not a table of prose. The arrangement is drawn; what each
-     omission means, and what the ladder implies, is said once, in the
-     caption. */
-  const ns = "rs2", W = 505, H = 372;
-  let b = defs(ns);
-  const LX = 22;
-
-  b += T(LX, 22, "a", { size: 11, weight: "bold" });
-
-  /* ---- a. feed in, one element temperature, conversion out ---- */
-  const rx = 96, ry = 46, rw = 220, rh = 88;
-  b += rect(rx, ry, rw, rh, { stroke: C.gas, fill: tintOf(C.gas), sw: 1, rx: 4 });
-  b += T(rx + rw / 2, ry + 18, "Ideal CSTR", { size: 9, weight: "bold", anchor: "middle", fill: shadeOf(C.gas) });
-  const ex = rx + 30, ey = ry + 36, ew = rw - 60, eh = 32;
-  b += rect(ex, ey, ew, eh, { stroke: C.thermal, fill: tintOf(C.thermal), sw: 1, rx: 2 });
-  b += T(ex + ew / 2, ey + 13, "Element temperature", { size: 8.5, weight: "bold", anchor: "middle", fill: shadeOf(C.thermal) });
-  b += T(ex + ew / 2, ey + 25, "T(t)", { size: 8.5, anchor: "middle", fill: C.ink });
-
-  b += arrow(ns, "M" + (rx - 56) + "," + (ry + rh / 2) + " L" + (rx - 4) + "," + (ry + rh / 2), { color: "hair" });
-  b += T(rx - 60, ry + rh / 2 - 8, "1:1 CH₄/CO₂", { size: 8, fill: C.grey });
-  b += arrow(ns, "M" + (rx + rw + 4) + "," + (ry + rh / 2) + " L" + (rx + rw + 56) + "," + (ry + rh / 2), { color: "hair" });
-  b += T(rx + rw + 6, ry + rh / 2 - 8, "conversion X(t)", { size: 8, fill: C.grey });
-
-  b += rect(rx, ry + rh + 16, rw, 26, { stroke: C.hair, fill: "none", sw: 0.8, dash: "3 2", rx: 2 });
-  b += T(rx + rw / 2, ry + rh + 32, "offline plug-flow comparison", { size: 8.5, anchor: "middle", fill: C.grey });
-
-  const nx = 386;
-  b += T(nx, 46, "Excluded", { size: 8.5, weight: "bold" });
-  b += line(nx, 51, 488, 51, { stroke: C.ink, sw: 0.8 });
-  ["Element gradients", "Thermal feedback", "Surface chemistry"].forEach(function (t, i) {
-    b += T(nx, 66 + i * 14, "\u2022  " + t, { size: 8.5 });
-  });
-
-  b += line(LX, 192, 488, 192, { stroke: C.rule, sw: 0.6 });
-
-  /* ---- b. the largest departure in each swing bin: the bound ---- */
-  (function () {
-    const L = DATA.mem.swingLadder, x0 = 96, y0 = 232, pw = 300, ph = 96;
-    b += T(LX, y0 - 22, "b", { size: 11, weight: "bold" });
-    const hi = Math.ceil(Math.max.apply(null, L.map((r) => r.max))) + 1;
-    const Y = (v) => lin(v, 0, hi, y0 + ph, y0 + 6);
-    b += rect(x0, y0, pw, ph, { stroke: C.grey, fill: "#FFFFFF", sw: 0.8, rx: 0 });
-    for (let g = 0; g <= hi; g += 2) {
-      b += line(x0, Y(g), x0 + 4, Y(g), { stroke: C.grey, sw: 0.6 });
-      b += T(x0 - 4, Y(g) + 3, String(g), { size: 8, anchor: "end", fill: C.grey });
-    }
-    b += line(x0, Y(1), x0 + pw, Y(1), { stroke: C.ink, sw: 0.8, dash: "3 2" });
-    const bw = pw / L.length;
-    L.forEach(function (r, i) {
-      /* one accent: the bin the headline number lives in */
-      const hot = i === L.length - 1;
-      const cx = x0 + i * bw;
-      b += rect(cx + 6, Y(r.max), bw - 12, Y(0) - Y(r.max),
-        { fill: hot ? tintOf(C.thermal) : TINT.grey, stroke: hot ? C.thermal : C.grey, sw: 0.8, rx: 0 });
-      b += line(cx + 6, Y(r.med), cx + bw - 6, Y(r.med), { stroke: hot ? SHADE.thermal : C.ink, sw: 1.2 });
-      b += T(cx + bw / 2, Y(r.max) - 4, r.max.toFixed(2),
-        { size: 8, anchor: "middle", weight: hot ? "bold" : "normal", fill: hot ? SHADE.thermal : C.ink });
-      b += T(cx + bw / 2, y0 + ph + 12, r.hi === null ? "≥ " + r.lo : r.lo + "–" + r.hi, { size: 8, anchor: "middle" });
-    });
-    b += T(x0 + pw / 2, y0 + ph + 25, "log rate-constant swing  S", { size: 8.5, anchor: "middle" });
-    b += '<g transform="rotate(-90 ' + (x0 - 26) + ' ' + (y0 + ph / 2) + ')">' +
-      T(x0 - 26, y0 + ph / 2, "X_{dyn} / X_{qs}", { size: 8.5, anchor: "middle" }) + '</g>';
-    b += rect(x0 + pw + 14, y0 + 4, 16, 10, { fill: TINT.grey, stroke: C.grey, sw: 0.8, rx: 0 });
-    b += T(x0 + pw + 34, y0 + 12, "largest in bin", { size: 8, fill: C.grey });
-    b += line(x0 + pw + 14, y0 + 26, x0 + pw + 30, y0 + 26, { stroke: C.ink, sw: 1.2 });
-    b += T(x0 + pw + 34, y0 + 29, "median", { size: 8, fill: C.grey });
-  })();
-  return svgDoc(W, H, b);
-}
-
-/* ------------------------------------------------------------------ */
 /* architecture(). The module the page and the tests both call, and the gates  */
 /* a change passes. No tool or model is named: they date, the          */
 /* structure does not.                                                 */
@@ -913,7 +838,7 @@ export function finalparity(DATA) {
     o += line(x0 + 8, ptop + 26, x0 + 24, ptop + 26, { stroke: C.grey, sw: 1.2, dash: "3 2" });
     o += T(x0 + 28, ptop + 29, "quasi-steady, uncorrected", { size: 8, fill: C.grey });
     o += T(x0 + pw - 8, pbot - 24, "mean " + sciT(F.mean) + " against " + sciT(F.cjhMean), { size: 8, anchor: "end", weight: "bold" });
-    /* four criteria here, five in Fig. S6: the long-period consistency check
+    /* four criteria here, five in Table S1: the long-period consistency check
        is a development criterion and was never part of the final test, so the
        two counts are stated separately rather than reconciled */
     o += T(x0 + pw - 8, pbot - 14, F.verdict === "PASS"
@@ -1040,68 +965,6 @@ export function method(DATA) {
       o += T(X(v), pbot + 11, String(Number(v.toFixed(3))), { size: 8, anchor: "middle", fill: C.grey });
     });
     o += T(x0 + pw / 2, pbot + 23, "CH₄ conversion  X", { size: 8.5, anchor: "middle" });
-    b += o;
-  })();
-  return svgDoc(W, H, b);
-}
-
-/* ------------------------------------------------------------------ */
-/* gpdetail(). What the fitted kernel says each input is worth, and what  */
-/* the correction was measured against on data it never saw.           */
-/* ------------------------------------------------------------------ */
-export function gpdetail(DATA) {
-  const ns = "rs4", W = 505, H = 280;
-  const G = DATA.gp;
-  let b = defs(ns);
-
-  /* a. the length scales; one accent, on the strongest dependence */
-  (function () {
-    const x0 = 150, w = 230, ytop = 36, rowh = 22;
-    let o = T(18, 22, "a", { size: 11, weight: "bold" });
-    const hi = Math.ceil(Math.max.apply(null, G.features.map((f) => f.ell)));
-    const X = (v) => lin(v, 0, hi, x0, x0 + w);
-    const strongest = G.features.reduce((a, f) => (f.ell < a.ell ? f : a), G.features[0]);
-    const yb = ytop + G.features.length * rowh;
-    o += rect(x0, ytop - 6, w, yb - ytop + 6, { stroke: C.grey, fill: "none", sw: 0.8, rx: 0 });
-    G.features.forEach(function (f, i) {
-      const y = ytop + i * rowh;
-      const hot = f === strongest;
-      o += T(x0 - 8, y + 9, f.label, { size: 8.5, anchor: "end" });
-      o += '<rect x="' + x0 + '" y="' + y + '" width="' + (X(f.ell) - x0).toFixed(1) +
-        '" height="11" fill="' + (hot ? C.thermal : C.grey) + '" fill-opacity="' + (hot ? 0.85 : 0.35) + '"/>';
-      /* a bar ending near the box edge takes its value inside the bar */
-      const inEnd = X(f.ell) > x0 + w - 26;
-      o += T(X(f.ell) + (inEnd ? -4 : 5), y + 9, f.ell.toFixed(2),
-        { size: 8, anchor: inEnd ? "end" : "start", fill: hot ? SHADE.thermal : C.grey });
-    });
-    [0, 2, 4, 6, 8].filter((v) => v <= hi).forEach(function (v) {
-      o += line(X(v), yb, X(v), yb - 4, { stroke: C.grey, sw: 0.6 });
-      o += T(X(v), yb + 11, String(v), { size: 8, anchor: "middle", fill: C.grey });
-    });
-    o += T(x0 + w / 2, yb + 23, "length scale, in standard deviations of the input", { size: 8.5, anchor: "middle" });
-    b += o;
-  })();
-
-  /* b. the ladder; the prespecified limits are one line, the rest is caption */
-  (function () {
-    const LX = 22, MX = 300, PX = 372, WX = 448, GX = 488, ytop = 216;
-    let o = T(18, ytop - 18, "b", { size: 11, weight: "bold" });
-    o += T(MX, ytop - 4, "mean", { size: 8, anchor: "end", fill: C.grey });
-    o += T(PX, ytop - 4, "p95", { size: 8, anchor: "end", fill: C.grey });
-    o += T(WX, ytop - 4, "max", { size: 8, anchor: "end", fill: C.grey });
-    o += line(LX, ytop + 1, GX, ytop + 1, { stroke: C.ink, sw: 0.9 });
-    let y = ytop + 15;
-    G.ladder.forEach(function (r, i) {
-      const best = i === G.ladder.length - 1;
-      o += T(LX, y, r.model, { size: 8.5, weight: best ? "bold" : "normal", fill: best ? SHADE.thermal : C.ink });
-      [[MX, r.mean], [PX, r.p95], [WX, r.max]].forEach(function (c) {
-        o += T(c[0], y, c[1].toFixed(4), { size: 8.5, anchor: "end",
-          weight: best ? "bold" : "normal", fill: best ? SHADE.thermal : C.grey });
-      });
-      y += 15;
-    });
-    o += line(LX, y - 10, GX, y - 10, { stroke: C.rule, sw: 0.6 });
-    o += T(LX, y + 2, "Prespecified limits: mean ≤ 0.02;  p95 ≤ 0.05;  max ≤ 0.10", { size: 8, fill: C.grey });
     b += o;
   })();
   return svgDoc(W, H, b);

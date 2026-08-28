@@ -10,8 +10,8 @@ import { SERIES_DEFAULTS, seriesRateConstants, steadySeriesCSTR, integrateSeries
          sampledWaveform, arrheniusRate, transportCoefficient, velocity,
          idealTwoStateAverages, timeAverageTemperature } from "../../apps/rphcjh/solver.js";
 import { predictRphConversion } from "../../apps/rphcjh/surrogate.js";
-import { workflow, drive, comparison, window_, consequence, detailed, verification, boundaries,
-         cjhmap, memory, finalparity, method, gpdetail, designspace, cost } from "./draw.mjs";
+import { workflow, drive, comparison, window_, consequence, detailed, verification,
+         cjhmap, memory, finalparity, method, designspace, cost } from "./draw.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const p = (x, n = 4) => Number(x.toPrecision(n));
@@ -218,15 +218,6 @@ const regime = (function () {
            total: gainBandCases.length, pool: memCases.length };
 })();
 
-/* How far the departure can go as a function of the swing. This is the bound
-   the headline ratio rests on: a reacting gas that does not follow the element
-   all the way sees a smaller swing, and moves down this ladder. */
-const swingLadder = [[0, 2], [2, 5], [5, 10], [10, 20], [20, 40], [40, 1e9]].map(function (e) {
-  const g = memCases.filter((c) => c.swing >= e[0] && c.swing < e[1]).map((c) => c.gain).sort((a, c) => a - c);
-  return { lo: e[0], hi: e[1] > 1e8 ? null : e[1], n: g.length,
-           max: g.length ? p(g[g.length - 1], 3) : null,
-           med: g.length ? p(g[Math.floor(g.length / 2)], 3) : null };
-}).filter((r) => r.n > 0);
 const gpReport = bundle.model.holdout_report.find((m) => m.model.includes("GP"));
 const cjhReport = bundle.model.holdout_report.find((m) => m.model.includes("as-is"));
 
@@ -339,7 +330,7 @@ const DATA = {
       lo: p(gainBandCases.reduce((a, c) => Math.min(a, c.pt), Infinity), 3),
       hi: p(gainBandCases.reduce((a, c) => Math.max(a, c.pt), 0), 3)
     } : null,
-    regime, swingLadder,
+    regime,
     hold: { mean: p(gpReport.mean, 3), p95: p(gpReport.p95, 3), max: p(gpReport.max, 3) },
     holdCjh: { mean: p(cjhReport.mean, 3), p95: p(cjhReport.p95, 3), max: p(cjhReport.max, 3) }
   },
@@ -462,14 +453,15 @@ const PLATES = [
   { id: "rphFigS1", label: "Fig. S1", draw: drive },
   { id: "rphFigS2", label: "Fig. S2", draw: detailed },
   { id: "rphFigS3", label: "Fig. S3", draw: method },
-  /* the campaign comes before the kernel: a reader asks where the training
+  /* the campaign comes before the fit: a reader asks where the training
      cases are before asking what the fit made of them */
   { id: "rphFigS4", label: "Fig. S4", draw: designspace },
-  { id: "rphFigS5", label: "Fig. S5", draw: gpdetail },
-  { id: "rphFigS6", label: "Fig. S6", draw: verification },
-  { id: "rphFigS7", label: "Fig. S7", draw: boundaries },
-  { id: "rphFigS8", label: "Fig. S8", draw: workflow },
-  { id: "rphFigS9", label: "Fig. S9", draw: cost }
+  { id: "rphFigS5", label: "Fig. S5", draw: verification },
+  { id: "rphFigS6", label: "Fig. S6", draw: cost },
+  /* Not submitted. The workflow diagram orients a reader of this page, but it
+     adds no data and no check the submitted set does not already carry, so it
+     sits after that set rather than inside it. */
+  { id: "rphFigW", label: "Workflow", draw: workflow }
 ];
 for (const plate of PLATES) {
   const svg = plate.draw(DATA);
@@ -538,9 +530,37 @@ const TOKENS = {
   RG_PHI: String(DATA.mem.regime.ptHi), RG_IN: String(DATA.mem.regime.inside),
   RG_CAP: String(DATA.mem.regime.captured), RG_TOT: String(DATA.mem.regime.total),
   EA1: String(DATA.kinetics.ea1),
-  LAD_N: (function () {
-    const n = DATA.mem.swingLadder.map((r) => r.n);
-    return n.slice(0, -1).join(", ") + " and " + n[n.length - 1];
+  /* Table S1. The fitted kernel and the development ladder, as a table rather
+     than as artwork. A fitted ARD length scale is not a physical sensitivity:
+     the five inputs are coupled through the element balance, so a bar chart of
+     them invites a causal reading the fit does not support. The numbers are
+     the ones the plate drew, from the same bundle. */
+  TABLE_S1: (function () {
+    const G = DATA.gp, sub = (t) => String(t).replace(/_\{([^}]*)\}/g, "<sub>$1</sub>");
+    /* the numeric class is mono and upper-cased, which is right for a value and
+       wrong for a phrase, so text-valued rows take no class */
+    const row = (q, v, n, txt) => "<tr><td class=\"q\">" + q + "</td><td" +
+                             (txt ? "" : " class=\"n\"") + ">" + v +
+                             "</td><td>" + n + "</td></tr>";
+    const rel = (t) => t.replace(/<=/g, "&#8804;").replace(/>=/g, "&#8805;");
+    let out = row("Kernel", G.kernel, "Fitted once, offline", true);
+    out += row("Training cases", String(G.nTrain),
+               String(G.dropped) + " nonreacting cases dropped before fitting");
+    out += row("Development-test cases", String(G.nHold), "Excluded from fitting");
+    out += row("Signal amplitude &#963;<sub>f</sub>", String(G.sigmaF), "Log-odds units");
+    out += row("Noise &#963;<sub>n</sub>", String(G.sigmaN), "Log-odds units");
+    G.features.forEach(function (f) {
+      out += row("Length scale, " + sub(f.label), String(f.ell), "Standardised input units");
+    });
+    G.ladder.forEach(function (m) {
+      out += row("Development-test error, " + m.model,
+                 "mean " + m.mean + ", p95 " + m.p95 + ", max " + m.max,
+                 "Absolute conversion error");
+    });
+    out += row("Acceptance criteria", rel(Object.keys(G.gates).join("; ")),
+               Object.values(G.gates).every(Boolean) ? "Prespecified; all met"
+                                                     : "Prespecified; NOT all met", true);
+    return out;
   })(),
   RT_MED: Math.round(DATA.cost.speedup.median).toLocaleString("en-US"),
   RT_MIN: Math.round(DATA.cost.speedup.min).toLocaleString("en-US"),

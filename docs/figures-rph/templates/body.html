@@ -88,48 +88,44 @@
 </figure>
 
 <figure id="rphFigS5">
-<div class="figbar"><span class="figno">Fig. S5</span><span class="figwhere">Supporting Information &#183; Fitted kernel and development criteria</span><span class="figsize">178 mm</span></div>
+<div class="figbar"><span class="figno">Fig. S5</span><span class="figwhere">Supporting Information &#183; Numerical verification</span><span class="figsize">178 mm</span></div>
 <div class="plate"></div>
 <div class="tools"><button data-src="rphFigS5">Show SVG source</button><button data-png="rphFigS5">Render 600 dpi</button><button data-copy="rphFigS5">Copy SVG</button><span class="hint"></span></div>
 <textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Fig. S5.</b> The fitted correction, examined on the development set. (a) One length scale per input; a shorter bar denotes a stronger dependence, and the strongest is highlighted. Duty carries the weakest dependence, and that is not a defect: the element model has already spent duty in producing the peak and minimum temperatures, which the correction reads directly. (b) Development-set error for the corrected model, the uncorrected quasi-steady approximation, and inverse-distance weighting over the same features. The limits on the panel were prescribed before fitting, together with two further development criteria also satisfied: at least a 30 percent improvement in mean error over the uncorrected approximation, and a correction that vanishes at long period. Five criteria are applied here and four in the independent evaluation: the long-period consistency check is a development criterion only.</div>
-<div class="prov">Length scales and criteria are read from the fitted model bundle; no value on this plate is retyped.</div>
-</figure>
-
-<figure id="rphFigS6">
-<div class="figbar"><span class="figno">Fig. S6</span><span class="figwhere">Supporting Information &#183; Numerical verification</span><span class="figsize">178 mm</span></div>
-<div class="plate"></div>
-<div class="tools"><button data-src="rphFigS6">Show SVG source</button><button data-png="rphFigS6">Render 600 dpi</button><button data-copy="rphFigS6">Copy SVG</button><span class="hint"></span></div>
-<textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Fig. S6.</b> Worst residual for each solver check, on one logarithmic axis. The checks fall into two populations about twelve decades apart. The finite-step rows compare the integrated march against a steady voltage-drive solve at 20 to 60 V and against the cycle energy balance, and the step sets their floor. The exact rows recover the closed-form constant-temperature reactor at 900 to 1300 &#176;C and round-trip the conversion inversion, and floating-point arithmetic sets theirs. The periodic rows drive the stiff limit, where the fast step runs up to twelve orders faster than the cycle containing it, and report drift over one converged cycle. Each residual is the worst over its check&#8217;s cases, between one and five per row. Open markers denote drives whose calculated peak lies outside the material-property range: numerical tests, not operating conditions.</div>
+<div class="cap"><b>Fig. S5.</b> Worst residual for each solver check, on one logarithmic axis. The checks fall into two populations about twelve decades apart. The finite-step rows compare the integrated march against a steady voltage-drive solve at 20 to 60 V and against the cycle energy balance, and the step sets their floor. The exact rows recover the closed-form constant-temperature reactor at 900 to 1300 &#176;C and round-trip the conversion inversion, and floating-point arithmetic sets theirs. The periodic rows drive the stiff limit, where the fast step runs up to twelve orders faster than the cycle containing it, and report drift over one converged cycle. Each residual is the worst over its check&#8217;s cases, between one and five per row. Open markers denote drives whose calculated peak lies outside the material-property range: numerical tests, not operating conditions.</div>
 <div class="prov">Every residual is computed when this page is built, not recorded from a previous run.</div>
 </figure>
 
-<figure id="rphFigS7">
-<div class="figbar"><span class="figno">Fig. S7</span><span class="figwhere">Supporting Information &#183; Model applicability, and the cost of the omitted lag</span><span class="figsize">178 mm</span></div>
+<figure id="rphFigS6">
+<div class="figbar"><span class="figno">Fig. S6</span><span class="figwhere">Supporting Information &#183; Computational cost</span><span class="figsize">178 mm</span></div>
 <div class="plate"></div>
-<div class="tools"><button data-src="rphFigS7">Show SVG source</button><button data-png="rphFigS7">Render 600 dpi</button><button data-copy="rphFigS7">Copy SVG</button><span class="hint"></span></div>
+<div class="tools"><button data-src="rphFigS6">Show SVG source</button><button data-png="rphFigS6">Render 600 dpi</button><button data-copy="rphFigS6">Copy SVG</button><span class="hint"></span></div>
 <textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Fig. S7.</b> The modelled arrangement, and how far its headline result depends on the part it does not resolve. (a) The element is treated as a single temperature inside an ideal constant-pressure stirred volume, with the inlet and outlet flows adjusted through the cycle to hold the instantaneous mass residence time fixed. Coupling runs in one direction only: the element temperature drives the chemistry, and reaction heat is not returned, so conversion cannot feed back on temperature and thermal runaway is outside the model. The steady plug-flow calculation sits outside the loop and is used for comparison, not prediction; absolute yields are not claimed. No layer carries oxidation, sublimation or a lifetime model, so a temperature the element reaches here is not one it necessarily survives. (b) Largest ratio (bar) and median (rule) in bins of the log rate-constant swing, over {{LAD_N}} cases from the smallest bin to the largest. The reacting gas is prescribed to follow the element; a gas that lags spans a smaller swing, and the largest departure rises monotonically with it, so the reported maximum is an upper bound. A reader with an estimate of the thermal lag in their own configuration can read the corresponding bound from the panel.</div>
-<div class="prov">Scope statements are properties of the model as implemented in <code>apps/rphcjh/solver.js</code>; the bins are computed from <code>canonical/design-physical.jsonl</code> when this page is built.</div>
-</figure>
-
-<figure id="rphFigS8">
-<div class="figbar"><span class="figno">Fig. S8</span><span class="figwhere">Supporting Information &#183; Prediction workflow</span><span class="figsize">178 mm</span></div>
-<div class="plate"></div>
-<div class="tools"><button data-src="rphFigS8">Show SVG source</button><button data-png="rphFigS8">Render 600 dpi</button><button data-copy="rphFigS8">Copy SVG</button><span class="hint"></span></div>
-<textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Fig. S8.</b> The three layers of the model, and what they share. (a) At prediction time, operating inputs are integrated through the element energy balance to a periodic trajectory; the steady detailed-chemistry map reads that trajectory into the quasi-steady conversion, and the fitted correction turns it into the dynamic one. This chain runs on GRI-Mech 3.0 with a fixed 1:1 CH&#8324;/CO&#8322; feed and reports conversion only; no selectivity is predicted, because none was validated. (b) The correction was fitted once, offline: the transient reactor integrated on the same trajectory supplies the truth, its log-odds difference from the same baseline is the target, and the fitted map from the five inputs to that target is what layer (a) evaluates. (c) The interpretive two-step network shares the trajectory, accounts for the pulsing window in arbitrary units, and claims no real yield.</div>
-<div class="prov">Every panel calls <code>apps/rphcjh/solver.js</code>; the predictor adds <code>apps/rphcjh/surrogate.js</code>, so the browser and the regression tests execute identical code.</div>
-</figure>
-
-<figure id="rphFigS9">
-<div class="figbar"><span class="figno">Fig. S9</span><span class="figwhere">Supporting Information &#183; Computational cost</span><span class="figsize">178 mm</span></div>
-<div class="plate"></div>
-<div class="tools"><button data-src="rphFigS9">Show SVG source</button><button data-png="rphFigS9">Render 600 dpi</button><button data-copy="rphFigS9">Copy SVG</button><span class="hint"></span></div>
-<textarea readonly spellcheck="false"></textarea><canvas></canvas>
-<div class="cap"><b>Fig. S9.</b> Wall-clock time to evaluate one operating condition on the two calculation paths, on a common logarithmic axis. Open circles are individual transient Cantera integrations of sealed final-test cases, rerun to convergence on one machine; the filled circle and open circle on the lower row are the median and 95th percentile of the browser model over the full sealed set on the same machine, timed after warm-up and excluding file loading. The quoted factor pairs each rerun case with its own browser timing. Both paths lengthen together as the pulse period shortens, so the case-matched range, not the single ratio, is the result. Measured on {{RT_MACHINE}}; the absolute times are specific to that machine.</div>
+<div class="cap"><b>Fig. S6.</b> Wall-clock time to evaluate one operating condition on the two calculation paths, on a common logarithmic axis. Open circles are individual transient Cantera integrations of sealed final-test cases, rerun to convergence on one machine; the filled circle and open circle on the lower row are the median and 95th percentile of the browser model over the full sealed set on the same machine, timed after warm-up and excluding file loading. The quoted factor pairs each rerun case with its own browser timing. Both paths lengthen together as the pulse period shortens, so the case-matched range, not the single ratio, is the result. Measured on {{RT_MACHINE}}; the absolute times are specific to that machine.</div>
 <div class="prov">Measured values from <code>tools/openmkm_dynamic/data/canonical/runtime-comparison.json</code>, committed with the scripts that produced it; the plate reads the file it names.</div>
+</figure>
+
+
+<h2>Table S1. Fitted correction and development criteria</h2>
+<p class="lede">What the plate that used to sit here reported, as a table. The five length scales are given for reproducibility, not as a ranking of physical importance: the inputs are coupled through the element energy balance, so a short length scale says the fit varies quickly along that standardised coordinate, not that the conversion depends causally on that variable. Every value is read from the same fitted bundle the browser loads. All five criteria were prescribed before fitting; four of them are reapplied in the independent evaluation of Fig. 4, because the long-period consistency check is a development criterion only.</p>
+
+<div class="tablewrap"><table>
+<thead><tr><th>Quantity</th><th>Value</th><th>Note</th></tr></thead>
+<tbody>{{TABLE_S1}}</tbody>
+</table></div>
+
+<div class="note"><b>Model scope.</b> The reacting gas is assigned the element temperature, and reaction heat is not returned to the element balance, so conversion cannot feed back on temperature and thermal runaway is outside the model. Element-scale gradients, surface chemistry and material degradation are outside it as well: no layer carries oxidation, sublimation or a lifetime model, so a temperature the element reaches here is not one it necessarily survives. The steady plug-flow calculation is used for comparison rather than prediction, and no absolute yield is claimed.</div>
+
+<h2>Not submitted</h2>
+<p class="lede">Drawn from the same data object, and useful for reading this page, but carrying no measurement the six figures above do not already carry. It is not part of the Supporting Information.</p>
+
+<figure id="rphFigW">
+<div class="figbar"><span class="figno">Workflow</span><span class="figwhere">Not submitted &#183; how the three layers fit together</span><span class="figsize">178 mm</span></div>
+<div class="plate"></div>
+<div class="tools"><button data-src="rphFigW">Show SVG source</button><button data-png="rphFigW">Render 600 dpi</button><button data-copy="rphFigW">Copy SVG</button><span class="hint"></span></div>
+<textarea readonly spellcheck="false"></textarea><canvas></canvas>
+<div class="cap"><b>Workflow.</b> The three layers of the model, and what they share. (a) At prediction time, operating inputs are integrated through the element energy balance to a periodic trajectory; the steady detailed-chemistry map reads that trajectory into the quasi-steady conversion, and the fitted correction turns it into the dynamic one. This chain runs on GRI-Mech 3.0 with a fixed 1:1 CH&#8324;/CO&#8322; feed and reports conversion only; no selectivity is predicted, because none was validated. (b) The correction was fitted once, offline: the transient reactor integrated on the same trajectory supplies the truth, its log-odds difference from the same baseline is the target, and the fitted map from the five inputs to that target is what layer (a) evaluates. (c) The interpretive two-step network shares the trajectory, accounts for the pulsing window in arbitrary units, and claims no real yield.</div>
+<div class="prov">Every panel calls <code>apps/rphcjh/solver.js</code>; the predictor adds <code>apps/rphcjh/surrogate.js</code>, so the browser and the regression tests execute identical code.</div>
 </figure>
 
 <h2>Values quoted in the manuscript text</h2>
