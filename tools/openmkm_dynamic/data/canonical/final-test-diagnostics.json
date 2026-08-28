@@ -1,0 +1,81 @@
+{
+  "generated_by": "tools/openmkm_dynamic/diagnose_final_test.py",
+  "points": 64,
+  "quasi_steady": {
+    "mae_pp": 4.78715642828785,
+    "rmse_pp": 10.63105844496914,
+    "mean_signed_pp": -4.784266444440424,
+    "p95_pp": 29.586936404014214,
+    "max_pp": 41.81440688991231,
+    "r2_one_minus_sse_sst": 0.8886720634058187
+  },
+  "corrected": {
+    "mae_pp": 0.2933332143009829,
+    "rmse_pp": 0.5397421583120297,
+    "mean_signed_pp": -0.15428822801803832,
+    "p95_pp": 1.2871403374546688,
+    "max_pp": 2.014604120828156,
+    "r2_one_minus_sse_sst": 0.999713038369695
+  },
+  "mae_reduction": 0.938724957353045,
+  "calibration": {
+    "coverage_by_nominal_level": {
+      "0.50": 0.703125,
+      "0.80": 0.859375,
+      "0.90": 0.90625,
+      "0.95": 0.921875
+    },
+    "mean_95_interval_width_pp": 3.0538186286262072,
+    "median_95_interval_width_pp": 2.6149645813044184,
+    "standardized_residuals": {
+      "mean": 0.5696206267874828,
+      "stdev": 1.1181887784830042,
+      "max_abs": 5.296841279246722
+    },
+    "uncertainty_vs_error": {
+      "pearson": 0.580141754843289,
+      "spearman": 0.7963827838827837
+    }
+  },
+  "conversion_bands": [
+    {
+      "band": "low",
+      "n": 44,
+      "qs_signed_pp_mean": -1.4695274229289608,
+      "qs_mae_pp": 1.4696076923613504,
+      "qs_relative_mean": 0.15730106065973348,
+      "corrected_mae_pp": 0.1651946052687762,
+      "median_period_over_tau": 8.84664415986501,
+      "median_delta_T": 439.12342049621475,
+      "median_delta_true": 0.03102371412883631
+    },
+    {
+      "band": "mid",
+      "n": 5,
+      "qs_signed_pp_mean": -13.806798298166086,
+      "qs_mae_pp": 13.806798298166086,
+      "qs_relative_mean": 0.31537067649801553,
+      "corrected_mae_pp": 0.3578375322631666,
+      "median_period_over_tau": 1.9269169590971678,
+      "median_delta_T": 548.4765117720669,
+      "median_delta_true": 0.48456419033390863
+    },
+    {
+      "band": "high",
+      "n": 15,
+      "qs_signed_pp_mean": -11.499990289632159,
+      "qs_mae_pp": 11.512085430379505,
+      "qs_relative_mean": 0.17056928988934308,
+      "corrected_mae_pp": 0.6477050281413951,
+      "median_period_over_tau": 0.5908694185099089,
+      "median_delta_T": 225.47235277908248,
+      "median_delta_true": 0.08720412544725864
+    }
+  ],
+  "residual_drivers": {
+    "spearman_qs_residual_vs_x_dyn": -0.6929945054945054,
+    "spearman_qs_residual_vs_log_p_over_tau": 0.08498168498168497,
+    "spearman_qs_residual_vs_delta_T": -0.4701465201465201,
+    "spearman_delta_true_vs_x_dyn": 0.42893772893772886
+  }
+}

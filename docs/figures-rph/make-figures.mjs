@@ -256,6 +256,9 @@ const example = (function () {
     voltage: p(i.voltage_V, 3), period: p(i.period_s, 3), duty: p(i.duty, 3),
     tau: p(i.tau_s, 3), tPeak: p(tPeakC, 4), tMin: p(tMinC, 3),
     cycles: i.drive_cycles,
+    /* the element trajectory itself, for the plate that draws this case */
+    samples: integratePulsedElement({ voltage: i.voltage_V, period: i.period_s,
+      duty: i.duty }).samples.map((q) => [Number(q[0].toFixed(4)), p(q[1], 5)]),
     xDyn: p(o.ch4_conversion, 3), xQs: p(o.quasi_steady_ch4_conversion, 3),
     delta: p(logit(o.ch4_conversion) - logit(o.quasi_steady_ch4_conversion), 3),
     deltaHat: pred.valid ? p(pred.correctionLogOdds, 3) : null,

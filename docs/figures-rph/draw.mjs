@@ -880,86 +880,118 @@ export function finalparity(DATA) {
 /* the campaign, selected by rule so it cannot be a flattering pick.   */
 /* ------------------------------------------------------------------ */
 export function method(DATA) {
-  const ns = "r9", W = 505, H = 316;
+  /* The worked case, in the order the model actually runs: the element
+     trajectory feeds the transient truth and the quasi-steady baseline,
+     their log-odds difference is the training target, the GP predicts that
+     target from five inputs, and panel c puts baseline, prediction and
+     truth on one axis. The case is the largest departure in the campaign,
+     selected by rule, so it cannot be a flattering pick. */
+  const ns = "r9", W = 505, H = 378;
   const E = DATA.example, G = DATA.gp;
   let b = defs(ns);
-  const box = (x, y, w, h, title, lines, hue, fill) => {
-    let o = rect(x, y, w, h, { stroke: C.edge, fill: fill || "#FFFFFF", sw: 0.8 });
-    o += T(x + w / 2, y + 13, title, { size: 8.5, weight: "bold", anchor: "middle",
-                                       fill: hue ? shadeOf(hue) : SHADE.ink });
-    (lines || []).forEach(function (t, i) {
-      o += T(x + w / 2, y + 25 + i * 10, t, { size: 8, anchor: "middle", fill: C.grey });
-    });
-    return o;
-  };
 
-  /* a. the label path: one drive, two conversions, one log-odds difference */
+  /* ---- a. one trajectory, two readings, one target ---- */
   b += T(18, 22, "a", { size: 11, weight: "bold" });
+  (function () {
+    const x0 = 46, pw = 130, ptop = 40, pbot = 138;
+    const tLo = Math.floor(E.tMin / 500) * 500, tHi = Math.ceil(E.tPeak / 500) * 500;
+    const X = (v) => lin(v, 0, 2, x0, x0 + pw);
+    const Y = (v) => lin(v, tLo, tHi, pbot, ptop);
+    let o = rect(x0, ptop, pw, pbot - ptop, { stroke: C.grey, fill: "#FFFFFF", sw: 0.8, rx: 0 });
+    [tLo, tHi].forEach(function (v) {
+      o += line(x0, Y(v), x0 + 4, Y(v), { stroke: C.grey, sw: 0.6 });
+      o += T(x0 - 4, Y(v) + 3, String(v), { size: 8, anchor: "end", fill: C.grey });
+    });
+    [0, 1, 2].forEach(function (v) {
+      o += line(X(v), pbot, X(v), pbot - 4, { stroke: C.grey, sw: 0.6 });
+      o += T(X(v), pbot + 11, String(v), { size: 8, anchor: "middle", fill: C.grey });
+    });
+    /* two periods of the real element ODE solution, not a sketch */
+    let d = "";
+    [0, 1].forEach(function (cyc) {
+      E.samples.forEach(function (q, k) {
+        d += (d ? " L" : "M") + X(cyc + q[0]).toFixed(1) + "," + Y(q[1]).toFixed(1);
+      });
+    });
+    o += '<path d="' + d + '" fill="none" stroke="' + C.thermal + '" stroke-width="1.3"/>';
+    o += T(x0 + pw / 2, pbot + 23, "time / period", { size: 8.5, anchor: "middle" });
+    o += '<g transform="rotate(-90 ' + (x0 - 26) + ' ' + ((ptop + pbot) / 2) + ')">' +
+      T(x0 - 26, (ptop + pbot) / 2, "T (°C)", { size: 8.5, anchor: "middle" }) + '</g>';
+    o += T(x0 + 4, ptop - 5, E.voltage + " V,  " + E.duty * 100 + " % duty,  " + E.period + " s",
+      { size: 8, fill: C.grey });
+    b += o;
+  })();
 
-  const ay = 32;
-  /* the shared upstream is neutral: colour is spent only on the two readings
-     of the waveform, which is the one contrast this plate exists to show */
-  b += box(18, ay, 108, 46, "Drive", [E.voltage + " V,  " + E.period + " s",
-                                      (100 * E.duty).toFixed(1) + " % duty"]);
-  b += arrow(ns, "M126," + (ay + 23) + " L140," + (ay + 23), { color: "hair" });
-  b += box(141, ay, 112, 46, "Element ODE", ["peak " + E.tPeak.toFixed(0) + " °C",
-                                             "minimum " + E.tMin.toFixed(0) + " °C"]);
-  b += T(203, ay + 54, "T(t), integrated to a periodic state", { size: 8, fill: C.grey });
+  /* the two readings of that trajectory */
+  const bx = 218, bw = 128;
+  b += rect(bx, 44, bw, 40, { stroke: C.gas, fill: tintOf(C.gas), sw: 1, rx: 2 });
+  b += T(bx + bw / 2, 58, "Transient CSTR", { size: 8.5, weight: "bold", anchor: "middle", fill: shadeOf(C.gas) });
+  b += T(bx + bw / 2, 72, "X_{dyn} = " + E.xDyn, { size: 8.5, anchor: "middle" });
+  b += rect(bx, 98, bw, 40, { stroke: C.scalar, fill: tintOf(C.scalar), sw: 1, rx: 2 });
+  b += T(bx + bw / 2, 112, "Quasi-steady map", { size: 8.5, weight: "bold", anchor: "middle", fill: shadeOf(C.scalar) });
+  b += T(bx + bw / 2, 126, "X_{qs} = " + E.xQs, { size: 8.5, anchor: "middle" });
+  b += arrow(ns, "M186,74 L214,60", { color: "hair" });
+  b += arrow(ns, "M186,104 L214,118", { color: "hair" });
+  b += T(200, 92, "T(t)", { size: 8, anchor: "middle", fill: C.grey });
 
-  /* the same waveform is read twice, which is the whole construction */
-  const by = ay + 76, split = ay + 60;
-  b += arrow(ns, "M197," + (ay + 46) + " L197," + split + " L84," + split + " L84," + (by - 2), { color: "hair", sw: 0.9 });
-  b += arrow(ns, "M197," + (ay + 46) + " L197," + split + " L320," + split + " L320," + (by - 2), { color: "hair", sw: 0.9 });
-  b += box(18, by, 132, 50, "Cantera transient CSTR", ["GRI-Mech 3.0, integrated",
-                                                       "X_{dyn} = " + E.xDyn], C.gas, TINT.gas);
-  b += box(254, by, 132, 50, "CJH map, phase by phase", ["outflow-weighted blend",
-                                                         "X_{qs} = " + E.xQs], C.scalar, TINT.scalar);
-  b += T(202, by + 22, "the same", { size: 8, anchor: "middle", fill: C.grey });
-  b += T(202, by + 32, "waveform", { size: 8, anchor: "middle", fill: C.grey });
+  /* the target both feed */
+  const cxx = 376, cw = 112;
+  b += rect(cxx, 62, cw, 58, { stroke: C.thermal, fill: tintOf(C.thermal), sw: 1, rx: 2 });
+  b += T(cxx + cw / 2, 76, "Correction target", { size: 8.5, weight: "bold", anchor: "middle", fill: shadeOf(C.thermal) });
+  b += T(cxx + cw / 2, 92, "δ_{true} = logit X_{dyn} − logit X_{qs}", { size: 8, anchor: "middle" });
+  b += T(cxx + cw / 2, 108, "δ_{true} = " + E.delta.toFixed(2), { size: 8.5, weight: "bold", anchor: "middle", fill: shadeOf(C.thermal) });
+  b += arrow(ns, "M" + (bx + bw + 4) + ",64 L" + (cxx - 4) + ",80", { color: "hair" });
+  b += arrow(ns, "M" + (bx + bw + 4) + ",118 L" + (cxx - 4) + ",102", { color: "hair" });
 
-  const cy = by + 62;
-  b += arrow(ns, "M84," + (by + 52) + " L84," + (cy - 2), { color: "hair", sw: 0.9 });
-  b += arrow(ns, "M320," + (by + 52) + " L320," + (cy - 2), { color: "hair", sw: 0.9 });
-  b += rect(18, cy, 368, 24, { stroke: C.edge, fill: "#FFFFFF", sw: 0.8 });
-  b += T(202, cy + 15, "label  δ  =  logit X_{dyn}  −  logit X_{qs}  =  " + E.delta.toFixed(2),
-    { size: 9, weight: "bold", anchor: "middle" });
-
-  /* the numbers on the right, so the diagram carries its own arithmetic */
-  b += rect(396, ay, 91, 104, { stroke: C.hair, fill: TINT.panel, sw: 0.8, dash: "3 2" });
-  b += T(404, ay + 14, "This case", { size: 8.5, weight: "bold", fill: C.grey });
-  /* X_qs, X_dyn and the observed delta are already in the flow boxes; only
-     what the flow does not carry is listed here */
-  [["period / τ", (E.period / E.tau).toFixed(1)], ["residence τ", E.tau + " s"],
-   ["ratio", E.gain.toFixed(2) + "x"],
-   ["δ predicted", E.deltaHat === null ? "n/a" : E.deltaHat.toFixed(2)],
-   ["X predicted", E.xPred === null ? "n/a" : String(E.xPred)]].forEach(function (r, i) {
-    b += T(404, ay + 30 + i * 13, r[0], { size: 8, fill: C.grey });
-    b += T(479, ay + 30 + i * 13, r[1], { size: 8, anchor: "end", weight: i >= 3 ? "bold" : "normal",
-                                          fill: i >= 3 ? SHADE.thermal : C.ink });
-  });
-
-  /* b. the model that turns five numbers into that correction */
-  const dy = 218;
+  /* ---- b. the model that predicts the target ---- */
+  const dy = 186;
   b += T(18, dy, "b", { size: 11, weight: "bold" });
   const ey = dy + 10;
-  b += rect(18, ey, 128, 76, { stroke: C.edge, fill: "#FFFFFF", sw: 0.8 });
-  b += T(82, ey + 13, "Five inputs", { size: 8.5, weight: "bold", anchor: "middle", fill: SHADE.ink });
-  G.features.forEach(function (f, i) {
-    b += T(26, ey + 25 + i * 10, "· " + f.label, { size: 8, fill: C.grey });
-  });
-  b += arrow(ns, "M146," + (ey + 38) + " L160," + (ey + 38), { color: "hair" });
-  b += rect(161, ey, 132, 76, { stroke: C.edge, fill: "#FFFFFF", sw: 0.8 });
-  b += T(227, ey + 14, "Gaussian process", { size: 9, weight: "bold", anchor: "middle" });
-  G.kernel.split(", ").forEach(function (part, i) {
-    b += T(227, ey + 25 + i * 10, part, { size: 8, anchor: "middle", fill: C.grey });
-  });
-  b += T(227, ey + 47, G.nTrain + " fitted, " + G.nHold + " development test", { size: 8, anchor: "middle", fill: C.grey });
-  b += T(227, ey + 57, "noise σ_{n} = " + G.sigmaN + " in log-odds", { size: 8, anchor: "middle", fill: C.grey });
-  b += T(227, ey + 69, "returns the correction δ", { size: 8, anchor: "middle", weight: "bold", fill: SHADE.thermal });
-  b += arrow(ns, "M293," + (ey + 38) + " L307," + (ey + 38), { color: "hair" });
-  b += rect(308, ey, 179, 76, { stroke: C.edge, fill: "#FFFFFF", sw: 0.8 });
-  b += T(397, ey + 30, "X_{pred} = σ( logit X_{qs} + δ )", { size: 9, weight: "bold", anchor: "middle", fill: SHADE.thermal });
-  b += T(397, ey + 47, "bounded in (0, 1)", { size: 8, anchor: "middle", fill: C.grey });
+  b += rect(46, ey, 130, 62, { stroke: C.edge, fill: "#FFFFFF", sw: 0.8, rx: 2 });
+  b += T(111, ey + 14, "Five inputs", { size: 8.5, weight: "bold", anchor: "middle" });
+  b += T(111, ey + 28, "logit X_{qs},  log₁₀(P/τ),  duty,", { size: 8, anchor: "middle", fill: C.grey });
+  b += T(111, ey + 40, "T_{peak},  T_{min}", { size: 8, anchor: "middle", fill: C.grey });
+  b += arrow(ns, "M178," + (ey + 31) + " L196," + (ey + 31), { color: "hair" });
+  b += rect(198, ey, 122, 62, { stroke: C.edge, fill: "#FFFFFF", sw: 0.8, rx: 2 });
+  b += T(259, ey + 14, "GP correction", { size: 8.5, weight: "bold", anchor: "middle" });
+  b += T(259, ey + 28, "Matérn 5/2,  " + G.nTrain + " fitted", { size: 8, anchor: "middle", fill: C.grey });
+  b += T(259, ey + 44, "δ_{pred} = " + (E.deltaHat === null ? "n/a" : E.deltaHat.toFixed(2)),
+    { size: 8.5, weight: "bold", anchor: "middle", fill: SHADE.thermal });
+  b += arrow(ns, "M322," + (ey + 31) + " L340," + (ey + 31), { color: "hair" });
+  b += rect(342, ey, 146, 62, { stroke: C.thermal, fill: "#FFFFFF", sw: 1, rx: 2 });
+  b += T(415, ey + 14, "Final conversion", { size: 8.5, weight: "bold", anchor: "middle", fill: shadeOf(C.thermal) });
+  b += T(415, ey + 28, "X_{pred} = σ( logit X_{qs} + δ_{pred} )", { size: 8, anchor: "middle" });
+  b += T(415, ey + 44, "X_{pred} = " + (E.xPred === null ? "n/a" : String(E.xPred)),
+    { size: 8.5, weight: "bold", anchor: "middle", fill: shadeOf(C.thermal) });
+
+  /* ---- c. the three numbers on one axis ---- */
+  const fy = 292;
+  b += T(18, fy - 6, "c", { size: 11, weight: "bold" });
+  (function () {
+    const x0 = 138, pw = 300, ptop = fy, pbot = fy + 56;
+    const hi = Math.ceil(Math.max(E.xDyn, E.xPred || 0) * 120) / 100;
+    const X = (v) => lin(v, 0, hi, x0, x0 + pw);
+    const bars = [
+      ["quasi-steady baseline", E.xQs, C.scalar],
+      ["GP prediction", E.xPred, C.thermal],
+      ["transient truth", E.xDyn, C.gas]
+    ];
+    let o = "";
+    bars.forEach(function (r, k) {
+      const y = ptop + k * 18;
+      o += rect(x0, y, Math.max(X(r[1]) - x0, 0.6), 12,
+        { fill: tintOf(r[2]), stroke: r[2], sw: 1, rx: 0 });
+      o += T(x0 - 4, y + 9, r[0], { size: 8.5, anchor: "end", fill: shadeOf(r[2]) });
+      o += T(X(r[1]) + 4, y + 9, String(r[1]), { size: 8, fill: shadeOf(r[2]) });
+    });
+    o += line(x0, pbot, x0 + pw, pbot, { stroke: C.grey, sw: 0.8 });
+    [0, hi / 2, hi].forEach(function (v) {
+      o += line(X(v), pbot, X(v), pbot - 4, { stroke: C.grey, sw: 0.6 });
+      o += T(X(v), pbot + 11, String(Number(v.toFixed(3))), { size: 8, anchor: "middle", fill: C.grey });
+    });
+    o += T(x0 + pw / 2, pbot + 23, "CH₄ conversion  X", { size: 8.5, anchor: "middle" });
+    b += o;
+  })();
   return svgDoc(W, H, b);
 }
 
