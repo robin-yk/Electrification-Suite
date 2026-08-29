@@ -33,7 +33,7 @@ Three named picks from the front:
   balanced    argmax of J = min(q_C2H2/q_C2H2_max, q_CO/q_CO_max)
 
 The 20 to 30 front picks are written to targets-pulsefront.json (indices
-7000001+) for Cantera round-trip verification; matching there is what
+8000001+, the first free million block) for Cantera round-trip verification; matching there is what
 licenses the claim that the GP accelerated the global pulse search.
 
 Scope: GRI-Mech 3.0, gas-phase CSTR, the trained box. No C4+/PAH/coke
@@ -93,15 +93,25 @@ dT = rows[:, COL['t_peak_c']] - rows[:, COL['t_min_c']]
 finite = (q1 > 0) & (q2 > 0) & np.isfinite(q1) & np.isfinite(q2)
 idx = np.where(finite)[0]
 front = pareto_max(q1, q2, idx)
-# conservative companion front: prescribed T(t) trusted only where the gas
-# load stays below the element's own loss power
-idx_f = np.where(finite & (fidelity <= 1.0))[0]
+# PRIMARY front: prescribed T(t) trusted only where the process load is a
+# small perturbation on the element's own loss power. The element ODE cools
+# against the 50 sccm He lab carrier (about 1 W at temperature, under 1% of
+# pe, so the He-vs-feed double count is negligible), but it never feels the
+# CH4/CO2 stream; at fidelity 1 the waveform would sag badly, so 0.1 is the
+# defensible cut until the coupling is two-way.
+idx_f = np.where(finite & (fidelity <= 0.1))[0]
 front_f = pareto_max(q1, q2, idx_f)
 q1max, q2max = q1[idx].max(), q2[idx].max()
 J = np.minimum(q1/q1max, q2/q2max)
 i_bal = idx[np.argmax(J[idx])]
 i_c2h2 = idx[np.argmax(q1[idx])]
 i_co = idx[np.argmax(q2[idx])]
+# primary-front picks, normalized inside the trusted set
+q1max_f, q2max_f = q1[idx_f].max(), q2[idx_f].max()
+Jf = np.minimum(q1/q1max_f, q2/q2max_f)
+j_bal = idx_f[np.argmax(Jf[idx_f])]
+j_c2h2 = idx_f[np.argmax(q1[idx_f])]
+j_co = idx_f[np.argmax(q2[idx_f])]
 print(f"front: {len(front)} of {len(idx)} candidates; "
       f"q_C2H2 max {q1max:.4g} kg/kWh, q_CO max {q2max:.4g} kg/kWh, "
       f"balanced J {J[i_bal]:.3f}")
@@ -129,7 +139,7 @@ def point(i):
         "J_balance": float(J[i]),
     }
 
-# decimated cloud for the figure: stratified thinning in the (q1, q2) plane
+# decimated cloud for the figure: uniform random subsample, seeded
 rng = np.random.default_rng(20260829)
 cloud_n = min(2500, len(idx))
 cloud = rng.choice(idx, size=cloud_n, replace=False)
@@ -146,17 +156,21 @@ report = {
         "power": "P_total = element loss power E_cycle/period PLUS process duty mdot*(h_out(T)-h_in(298.15K)) from GRI NASA polynomials; PSU, startup and auxiliaries excluded",
         "chain": "(V,P,d) -> element ODE T(t) -> steady CJH atlas blend (internal GP baseline, not a comparison arm) -> frozen GP correction -> yields",
         "interpretation_rule": "no candidate was removed for high duty or low swing; if such a condition tops the front, the finding is that the searched pulse space is optimal there, not that continuous heating won",
-        "scope": "GRI-Mech 3.0 gas-phase CSTR, trained box; no C4+/PAH/coke sink, so the front is GRI-screened; waveform_fidelity = duty_W/pe marks where the one-way-coupled T(t) is optimistic",
+        "scope": "GRI-Mech 3.0 gas-phase CSTR, trained box; no C4+/PAH/coke sink, so the front is GRI-screened; waveform_fidelity = duty_W/pe marks where the one-way-coupled T(t) is optimistic, and front_fidelity_le_01 is the primary result until the element ODE feels the feed",
+        "known_mismatch": "the process duty uses the quasi-steady composition while the yields carry the GP memory correction; the Cantera round-trip recomputes q from true outlet compositions to bound this",
         "element_cache": {"nodes": len(nodes), "max_power_mismatch": float(mis)},
         "timing_s": {"row_build": round(t_build, 1), "gp_predict": round(t_pred, 1)},
         "candidates": int(len(rows)), "usable": int(len(idx)),
-        "front_fidelity_le_1": int(len(front_f)),
+        "front_fidelity_le_01": int(len(front_f)),
     },
     "front": [point(int(i)) for i in front],
-    "front_fidelity_le_1": [point(int(i)) for i in front_f],
+    "front_fidelity_le_01": [point(int(i)) for i in front_f],
     "picks": {"lean_c2h2": point(int(i_c2h2)),
               "lean_co": point(int(i_co)),
               "balanced": point(int(i_bal))},
+    "picks_fidelity_le_01": {"lean_c2h2": point(int(j_c2h2)),
+                             "lean_co": point(int(j_co)),
+                             "balanced": point(int(j_bal))},
     "cloud": cloud_pts,
 }
 
@@ -178,7 +192,8 @@ sel = list(dict.fromkeys(
                                        min(N_VERIFY-9, len(front))).astype(int)]]
     + [int(i) for i in front_f[np.linspace(0, len(front_f)-1,
                                            min(6, len(front_f))).astype(int)]]
-    + [int(i_c2h2), int(i_co), int(i_bal)]))
+    + [int(i_c2h2), int(i_co), int(i_bal),
+       int(j_c2h2), int(j_co), int(j_bal)]))
 targets = []
 for k, i in enumerate(sel):
     targets.append({

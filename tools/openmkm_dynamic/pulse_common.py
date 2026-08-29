@@ -150,7 +150,13 @@ def build_rows(nodes, taus, feeds, blended_column, hf, h_table,
                 blend = (samp * w).sum(axis=1) / w.sum()
                 x_qs, y1q, y2q, dh = chem_from_blend(blend, xf, hf)
                 mw_in, cfed, w_in = inlet(xf)
-                rho = float(np.mean(PRESSURE_PA*mw_in/(R_GAS*Tph)))
+                # density must use the reacted-mixture molecular weight:
+                # Cantera defines mdot = reactor.mass/tau on the actual
+                # composition, and at deep conversion the mixture MW halves,
+                # so the feed MW would inflate throughput by up to 2x
+                inv_mw_ph = sum(samp[1+si]/MW[sp]
+                                for si, sp in enumerate(RECORD_SPECIES))
+                rho = float(np.mean(PRESSURE_PA/(R_GAS*Tph*inv_mw_ph)))
                 mdot = rho*VOID_CM3*1e-6/tau
                 # process duty per gram: outflow-weighted mixture enthalpy at
                 # T(t) minus the cold feed, absolute convention, so sensible
@@ -203,8 +209,10 @@ def productivities(rows, y1, y2):
 
 
 def pareto_max(a, b, idx):
-    """Indices from idx on the maximize-both front, sorted by a descending."""
-    order = idx[np.argsort(-a[idx], kind='stable')]
+    """Indices from idx on the maximize-both front, sorted by a descending.
+    Ties in a are visited best-b first so a weakly dominated tie-mate can
+    never slip in ahead of its dominator."""
+    order = idx[np.lexsort((-b[idx], -a[idx]))]
     front, best = [], -np.inf
     for i in order:
         if b[i] > best:
@@ -214,7 +222,7 @@ def pareto_max(a, b, idx):
 
 
 def pareto_min(a, b, idx):
-    order = idx[np.argsort(a[idx], kind='stable')]
+    order = idx[np.lexsort((b[idx], a[idx]))]
     front, best = [], np.inf
     for i in order:
         if b[i] < best:

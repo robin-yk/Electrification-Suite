@@ -1,5 +1,12 @@
 """RPH vs matched-CJH energy fair fight in the (SEC_C2H2, SEC_CO) plane.
 
+STATUS: appendix, and currently NOT quotable. Two accounting defects found
+by the adversarial audit after this file was written are fixed in
+pulse_common.py but not yet here: the SEC denominator omits the process
+duty (sensible plus reaction), and mdot uses the feed molecular weight
+where Cantera's mass-based tau implies the reacted mixture's. Rewrite this
+on pulse_common before using any number it prints.
+
 Three calculations are kept separate and must not be conflated:
   RPH  pulsed transient prediction: element ODE T(t) -> atlas quasi-steady
        blend -> frozen GP memory correction. Only candidates with a real
