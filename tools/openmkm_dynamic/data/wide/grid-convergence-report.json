@@ -1,0 +1,191 @@
+{
+ "gates": {
+  "yield_rel": 0.01,
+  "q_rel": 0.02,
+  "peak_miss_k": 5.0
+ },
+ "reference": "8x hot resolution, 0.5 K peak tolerance",
+ "cases": [
+  {
+   "case": {
+    "voltage": 41.2,
+    "period_s": 10.0,
+    "duty": 0.02,
+    "tau_s": 6.95,
+    "feed_x": 0.6
+   },
+   "substeps": 254,
+   "substeps_reference": 1882,
+   "converged": true,
+   "rel_c2h2": 0.00337077095396221,
+   "rel_co": 0.005663998237261714,
+   "rel_x_ch4": 0.005528476341811306
+  },
+  {
+   "case": {
+    "voltage": 55.0,
+    "period_s": 0.1,
+    "duty": 0.02,
+    "tau_s": 0.05,
+    "feed_x": 0.6
+   },
+   "substeps": 134,
+   "substeps_reference": 642,
+   "converged": true,
+   "rel_c2h2": 0.0,
+   "rel_co": 0.0,
+   "rel_x_ch4": 0.0005630439685664346
+  },
+  {
+   "case": {
+    "voltage": 30.0,
+    "period_s": 1.0,
+    "duty": 0.02,
+    "tau_s": 0.5,
+    "feed_x": 0.45
+   },
+   "substeps": 134,
+   "substeps_reference": 642,
+   "converged": true,
+   "rel_c2h2": 0.0,
+   "rel_co": 0.0,
+   "rel_x_ch4": 0.0
+  },
+  {
+   "case": {
+    "voltage": 36.5,
+    "period_s": 7.2,
+    "duty": 0.03,
+    "tau_s": 6.95,
+    "feed_x": 0.6
+   },
+   "substeps": 251,
+   "substeps_reference": 1511,
+   "converged": true,
+   "rel_c2h2": 0.0028015023571624775,
+   "rel_co": 0.0038988419157368615,
+   "rel_x_ch4": 0.003941172226477718
+  },
+  {
+   "case": {
+    "voltage": 55.0,
+    "period_s": 0.2,
+    "duty": 0.03,
+    "tau_s": 0.1,
+    "feed_x": 0.75
+   },
+   "substeps": 641,
+   "substeps_reference": 5121,
+   "converged": true,
+   "rel_c2h2": 0.0,
+   "rel_co": 2.1587251814669806e-05,
+   "rel_x_ch4": 2.5097557844744323e-05
+  },
+  {
+   "case": {
+    "voltage": 27.3,
+    "period_s": 2.0,
+    "duty": 0.03,
+    "tau_s": 1.5,
+    "feed_x": 0.5
+   },
+   "substeps": 641,
+   "substeps_reference": 5121,
+   "converged": true,
+   "rel_c2h2": 0.0,
+   "rel_co": 0.0,
+   "rel_x_ch4": 9.974316135952233e-05
+  },
+  {
+   "case": {
+    "voltage": 27.3,
+    "period_s": 7.2,
+    "duty": 0.05,
+    "tau_s": 6.95,
+    "feed_x": 0.75
+   },
+   "substeps": 5890,
+   "substeps_reference": 5890,
+   "converged": true,
+   "rel_c2h2": 0.0,
+   "rel_co": 0.0,
+   "rel_x_ch4": 0.0
+  },
+  {
+   "case": {
+    "voltage": 50.4,
+    "period_s": 0.5,
+    "duty": 0.05,
+    "tau_s": 0.25,
+    "feed_x": 0.5
+   },
+   "substeps": 5121,
+   "substeps_reference": 5121,
+   "converged": true,
+   "rel_c2h2": 0.0,
+   "rel_co": 0.0,
+   "rel_x_ch4": 0.0
+  },
+  {
+   "case": {
+    "voltage": 31.9,
+    "period_s": 5.18,
+    "duty": 0.05,
+    "tau_s": 6.95,
+    "feed_x": 0.55
+   },
+   "substeps": 1320,
+   "substeps_reference": 5121,
+   "converged": true,
+   "rel_c2h2": 0.00045570844777476083,
+   "rel_co": 0.00046125880475567094,
+   "rel_x_ch4": 0.0004588810201964222
+  },
+  {
+   "case": {
+    "voltage": 36.5,
+    "period_s": 7.2,
+    "duty": 0.07,
+    "tau_s": 3.36,
+    "feed_x": 0.65
+   },
+   "substeps": 776,
+   "substeps_reference": 5121,
+   "converged": true,
+   "rel_c2h2": 0.0007635325393345882,
+   "rel_co": 0.0010074799569030901,
+   "rel_x_ch4": 0.0009855604151698394
+  },
+  {
+   "case": {
+    "voltage": 38.8,
+    "period_s": 1.0,
+    "duty": 0.2,
+    "tau_s": 0.5,
+    "feed_x": 0.6
+   },
+   "substeps": 5120,
+   "substeps_reference": 5120,
+   "converged": true,
+   "rel_c2h2": 0.0,
+   "rel_co": 0.0,
+   "rel_x_ch4": 0.0
+  },
+  {
+   "case": {
+    "voltage": 34.2,
+    "period_s": 0.1,
+    "duty": 0.85,
+    "tau_s": 0.05,
+    "feed_x": 0.7
+   },
+   "substeps": 5120,
+   "substeps_reference": 5120,
+   "converged": true,
+   "rel_c2h2": 0.0,
+   "rel_co": 0.0,
+   "rel_x_ch4": 0.0
+  }
+ ],
+ "failed": []
+}
