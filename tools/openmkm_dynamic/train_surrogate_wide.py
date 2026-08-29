@@ -74,8 +74,17 @@ def feed_mass_fractions(x):
     return m_ch4 / tot, m_co2 / tot
 
 
-def quantities(record):
-    """The four bounded targets and their quasi-steady twins, from one case."""
+def quantities(record, sidecar=None):
+    """The four bounded targets and their quasi-steady twins, from one case.
+
+    With a sidecar, the quasi-steady side comes from the atlas-interpolated
+    blend the DEPLOYMENT computes rather than the Cantera reference recorded
+    with the case. Training against the reference and deploying against the
+    atlas looks harmless in absolute terms (the interpolation differs by
+    about 0.002 mean) but is fatal in logit space wherever a conversion is
+    near zero: X_CO2 deployed that way scored 0.907 p95 against a 0.05 gate.
+    The correction must be learned against the baseline it will be added to.
+    """
     o = record["outputs"]
     x = feed_x(record["inputs"]["feed"])
     w_ch4_in, w_co2_in = feed_mass_fractions(x)
@@ -89,13 +98,20 @@ def quantities(record):
             "y_co": w["CO"] / MW["CO"] / carbon_fed,
         }
 
-    return (block(o["outflow_mass_fractions"]),
-            block(o["quasi_steady_outflow_mass_fractions"]))
+    if sidecar is not None:
+        w_qs = sidecar[str(record["design_index"])]["outflow_mass_fractions_qs"]
+    else:
+        w_qs = o["quasi_steady_outflow_mass_fractions"]
+    return (block(o["outflow_mass_fractions"]), block(w_qs))
 
 
-def features(record):
+def features(record, sidecar=None):
     i, o = record["inputs"], record["outputs"]
-    return [logit(o["quasi_steady_ch4_conversion"]),
+    if sidecar is not None:
+        x_qs = sidecar[str(record["design_index"])]["x_ch4_qs"]
+    else:
+        x_qs = o["quasi_steady_ch4_conversion"]
+    return [logit(x_qs),
             math.log10(i["period_s"] / i["tau_s"]),
             i["duty"],
             i["t_peak_K"] - 273.15,
@@ -232,6 +248,10 @@ def main():
     ap.add_argument("--test", nargs="+", default=[])
     ap.add_argument("--output", type=Path, default=None)
     ap.add_argument("--seed", type=int, default=7)
+    ap.add_argument("--qs-sidecar", type=Path, default=None,
+                    help="atlas quasi-steady sidecar; when given, features and "
+                         "targets use the deployment baseline instead of the "
+                         "recorded Cantera reference")
     args = ap.parse_args()
 
     if args.check_shipped:
@@ -239,26 +259,34 @@ def main():
         if not args.train:
             return
 
-    train = [r for r in load(args.train) if r.get("converged")]
-    test = [r for r in load(args.test) if r.get("converged")]
+    sidecar = None
+    if args.qs_sidecar:
+        sidecar = json.loads(args.qs_sidecar.read_text())["cases"]
+        print(f"quasi-steady baseline: atlas sidecar ({len(sidecar)} cases)")
+    train = [r for r in load(args.train) if r.get("converged")
+             and (sidecar is None or str(r["design_index"]) in sidecar)]
+    test = [r for r in load(args.test) if r.get("converged")
+            and (sidecar is None or str(r["design_index"]) in sidecar)]
     print(f"train {len(train)} converged cases, test {len(test)}")
 
-    Zr = np.array([features(r) for r in train])
+    Zr = np.array([features(r, sidecar) for r in train])
     mu, sd = Zr.mean(axis=0), Zr.std(axis=0)
     sd[sd == 0] = 1.0
     Zt = (Zr - mu) / sd
-    Ztest = (np.array([features(r) for r in test]) - mu) / sd if test else None
+    Ztest = (np.array([features(r, sidecar) for r in test]) - mu) / sd if test else None
 
     model_out = {"schema": 1, "kind": "wide-box logit-difference GPs, Matern 5/2 ARD",
                  "feature_names": ["logit_x_qs", "log10_period_over_tau", "duty",
                                    "t_peak_c", "t_min_c", "feed_x"],
                  "feature_mean": mu.tolist(), "feature_std": sd.tolist(),
+                 "quasi_steady_baseline": ("atlas sidecar" if sidecar is not None
+                                           else "recorded Cantera reference"),
                  "train_cases": len(train), "seed": args.seed, "targets": {}}
 
     for target in ("x_ch4", "x_co2", "y_c2h2", "y_co"):
         keep, deltas = [], []
         for j, r in enumerate(train):
-            dyn, qs = quantities(r)
+            dyn, qs = quantities(r, sidecar)
             if dyn[target] <= 1e-6 and qs[target] <= 1e-6:
                 continue                      # dead zero, matches the shipped rule
             keep.append(j)
@@ -276,7 +304,7 @@ def main():
             Ktest = fitted["sigma_f"] ** 2 * matern52_cross(Ztest, Ztr,
                                                             fitted["lengthscales"])
             for j, r in enumerate(test):
-                dyn, qs = quantities(r)
+                dyn, qs = quantities(r, sidecar)
                 if dyn[target] <= 1e-6 and qs[target] <= 1e-6:
                     continue
                 truth.append(dyn[target])
