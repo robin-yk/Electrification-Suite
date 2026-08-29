@@ -1,0 +1,12 @@
+{
+ "model": "wide-surrogate-atlas-v4.json",
+ "quantile": 0.95,
+ "sigma_threshold": 0.7405439989786503,
+ "development_cases": 199,
+ "development_sigma": {
+  "median": 0.16845616685037265,
+  "p95": 0.7405439989786503,
+  "max": 1.3053046335360807
+ },
+ "rule": "worst posterior sigma over the four targets, at or under the quantile of the same statistic on the development set, AND inside the design box on the raw controls"
+}

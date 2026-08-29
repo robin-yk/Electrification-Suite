@@ -16,6 +16,7 @@ Run: python tools/openmkm_dynamic/audit_peak_sampling.py [--tol 5.0]
 import argparse
 import glob
 import json
+import math
 import os
 import sys
 import warnings
@@ -45,10 +46,21 @@ def one(rec):
         grid = [((k + 0.5) / n, 1.0 / n) for k in range(n)]
         version = "uniform"
     else:
+        # Reconstruct the grid the record ACTUALLY used, not the one a rerun
+        # would build now. The cold count is fixed by the window, so the
+        # recorded total pins the hot count exactly, and the audit stays an
+        # independent measurement of stored labels even after the grid rule
+        # changes underneath it.
         grid = phase_grid(p)
         version = "adaptive"
-        if len(grid) != n_sub:           # a third grid we do not know about
-            version = f"unknown({n_sub})"
+        if len(grid) != n_sub:
+            w = min(0.5, max(3.0*i["duty"], i["duty"] + 0.03))
+            n_cold = max(math.ceil(i.get("points_per_cycle", 100)*(1.0 - w)), 1)
+            n_hot = max(n_sub - n_cold, 1)
+            dh, dc = w/n_hot, (1.0 - w)/n_cold
+            grid = ([((k + 0.5)*dh, dh) for k in range(n_hot)]
+                    + [(w + (k + 0.5)*dc, dc) for k in range(n_cold)])
+            version = f"adaptive({n_hot}+{n_cold})"
     peak = max(waveform_temperature(k / 20000.0, p) for k in range(20000))
     seen = max(waveform_temperature(ph, p) for ph, _ in grid)
     return {"design_index": rec["design_index"], "grid": version,

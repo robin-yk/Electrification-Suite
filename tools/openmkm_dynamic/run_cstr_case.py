@@ -260,6 +260,7 @@ def mean_temperature(p, n=2000):
 
 HOT_MIN_POINTS = 40
 PEAK_MISS_TOL_K = 5.0
+PEAK_MISS_MARGIN = 0.8
 MAX_HOT_POINTS = 2560
 
 
@@ -299,7 +300,13 @@ def phase_grid(p):
     # 40 points was not the low-duty one everybody expects but duty 0.20 at a
     # 1 s period, 13.0 K, so the criterion has to be measured per case rather
     # than argued from duty.
-    tol = p.get("peak_miss_tol_k", PEAK_MISS_TOL_K)
+    # Refine to a margin inside the acceptance tolerance. The audit estimates
+    # the peak with its own independent dense scan of the whole cycle, so the
+    # two disagree by a tenth of a kelvin, and refining to exactly the
+    # tolerance left three cases sitting at 5.02 to 5.10 K against a 5.00 K
+    # gate. The margin costs a doubling on a handful of cases and removes the
+    # knife edge.
+    tol = p.get("peak_miss_tol_k", PEAK_MISS_TOL_K)*PEAK_MISS_MARGIN
     if hot_min and tol and p.get("waveform") == "physical" and "_profile" in p:
         dense = max(4000, 8 * n_hot)
         peak = max(waveform_temperature(w * (k + 0.5) / dense, p)
