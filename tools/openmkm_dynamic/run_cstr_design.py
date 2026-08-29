@@ -66,6 +66,48 @@ AXES = {
 POINTS_PER_CYCLE = 100
 MAX_CYCLES = 600
 
+# The wide design. AXES above is frozen: the canonical 285 cases record a
+# design_index whose meaning is the Halton walk over exactly those four axes in
+# that order, so touching it would silently repoint every existing record. The
+# wide walk is a second, separate sequence with its own prime for the new axis.
+#
+# tau reaches 10 s because the old 1 s ceiling was not a physical bound. It cut
+# below laboratory scale: 50 sccm through the Wismann tube's 11.03 cm3 void is
+# tau = 2.16 s, and through the Zheng foam's 70.05 cm3 void it is 13.7 s, so the
+# old box could not describe either apparatus. duty reaches 0.85 because the
+# 0.40 ceiling was where the selectivity-favouring cases piled up; build_params
+# needs duty plus the two 0.05 ramps under 1, so 0.85 is the practical top.
+# feed_x is the CH4 mole fraction, spanning the five steady sheets the map now
+# carries. It is sampled continuously rather than snapped to a sheet, which is
+# how tau has always been sampled against the map's 25 columns, and it makes the
+# feed interpolation something the held-out cases actually test.
+PRIMES_WIDE = [2, 3, 5, 7, 11]
+AXES_WIDE = {
+    "voltage": (25.0, 55.0, "linear"),
+    "period_s": (1e-2, 10.0, "log"),
+    "duty": (0.02, 0.85, "linear"),
+    "tau_s": (1e-2, 10.0, "log"),
+    "feed_x": (0.40, 0.80, "linear"),
+}
+# Convergence guard, not an information claim. Cycles to convergence track
+# tau/P at roughly 4.5 cycles per unit, so past tau/P of about 130 the runner
+# hits MAX_CYCLES = 600 and must record converged=False after 140 s of work:
+# money spent on a case that downstream training is required to discard. The
+# default cap sits just under that wall and nothing else.
+#
+# It is deliberately NOT set lower. An earlier draft cut at tau/P = 30 on the
+# argument that the correction is small out there; joint binning of the 285
+# canonical cases showed the correction is governed by the temperature swing,
+# not by tau/P (median |logit correction| 0.006 to 0.008 across the whole
+# tau/P range once swing < 100 K, versus 1.49 at swing > 400 K), and the old
+# box's high-tau/P cases were all small-swing because a short period gives the
+# element no time to move. Small correction there is the element's thermal
+# inertia, not gas-side averaging, so cutting on tau/P would encode a
+# confounded explanation. The pilot samples the 30 to 130 band on purpose to
+# test whether large-tau, sub-second-period cases with real swing carry a
+# correction the frozen box could never see.
+MAX_TAU_OVER_PERIOD = 130.0
+
 
 def halton(index, base):
     value, factor = 0.0, 1.0
@@ -74,6 +116,20 @@ def halton(index, base):
         index, digit = divmod(index, base)
         value += digit * factor
     return value
+
+
+def design_point_wide(index):
+    """Halton walk over AXES_WIDE. Returns a point carrying an explicit feed."""
+    point = {}
+    for (name, (low, high, scale)), base in zip(AXES_WIDE.items(), PRIMES_WIDE):
+        u = halton(index, base)
+        point[name] = (math.exp(math.log(low) + u * math.log(high / low))
+                       if scale == "log" else low + u * (high - low))
+    x = point.pop("feed_x")
+    point["feed"] = f"CH4:{x:.6f}, CO2:{1 - x:.6f}"
+    point["feed_x"] = x
+    point["waveform"] = "physical"
+    return point
 
 
 def design_point(index):
@@ -114,7 +170,10 @@ def subsample(trajectory, points_per_cycle, keep=40):
 PEAK_CAP_C = 1800.0
 
 
-def design_feasible(point):
+def design_feasible(point, max_tau_over_period=None):
+    cap = MAX_TAU_OVER_PERIOD if max_tau_over_period is None else max_tau_over_period
+    if point["tau_s"] / point["period_s"] > cap:
+        return False
     from element_drive import integrate_pulsed_element
     drive = integrate_pulsed_element(voltage=point["voltage"],
                                      period=point["period_s"], duty=point["duty"])
@@ -130,7 +189,7 @@ def run_design_case(ct, mech, index, closure="const-pressure", point=None):
         mechanism=mech, t_min_c=25.0, t_peak_c=1250.0,
         duty=point["duty"], waveform="physical", voltage=point["voltage"],
         ramp_up_fraction=0.05, ramp_down_fraction=0.05, pressure_atm=1.0,
-        residence_time_s=point["tau_s"], feed="CH4:1, CO2:1",
+        residence_time_s=point["tau_s"], feed=point.get("feed", "CH4:1, CO2:1"),
         points_per_cycle=POINTS_PER_CYCLE, min_cycles=10, max_cycles=MAX_CYCLES,
         cycle_tolerance=1e-7, record_cycles=1, period_s=point["period_s"],
         closure=closure)
@@ -153,6 +212,8 @@ def run_design_case(ct, mech, index, closure="const-pressure", point=None):
             "quasi_steady_ch4_conversion": x_qs,
             "quasi_steady_c2_selectivity": qs["c2_selectivity_carbon"],
             "memory_gain": x_dyn / x_qs if x_qs > 1e-12 else None,
+            "outflow_mass_fractions": cs["outflow_mass_fractions"],
+            "quasi_steady_outflow_mass_fractions": qs["outflow_mass_fractions"],
             "radical_carryover": cs["radical_carryover_at_cycle_start"],
         },
         "converged": cs["converged"],
@@ -176,9 +237,19 @@ def main():
                         help="zero-based explicit-target shard")
     parser.add_argument("--target-shards", type=int, default=1,
                         help="number of explicit-target shards")
+    parser.add_argument("--wide", action="store_true",
+                        help="draw from AXES_WIDE (tau to 10 s, duty to 0.85, feed "
+                             "axis) instead of the frozen four-axis walk. Use an "
+                             "index range at or above 2000001 so a wide case can "
+                             "never be confused with a frozen-walk case.")
     parser.add_argument("--closure", default="const-pressure",
                         choices=["const-pressure", "const-volume"],
                         help="reactor closure; recorded with every case")
+    parser.add_argument("--max-tau-over-period", type=float,
+                        default=MAX_TAU_OVER_PERIOD,
+                        help="skip cases whose tau/P exceeds this; the default "
+                             "sits where MAX_CYCLES stops convergence, see the "
+                             "comment at MAX_TAU_OVER_PERIOD")
     args = parser.parse_args()
 
     import cantera as ct
@@ -201,7 +272,8 @@ def main():
         # need to exist for the shared plumbing.
         work = [(int(t.get("design_index", -(k + 1))),
                  dict({kk: t[kk] for kk in ("voltage", "period_s", "duty", "tau_s")},
-                      t_min_c=25.0, t_peak_c=1250.0))
+                      t_min_c=25.0, t_peak_c=1250.0,
+                      **({"feed": t["feed"]} if "feed" in t else {})))
                 for k, t in enumerate(spec["targets"])
                 if k % args.target_shards == args.target_shard]
     else:
@@ -211,14 +283,21 @@ def main():
         for index, target_point in work:
             if index in done:
                 continue
-            point = dict(target_point) if target_point else design_point(index)
-            if not design_feasible(point):
-                print(f"{index}: SKIP infeasible (element peak past {PEAK_CAP_C:.0f} C "
-                      f"at {point['voltage']:.1f} V, P={point['period_s']:.3g} s, "
-                      f"duty {point['duty']:.2f})")
+            draw = design_point_wide if args.wide else design_point
+            point = dict(target_point) if target_point else draw(index)
+            if not design_feasible(point, args.max_tau_over_period):
+                ratio = point["tau_s"] / point["period_s"]
+                why = (f"tau/P={ratio:.1f} over the {args.max_tau_over_period:.0f} "
+                       f"convergence cap"
+                       if ratio > args.max_tau_over_period
+                       else f"element peak past {PEAK_CAP_C:.0f} C")
+                print(f"{index}: SKIP infeasible ({why}; {point['voltage']:.1f} V, "
+                      f"P={point['period_s']:.3g} s, duty {point['duty']:.2f}, "
+                      f"tau={point['tau_s']:.3g} s)")
                 continue
             try:
-                record = run_design_case(ct, args.mechanism, index, args.closure, target_point)
+                record = run_design_case(ct, args.mechanism, index, args.closure,
+                                         target_point or point)
             except Exception as exc:                      # noqa: BLE001
                 print(f"{index}: FAILED {type(exc).__name__}: {exc}")
                 if not args.continue_on_error:

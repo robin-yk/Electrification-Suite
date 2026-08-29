@@ -34,7 +34,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 RECORD_SPECIES = ["CH4", "CO2", "CO", "H2", "H2O",
                   "C2H2", "C2H4", "C2H6", "CH3", "H", "OH"]
-MW = {"CH4": 16.043, "C2H2": 26.038, "C2H4": 28.054, "C2H6": 30.070}
+# Molar masses for every recorded species, matching tools/openmkm/run_sweep.py
+# where the two lists overlap, so a yield computed from either file agrees.
+MW = {"CH4": 16.043, "CO2": 44.010, "CO": 28.010, "H2": 2.016, "H2O": 18.015,
+      "C2H2": 26.038, "C2H4": 28.054, "C2H6": 30.070,
+      "CH3": 15.035, "H": 1.008, "OH": 17.007}
 C2_SPECIES = ("C2H2", "C2H4", "C2H6")
 
 
@@ -121,14 +125,16 @@ def integrate(ct, mech, p, on_sample=None):
     gas, reactor, mfc_in, mfc_out, net = make_reactor(ct, mech, p)
     y_feed_ch4 = gas.Y[gas.species_index("CH4")]
     i_ch4 = gas.species_index("CH4")
+    i_rec = {sp: gas.species_index(sp) for sp in RECORD_SPECIES}
     n_sub = p["points_per_cycle"]
     dt = p["period_s"] / n_sub
     cycles = []
     prev_boundary = None
     t = 0.0
     for cycle in range(1, p["max_cycles"] + 1):
-        w_ch4 = w_feed = 0.0
+        w_ch4 = w_feed = w_total = 0.0
         c2_carbon = conv_carbon = 0.0
+        w_out = {sp: 0.0 for sp in RECORD_SPECIES}
         for k in range(n_sub):
             phase = (k + 0.5) / n_sub
             T = waveform_temperature(phase, p)
@@ -143,6 +149,9 @@ def integrate(ct, mech, p, on_sample=None):
             y = reactor.phase.Y
             w_ch4 += mdot * y[i_ch4] * dt
             w_feed += mdot * y_feed_ch4 * dt
+            w_total += mdot * dt
+            for sp in RECORD_SPECIES:
+                w_out[sp] += mdot * y[i_rec[sp]] * dt
             conv_carbon += mdot * (y_feed_ch4 - y[i_ch4]) / MW["CH4"] * dt
             c2_carbon += mdot * sum(
                 2 * y[gas.species_index(sp)] / MW[sp] for sp in C2_SPECIES) * dt
@@ -155,9 +164,17 @@ def integrate(ct, mech, p, on_sample=None):
         conversion = 1.0 - w_ch4 / w_feed
         selectivity = (min(1.0, max(0.0, c2_carbon / conv_carbon))
                        if conv_carbon > 1e-15 else 0.0)
+        # Outflow-weighted mean outlet mass fractions: the same mdot dt weight
+        # the conversion integral uses, so a species yield derived from these is
+        # consistent with ch4_conversion by construction. Recorded per species
+        # because the optimization objective needs Y_C2H2 and Y_CO separately;
+        # the lumped C2 selectivity cannot be split after the fact without the
+        # 3 percent reconstruction error of re-averaging the thinned trajectory.
         cycles.append({"cycle": cycle, "boundary_residual": residual,
                        "ch4_conversion": conversion,
-                       "c2_selectivity_carbon": selectivity})
+                       "c2_selectivity_carbon": selectivity,
+                       "outflow_mass_fractions": {
+                           sp: w_out[sp] / w_total for sp in RECORD_SPECIES}})
         if cycle >= p["min_cycles"] and residual < p["cycle_tolerance"]:
             break
     return gas, reactor, cycles
@@ -221,6 +238,7 @@ def run_case(mech, p):
                 "cycle_boundary_residual": last["boundary_residual"],
                 "mean_ch4_conversion": last["ch4_conversion"],
                 "mean_c2_selectivity_carbon": last["c2_selectivity_carbon"],
+                "outflow_mass_fractions": last["outflow_mass_fractions"],
                 "radical_carryover_at_cycle_start": first_boundary,
             },
             "convergence_history": [

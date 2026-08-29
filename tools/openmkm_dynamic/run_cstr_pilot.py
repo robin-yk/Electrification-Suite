@@ -108,8 +108,24 @@ def quasi_steady_reference(ct, mech, p, n_grid=13, n_phase=400):
     # (1.01 with a first-order washout lag), so the anomaly was the definition,
     # not physics. Both are returned; the weighted one is the baseline a
     # memory-gain label must divide by.
+    # Per-species mass fractions at each grid node, so the blend below can
+    # report the same outflow-weighted outlet the dynamic runner now records.
+    def massfrac(node):
+        m = {sp: node["outlet_molefrac"][sp] * MW[sp] for sp in RECORD_SPECIES}
+        tot = sum(m.values())
+        return {sp: m[sp] / tot for sp in RECORD_SPECIES}
+    tableW = {T: massfrac(node) for T, node in table.items()}
+
+    def interpW(T, sp):
+        if T <= grid_T[0]: return tableW[grid_T[0]][sp]
+        if T >= grid_T[-1]: return tableW[grid_T[-1]][sp]
+        j = max(i for i, g in enumerate(grid_T) if g <= T)
+        f = (T - grid_T[j]) / (grid_T[j + 1] - grid_T[j])
+        return tableW[grid_T[j]][sp] * (1 - f) + tableW[grid_T[j + 1]][sp] * f
+
     xs = ss = 0.0
     wx = ws = wsum = 0.0
+    wsp = {sp: 0.0 for sp in RECORD_SPECIES}
     for k in range(n_phase):
         T = waveform_temperature((k + 0.5) / n_phase, p)
         x = interp(T, "ch4_conversion")
@@ -120,12 +136,16 @@ def quasi_steady_reference(ct, mech, p, n_grid=13, n_phase=400):
         wx += w * x
         ws += w * x * s2
         wsum += w
+        for sp in RECORD_SPECIES:
+            wsp[sp] += w * interpW(T, sp)
     x_avg = xs / n_phase
     x_weighted = wx / wsum
     return {"ch4_conversion": x_avg,
             "c2_selectivity_carbon": ss / xs if xs > 1e-15 else 0.0,
             "ch4_conversion_outflow_weighted": x_weighted,
             "c2_selectivity_outflow_weighted": ws / wx if wx > 1e-15 else 0.0,
+            "outflow_mass_fractions": {sp: wsp[sp] / wsum
+                                       for sp in RECORD_SPECIES},
             "endpoints": {"t_min": table[grid_T[0]], "t_peak": table[grid_T[-1]]}}
 
 
