@@ -45,7 +45,15 @@ MW = {"CH4": 16.043, "CO2": 44.010, "CO": 28.010, "H2": 2.016, "H2O": 18.015,
       "C2H2": 26.038, "C2H4": 28.054, "C2H6": 30.070,
       "CH3": 15.035, "H": 1.008, "OH": 17.007}
 C2 = ("C2H2", "C2H4", "C2H6")
-EPS = 1e-9
+# The logit floor is 1e-4, not machine-small. A quantity below 1e-4 is below
+# anything the absolute-error gates can see, but its logit against a 1e-9
+# clamp is a large number set by the clamp constant rather than by physics,
+# and near-zero atlas baselines then hand the GP training targets that are
+# essentially noise of amplitude ten logit units. That noise wrecked the
+# X_CH4 hyperparameters (sigma_n 0.21, length scales collapsed to 0.3) in
+# the first atlas-baseline fit. Flooring at 1e-4 bounds every target by
+# logit(1-1e-4) - logit(1e-4) and makes the fit independent of the clamp.
+EPS = 1e-4
 GATES = {"mean": 0.02, "p95": 0.05, "max": 0.10}
 
 
