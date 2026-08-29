@@ -439,7 +439,7 @@ const DATA = {
        round-trip. The scorer already refuses stale joins; here we only
        require both reports to exist and the verified count to be sane. */
     const rep = readJSON("tools/openmkm_dynamic/data/wide/pulse-optimizer-report.json");
-    const rt = readJSON("tools/openmkm_dynamic/data/wide/pulsefront-roundtrip-report.json");
+    const rt = readJSON("tools/openmkm_dynamic/data/wide/pulsefront2-roundtrip-report.json");
     if (!rt.n_verified || rt.n_verified < 20)
       throw new Error("pulse-front round trip too small: " + rt.n_verified);
     if (!rep.front_fidelity_le_01 || !rep.front_fidelity_le_01.length)
