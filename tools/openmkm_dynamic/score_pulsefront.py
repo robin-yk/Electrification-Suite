@@ -26,7 +26,7 @@ from scipy.stats import spearmanr
 from q_ranking_validation import one_case
 
 CAMPAIGN = sys.argv[1] if len(sys.argv) > 1 else 'pulsefront'
-if CAMPAIGN not in ('pulsefront', 'pulsefront2'):
+if CAMPAIGN not in ('pulsefront', 'pulsefront2', 'pulsefront3'):
     raise SystemExit('unknown campaign ' + CAMPAIGN)
 
 T = json.load(open(HERE + f'/data/wide/targets-{CAMPAIGN}.json'))['targets']

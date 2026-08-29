@@ -18,10 +18,19 @@ from element_drive import (integrate_pulsed_element, cfp_resistance,
 from multiprocessing import Pool
 
 PEAK_CAP_C = 1800.0
-V_N, P_N, D_N = 14, 22, 10
+V_N, P_N = 14, 22
 VS = np.linspace(25, 55, V_N)
 PS = np.exp(np.linspace(math.log(0.01), math.log(10.0), P_N))
-DS = np.linspace(0.05, 0.85, D_N)
+# v1 is the grid every pulsefront/pulsefront2 number was computed on; x1 opens
+# the low-duty edge that every v1 primary-front point sat against (all 18 at
+# duty 0.05), down to the 0.02 floor the transient design box itself sampled.
+# The ten v1 values are a subset of x1, so v1 results are reproducible from an
+# x1 cache by filtering.
+DUTY_GRIDS = {
+    'v1': np.linspace(0.05, 0.85, 10),
+    'x1': np.concatenate([[0.02, 0.03, 0.04], np.linspace(0.05, 0.85, 10)]),
+}
+DS = DUTY_GRIDS['v1']
 
 def one_voltage(v):
     out = []
@@ -45,10 +54,17 @@ def one_voltage(v):
     return out
 
 if __name__ == '__main__':
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument('out', help='pickle path for the node cache')
+    ap.add_argument('--duty-grid', choices=sorted(DUTY_GRIDS), default='v1')
+    args = ap.parse_args()
+    DS = DUTY_GRIDS[args.duty_grid]
     t0 = time.time()
     with Pool(3) as pool:
         chunks = pool.map(one_voltage, VS)
     nodes = [n for ch in chunks for n in ch]
-    with open(sys.argv[1], 'wb') as f:
+    with open(args.out, 'wb') as f:
         pickle.dump(nodes, f)
-    print(f"CACHE DONE: {len(nodes)} nodes in {time.time()-t0:.0f}s -> {sys.argv[1]}")
+    print(f"CACHE DONE ({args.duty_grid}): {len(nodes)} nodes "
+          f"in {time.time()-t0:.0f}s -> {args.out}")

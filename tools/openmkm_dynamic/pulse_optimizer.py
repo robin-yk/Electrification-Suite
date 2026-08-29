@@ -63,10 +63,37 @@ HF = json.load(open(HERE + '/data/hf-nist.json'))['hf']
 TAUS = np.exp(np.linspace(math.log(0.01), math.log(10.0), 20))
 FEEDS = np.linspace(0.40, 0.80, 9)
 N_VERIFY = 28
-BASE_INDEX = 8100001
 
-cache_path = sys.argv[1] if len(sys.argv) > 1 else OUTDIR + '/element-cache.pkl'
+# Campaigns own their index block and their duty grid; blocks are never
+# reused. pulsefront2 ran on the v1 element cache (duty 0.05 to 0.85) and its
+# whole primary front sat on the 0.05 edge, so pulsefront3 runs on the x1
+# cache that opens duty down to the 0.02 floor of the transient design box.
+CAMPAIGNS = {
+    'pulsefront2': {'base_index': 8100001, 'duty_grid': 'v1',
+                    'report': 'pulse-optimizer-report.json',
+                    'targets': 'targets-pulsefront2.json'},
+    'pulsefront3': {'base_index': 8200001, 'duty_grid': 'x1',
+                    'report': 'pulse-optimizer-pulsefront3-report.json',
+                    'targets': 'targets-pulsefront3.json'},
+}
+
+import argparse
+ap = argparse.ArgumentParser()
+ap.add_argument('--campaign', choices=sorted(CAMPAIGNS), default='pulsefront2')
+ap.add_argument('--cache', default=OUTDIR + '/element-cache.pkl',
+                help='element node cache pickle; its duty grid must match the campaign')
+cli = ap.parse_args()
+CAMP = CAMPAIGNS[cli.campaign]
+BASE_INDEX = CAMP['base_index']
+
+cache_path = cli.cache
 nodes = pickle.load(open(cache_path, 'rb'))
+duty_min_cache = min(n['du'] for n in nodes)
+want_min = 0.02 if CAMP['duty_grid'] == 'x1' else 0.05
+if abs(duty_min_cache - want_min) > 1e-9:
+    raise SystemExit(f"cache duty floor {duty_min_cache} does not match "
+                     f"campaign {cli.campaign} ({CAMP['duty_grid']} wants {want_min}); "
+                     f"rebuild with build_element_cache.py --duty-grid {CAMP['duty_grid']}")
 mis = max(abs(n['pe_elec']-n['pe_loss'])/n['pe_elec'] for n in nodes)
 print(f"element cache: {len(nodes)} nodes, elec-vs-loss power mismatch max {mis:.4f}")
 
@@ -159,6 +186,10 @@ cloud_pts = [{"q1": float(q1[i]), "q2": float(q2[i]),
 
 report = {
     "meta": {
+        "campaign": cli.campaign,
+        "duty_grid": {"name": CAMP['duty_grid'],
+                      "duty_min": float(duty_min_cache),
+                      "duty_max": float(max(n['du'] for n in nodes))},
         "objective": "maximize (q_C2H2, q_CO) = (mdot_C2H2/Pbar, mdot_CO/Pbar) in kg/kWh over pulse conditions (V, period, duty, tau, feed_x)",
         "fixed_basis": {"void_cm3": VOID_CM3, "pressure_pa": PRESSURE_PA,
                         "element": "shared CFP element and lumped-loss model",
@@ -197,7 +228,7 @@ for lab, lo in (("dT_lt_50", -1), ("dT_50_200", 50), ("dT_ge_200", 200)):
         n = int(sum(1 for i in front if dT[i] >= 200))
     report['meta'][f'front_{lab}'] = n
 
-json.dump(report, open(f'{OUTDIR}/pulse-optimizer-report.json', 'w'), indent=1)
+json.dump(report, open(f"{OUTDIR}/{CAMP['report']}", 'w'), indent=1)
 
 # verification targets: spread across the front plus the three picks
 sel = list(dict.fromkeys(
@@ -221,6 +252,7 @@ for k, i in enumerate(sel):
                       "pe_W": float(pe[i]), "p_total_W": float(p_total[i]),
                       "mdot_g_s": float(mdot_c[i])}})
 json.dump({"purpose": "round-trip verification of the pulse energy-productivity front",
-           "targets": targets},
-          open(f'{OUTDIR}/targets-pulsefront2.json', 'w'), indent=1)
-print(f"PULSE OPTIMIZER DONE: front {len(front)}, verify targets {len(targets)}")
+           "campaign": cli.campaign, "targets": targets},
+          open(f"{OUTDIR}/{CAMP['targets']}", 'w'), indent=1)
+print(f"PULSE OPTIMIZER DONE ({cli.campaign}): front {len(front)}, "
+      f"verify targets {len(targets)}")
