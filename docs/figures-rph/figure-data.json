@@ -1,6 +1,27 @@
 {
  "commit": "c5a72bf",
- "dataCommit": "e5cc403",
+ "dataCommit": "e5cc403 + uncommitted changes",
+ "spec": {
+  "index": 5000168,
+  "voidCm3": 11.03,
+  "feedRatio": 3.79,
+  "volts": 53.6,
+  "periodMs": 96.8,
+  "duty": 0.22,
+  "tauS": 1.77,
+  "tPeakC": 1652,
+  "tMinC": 1386,
+  "inCH4": 1.96,
+  "inCO2": 1.42,
+  "outC2H2": 1.11,
+  "outCO": 1.72,
+  "outH2": 0.375,
+  "outCH4": 0.0876,
+  "electricW": 202,
+  "chemistryW": 6.6,
+  "kwhPerKgC2H2": 182,
+  "conversion": 95.5
+ },
  "map": {
   "tLo": 400,
   "tHi": 1850,

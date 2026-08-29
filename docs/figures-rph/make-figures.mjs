@@ -1,7 +1,7 @@
 // Builds the figure data for the RPH vs CJH Application Note and writes the
 // plates. Every number here comes from apps/rphcjh/solver.js; nothing is
 // typed. Run: node docs/figures-rph/make-figures.mjs
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync, readdirSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -11,7 +11,7 @@ import { SERIES_DEFAULTS, seriesRateConstants, steadySeriesCSTR, integrateSeries
          idealTwoStateAverages, timeAverageTemperature } from "../../apps/rphcjh/solver.js";
 import { predictRphConversion } from "../../apps/rphcjh/surrogate.js";
 import { workflow, drive, comparison, window_, consequence, detailed, verification,
-         cjhmap, memory, finalparity, method, designspace, cost } from "./draw.mjs";
+         cjhmap, memory, finalparity, method, designspace, cost, specsheet } from "./draw.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const p = (x, n = 4) => Number(x.toPrecision(n));
@@ -38,7 +38,8 @@ const DATA_FILES = [
   "tools/openmkm_dynamic/data/canonical/runtime-comparison.json",
   "apps/rphcjh/data/rph-surrogate.json",
   "apps/rphcjh/data/cantera.json",
-  "apps/rphcjh/data/openmkm-pfr.json"
+  "apps/rphcjh/data/openmkm-pfr.json",
+  "tools/openmkm_dynamic/data/hf-nist.json"
 ];
 
 function dataCommit() {
@@ -300,12 +301,70 @@ const space = {
 };
 
 const runtime = readJSON("tools/openmkm_dynamic/data/canonical/runtime-comparison.json");
+
+/* The grams-and-watts operating point. One recorded transient truth from the
+   wide campaign, selected by rule (best C2H2 outflow times conversion among
+   converged cases with tau of at least 1 s), restated in the units an
+   experimentalist orders parts in. Everything below is computed here from the
+   record, the JS element model, and the shared NIST enthalpies; nothing is
+   typed. The selection deliberately excludes the short-tau corner: there the
+   reaction enthalpy demand exceeds the element's electrical draw, the one-way
+   coupling of the model is no longer self-consistent, and quoting those
+   flows would be quoting a temperature history no element could sustain. */
+const spec = (function () {
+  const MWs = { CH4: 16.043, CO2: 44.010, CO: 28.010, H2: 2.016, H2O: 18.015,
+                C2H2: 26.038, C2H4: 28.054, C2H6: 30.070,
+                CH3: 15.035, H: 1.008, OH: 17.007 };
+  const HF = readJSON("tools/openmkm_dynamic/data/hf-nist.json").hf;
+  const R_GAS = 8.314462618, VOID_CM3 = 11.03;   /* Wismann tube void volume */
+  let best = null;
+  const dir = join(here, "..", "..", "tools", "openmkm_dynamic", "data", "wide");
+  for (const f of readdirSync(dir)) {
+    if (!/^design-wide-.*\.jsonl$/.test(f)) continue;
+    for (const line of readFileSync(join(dir, f), "utf8").split("\n")) {
+      if (!line.trim()) continue;
+      const r = JSON.parse(line);
+      if (!r.converged || r.inputs.tau_s < 1.0) continue;
+      const score = r.outputs.outflow_mass_fractions.C2H2 * r.outputs.ch4_conversion;
+      if (!best || score > best.score) best = { score, r };
+    }
+  }
+  const r = best.r, i = r.inputs, w = r.outputs.outflow_mass_fractions;
+  const parts = Object.fromEntries(i.feed.replace(/ /g, "").split(",").map((kv) => kv.split(":")));
+  const xf = Number(parts.CH4) / (Number(parts.CH4) + Number(parts.CO2));
+  const mwIn = xf * MWs.CH4 + (1 - xf) * MWs.CO2;
+  const Ts = r.trajectory.temperature_K;
+  const rho = Ts.reduce((a, T) => a + i.pressure_Pa * mwIn / (R_GAS * T), 0) / Ts.length;
+  const mdot = rho * VOID_CM3 * 1e-6 / i.tau_s;               /* g/s */
+  const gh = (frac) => mdot * frac * 3600;
+  const wIn = { CH4: xf * MWs.CH4 / mwIn, CO2: (1 - xf) * MWs.CO2 / mwIn };
+  const drive = integratePulsedElement({ voltage: i.voltage_V, period: i.period_s, duty: i.duty });
+  const dh = Object.keys(MWs).reduce((a, sp) =>
+    a + ((w[sp] || 0) - (wIn[sp] || 0)) / MWs[sp] * HF[sp] * 1000, 0);   /* J per g */
+  const endo = dh * mdot;
+  if (drive.avgPower <= endo) {
+    throw new Error("spec point fails its own power self-consistency check");
+  }
+  return {
+    index: r.design_index, voidCm3: VOID_CM3,
+    feedRatio: p(xf / (1 - xf), 3),
+    volts: p(i.voltage_V, 3), periodMs: p(i.period_s * 1000, 3), duty: p(i.duty, 2),
+    tauS: p(i.tau_s, 3), tPeakC: Math.round(drive.tPeak), tMinC: Math.round(drive.tMin),
+    inCH4: p(gh(wIn.CH4), 3), inCO2: p(gh(wIn.CO2), 3),
+    outC2H2: p(gh(w.C2H2), 3), outCO: p(gh(w.CO), 3),
+    outH2: p(gh(w.H2), 3), outCH4: p(gh(w.CH4), 3),
+    electricW: p(drive.avgPower, 3), chemistryW: p(endo, 2),
+    kwhPerKgC2H2: p(drive.avgPower / gh(w.C2H2), 3),
+    conversion: p(100 * r.outputs.ch4_conversion, 3)
+  };
+})();
 const rtB = runtime.summary.browser_all_case_summary_ms;
 const rtEnv = runtime.environments;
 
 const DATA = {
   commit: solverCommit(),
   dataCommit: dataCommit(),
+  spec,
   map: {
     tLo: gridRows.reduce((a, r) => Math.min(a, r.T_C), Infinity),
     tHi: gridRows.reduce((a, r) => Math.max(a, r.T_C), -Infinity),
@@ -461,7 +520,10 @@ const PLATES = [
   /* Not submitted. The workflow diagram orients a reader of this page, but it
      adds no data and no check the submitted set does not already carry, so it
      sits after that set rather than inside it. */
-  { id: "rphFigW", label: "Workflow", draw: workflow }
+  { id: "rphFigW", label: "Workflow", draw: workflow },
+  /* the plainest statement of what the machine is for: grams in, watts,
+     grams out, at one recorded operating point */
+  { id: "rphFigG", label: "Spec sheet", draw: specsheet }
 ];
 for (const plate of PLATES) {
   const svg = plate.draw(DATA);

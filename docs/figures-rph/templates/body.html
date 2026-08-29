@@ -128,6 +128,15 @@
 <div class="prov">Every panel calls <code>apps/rphcjh/solver.js</code>; the predictor adds <code>apps/rphcjh/surrogate.js</code>, so the browser and the regression tests execute identical code.</div>
 </figure>
 
+<figure id="rphFigG">
+<div class="figbar"><span class="figno">Spec sheet</span><span class="figwhere">Not submitted &#183; one operating point in laboratory units</span><span class="figsize">178 mm</span></div>
+<div class="plate"></div>
+<div class="tools"><button data-src="rphFigG">Show SVG source</button><button data-png="rphFigG">Render 600 dpi</button><button data-copy="rphFigG">Copy SVG</button><span class="hint"></span></div>
+<textarea readonly spellcheck="false"></textarea><canvas></canvas>
+<div class="cap"><b>Spec sheet.</b> One recorded operating point restated in the units an experiment is planned in: grams per hour of feed, watts of electricity, grams per hour of products, at a stated reactor volume. The record is a transient detailed-chemistry solution from the wide campaign, selected by rule (largest acetylene output times conversion among converged cases with residence time of at least one second); the mass flows follow from the recorded temperature history and residence time at the stated void volume, the electrical draw from the element energy balance on the same drive, and the reaction enthalpy from the composition change with NIST heats of formation. The selection rule deliberately excludes shorter residence times: there the reaction enthalpy demand exceeds what the element supplies, so the prescribed temperature history is not one the element could sustain, and the build refuses to quote it.</div>
+<div class="prov">Selected and computed in <code>make-figures.mjs</code> from the wide-campaign records; the same numbers are reproduced independently by <code>tools/openmkm_dynamic/spec_sheet.py</code>.</div>
+</figure>
+
 <h2>Values quoted in the manuscript text</h2>
 <p class="lede">The captions above carry no numbers, because a journal caption does not. Every value the manuscript quotes is listed here instead, computed from the same frozen data object the plates are drawn from. Copying from this table, rather than from a previous draft, is what keeps the text and the artwork on the same solve.</p>
 

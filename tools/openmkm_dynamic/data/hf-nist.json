@@ -1,0 +1,9 @@
+{
+ "source": "NIST Chemistry WebBook, standard enthalpy of formation at 298.15 K",
+ "units": "kJ/mol",
+ "hf": {
+  "CH4": -74.87, "CO2": -393.52, "CO": -110.53, "H2": 0.0, "H2O": -241.83,
+  "C2H2": 226.73, "C2H4": 52.47, "C2H6": -83.85,
+  "CH3": 145.69, "H": 217.998, "OH": 37.28
+ }
+}

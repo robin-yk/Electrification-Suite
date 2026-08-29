@@ -15,10 +15,10 @@ from run_cstr_case import MW, RECORD_SPECIES
 from element_drive import integrate_pulsed_element, cfp_resistance, drive_defaults
 
 R_GAS = 8.314462618
-# standard enthalpies of formation, kJ/mol (NIST webbook, 298 K)
-HF = {"CH4": -74.87, "CO2": -393.52, "CO": -110.53, "H2": 0.0, "H2O": -241.83,
-      "C2H2": 226.73, "C2H4": 52.47, "C2H6": -83.85, "CH3": 145.69,
-      "H": 217.998, "OH": 37.28}
+# heats of formation live in one shared file so this tool and the figure
+# build cannot drift apart on a thermochemical constant
+_HF_PATH = __import__('pathlib').Path(__file__).resolve().parent / 'data' / 'hf-nist.json'
+HF = json.loads(_HF_PATH.read_text())["hf"]
 
 def feed_x(s):
     p = dict(kv.split(':') for kv in s.replace(' ', '').split(','))

@@ -1166,3 +1166,53 @@ export function cost(DATA) {
 
   return svgDoc(W, H, b);
 }
+
+/* ------------------------------------------------------------------ */
+/* specsheet(). One operating point in the units an experimentalist    */
+/* orders parts in: grams per hour in, watts, grams per hour out. The  */
+/* record is a transient Cantera truth from the wide campaign, chosen  */
+/* by rule; the drawing only restates it.                              */
+/* ------------------------------------------------------------------ */
+export function specsheet(DATA) {
+  const ns = "rg", W = 505, H = 205, S = DATA.spec;
+  let b = defs(ns);
+  const bx = 187, bw = 130, by = 52, bh = 96, cy = by + bh / 2;
+
+  /* the reactor: one heated box */
+  b += rect(bx, by, bw, bh, { stroke: SHADE.thermal, fill: TINT.thermal, sw: 1.2, rx: 6 });
+  b += T(bx + bw / 2, cy - 14, "heated void", { size: 9, anchor: "middle", fill: SHADE.thermal });
+  b += T(bx + bw / 2, cy - 2, S.voidCm3.toFixed(0) + " cm³, 1 atm", { size: 9, anchor: "middle", fill: SHADE.thermal });
+  b += T(bx + bw / 2, cy + 12, S.tMinC + "–" + S.tPeakC + " °C", { size: 9.5, weight: "bold", anchor: "middle", fill: SHADE.thermal });
+  b += T(bx + bw / 2, cy + 26, "residence " + S.tauS.toFixed(1) + " s", { size: 8, anchor: "middle", fill: C.grey });
+
+  /* electricity, from above */
+  b += arrow(ns, "M" + (bx + bw / 2) + ",18 L" + (bx + bw / 2) + "," + (by - 3), { color: "field", sw: 1.6 });
+  b += T(bx + bw / 2 + 8, 26, S.electricW.toFixed(0) + " W of electricity", { size: 10, weight: "bold", fill: SHADE.field });
+  b += T(bx + bw / 2 + 8, 38, S.volts.toFixed(0) + " V pulses, " + S.periodMs.toFixed(0) + " ms period, " + Math.round(S.duty * 100) + " % on", { size: 8, fill: C.grey });
+
+  /* feed, from the left */
+  const lx = 42;
+  b += T(lx, cy - 26, "in", { size: 8.5, fill: C.grey });
+  b += T(lx, cy - 12, "CH₄  " + S.inCH4.toFixed(1) + " g/h", { size: 10.5, weight: "bold", fill: SHADE.gas });
+  b += T(lx, cy + 2, "CO₂  " + S.inCO2.toFixed(1) + " g/h", { size: 10.5, weight: "bold", fill: SHADE.gas });
+  b += T(lx, cy + 15, "(" + S.feedRatio.toFixed(1) + " : 1 by mole)", { size: 8, fill: C.grey });
+  b += arrow(ns, "M" + (lx + 82) + "," + (cy - 6) + " L" + (bx - 4) + "," + (cy - 6), { color: "gas", sw: 1.6 });
+
+  /* products, to the right */
+  const rx = bx + bw + 22;
+  b += arrow(ns, "M" + (bx + bw + 2) + "," + (cy - 6) + " L" + (rx - 6) + "," + (cy - 6), { color: "scalar", sw: 1.6 });
+  b += T(rx, cy - 26, "out", { size: 8.5, fill: C.grey });
+  b += T(rx, cy - 12, "C₂H₂  " + S.outC2H2.toFixed(1) + " g/h", { size: 10.5, weight: "bold", fill: SHADE.scalar });
+  b += T(rx, cy + 2, "CO  " + S.outCO.toFixed(1) + " g/h", { size: 10.5, weight: "bold", fill: SHADE.scalar });
+  b += T(rx, cy + 15, "H₂ " + S.outH2.toFixed(2) + " g/h; CH₄ left " + S.outCH4.toFixed(2) + " g/h", { size: 8, fill: C.grey });
+
+  /* the honest footer: where the watts actually go */
+  const fy = by + bh + 22;
+  b += line(30, fy - 10, W - 30, fy - 10, { stroke: C.rule, sw: 0.5 });
+  b += T(30, fy + 2, S.conversion.toFixed(0) + " % of the methane converts, but of the " + S.electricW.toFixed(0) +
+    " W drawn only " + S.chemistryW.toFixed(0) + " W ends up stored in the molecules.", { size: 8.5 });
+  b += T(30, fy + 13, "The rest leaks from a small object glowing at 1600 \u00B0C. So the " + S.kwhPerKgC2H2.toFixed(0) +
+    " kWh per kilogram of acetylene here is an", { size: 8.5 });
+  b += T(30, fy + 24, "insulation problem, not a chemistry problem.", { size: 8.5 });
+  return svgDoc(W, H, b);
+}
