@@ -1,0 +1,95 @@
+{
+ "note": "shared per-file metadata lifted out of the rows by compact_feed_grid.py; each row keeps T_C, tau_s, pass, ch4_conversion, c2_selectivity_carbon, outlet_molefrac",
+ "files": {
+  "cjh-grid-x040.jsonl": {
+   "generator": "tools/openmkm_dynamic/run_cjh_grid.py",
+   "engine": "cantera steady CSTR (same make_reactor as the transient cases)",
+   "mechanism": "GRI-Mech 3.0",
+   "closure": "const-pressure",
+   "feed": "CH4:2, CO2:3",
+   "pressure_atm": 1.0,
+   "generated": "2026-08-29",
+   "rows": 6031,
+   "T_C_range": [
+    400.0,
+    1850.0
+   ],
+   "tau_s_range": [
+    0.01,
+    10.0
+   ]
+  },
+  "cjh-grid-x050.jsonl": {
+   "generator": "tools/openmkm_dynamic/run_cjh_grid.py",
+   "engine": "cantera steady CSTR (same make_reactor as the transient cases)",
+   "mechanism": "GRI-Mech 3.0",
+   "closure": "const-pressure",
+   "feed": "CH4:1, CO2:1",
+   "pressure_atm": 1.0,
+   "generated": "2026-08-29",
+   "rows": 5996,
+   "T_C_range": [
+    400.0,
+    1850.0
+   ],
+   "tau_s_range": [
+    0.01,
+    10.0
+   ]
+  },
+  "cjh-grid-x060.jsonl": {
+   "generator": "tools/openmkm_dynamic/run_cjh_grid.py",
+   "engine": "cantera steady CSTR (same make_reactor as the transient cases)",
+   "mechanism": "GRI-Mech 3.0",
+   "closure": "const-pressure",
+   "feed": "CH4:3, CO2:2",
+   "pressure_atm": 1.0,
+   "generated": "2026-08-29",
+   "rows": 5968,
+   "T_C_range": [
+    400.0,
+    1850.0
+   ],
+   "tau_s_range": [
+    0.01,
+    10.0
+   ]
+  },
+  "cjh-grid-x071.jsonl": {
+   "generator": "tools/openmkm_dynamic/run_cjh_grid.py",
+   "engine": "cantera steady CSTR (same make_reactor as the transient cases)",
+   "mechanism": "GRI-Mech 3.0",
+   "closure": "const-pressure",
+   "feed": "CH4:5, CO2:2",
+   "pressure_atm": 1.0,
+   "generated": "2026-08-29",
+   "rows": 5934,
+   "T_C_range": [
+    400.0,
+    1850.0
+   ],
+   "tau_s_range": [
+    0.01,
+    10.0
+   ]
+  },
+  "cjh-grid-x080.jsonl": {
+   "generator": "tools/openmkm_dynamic/run_cjh_grid.py",
+   "engine": "cantera steady CSTR (same make_reactor as the transient cases)",
+   "mechanism": "GRI-Mech 3.0",
+   "closure": "const-pressure",
+   "feed": "CH4:4, CO2:1",
+   "pressure_atm": 1.0,
+   "generated": "2026-08-29",
+   "rows": 5908,
+   "T_C_range": [
+    400.0,
+    1850.0
+   ],
+   "tau_s_range": [
+    0.01,
+    10.0
+   ]
+  }
+ }
+}
