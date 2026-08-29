@@ -17,8 +17,8 @@
    "max_power_mismatch": 0.012391975631108375
   },
   "timing_s": {
-   "row_build": 43.7,
-   "gp_predict": 189.7
+   "row_build": 44.7,
+   "gp_predict": 179.6
   },
   "candidates": 269685,
   "usable": 269685,
