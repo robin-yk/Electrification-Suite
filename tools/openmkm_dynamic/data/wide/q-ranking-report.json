@@ -1,0 +1,83 @@
+{
+ "convention": "truth-side duty pairs cycle-average composition with 1/T-weighted cycle-average enthalpy; the phase correlation term is unrecorded in the campaign files",
+ "pooled": {
+  "all": {
+   "q_c2h2": {
+    "n": 591,
+    "spearman": 0.9885093860960675,
+    "kendall": 0.9340961885915856,
+    "median_rel_q_err": 0.03382508515841365,
+    "p90_rel_q_err": 27417.56625366039,
+    "true_best_kg_kwh": 0.08480778214901791,
+    "regret_at_1": 0.0,
+    "regret_at_5": 0.0,
+    "top5_overlap": 5,
+    "top10_overlap": 10
+   },
+   "q_co": {
+    "n": 591,
+    "spearman": 0.987297901876754,
+    "kendall": 0.926203791333276,
+    "median_rel_q_err": 0.029307616645241508,
+    "p90_rel_q_err": 3150.078021329172,
+    "true_best_kg_kwh": 0.19824309191264716,
+    "regret_at_1": 0.0,
+    "regret_at_5": 0.0,
+    "top5_overlap": 5,
+    "top10_overlap": 9
+   }
+  },
+  "dT100": {
+   "q_c2h2": {
+    "n": 357,
+    "spearman": 0.9963756515097407,
+    "kendall": 0.9582035061215497,
+    "median_rel_q_err": 0.05315169546347431,
+    "p90_rel_q_err": 0.4789360185839312,
+    "true_best_kg_kwh": 0.08480778214901791,
+    "regret_at_1": 0.0,
+    "regret_at_5": 0.0,
+    "top5_overlap": 4,
+    "top10_overlap": 10
+   },
+   "q_co": {
+    "n": 357,
+    "spearman": 0.9961699324133647,
+    "kendall": 0.9541749283983256,
+    "median_rel_q_err": 0.051953831310392884,
+    "p90_rel_q_err": 0.5531350237537221,
+    "true_best_kg_kwh": 0.19824309191264716,
+    "regret_at_1": 0.0,
+    "regret_at_5": 0.0,
+    "top5_overlap": 5,
+    "top10_overlap": 10
+   }
+  },
+  "dT200": {
+   "q_c2h2": {
+    "n": 267,
+    "spearman": 0.9966075258580798,
+    "kendall": 0.958660696685534,
+    "median_rel_q_err": 0.07372827666882942,
+    "p90_rel_q_err": 0.4835211474553674,
+    "true_best_kg_kwh": 0.07275345780878033,
+    "regret_at_1": 0.0,
+    "regret_at_5": 0.0,
+    "top5_overlap": 5,
+    "top10_overlap": 10
+   },
+   "q_co": {
+    "n": 267,
+    "spearman": 0.9961296415615595,
+    "kendall": 0.9526907155529272,
+    "median_rel_q_err": 0.07541108916716999,
+    "p90_rel_q_err": 0.5113519405890458,
+    "true_best_kg_kwh": 0.1881890007974384,
+    "regret_at_1": 0.0,
+    "regret_at_5": 0.0,
+    "top5_overlap": 5,
+    "top10_overlap": 10
+   }
+  }
+ }
+}
