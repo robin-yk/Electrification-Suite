@@ -140,17 +140,54 @@ if __name__ == '__main__':
     ap.add_argument('--jobs', type=int, default=4)
     ap.add_argument('--out', default=HERE + '/data/wide/basin-bo-report.json')
     ap.add_argument('--truths', default=HERE + '/data/wide/design-wide-basinbo-w0.jsonl')
+    ap.add_argument('--select', choices=('robust', 'diverse'), default='robust',
+                    help='robust: the basins the most scalarization weights agree on, '
+                         'in map order. diverse: among basins at or above '
+                         '--min-weights, the mutually most separated set.')
+    ap.add_argument('--min-weights', type=int, default=1,
+                    help='diverse selection only considers basins found by at '
+                         'least this many scalarization weights')
+    ap.add_argument('--base-index', type=int, default=BASE_INDEX,
+                    help='first design index to write; a second campaign must '
+                         'not reuse the first one\'s block')
     a = ap.parse_args()
 
     B = json.load(open(a.basins))
-    basins = B['basins'][:a.top]
-    # grid steps of the sweep, for sizing trust regions
+    # grid steps of the sweep, for sizing trust regions and for measuring how
+    # far apart two basins are
     STEP = {'voltage': (55.0-25.0)/13, 'period_s': (10.0/0.01)**(1/21),
             'duty': 0.01, 'tau_s': (10.0/0.01)**(1/19), 'feed_x': (0.80-0.40)/8}
     BOX = {'voltage': (25.0, 55.0), 'period_s': (0.01, 10.0), 'duty': (0.02, 0.85),
            'tau_s': (0.01, 10.0), 'feed_x': (0.40, 0.80)}
+
+    def steps(b):
+        """Basin centre in grid-step units, so distances are comparable."""
+        return np.array([math.log(b[n])/math.log(STEP[n]) if n in LOG_AXES
+                         else b[n]/STEP[n] for n in AXES])
+
+    if a.select == 'robust':
+        basins = B['basins'][:a.top]
+    else:
+        # Ordering by weight count alone hands back near-duplicates: the map's
+        # top five contain two pairs that differ in one control by two grid
+        # steps. Regimes are the claim here, so pick greedily for separation
+        # among the basins that survive every scalarization weight.
+        pool = [b for b in B['basins'] if len(b['weights']) >= a.min_weights]
+        if not pool:
+            raise SystemExit(f'no basin found by {a.min_weights} or more weights')
+        S = [steps(b) for b in pool]
+        chosen = [0]
+        while len(chosen) < min(a.top, len(pool)):
+            far = max((i for i in range(len(pool)) if i not in chosen),
+                      key=lambda i: min(np.abs(S[i] - S[j]).max() for j in chosen))
+            chosen.append(far)
+        basins = [pool[i] for i in chosen]
+        sep = min(np.abs(S[i] - S[j]).max()
+                  for i in chosen for j in chosen if i != j) if len(chosen) > 1 else 0.0
+        print(f'diverse selection: {len(pool)} basins at >= {a.min_weights} weights, '
+              f'{len(basins)} picked, closest pair {sep:.1f} grid steps apart')
     rng = np.random.default_rng(20260907)
-    next_index = BASE_INDEX
+    next_index = a.base_index
     out_rows, report = [], []
 
     for bi, b in enumerate(basins):
@@ -233,7 +270,7 @@ if __name__ == '__main__':
             r.pop('_q', None)
             f.write(json.dumps(r, separators=(',', ':')) + "\n")
     json.dump({"basins_file": os.path.basename(a.basins), "settings": vars(a),
-               "index_block": BASE_INDEX, "results": report},
+               "index_block": a.base_index, "results": report},
               open(a.out, 'w'), indent=1)
     print(f"\n{len(out_rows)} Cantera evaluations -> {a.truths}")
     print(f"BASIN BO -> {a.out}")
