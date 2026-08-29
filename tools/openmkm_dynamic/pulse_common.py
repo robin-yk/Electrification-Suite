@@ -14,6 +14,7 @@ Column layout of the candidate matrix returned by build_rows():
 """
 import json, math
 import numpy as np
+from scipy.spatial import cKDTree
 from run_cstr_case import waveform_temperature, MW, RECORD_SPECIES
 from element_drive import profile_function
 
@@ -92,10 +93,63 @@ def training_box(model_path, targets=("y_c2h2", "y_co", "x_ch4", "x_co2")):
 
 
 def in_domain(rows, box):
-    """True where every GP feature lies inside the trained box."""
+    """True where every GP feature lies inside the trained box.
+
+    Kept for reading the older campaigns, superseded by support_gate. A
+    per-feature min-max box says nothing about whether a candidate has any
+    training point near it: the corner where three features each sit at
+    their own extreme is inside the box and outside the data. It is also
+    decided at the last bit, which is how the duty-pinned round failed. The
+    box floor came back from the model as 0.020000000000000018 after one
+    round trip through standardization, the grid asks for exactly 0.02, and
+    every low-duty candidate was rejected by 1.8e-17.
+    """
     Z = gp_features(rows)
     lo, hi = box
     return ((Z >= lo) & (Z <= hi)).all(axis=1)
+
+
+DESIGN_BOX = {'voltage': (25.0, 55.0), 'period_s': (1e-2, 10.0),
+              'duty': (0.02, 0.85), 'tau_s': (1e-2, 10.0), 'feed_x': (0.40, 0.80)}
+
+
+def training_points(model_path, targets=("y_c2h2", "y_co", "x_ch4", "x_co2")):
+    """Every live training point of the frozen model, in standardized feature
+    space, deduplicated across targets."""
+    M = json.load(open(model_path))
+    Z = np.vstack([np.array(M['targets'][t]['train_z']) for t in targets])
+    return np.unique(np.round(Z, 12), axis=0), np.array(M['feature_mean']),         np.array(M['feature_std'])
+
+
+def support_gate(rows, model_path, quantile=0.95, slack=1.0,
+                 design_box=DESIGN_BOX):
+    """Two conditions, both of which a defensible candidate has to meet.
+
+    First the physical one: the raw controls lie inside the design box the
+    campaign actually samples, with a relative tolerance so a grid value
+    that equals a bound is inside it.
+
+    Second the statistical one: the distance in standardized feature space
+    to the nearest training point is no larger than the training set's own
+    reach. That reach is calibrated from the data, as the `quantile` of the
+    training points' own nearest-neighbour distances times `slack`, so it
+    describes how densely this particular campaign filled its space rather
+    than importing a number from elsewhere.
+
+    Returns (ok, distance, threshold).
+    """
+    Ztr, mu, sd = training_points(model_path)
+    Z = (gp_features(rows) - mu)/sd
+    tree = cKDTree(Ztr)
+    d_self = tree.query(Ztr, k=2)[0][:, 1]          # nearest OTHER training point
+    thr = float(np.quantile(d_self, quantile)*slack)
+    dist = tree.query(Z, k=1)[0]
+    ok = dist <= thr
+    for name, (lo, hi) in design_box.items():
+        v = rows[:, COL[name]]
+        tol = 1e-9*max(abs(lo), abs(hi))
+        ok &= (v >= lo - tol) & (v <= hi + tol)
+    return ok, dist, thr
 
 
 def load_gp(model_path, targets=("y_c2h2", "y_co", "x_ch4", "x_co2")):

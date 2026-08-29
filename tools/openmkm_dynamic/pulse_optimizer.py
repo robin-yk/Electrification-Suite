@@ -55,7 +55,7 @@ sys.path.insert(0, HERE)
 import numpy as np
 from pulse_common import (load_atlas, load_gp, build_rows,
                           corrected_productivities, pareto_max, load_h_table,
-                          training_box, in_domain,
+                          training_box, in_domain, support_gate, DESIGN_BOX,
                           COL, VOID_CM3, PRESSURE_PA, MW)
 
 OUTDIR = HERE + '/data/wide'
@@ -71,20 +71,29 @@ N_VERIFY = 28
 # floor of the transient design box.
 CAMPAIGNS = {
     'pulsefront2': {'base_index': 8100001, 'duty_grid': 'v1',
-                    'model': 'wide-surrogate-atlas.json',
+                    'model': 'wide-surrogate-atlas.json', 'gate': 'box',
                     'report': 'pulse-optimizer-report.json',
                     'targets': 'targets-pulsefront2.json'},
     'pulsefront3': {'base_index': 8200001, 'duty_grid': 'x1',
-                    'model': 'wide-surrogate-atlas.json',
+                    'model': 'wide-surrogate-atlas.json', 'gate': 'box',
                     'report': 'pulse-optimizer-pulsefront3-report.json',
                     'targets': 'targets-pulsefront3.json'},
     # v3 adds the low-duty acquisition round and the duty-pinned truths, so its
     # box reaches the design box's own 0.02 floor and the lowest duty row is
     # searchable on its chemistry.
     'pulsefront4': {'base_index': 8500001, 'duty_grid': 'x1',
-                    'model': 'wide-surrogate-atlas-v3.json',
+                    'model': 'wide-surrogate-atlas-v3.json', 'gate': 'box',
                     'report': 'pulse-optimizer-pulsefront4-report.json',
                     'targets': 'targets-pulsefront4.json'},
+    # pulsefront4 showed what a min-max box gate is worth: v3's duty floor came
+    # back as 0.020000000000000018 and the grid asks for exactly 0.02, so every
+    # low-duty candidate stayed out by 1.8e-17 even after the pinned round. The
+    # support gate replaces it with the design box plus a distance-to-training
+    # test calibrated from the training set's own spacing.
+    'pulsefront5': {'base_index': 8600001, 'duty_grid': 'x1',
+                    'model': 'wide-surrogate-atlas-v3.json', 'gate': 'support',
+                    'report': 'pulse-optimizer-pulsefront5-report.json',
+                    'targets': 'targets-pulsefront5.json'},
 }
 
 import argparse
@@ -148,7 +157,14 @@ chem_W = rows[:, COL['dh_J_per_g']]*rows[:, COL['mdot_g_s']]
 fidelity = duty_W/pe
 dT = rows[:, COL['t_peak_c']] - rows[:, COL['t_min_c']]
 
-dom = in_domain(rows, BOX)
+dom_box = in_domain(rows, BOX)
+if CAMP['gate'] == 'support':
+    dom, nn_dist, nn_thr = support_gate(rows, MODEL_PATH)
+    print(f"support gate: threshold {nn_thr:.3f} in standardized feature space, "
+          f"{int(dom.sum())} of {len(rows)} candidates supported "
+          f"(box gate would keep {int(dom_box.sum())})")
+else:
+    dom, nn_dist, nn_thr = dom_box, None, None
 finite = (q1 > 0) & (q2 > 0) & np.isfinite(q1) & np.isfinite(q2)
 idx = np.where(finite)[0]
 front = pareto_max(q1, q2, idx)
@@ -200,6 +216,9 @@ def point(i):
         "sec_c2h2_kwh_kg": float(1.0/q1[i]), "sec_co_kwh_kg": float(1.0/q2[i]),
         "chem_W": float(chem_W[i]),
         "in_domain": bool(dom[i]),
+        "in_domain_box": bool(dom_box[i]),
+        "t_on_s": float(rows[i, COL['period_s']]*rows[i, COL['duty']]),
+        "support_distance": (None if nn_dist is None else float(nn_dist[i])),
         "J_balance": float(J[i]),
     }
 
@@ -215,6 +234,7 @@ report = {
     "meta": {
         "campaign": cli.campaign,
         "model": CAMP['model'],
+        "gate": CAMP['gate'],
         "duty_grid": {"name": CAMP['duty_grid'],
                       "duty_min": float(duty_min_cache),
                       "duty_max": float(max(n['du'] for n in nodes))},
@@ -238,6 +258,13 @@ report = {
         "in_domain": int(dom.sum()),
         "front_out_of_domain": int(sum(1 for i in front if not dom[i])),
         "front_fidelity_le_01": int(len(front_f)),
+        "support_gate": (None if nn_thr is None else {
+            "threshold": nn_thr,
+            "rule": "design box on the raw controls AND distance to the nearest "
+                    "training point at or under the 95th percentile of the "
+                    "training set's own nearest-neighbour spacing",
+            "design_box": DESIGN_BOX,
+            "kept": int(dom.sum()), "box_gate_would_keep": int(dom_box.sum())}),
         "domain_note": "in_domain means every GP feature inside the trained box reconstructed from the frozen model; the round trip refuted exactly the extrapolated front members (8000001, 8000005 at log10(P/tau) past the trained 2.744), so out-of-domain candidates are reported but never picked",
     },
     "front": [point(int(i)) for i in front],
@@ -286,7 +313,8 @@ for k, i in enumerate(sel):
                       "mdot_g_s": float(mdot_c[i])}})
 json.dump({"purpose": "round-trip verification of the pulse energy-productivity front",
            "campaign": cli.campaign,
-        "model": CAMP['model'], "targets": targets},
+        "model": CAMP['model'],
+        "gate": CAMP['gate'], "targets": targets},
           open(f"{OUTDIR}/{CAMP['targets']}", 'w'), indent=1)
 print(f"PULSE OPTIMIZER DONE ({cli.campaign}): front {len(front)}, "
       f"verify targets {len(targets)}")
