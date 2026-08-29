@@ -121,35 +121,57 @@ def training_points(model_path, targets=("y_c2h2", "y_co", "x_ch4", "x_co2")):
     return np.unique(np.round(Z, 12), axis=0), np.array(M['feature_mean']),         np.array(M['feature_std'])
 
 
-def support_gate(rows, model_path, quantile=0.95, slack=1.0,
-                 design_box=DESIGN_BOX):
+def support_gate(rows, model_path, sigma_threshold, design_box=DESIGN_BOX,
+                 targets=("y_c2h2", "y_co", "x_ch4", "x_co2")):
     """Two conditions, both of which a defensible candidate has to meet.
 
-    First the physical one: the raw controls lie inside the design box the
+    The physical one: the raw controls lie inside the design box the
     campaign actually samples, with a relative tolerance so a grid value
-    that equals a bound is inside it.
+    equal to a bound is inside it.
 
-    Second the statistical one: the distance in standardized feature space
-    to the nearest training point is no larger than the training set's own
-    reach. That reach is calibrated from the data, as the `quantile` of the
-    training points' own nearest-neighbour distances times `slack`, so it
-    describes how densely this particular campaign filled its space rather
-    than importing a number from elsewhere.
+    The statistical one: the model's own posterior standard deviation, the
+    largest over the four targets, is no worse than what it shows where its
+    error gates were actually measured. The threshold comes from
+    calibrate_sigma_threshold() on a held-out development set, so "in
+    domain" means "as uncertain as it is where we checked it" rather than
+    "inside a bounding box".
 
-    Returns (ok, distance, threshold).
+    An earlier version of this gate used distance to the nearest training
+    point in standardized space. That is the wrong metric for this model:
+    its ARD lengthscale for duty is 312 standardized units on Y_C2H2 and
+    2981 on Y_CO, against 0.8 to 5.7 on the other five features, so the GP
+    barely uses duty as an axis at all, its effect having already entered
+    through t_peak, t_min and P/tau. A plain standardized distance weights
+    duty like everything else and contradicts the model it is guarding.
+    The posterior sigma is the kernel's own answer to the same question and
+    needs no separate metric choice.
+
+    Returns (ok, sigma, threshold).
     """
-    Ztr, mu, sd = training_points(model_path)
-    Z = (gp_features(rows) - mu)/sd
-    tree = cKDTree(Ztr)
-    d_self = tree.query(Ztr, k=2)[0][:, 1]          # nearest OTHER training point
-    thr = float(np.quantile(d_self, quantile)*slack)
-    dist = tree.query(Z, k=1)[0]
-    ok = dist <= thr
+    sigma_of = load_gp_variance(model_path, targets)
+    Z = gp_features(rows)
+    sig = np.max([sigma_of(t, Z) for t in targets], axis=0)
+    ok = sig <= sigma_threshold
     for name, (lo, hi) in design_box.items():
         v = rows[:, COL[name]]
         tol = 1e-9*max(abs(lo), abs(hi))
         ok &= (v >= lo - tol) & (v <= hi + tol)
-    return ok, dist, thr
+    return ok, sig, float(sigma_threshold)
+
+
+def calibrate_sigma_threshold(model_path, dev_features, quantile=0.95,
+                              targets=("y_c2h2", "y_co", "x_ch4", "x_co2")):
+    """Posterior-sigma threshold from a development set the model passed.
+
+    dev_features is the raw (unstandardized) feature matrix of the held-out
+    cases whose error gates were measured. The threshold is the `quantile`
+    of the per-case worst-target sigma there: a candidate the model is more
+    uncertain about than that sits outside the regime where the gates were
+    demonstrated, whatever box it falls in.
+    """
+    sigma_of = load_gp_variance(model_path, targets)
+    sig = np.max([sigma_of(t, dev_features) for t in targets], axis=0)
+    return float(np.quantile(sig, quantile)), sig
 
 
 def load_gp(model_path, targets=("y_c2h2", "y_co", "x_ch4", "x_co2")):
@@ -173,6 +195,48 @@ def load_gp(model_path, targets=("y_c2h2", "y_co", "x_ch4", "x_co2")):
             out[a:b] = (sf*sf*(1+r+r*r/3)*np.exp(-r)) @ al
         return out
     return correction
+
+
+def load_gp_variance(model_path, targets=("y_c2h2", "y_co", "x_ch4", "x_co2")):
+    """Posterior standard deviation of the frozen correction, per target.
+
+    The artifact stores train_z, alpha and the kernel parameters but not the
+    factorization, so K is rebuilt here from the same Matern 5/2 ARD kernel
+    the trainer fitted and factorized once per target. Prediction is then
+    var = k(z,z) - v^T v with v the triangular solve of k*, which is the
+    standard expression and needs no extra stored state.
+
+    This is what an acquisition function needs. Without it the campaign can
+    only sample where it already suspects something, which is targeted
+    sampling and not active learning, and it cannot tell a candidate the
+    model is confident about from one it is guessing at.
+    """
+    M = json.load(open(model_path))
+    mu, sd = np.array(M['feature_mean']), np.array(M['feature_std'])
+    packed = {}
+    for tgt in targets:
+        tm = M['targets'][tgt]
+        Zt = np.array(tm['train_z'])
+        ls = np.array(tm['lengthscales'])
+        sf, sn = float(tm['sigma_f']), float(tm['sigma_n'])
+        d2 = ((Zt[:, None, :] - Zt[None, :, :]) / ls) ** 2
+        r = np.sqrt(5.0 * d2.sum(-1))
+        K = sf*sf*(1 + r + r*r/3)*np.exp(-r) + (sn*sn + 1e-10)*np.eye(len(Zt))
+        packed[tgt] = (Zt, ls, sf, np.linalg.cholesky(K))
+
+    def sigma(tgt, Z):
+        Zs = (Z - mu) / sd
+        Zt, ls, sf, L = packed[tgt]
+        out = np.empty(len(Zs))
+        for a in range(0, len(Zs), 5000):
+            b = min(a+5000, len(Zs))
+            d2 = ((Zs[a:b, None, :] - Zt[None, :, :]) / ls) ** 2
+            r = np.sqrt(5.0 * d2.sum(-1))
+            Ks = sf*sf*(1 + r + r*r/3)*np.exp(-r)
+            v = np.linalg.solve(L, Ks.T)
+            out[a:b] = np.sqrt(np.maximum(sf*sf - (v*v).sum(0), 0.0))
+        return out
+    return sigma
 
 
 def inlet(xf):

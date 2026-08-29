@@ -159,12 +159,19 @@ dT = rows[:, COL['t_peak_c']] - rows[:, COL['t_min_c']]
 
 dom_box = in_domain(rows, BOX)
 if CAMP['gate'] == 'support':
-    dom, nn_dist, nn_thr = support_gate(rows, MODEL_PATH)
-    print(f"support gate: threshold {nn_thr:.3f} in standardized feature space, "
+    # frozen by calibrate_gate.py and committed with the model, so a sweep
+    # cannot retune its own admission test
+    GATE = json.load(open(HERE + '/data/wide/gate-' +
+                          CAMP['model'].replace('.json', '') + '.json'))
+    dom, sigma_post, sig_thr = support_gate(rows, MODEL_PATH,
+                                            GATE['sigma_threshold'])
+    print(f"support gate: posterior sigma <= {sig_thr:.4f} (the {GATE['quantile']} "
+          f"quantile over {GATE['development_cases']} development cases), "
           f"{int(dom.sum())} of {len(rows)} candidates supported "
-          f"(box gate would keep {int(dom_box.sum())})")
+          f"(the retired box gate would keep {int(dom_box.sum())})")
 else:
-    dom, nn_dist, nn_thr = dom_box, None, None
+    GATE = None
+    dom, sigma_post, sig_thr = dom_box, None, None
 finite = (q1 > 0) & (q2 > 0) & np.isfinite(q1) & np.isfinite(q2)
 idx = np.where(finite)[0]
 front = pareto_max(q1, q2, idx)
@@ -218,7 +225,7 @@ def point(i):
         "in_domain": bool(dom[i]),
         "in_domain_box": bool(dom_box[i]),
         "t_on_s": float(rows[i, COL['period_s']]*rows[i, COL['duty']]),
-        "support_distance": (None if nn_dist is None else float(nn_dist[i])),
+        "posterior_sigma": (None if sigma_post is None else float(sigma_post[i])),
         "J_balance": float(J[i]),
     }
 
@@ -258,13 +265,9 @@ report = {
         "in_domain": int(dom.sum()),
         "front_out_of_domain": int(sum(1 for i in front if not dom[i])),
         "front_fidelity_le_01": int(len(front_f)),
-        "support_gate": (None if nn_thr is None else {
-            "threshold": nn_thr,
-            "rule": "design box on the raw controls AND distance to the nearest "
-                    "training point at or under the 95th percentile of the "
-                    "training set's own nearest-neighbour spacing",
-            "design_box": DESIGN_BOX,
-            "kept": int(dom.sum()), "box_gate_would_keep": int(dom_box.sum())}),
+        "support_gate": (None if GATE is None else dict(
+            GATE, design_box=DESIGN_BOX, kept=int(dom.sum()),
+            box_gate_would_keep=int(dom_box.sum()))),
         "domain_note": "in_domain means every GP feature inside the trained box reconstructed from the frozen model; the round trip refuted exactly the extrapolated front members (8000001, 8000005 at log10(P/tau) past the trained 2.744), so out-of-domain candidates are reported but never picked",
     },
     "front": [point(int(i)) for i in front],
