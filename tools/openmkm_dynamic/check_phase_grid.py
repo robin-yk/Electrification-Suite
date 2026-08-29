@@ -59,9 +59,19 @@ for duty in (0.20, 0.40, 0.85):
           f"{len(g)} substeps against the requested {PPC}")
 
 # the reason the grid exists: the hot phase the chemistry integrates has to be
-# the hot phase the element actually reaches
-for (v, period, duty, tol) in ((41.2, 10.0, 0.02, 30.0), (36.5, 7.2, 0.03, 30.0),
-                               (27.3, 7.2, 0.05, 30.0)):
+# the hot phase the element actually reaches. The uniform grid is not wrong
+# everywhere, which is what made this easy to miss: where the element saturates
+# inside a short on time it samples the top fine, and it fails where the element
+# is still climbing when the power cuts. So the regression guard asks that the
+# set contain a case the old grid gets badly wrong, not that it get every case
+# wrong.
+uniform_deficits = []
+for (v, period, duty, tol) in ((41.2, 10.0, 0.02, 5.0), (55.0, 0.1, 0.02, 5.0),
+                               (30.0, 1.0, 0.02, 5.0), (36.5, 7.2, 0.03, 5.0),
+                               (55.0, 0.2, 0.03, 5.0), (27.3, 2.0, 0.03, 5.0),
+                               (27.3, 7.2, 0.05, 5.0), (50.4, 0.5, 0.05, 5.0),
+                               (31.9, 5.18, 0.05, 5.0), (36.5, 7.2, 0.07, 5.0),
+                               (38.8, 1.0, 0.20, 5.0), (34.2, 0.1, 0.85, 1.0)):
     p = params(v, period, duty)
     peak = max(waveform_temperature(k / 20000.0, p) for k in range(20000))
     seen_adaptive = max(waveform_temperature(ph, p) for ph, _ in phase_grid(p))
@@ -69,9 +79,12 @@ for (v, period, duty, tol) in ((41.2, 10.0, 0.02, 30.0), (36.5, 7.2, 0.03, 30.0)
     check(f"peak resolved duty {duty:.2f}", peak - seen_adaptive < tol,
           f"deficit {peak - seen_adaptive:.1f} K against the {tol:.0f} K bound "
           f"(uniform {PPC}-point grid: {peak - seen_uniform:.1f} K)")
-    check(f"uniform grid is the thing being fixed, duty {duty:.2f}",
-          peak - seen_uniform > tol,
-          f"uniform deficit {peak - seen_uniform:.1f} K exceeds {tol:.0f} K")
+    uniform_deficits.append((peak - seen_uniform, v, period, duty))
+
+worst = max(uniform_deficits)
+check("the uniform grid fails somewhere in this set", worst[0] > 50.0,
+      f"worst uniform deficit {worst[0]:.1f} K at V {worst[1]}, P {worst[2]} s, "
+      f"duty {worst[3]}, against the adaptive grid's bound of 5 K")
 
 if FAIL:
     print(f"\n{len(FAIL)} CHECK(S) FAILED: {', '.join(FAIL)}")

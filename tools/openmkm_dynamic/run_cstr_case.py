@@ -259,6 +259,8 @@ def mean_temperature(p, n=2000):
 
 
 HOT_MIN_POINTS = 40
+PEAK_MISS_TOL_K = 5.0
+MAX_HOT_POINTS = 2560
 
 
 def phase_grid(p):
@@ -285,9 +287,30 @@ def phase_grid(p):
     w = min(0.5, max(3.0 * p["duty"], p["duty"] + 0.03))
     n_hot = max(int(math.ceil(n * w)), hot_min)
     n_cold = max(int(math.ceil(n * (1.0 - w))), 1)
-    dh, dc = w / n_hot, (1.0 - w) / n_cold
-    return ([((k + 0.5) * dh, dh) for k in range(n_hot)]
-            + [(w + (k + 0.5) * dc, dc) for k in range(n_cold)])
+
+    def hot(nh):
+        dh = w / nh
+        return [((k + 0.5) * dh, dh) for k in range(nh)]
+
+    # A fixed point count cannot promise a peak: the miss is set by how fast T
+    # moves over half a substep near the top, which depends on the case, and
+    # more points can even sample slightly worse if they land less luckily.
+    # Refine against the miss itself instead. The worst case found at a fixed
+    # 40 points was not the low-duty one everybody expects but duty 0.20 at a
+    # 1 s period, 13.0 K, so the criterion has to be measured per case rather
+    # than argued from duty.
+    tol = p.get("peak_miss_tol_k", PEAK_MISS_TOL_K)
+    if hot_min and tol and p.get("waveform") == "physical" and "_profile" in p:
+        dense = max(4000, 8 * n_hot)
+        peak = max(waveform_temperature(w * (k + 0.5) / dense, p)
+                   for k in range(dense))
+        while n_hot < MAX_HOT_POINTS:
+            if peak - max(waveform_temperature(ph, p) for ph, _ in hot(n_hot)) <= tol:
+                break
+            n_hot *= 2
+
+    dc = (1.0 - w) / n_cold
+    return hot(n_hot) + [(w + (k + 0.5) * dc, dc) for k in range(n_cold)]
 
 
 def build_params(args):
