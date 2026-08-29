@@ -1216,3 +1216,132 @@ export function specsheet(DATA) {
   b += T(30, fy + 24, "insulation problem, not a chemistry problem.", { size: 8.5 });
   return svgDoc(W, H, b);
 }
+
+/* ------------------------------------------------------------------ */
+/* twopaths(). The whole idea in one glance: the expensive calculation */
+/* and the cheap one arrive at the same answer.                        */
+/* ------------------------------------------------------------------ */
+export function twopaths(DATA) {
+  const ns = "rt2", W = 505, H = 168, S = DATA.paths;
+  let b = defs(ns);
+  const ly = 58, ry = 118, bx = 30, ex = 380;
+
+  b += rect(bx, 72, 96, 32, { stroke: C.grey, fill: TINT.panel, sw: 0.9, rx: 5 });
+  b += T(bx + 48, 86, "operating", { size: 9, anchor: "middle" });
+  b += T(bx + 48, 97, "conditions", { size: 9, anchor: "middle" });
+
+  /* the expensive road */
+  b += arrow(ns, "M" + (bx + 100) + ",80 C 200,40 300,40 " + (ex - 4) + "," + (ly + 16), { color: "thermal", sw: 1.6 });
+  b += T(240, 36, "solve the full transient chemistry", { size: 9.5, weight: "bold", anchor: "middle", fill: SHADE.thermal });
+  b += T(240, 48, "≈ " + S.canteraS.toFixed(0) + " s per operating point", { size: 8.5, anchor: "middle", fill: C.grey });
+
+  /* the cheap road */
+  b += arrow(ns, "M" + (bx + 100) + ",96 C 200,138 300,138 " + (ex - 4) + "," + (ry - 4), { color: "scalar", sw: 1.6 });
+  b += T(240, 152, "look up a steady map, add a learned correction", { size: 9.5, weight: "bold", anchor: "middle", fill: SHADE.scalar });
+  b += T(240, 163, S.browserMs.toFixed(0) + " ms per point, in a browser · " + S.speedup.toLocaleString("en-US") + "× faster", { size: 8.5, anchor: "middle", fill: C.grey });
+
+  /* they meet */
+  b += rect(ex, ly, 100, 76, { stroke: SHADE.gas, fill: TINT.gas, sw: 1.1, rx: 6 });
+  b += T(ex + 50, ly + 18, "the same", { size: 10, weight: "bold", anchor: "middle", fill: SHADE.gas });
+  b += T(ex + 50, ly + 31, "answer", { size: 10, weight: "bold", anchor: "middle", fill: SHADE.gas });
+  b += T(ex + 50, ly + 47, "conversions and yields", { size: 7.5, anchor: "middle", fill: C.grey });
+  b += T(ex + 50, ly + 58, "agree to " + S.errLo.toFixed(3) + "–" + S.errHi.toFixed(3), { size: 7.5, anchor: "middle", fill: C.grey });
+  b += T(ex + 50, ly + 69, "on " + S.nSealed + " unseen points", { size: 7.5, anchor: "middle", fill: C.grey });
+  return svgDoc(W, H, b);
+}
+
+/* ------------------------------------------------------------------ */
+/* steering(). The verified frontier as a steering wheel: residence    */
+/* time and feed choose the product split.                             */
+/* ------------------------------------------------------------------ */
+export function steering(DATA) {
+  const ns = "rst", W = 505, H = 268, F = DATA.frontier;
+  let b = defs(ns);
+  const x0 = 66, pw = 240, ptop = 30, pbot = 232, ph = pbot - ptop;
+  const X = (v) => lin(v, 0, 1, x0, x0 + pw);
+  const Y = (v) => lin(v, 0, 1, pbot, ptop);
+  b += rect(x0, ptop, pw, ph, { stroke: C.grey, fill: "#FFFFFF", sw: 0.8, rx: 0 });
+  [0, 0.25, 0.5, 0.75, 1].forEach(function (v) {
+    b += T(X(v), pbot + 12, v.toFixed(2), { size: 8, anchor: "middle" });
+    b += T(x0 - 5, Y(v) + 3, v.toFixed(2), { size: 8, anchor: "end" });
+  });
+  b += T(x0 + pw / 2, pbot + 24, "acetylene yield (fraction of fed carbon)", { size: 8.5, anchor: "middle" });
+  b += '<text x="' + (x0 - 34) + '" y="' + ((ptop + pbot) / 2) + '" font-size="8.5" text-anchor="middle" transform="rotate(-90 ' + (x0 - 34) + ' ' + ((ptop + pbot) / 2) + ')">CO yield (fraction of fed carbon)</text>';
+
+  /* carbon conservation bound */
+  b += line(X(0), Y(1), X(1), Y(0), { stroke: C.rule, sw: 0.7, dash: "4 3" });
+  b += T(X(0.62), Y(0.47) - 4, "all fed carbon", { size: 7.5, fill: C.faint });
+  b += T(X(0.62), Y(0.47) + 5, "converted", { size: 7.5, fill: C.faint });
+
+  /* the predicted frontier */
+  F.front.forEach(function (r) {
+    b += '<circle cx="' + X(r.pred_y_c2h2) + '" cy="' + Y(r.pred_y_co) + '" r="1.6" fill="' + C.faint + '"/>';
+  });
+  /* verified points: Cantera truths as rings */
+  F.rt.pairs.forEach(function (q) {
+    b += '<circle cx="' + X(q.true1) + '" cy="' + Y(q.true2) + '" r="3.2" fill="none" stroke="' + C.ink + '" stroke-width="0.9"/>';
+  });
+
+  const PICKS = [
+    ["max_y_c2h2", "scalar"], ["balance_minmax", "gas"], ["max_y_co", "thermal"]];
+  PICKS.forEach(function (pk) {
+    const r = F.picks[pk[0]];
+    b += '<circle cx="' + X(r.pred_y_c2h2) + '" cy="' + Y(r.pred_y_co) + '" r="4.4" fill="' + C[pk[1]] + '"/>';
+  });
+
+  /* the plain-language legend */
+  const lx = x0 + pw + 24;
+  function entry(y, color, lines) {
+    b += '<circle cx="' + lx + '" cy="' + (y - 3) + '" r="4.4" fill="' + C[color] + '"/>';
+    lines.forEach(function (t, i) {
+      b += T(lx + 10, y + i * 10, t, { size: 8, fill: i ? C.grey : SHADE[color], weight: i ? "normal" : "bold" });
+    });
+  }
+  const c1 = F.picks.max_y_c2h2, c2 = F.picks.balance_minmax, c3 = F.picks.max_y_co;
+  entry(46, "scalar", ["want acetylene:", "flow fast (τ " + (c1.tau_s * 1000).toFixed(0) + " ms), CH₄-rich",
+    c1.gph_c2h2_per_element_at_eps10.toFixed(1) + " g/h per element"]);
+  entry(96, "gas", ["want both:", "τ " + c2.tau_s.toFixed(1) + " s, CH₄:CO₂ " +
+    (c2.feed_x / (1 - c2.feed_x)).toFixed(1) + ":1", c2.gph_c2h2_per_element_at_eps10.toFixed(1) + " g/h C₂H₂ + CO stream"]);
+  entry(146, "thermal", ["want syngas CO:", "flow slow (τ " + c3.tau_s.toFixed(0) + " s), 1:1 feed",
+    "99 % of carbon to CO"]);
+  b += '<circle cx="' + lx + '" cy="' + 189 + '" r="3.2" fill="none" stroke="' + C.ink + '" stroke-width="0.9"/>';
+  b += T(lx + 10, 192, "rings: re-solved with full", { size: 8, fill: C.grey });
+  b += T(lx + 10, 202, "chemistry; lands within " + F.rt.maxErr.toFixed(2), { size: 8, fill: C.grey });
+  b += T(lx + 10, 218, "every point here is continuous", { size: 8, fill: C.grey });
+  b += T(lx + 10, 228, "heating; pulsing never reached", { size: 8, fill: C.grey });
+  b += T(lx + 10, 238, "this frontier", { size: 8, fill: C.grey });
+  return svgDoc(W, H, b);
+}
+
+/* ------------------------------------------------------------------ */
+/* rtparity(). Promised versus delivered, one dot per frontier check.  */
+/* ------------------------------------------------------------------ */
+export function rtparity(DATA) {
+  const ns = "rrt", W = 505, H = 250, R = DATA.frontier.rt;
+  let b = defs(ns);
+  const x0 = 150, pw = 200, ptop = 26, pbot = 226, ph = pbot - ptop;
+  const X = (v) => lin(v, 0, 1, x0, x0 + pw);
+  const Y = (v) => lin(v, 0, 1, pbot, ptop);
+  b += rect(x0, ptop, pw, ph, { stroke: C.grey, fill: "#FFFFFF", sw: 0.8, rx: 0 });
+  [0, 0.5, 1].forEach(function (v) {
+    b += T(X(v), pbot + 12, v.toFixed(1), { size: 8, anchor: "middle" });
+    b += T(x0 - 5, Y(v) + 3, v.toFixed(1), { size: 8, anchor: "end" });
+  });
+  b += T(x0 + pw / 2, pbot + 24, "yield the fast model promised", { size: 8.5, anchor: "middle" });
+  b += '<text x="' + (x0 - 26) + '" y="' + ((ptop + pbot) / 2) + '" font-size="8.5" text-anchor="middle" transform="rotate(-90 ' + (x0 - 26) + ' ' + ((ptop + pbot) / 2) + ')">yield the full chemistry delivered</text>';
+  b += line(X(0), Y(0), X(1), Y(1), { stroke: C.rule, sw: 0.8, dash: "4 3" });
+  b += T(X(0.76), Y(0.76) - 7, "perfect agreement", { size: 7.5, fill: C.faint });
+  R.pairs.forEach(function (q) {
+    b += '<circle cx="' + X(q.pred1) + '" cy="' + Y(q.true1) + '" r="3" fill="' + C.scalar + '" fill-opacity="0.85"/>';
+    b += '<circle cx="' + X(q.pred2) + '" cy="' + Y(q.true2) + '" r="3" fill="' + C.thermal + '" fill-opacity="0.85"/>';
+  });
+  b += '<circle cx="40" cy="60" r="3" fill="' + C.scalar + '"/>';
+  b += T(48, 63, "acetylene", { size: 8.5, fill: SHADE.scalar });
+  b += '<circle cx="40" cy="76" r="3" fill="' + C.thermal + '"/>';
+  b += T(48, 79, "CO", { size: 8.5, fill: SHADE.thermal });
+  b += T(40, 100, String(R.n) + " frontier designs,", { size: 8, fill: C.grey });
+  b += T(40, 110, "checked after the fact", { size: 8, fill: C.grey });
+  b += T(40, 126, "mean miss " + R.meanErr.toFixed(3), { size: 8, fill: C.grey });
+  b += T(40, 136, "worst miss " + R.maxErr.toFixed(3), { size: 8, fill: C.grey });
+  return svgDoc(W, H, b);
+}

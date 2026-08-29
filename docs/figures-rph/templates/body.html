@@ -137,6 +137,33 @@
 <div class="prov">Selected and computed in <code>make-figures.mjs</code> from the wide-campaign records; the same numbers are reproduced independently by <code>tools/openmkm_dynamic/spec_sheet.py</code>.</div>
 </figure>
 
+<figure id="rphFigT">
+<div class="figbar"><span class="figno">Two paths</span><span class="figwhere">Not submitted &#183; the idea in one glance</span><span class="figsize">178 mm</span></div>
+<div class="plate"></div>
+<div class="tools"><button data-src="rphFigT">Show SVG source</button><button data-png="rphFigT">Render 600 dpi</button><button data-copy="rphFigT">Copy SVG</button><span class="hint"></span></div>
+<textarea readonly spellcheck="false"></textarea><canvas></canvas>
+<div class="cap"><b>Two paths.</b> The claim of the whole project in one drawing: the expensive transient detailed-chemistry solve and the cheap path, a steady-map lookup with a learned correction, arrive at the same conversions and yields. The per-point timings are the measured medians from the runtime benchmark, and the agreement band is the mean absolute error of the four predicted quantities on the third sealed test set, which no fitting step ever touched.</div>
+<div class="prov">Timings from <code>runtime-comparison.json</code>; agreement from <code>final3-test-report.json</code>.</div>
+</figure>
+
+<figure id="rphFigF">
+<div class="figbar"><span class="figno">Steering</span><span class="figwhere">Not submitted &#183; residence time and feed choose the product</span><span class="figsize">178 mm</span></div>
+<div class="plate"></div>
+<div class="tools"><button data-src="rphFigF">Show SVG source</button><button data-png="rphFigF">Render 600 dpi</button><button data-copy="rphFigF">Copy SVG</button><span class="hint"></span></div>
+<textarea readonly spellcheck="false"></textarea><canvas></canvas>
+<div class="cap"><b>Steering.</b> The predicted acetylene and CO yields of every frontier design from the 269685-candidate sweep (small dots), the three named operating styles (large dots), and the frontier designs re-solved with the full transient chemistry (rings). Residence time and feed ratio are the steering inputs: fast flow with a methane-rich feed makes acetylene, slow flow at a one-to-one feed makes CO, and the middle makes a usable stream of both. Per-element rates are quoted at the throughput where the reaction load stays below ten percent of the element's electrical draw. Every frontier design is effectively continuous heating; pulsed operation never reached this frontier, which is one of the campaign's findings, not an assumption.</div>
+<div class="prov">Frontier and picks from <code>pareto-sweep-report.json</code>; rings from the frontier round-trip campaign.</div>
+</figure>
+
+<figure id="rphFigR">
+<div class="figbar"><span class="figno">Round trip</span><span class="figwhere">Not submitted &#183; promised versus delivered</span><span class="figsize">178 mm</span></div>
+<div class="plate"></div>
+<div class="tools"><button data-src="rphFigR">Show SVG source</button><button data-png="rphFigR">Render 600 dpi</button><button data-copy="rphFigR">Copy SVG</button><span class="hint"></span></div>
+<textarea readonly spellcheck="false"></textarea><canvas></canvas>
+<div class="cap"><b>Round trip.</b> Each frontier design the fast model proposed was afterwards re-solved by the transient detailed-chemistry reactor it replaces. One dot per design and product; the diagonal is perfect agreement. The join between promised and delivered values is validated input by input at build time, because an earlier draft silently paired a rewritten target list with truths computed from its predecessor, and the plate that resulted was the bug's own alarm.</div>
+<div class="prov">Predictions from <code>targets-frontier.json</code>; truths from the frontier2 campaign records; the build refuses mismatched pairs.</div>
+</figure>
+
 <h2>Values quoted in the manuscript text</h2>
 <p class="lede">The captions above carry no numbers, because a journal caption does not. Every value the manuscript quotes is listed here instead, computed from the same frozen data object the plates are drawn from. Copying from this table, rather than from a previous draft, is what keeps the text and the artwork on the same solve.</p>
 

@@ -11,7 +11,8 @@ import { SERIES_DEFAULTS, seriesRateConstants, steadySeriesCSTR, integrateSeries
          idealTwoStateAverages, timeAverageTemperature } from "../../apps/rphcjh/solver.js";
 import { predictRphConversion } from "../../apps/rphcjh/surrogate.js";
 import { workflow, drive, comparison, window_, consequence, detailed, verification,
-         cjhmap, memory, finalparity, method, designspace, cost, specsheet } from "./draw.mjs";
+         cjhmap, memory, finalparity, method, designspace, cost, specsheet,
+         twopaths, steering, rtparity } from "./draw.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const p = (x, n = 4) => Number(x.toPrecision(n));
@@ -39,7 +40,10 @@ const DATA_FILES = [
   "apps/rphcjh/data/rph-surrogate.json",
   "apps/rphcjh/data/cantera.json",
   "apps/rphcjh/data/openmkm-pfr.json",
-  "tools/openmkm_dynamic/data/hf-nist.json"
+  "tools/openmkm_dynamic/data/hf-nist.json",
+  "tools/openmkm_dynamic/data/wide/pareto-sweep-report.json",
+  "tools/openmkm_dynamic/data/wide/targets-frontier.json",
+  "tools/openmkm_dynamic/data/wide/final3-test-report.json"
 ];
 
 function dataCommit() {
@@ -302,6 +306,60 @@ const space = {
 
 const runtime = readJSON("tools/openmkm_dynamic/data/canonical/runtime-comparison.json");
 
+/* Shared arithmetic for the wide-campaign records. */
+const MW_W = { CH4: 16.043, CO2: 44.010, CO: 28.010, C2H2: 26.038 };
+function feedXOf(feed) {
+  const parts = Object.fromEntries(feed.replace(/ /g, "").split(",").map((kv) => kv.split(":")));
+  return Number(parts.CH4) / (Number(parts.CH4) + Number(parts.CO2));
+}
+function carbonYields(feed, w) {
+  const xf = feedXOf(feed);
+  const wci = xf * MW_W.CH4 / (xf * MW_W.CH4 + (1 - xf) * MW_W.CO2);
+  const cfed = wci / MW_W.CH4 + (1 - wci) / MW_W.CO2;
+  return { y1: 2 * w.C2H2 / MW_W.C2H2 / cfed, y2: w.CO / MW_W.CO / cfed };
+}
+
+/* The frontier, its Cantera round-trip, and the third sealed test: the three
+   ingredients of the plain-language plates. All read from files the campaigns
+   wrote; nothing recomputed here except the join. */
+const sweepRep = readJSON("tools/openmkm_dynamic/data/wide/pareto-sweep-report.json");
+const final3 = readJSON("tools/openmkm_dynamic/data/wide/final3-test-report.json");
+const roundtrip = (function () {
+  const preds = Object.fromEntries(
+    readJSON("tools/openmkm_dynamic/data/wide/targets-frontier.json")
+      .targets.map((t) => [t.design_index, t.predicted]));
+  const dir = join(here, "..", "..", "tools", "openmkm_dynamic", "data", "wide");
+  const pairs = [];
+  for (const f of readdirSync(dir)) {
+    if (!/^design-wide-frontier2-w\d\.jsonl$/.test(f)) continue;
+    for (const line of readFileSync(join(dir, f), "utf8").split("\n")) {
+      if (!line.trim()) continue;
+      const r = JSON.parse(line);
+      if (!r.converged || !(r.design_index in preds)) continue;
+      /* the join is only valid if the truth was RUN FROM this target list;
+         an overwritten target file once paired new predictions with old
+         truths, so the inputs must agree before a pair counts */
+      const t0 = readJSON("tools/openmkm_dynamic/data/wide/targets-frontier.json")
+        .targets.find((q) => q.design_index === r.design_index);
+      const same = Math.abs(t0.voltage - r.inputs.voltage_V) < 1e-6 &&
+        Math.abs(t0.period_s - r.inputs.period_s) < 1e-9 &&
+        Math.abs(t0.tau_s - r.inputs.tau_s) < 1e-9 &&
+        t0.feed === r.inputs.feed;
+      if (!same) throw new Error("frontier truth " + r.design_index +
+        " does not match its target; stale round-trip files");
+      const t = carbonYields(r.inputs.feed, r.outputs.outflow_mass_fractions);
+      pairs.push({ index: r.design_index,
+                   pred1: preds[r.design_index].y_c2h2, true1: t.y1,
+                   pred2: preds[r.design_index].y_co, true2: t.y2 });
+    }
+  }
+  if (!pairs.length) throw new Error("no valid round-trip pairs; run the frontier2 campaign");
+  const e = pairs.flatMap((q) => [Math.abs(q.pred1 - q.true1), Math.abs(q.pred2 - q.true2)]);
+  return { pairs, n: pairs.length,
+           meanErr: p(e.reduce((a, b) => a + b, 0) / e.length, 3),
+           maxErr: p(Math.max.apply(null, e), 3) };
+})();
+
 /* The grams-and-watts operating point. One recorded transient truth from the
    wide campaign, selected by rule (best C2H2 outflow times conversion among
    converged cases with tau of at least 1 s), restated in the units an
@@ -365,6 +423,17 @@ const DATA = {
   commit: solverCommit(),
   dataCommit: dataCommit(),
   spec,
+  paths: (function () {
+    const cant = runtime.paired_cases.map((c) => c.cantera_median_s).sort((a, b) => a - b);
+    const means = ["x_ch4", "x_co2", "y_c2h2", "y_co"].map((t) => final3[t].gp[0]);
+    return { canteraS: p(cant[Math.floor(cant.length / 2)], 3),
+             browserMs: p(rtB.median, 3),
+             speedup: Math.round(runtime.summary.speedup_median),
+             errLo: p(Math.min.apply(null, means), 2),
+             errHi: p(Math.max.apply(null, means), 2),
+             nSealed: final3.x_co2.n };
+  })(),
+  frontier: { front: sweepRep.front, picks: sweepRep.picks, rt: roundtrip },
   map: {
     tLo: gridRows.reduce((a, r) => Math.min(a, r.T_C), Infinity),
     tHi: gridRows.reduce((a, r) => Math.max(a, r.T_C), -Infinity),
@@ -523,7 +592,10 @@ const PLATES = [
   { id: "rphFigW", label: "Workflow", draw: workflow },
   /* the plainest statement of what the machine is for: grams in, watts,
      grams out, at one recorded operating point */
-  { id: "rphFigG", label: "Spec sheet", draw: specsheet }
+  { id: "rphFigG", label: "Spec sheet", draw: specsheet },
+  { id: "rphFigT", label: "Two paths", draw: twopaths },
+  { id: "rphFigF", label: "Steering", draw: steering },
+  { id: "rphFigR", label: "Round trip", draw: rtparity }
 ];
 for (const plate of PLATES) {
   const svg = plate.draw(DATA);
