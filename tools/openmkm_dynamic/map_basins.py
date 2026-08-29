@@ -126,8 +126,15 @@ if __name__ == '__main__':
         if any((np.abs(idx[i] - idx[j]) <= a.merge).all() for j in taken):
             continue
         taken.append(i)
+        # A basin's own preference is the weight at which it scores best, not
+        # the mean of the weights that found it: averaging the nine weights of
+        # a robust basin returns 0.5 for every one of them, which would send
+        # every refinement after the same balanced trade-off and erase the
+        # regime distinction the map exists to show.
+        wb = max(found[i], key=lambda w: min(q1[i]/n1/max(w, 1e-9),
+                                             q2[i]/n2/max(1 - w, 1e-9)))
         basins.append({
-            "row": int(i), "weights": found[i],
+            "row": int(i), "weights": found[i], "best_weight": float(wb),
             "voltage": float(rows[i, COL['voltage']]),
             "period_s": float(rows[i, COL['period_s']]),
             "duty": float(rows[i, COL['duty']]),
@@ -148,6 +155,10 @@ if __name__ == '__main__':
               f"{b['t_peak_c']:>6.0f} {b['dT_K']:>6.0f} {b['q_c2h2']:>8.5f} "
               f"{b['q_co']:>8.5f} {len(b['weights']):>7}")
     json.dump({"model": os.path.basename(model), "gate": GATE,
+               # the normalizers the Chebyshev scores were built on; anything
+               # that reuses these scores has to reuse these numbers, not a
+               # normalizer recomputed from its own sample
+               "q_ref": {"q_c2h2": float(n1), "q_co": float(n2)},
                "scalarizations": a.weights, "merge_steps": a.merge,
                "candidates": int(len(rows)), "usable": int(usable.sum()),
                "local_maxima": len(found), "basins": basins},

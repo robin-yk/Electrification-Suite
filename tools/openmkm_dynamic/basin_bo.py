@@ -153,6 +153,14 @@ if __name__ == '__main__':
     a = ap.parse_args()
 
     B = json.load(open(a.basins))
+    # Chebyshev normalizers travel with the map. Recomputing them from the
+    # running sample makes the GP's target mean something different every
+    # round, so the incumbent it improves against is not comparable to the
+    # one from the round before.
+    QREF = B.get('q_ref')
+    if QREF is None:
+        raise SystemExit('basin map predates q_ref; re-run map_basins.py')
+    N1, N2 = max(QREF['q_c2h2'], 1e-12), max(QREF['q_co'], 1e-12)
     # grid steps of the sweep, for sizing trust regions and for measuring how
     # far apart two basins are
     STEP = {'voltage': (55.0-25.0)/13, 'period_s': (10.0/0.01)**(1/21),
@@ -191,7 +199,7 @@ if __name__ == '__main__':
     out_rows, report = [], []
 
     for bi, b in enumerate(basins):
-        w = float(np.mean(b['weights']))
+        w = float(b.get('best_weight', np.mean(b['weights'])))
         centre = np.array([b[n] for n in AXES])
         lo, hi = np.empty(5), np.empty(5)
         for j, n in enumerate(AXES):
@@ -229,8 +237,7 @@ if __name__ == '__main__':
                 break
             Z = np.array(seen_Z)
             q1 = np.array(seen_q1); q2 = np.array(seen_q2)
-            n1, n2 = max(q1.max(), 1e-12), max(q2.max(), 1e-12)
-            score = np.minimum(q1/n1/max(w, 1e-9), q2/n2/max(1-w, 1e-9))
+            score = np.minimum(q1/N1/max(w, 1e-9), q2/N2/max(1-w, 1e-9))
             best = score.max()
             print(f"  round {rd}: {len(seen_Z)} evaluations, best scalar {best:.4f}, "
                   f"q1 {q1[score.argmax()]:.5f} q2 {q2[score.argmax()]:.5f}, "
@@ -252,8 +259,7 @@ if __name__ == '__main__':
             X = from_unit(np.array(pick), lo, hi)
 
         Z = np.array(seen_Z); q1 = np.array(seen_q1); q2 = np.array(seen_q2)
-        n1, n2 = max(q1.max(), 1e-12), max(q2.max(), 1e-12)
-        score = np.minimum(q1/n1/max(w, 1e-9), q2/n2/max(1-w, 1e-9))
+        score = np.minimum(q1/N1/max(w, 1e-9), q2/N2/max(1-w, 1e-9))
         k = int(score.argmax())
         x = from_unit(Z[k], lo, hi)
         report.append({
