@@ -49,7 +49,12 @@ from pulse_common import (load_atlas, load_gp, load_h_table, inlet,
 HF = json.load(open(HERE + '/data/hf-nist.json'))['hf']
 N_PHASE = 200
 blended_column = load_atlas(HERE + '/data/feed-grid')
-correction = load_gp(HERE + '/models/wide-surrogate-atlas.json')
+# The model under test. A campaign that froze a different artifact selects it
+# with PULSE_MODEL rather than editing this line, so a scorer can never quietly
+# grade one campaign's targets against another campaign's model.
+MODEL_PATH = os.environ.get('PULSE_MODEL',
+                            HERE + '/models/wide-surrogate-atlas.json')
+correction = load_gp(MODEL_PATH)
 hT, hsp = load_h_table(HERE + '/data/enthalpy-gri30.json')
 
 SETS = {"validation": "design-wide-validation-w*.jsonl",

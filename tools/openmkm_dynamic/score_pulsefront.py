@@ -25,9 +25,16 @@ import numpy as np
 from scipy.stats import spearmanr
 from q_ranking_validation import one_case
 
+# Each campaign is graded against the model it was optimized on. pulsefront4
+# is the first to use v3, so the model has to travel with the campaign name.
+CAMPAIGN_MODEL = {'pulsefront': 'wide-surrogate-atlas.json',
+                  'pulsefront2': 'wide-surrogate-atlas.json',
+                  'pulsefront3': 'wide-surrogate-atlas.json',
+                  'pulsefront4': 'wide-surrogate-atlas-v3.json'}
 CAMPAIGN = sys.argv[1] if len(sys.argv) > 1 else 'pulsefront'
-if CAMPAIGN not in ('pulsefront', 'pulsefront2', 'pulsefront3'):
+if CAMPAIGN not in CAMPAIGN_MODEL:
     raise SystemExit('unknown campaign ' + CAMPAIGN)
+os.environ.setdefault('PULSE_MODEL', HERE + '/models/' + CAMPAIGN_MODEL[CAMPAIGN])
 
 T = json.load(open(HERE + f'/data/wide/targets-{CAMPAIGN}.json'))['targets']
 pred = {t['design_index']: t for t in T}

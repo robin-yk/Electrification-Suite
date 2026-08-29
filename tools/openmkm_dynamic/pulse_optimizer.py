@@ -71,11 +71,20 @@ N_VERIFY = 28
 # floor of the transient design box.
 CAMPAIGNS = {
     'pulsefront2': {'base_index': 8100001, 'duty_grid': 'v1',
+                    'model': 'wide-surrogate-atlas.json',
                     'report': 'pulse-optimizer-report.json',
                     'targets': 'targets-pulsefront2.json'},
     'pulsefront3': {'base_index': 8200001, 'duty_grid': 'x1',
+                    'model': 'wide-surrogate-atlas.json',
                     'report': 'pulse-optimizer-pulsefront3-report.json',
                     'targets': 'targets-pulsefront3.json'},
+    # v3 adds the low-duty acquisition round and the duty-pinned truths, so its
+    # box reaches the design box's own 0.02 floor and the lowest duty row is
+    # searchable on its chemistry.
+    'pulsefront4': {'base_index': 8500001, 'duty_grid': 'x1',
+                    'model': 'wide-surrogate-atlas-v3.json',
+                    'report': 'pulse-optimizer-pulsefront4-report.json',
+                    'targets': 'targets-pulsefront4.json'},
 }
 
 import argparse
@@ -116,8 +125,9 @@ if mis > POWER_MISMATCH_CAP:
 
 t0 = time.time()
 blended_column = load_atlas(HERE + '/data/feed-grid')
-correction = load_gp(HERE + '/models/wide-surrogate-atlas.json')
-BOX = training_box(HERE + '/models/wide-surrogate-atlas.json')
+MODEL_PATH = HERE + '/models/' + CAMP['model']
+correction = load_gp(MODEL_PATH)
+BOX = training_box(MODEL_PATH)
 H_TABLE = load_h_table(HERE + '/data/enthalpy-gri30.json')
 rows = build_rows(nodes, TAUS, FEEDS, blended_column, HF, H_TABLE,
                   progress=lambda ni, nn, nr: print(
@@ -204,6 +214,7 @@ cloud_pts = [{"q1": float(q1[i]), "q2": float(q2[i]),
 report = {
     "meta": {
         "campaign": cli.campaign,
+        "model": CAMP['model'],
         "duty_grid": {"name": CAMP['duty_grid'],
                       "duty_min": float(duty_min_cache),
                       "duty_max": float(max(n['du'] for n in nodes))},
@@ -274,7 +285,8 @@ for k, i in enumerate(sel):
                       "pe_W": float(pe[i]), "p_total_W": float(p_total[i]),
                       "mdot_g_s": float(mdot_c[i])}})
 json.dump({"purpose": "round-trip verification of the pulse energy-productivity front",
-           "campaign": cli.campaign, "targets": targets},
+           "campaign": cli.campaign,
+        "model": CAMP['model'], "targets": targets},
           open(f"{OUTDIR}/{CAMP['targets']}", 'w'), indent=1)
 print(f"PULSE OPTIMIZER DONE ({cli.campaign}): front {len(front)}, "
       f"verify targets {len(targets)}")
