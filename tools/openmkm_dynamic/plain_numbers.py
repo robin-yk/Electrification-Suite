@@ -79,6 +79,7 @@ def plain(r):
     gph = 3600.0*mdot
     out = {sp: gph*wm[sp] for sp in RECORD_SPECIES}
     return {
+        "out_total_g_h": sum(out.values()),
         "voltage_V": v, "period_s": P, "duty": du, "tau_s": tau,
         "t_on_s": P*du, "feed_x": xf,
         "t_peak_c": d['t_peak_c'], "t_min_c": d['t_min_c'],
@@ -96,12 +97,40 @@ if __name__ == '__main__':
     ap.add_argument('--sort', default='C2H2', help='species to rank by, or "CO"')
     ap.add_argument('--top', type=int, default=12)
     ap.add_argument('--json', default=None)
+    ap.add_argument('--card', action='store_true',
+                    help='one spec card per case instead of the table')
     a = ap.parse_args()
 
     recs = [json.loads(l) for f in a.files for l in open(f)]
     rows = [x for x in (plain(r) for r in recs if r.get('converged')) if x]
     rows.sort(key=lambda z: -z['out_g_h'][a.sort])
     print(f"{len(rows)} converged cases, ranked by {a.sort} out\n")
+
+    if a.card:
+        for z in rows[:a.top]:
+            o, g = z['out_g_h'], z['feed_g_h']
+            xin = z['feed_x']
+            mch4 = g*xin*MW['CH4']/(xin*MW['CH4'] + (1-xin)*MW['CO2'])
+            print(f"--- {z['voltage_V']:.0f} V, {z['period_s']:.3g} s, "
+                  f"duty {100*z['duty']:.1f} percent " + '-'*24)
+            print(f"  feed       CH4 {mch4:.3f} g/h + CO2 {g-mch4:.3f} g/h "
+                  f"= {g:.3f} g/h")
+            print(f"  pulse      {z['voltage_V']:.0f} V, period {z['period_s']:.4g} s, "
+                  f"duty {100*z['duty']:.1f} percent, on-time "
+                  f"{1000*z['t_on_s']:.1f} ms")
+            print(f"  element    {z['t_min_c']:.0f} C low, {z['t_peak_c']:.0f} C peak")
+            print(f"  power      element loss {z['element_W']:.1f} W + gas and "
+                  f"reaction {z['process_W']:.2f} W = {z['total_W']:.1f} W")
+            print(f"  product    C2H2 {o['C2H2']:.4f} g/h + CO {o['CO']:.3f} g/h "
+                  f"+ H2 {o['H2']:.4f} g/h")
+            print(f"  unreacted  CH4 {o['CH4']:.3f} g/h + CO2 {o['CO2']:.3f} g/h")
+            print(f"  per kWh    C2H2 {1.0/z['kwh_per_kg_c2h2']:.5f} kg, "
+                  f"CO {1.0/z['kwh_per_kg_co']:.5f} kg")
+            print(f"  balance    in {g:.4f} g/h, out {z['out_total_g_h']:.4f} g/h, "
+                  f"closure {100*abs(z['out_total_g_h']/g - 1):.4f} percent")
+            print(f"  provenance converged Cantera case, residence time "
+                  f"{z['tau_s']:.4g} s\n")
+        raise SystemExit(0)
     head = (f"{'V':>4} {'P s':>7} {'duty':>5} {'t_on s':>7} {'tau s':>6} "
             f"{'CH4%':>5} {'Tpk C':>6} | {'in g/h':>8} {'CH4':>7} {'CO2':>7} "
             f"{'C2H2':>7} {'CO':>7} {'H2':>6} | {'elem W':>7} {'proc W':>7} "
