@@ -1,0 +1,123 @@
+{
+ "purpose": "pin the trained-domain duty floor to the design box's own 0.02 so the optimizer's lowest duty row is judged on chemistry rather than on the bounding box of whatever the training draw happened to contain",
+ "seed": 20260906,
+ "drawn": 16,
+ "kept": 12,
+ "duty_pinned": 0.02,
+ "box": {
+  "voltage": [
+   30.0,
+   55.0
+  ],
+  "period_s": [
+   2.0,
+   10.0
+  ],
+  "tau_s": [
+   2.5,
+   10.0
+  ],
+  "feed_x": [
+   0.4,
+   0.8
+  ]
+ },
+ "targets": [
+  {
+   "design_index": 8350001,
+   "voltage": 52.20475885550178,
+   "period_s": 3.2737510779276606,
+   "duty": 0.02,
+   "tau_s": 5.623028658889208,
+   "feed": "CH4:0.415670, CO2:0.584330"
+  },
+  {
+   "design_index": 8350002,
+   "voltage": 42.55187713614134,
+   "period_s": 5.263054603939961,
+   "duty": 0.02,
+   "tau_s": 2.5448800695154037,
+   "feed": "CH4:0.710222, CO2:0.289778"
+  },
+  {
+   "design_index": 8350003,
+   "voltage": 53.42383544371657,
+   "period_s": 2.7534324553566893,
+   "duty": 0.02,
+   "tau_s": 8.23616084924385,
+   "feed": "CH4:0.755352, CO2:0.244648"
+  },
+  {
+   "design_index": 8350004,
+   "voltage": 37.49565142314938,
+   "period_s": 2.4198528421842553,
+   "duty": 0.02,
+   "tau_s": 6.392301795075034,
+   "feed": "CH4:0.421008, CO2:0.578992"
+  },
+  {
+   "design_index": 8350005,
+   "voltage": 35.865165854065125,
+   "period_s": 8.281469975752552,
+   "duty": 0.02,
+   "tau_s": 3.161020658227456,
+   "feed": "CH4:0.758100, CO2:0.241900"
+  },
+  {
+   "design_index": 8350006,
+   "voltage": 47.73629755557145,
+   "period_s": 2.270393705984428,
+   "duty": 0.02,
+   "tau_s": 3.580819496974284,
+   "feed": "CH4:0.688998, CO2:0.311002"
+  },
+  {
+   "design_index": 8350007,
+   "voltage": 31.41848782614281,
+   "period_s": 4.411286341384496,
+   "duty": 0.02,
+   "tau_s": 3.2396007851996105,
+   "feed": "CH4:0.496107, CO2:0.503893"
+  },
+  {
+   "design_index": 8350008,
+   "voltage": 30.968523041119035,
+   "period_s": 3.8561063090320085,
+   "duty": 0.02,
+   "tau_s": 3.833511456583697,
+   "feed": "CH4:0.476697, CO2:0.523303"
+  },
+  {
+   "design_index": 8350009,
+   "voltage": 35.45978151331515,
+   "period_s": 6.142354188321527,
+   "duty": 0.02,
+   "tau_s": 8.110253241798205,
+   "feed": "CH4:0.750555, CO2:0.249445"
+  },
+  {
+   "design_index": 8350010,
+   "voltage": 45.80130375291856,
+   "period_s": 3.20549702774697,
+   "duty": 0.02,
+   "tau_s": 4.493249120030846,
+   "feed": "CH4:0.633248, CO2:0.366752"
+  },
+  {
+   "design_index": 8350011,
+   "voltage": 41.36920741024295,
+   "period_s": 5.457663323114164,
+   "duty": 0.02,
+   "tau_s": 6.681968015380657,
+   "feed": "CH4:0.602056, CO2:0.397944"
+  },
+  {
+   "design_index": 8350012,
+   "voltage": 32.81966704727065,
+   "period_s": 3.0143768088303418,
+   "duty": 0.02,
+   "tau_s": 2.603768563132348,
+   "feed": "CH4:0.433979, CO2:0.566021"
+  }
+ ]
+}

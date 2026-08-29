@@ -37,7 +37,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 from run_cstr_case import (build_params, run_case, mean_temperature,
-                           waveform_temperature, RECORD_SPECIES)
+                           waveform_temperature, RECORD_SPECIES,
+                           HOT_MIN_POINTS)
 from run_cstr_pilot import quasi_steady_reference
 
 # Four axes, all of them knobs a person can actually turn. The previous design
@@ -190,7 +191,8 @@ def run_design_case(ct, mech, index, closure="const-pressure", point=None):
         duty=point["duty"], waveform="physical", voltage=point["voltage"],
         ramp_up_fraction=0.05, ramp_down_fraction=0.05, pressure_atm=1.0,
         residence_time_s=point["tau_s"], feed=point.get("feed", "CH4:1, CO2:1"),
-        points_per_cycle=POINTS_PER_CYCLE, min_cycles=10, max_cycles=MAX_CYCLES,
+        points_per_cycle=POINTS_PER_CYCLE, hot_min_points=HOT_MIN_POINTS,
+        min_cycles=10, max_cycles=MAX_CYCLES,
         cycle_tolerance=1e-7, record_cycles=1, period_s=point["period_s"],
         closure=closure)
     p = build_params(args)
@@ -218,7 +220,9 @@ def run_design_case(ct, mech, index, closure="const-pressure", point=None):
         },
         "converged": cs["converged"],
         "cycles_to_convergence": cs["cycles_to_convergence"],
-        "trajectory": subsample(result["trajectory"], POINTS_PER_CYCLE),
+        "trajectory": subsample(result["trajectory"],
+                                result["inputs"].get("substeps_per_cycle",
+                                                     POINTS_PER_CYCLE)),
     }
 
 

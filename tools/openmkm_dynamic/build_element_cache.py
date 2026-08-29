@@ -22,8 +22,10 @@ V_N, P_N = 14, 22
 VS = np.linspace(25, 55, V_N)
 PS = np.exp(np.linspace(math.log(0.01), math.log(10.0), P_N))
 # v1 is the grid every pulsefront/pulsefront2 number was computed on; x1 opens
-# the low-duty edge that every v1 primary-front point sat against (all 18 at
-# duty 0.05), down to the 0.02 floor the transient design box itself sampled.
+# the low-duty edge that most of the v1 primary front sat against: 12 of its 18
+# points and all three named picks were at duty 0.05, the grid floor, with the
+# other 6 at 0.139 and 0.317. x1 reaches the 0.02 floor the transient design
+# box itself sampled.
 # The ten v1 values are a subset of x1, so v1 results are reproducible from an
 # x1 cache by filtering.
 DUTY_GRIDS = {

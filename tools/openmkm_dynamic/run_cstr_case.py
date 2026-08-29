@@ -126,8 +126,7 @@ def integrate(ct, mech, p, on_sample=None):
     y_feed_ch4 = gas.Y[gas.species_index("CH4")]
     i_ch4 = gas.species_index("CH4")
     i_rec = {sp: gas.species_index(sp) for sp in RECORD_SPECIES}
-    n_sub = p["points_per_cycle"]
-    dt = p["period_s"] / n_sub
+    grid = phase_grid(p)
     cycles = []
     prev_boundary = None
     t = 0.0
@@ -135,8 +134,8 @@ def integrate(ct, mech, p, on_sample=None):
         w_ch4 = w_feed = w_total = 0.0
         c2_carbon = conv_carbon = 0.0
         w_out = {sp: 0.0 for sp in RECORD_SPECIES}
-        for k in range(n_sub):
-            phase = (k + 0.5) / n_sub
+        for phase, dphase in grid:
+            dt = dphase * p["period_s"]
             T = waveform_temperature(phase, p)
             gas.TP = T, p["pressure_Pa"]
             reactor.syncState()
@@ -230,7 +229,7 @@ def run_case(mech, p):
                         "t_min_K", "t_peak_K", "period_s", "duty", "waveform",
                         "mean_temperature_K", "ramp_up_fraction",
                         "ramp_down_fraction", "pressure_Pa", "tau_s", "feed",
-                        "points_per_cycle") if k in p},
+                        "points_per_cycle", "substeps_per_cycle") if k in p},
             "reactor_constraint": f"{p['closure']}_prescribed_T",
             "cycle_summary": {
                 "converged": last["boundary_residual"] < p["cycle_tolerance"],
@@ -259,6 +258,38 @@ def mean_temperature(p, n=2000):
     return sum(waveform_temperature((k + 0.5) / n, p) for k in range(n)) / n
 
 
+HOT_MIN_POINTS = 40
+
+
+def phase_grid(p):
+    """Substep midpoints and widths over one cycle, refined across the hot window.
+
+    A uniform grid under-resolves a low-duty pulse. At duty 0.02 with 100
+    substeps only two land in the on phase, and because each substep holds one
+    temperature, the hottest state the chemistry ever integrates is 217 K below
+    the element's own peak (120 K at duty 0.03, 62 K at 0.05, 8 K at 0.07 where
+    the element has already saturated). The cycle mean is untouched by this, so
+    nothing in the energy accounting flags it, but the error lands entirely in
+    the phase where the chemistry happens: at duty 0.03 a 100-point grid puts
+    Y_C2H2 14.3 percent above the 1000-point answer.
+
+    The grid below keeps the requested resolution everywhere and adds points
+    inside the hot window w, so it reduces to the old grid, to within one
+    substep per segment, whenever that window already holds hot_min points.
+    Cases recorded before this existed carry points_per_cycle without
+    substeps_per_cycle, which is how you tell them apart; pass hot_min_points=0
+    to reproduce one exactly.
+    """
+    n = p["points_per_cycle"]
+    hot_min = p.get("hot_min_points", HOT_MIN_POINTS)
+    w = min(0.5, max(3.0 * p["duty"], p["duty"] + 0.03))
+    n_hot = max(int(math.ceil(n * w)), hot_min)
+    n_cold = max(int(math.ceil(n * (1.0 - w))), 1)
+    dh, dc = w / n_hot, (1.0 - w) / n_cold
+    return ([((k + 0.5) * dh, dh) for k in range(n_hot)]
+            + [(w + (k + 0.5) * dc, dc) for k in range(n_cold)])
+
+
 def build_params(args):
     total_ramp = args.ramp_up_fraction + args.ramp_down_fraction
     if total_ramp + args.duty >= 1.0:
@@ -277,6 +308,7 @@ def build_params(args):
         "tau_s": args.residence_time_s,
         "feed": args.feed,
         "points_per_cycle": args.points_per_cycle,
+        "hot_min_points": getattr(args, "hot_min_points", HOT_MIN_POINTS),
         "min_cycles": args.min_cycles,
         "max_cycles": max_cycles,
         "cycle_tolerance": args.cycle_tolerance,
@@ -299,6 +331,7 @@ def build_params(args):
         p["voltage_V"] = args.voltage
         p["drive_cycles"] = drive["cycles"]
     p["mean_temperature_K"] = mean_temperature(p)
+    p["substeps_per_cycle"] = len(phase_grid(p))
     return p
 
 

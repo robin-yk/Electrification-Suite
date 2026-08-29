@@ -65,9 +65,10 @@ FEEDS = np.linspace(0.40, 0.80, 9)
 N_VERIFY = 28
 
 # Campaigns own their index block and their duty grid; blocks are never
-# reused. pulsefront2 ran on the v1 element cache (duty 0.05 to 0.85) and its
-# whole primary front sat on the 0.05 edge, so pulsefront3 runs on the x1
-# cache that opens duty down to the 0.02 floor of the transient design box.
+# reused. pulsefront2 ran on the v1 element cache (duty 0.05 to 0.85) and 12 of
+# its 18 primary-front points, including all three named picks, sat on the 0.05
+# edge, so pulsefront3 runs on the x1 cache that opens duty down to the 0.02
+# floor of the transient design box.
 CAMPAIGNS = {
     'pulsefront2': {'base_index': 8100001, 'duty_grid': 'v1',
                     'report': 'pulse-optimizer-report.json',
@@ -94,8 +95,24 @@ if abs(duty_min_cache - want_min) > 1e-9:
     raise SystemExit(f"cache duty floor {duty_min_cache} does not match "
                      f"campaign {cli.campaign} ({CAMP['duty_grid']} wants {want_min}); "
                      f"rebuild with build_element_cache.py --duty-grid {CAMP['duty_grid']}")
-mis = max(abs(n['pe_elec']-n['pe_loss'])/n['pe_elec'] for n in nodes)
+# Two independent cycle-average powers, electric and thermal, that agree only
+# at a converged periodic state resolved well enough to integrate. The check
+# used to be printed and forgotten; a low-duty grid pushes the worst node from
+# 1.2 to 2.4 percent, which is worth failing on rather than reading later.
+mis_by_duty = {}
+for n in nodes:
+    d = round(n['du'], 4)
+    mis_by_duty.setdefault(d, []).append(abs(n['pe_elec']-n['pe_loss'])/n['pe_elec'])
+mis = max(max(v) for v in mis_by_duty.values())
+POWER_MISMATCH_CAP = 0.03
 print(f"element cache: {len(nodes)} nodes, elec-vs-loss power mismatch max {mis:.4f}")
+for d in sorted(mis_by_duty):
+    v = sorted(mis_by_duty[d])
+    print(f"    duty {d:.4f}: {len(v):4d} nodes, median {v[len(v)//2]:.4f}, max {v[-1]:.4f}")
+if mis > POWER_MISMATCH_CAP:
+    raise SystemExit(f"element cache power mismatch {mis:.4f} over the "
+                     f"{POWER_MISMATCH_CAP} cap; the waveform or the periodic "
+                     f"state is not resolved well enough to price energy")
 
 t0 = time.time()
 blended_column = load_atlas(HERE + '/data/feed-grid')
@@ -199,7 +216,12 @@ report = {
         "interpretation_rule": "no candidate was removed for high duty or low swing; if such a condition tops the front, the finding is that the searched pulse space is optimal there, not that continuous heating won",
         "scope": "GRI-Mech 3.0 gas-phase CSTR, trained box; no C4+/PAH/coke sink, so the front is GRI-screened; waveform_fidelity = duty_W/pe marks where the one-way-coupled T(t) is optimistic, and front_fidelity_le_01 is the primary result until the element ODE feels the feed",
         "known_mismatch": "the process duty uses the quasi-steady composition while the yields carry the GP memory correction; the Cantera round-trip recomputes q from true outlet compositions to bound this",
-        "element_cache": {"nodes": len(nodes), "max_power_mismatch": float(mis)},
+        "element_cache": {
+            "nodes": len(nodes), "max_power_mismatch": float(mis),
+            "power_mismatch_cap": POWER_MISMATCH_CAP,
+            "max_power_mismatch_by_duty": {
+                f"{d:.4f}": float(max(mis_by_duty[d])) for d in sorted(mis_by_duty)},
+            "nodes_by_duty": {f"{d:.4f}": len(mis_by_duty[d]) for d in sorted(mis_by_duty)}},
         "timing_s": {"row_build": round(t_build, 1), "gp_predict": round(t_pred, 1)},
         "candidates": int(len(rows)), "usable": int(len(idx)),
         "in_domain": int(dom.sum()),
