@@ -27,7 +27,8 @@ SHEET_X = [0.40, 0.50, 0.60, 5/7, 0.80]
 LABELS = ["x040", "x050", "x060", "x071", "x080"]
 COL = {n: i for i, n in enumerate(
     "voltage period_s duty tau_s feed_x t_peak_c t_min_c x_qs y_c2h2_qs "
-    "y_co_qs pe_W dh_J_per_g mdot_g_s cfed rho".split())}
+    "y_co_qs pe_W dh_J_per_g mdot_g_s cfed rho duty_J_per_g".split())}
+T_IN_K = 298.15
 
 lgt = lambda v: math.log(min(1-EPS, max(EPS, v)) / (1 - min(1-EPS, max(EPS, v))))
 sig = lambda v: 1.0/(1.0+np.exp(-v))
@@ -114,9 +115,18 @@ def chem_from_blend(blend, xf, hf):
     return blend[0], y1, y2, dh
 
 
-def build_rows(nodes, taus, feeds, blended_column, hf,
+def load_h_table(path):
+    """Absolute mass enthalpies h_i(T) in J/g from make_enthalpy_table.py."""
+    d = json.load(open(path))
+    Ts = np.array(d['T_K'], dtype=float)
+    return Ts, {sp: np.array(d['h_J_per_g'][sp]) for sp in d['h_J_per_g']}
+
+
+def build_rows(nodes, taus, feeds, blended_column, hf, h_table,
                max_ratio=130.0, n_phase=200, progress=None):
     """Candidate matrix over cache nodes x taus x feeds; layout in COL."""
+    hT, hsp = h_table
+    h_in_cache = {}
     rows = []
     for ni, nd in enumerate(nodes):
         v, P, du, d, pe = nd['v'], nd['P'], nd['du'], nd['d'], nd['pe_elec']
@@ -128,6 +138,7 @@ def build_rows(nodes, taus, feeds, blended_column, hf,
                         for k in range(n_phase)])
         w = 1.0/Tph
         TphC = Tph - 273.15
+        h_at = {sp: np.interp(Tph, hT, hsp[sp]) for sp in RECORD_SPECIES}
         for tau in taus:
             if tau/P > max_ratio:
                 continue
@@ -138,11 +149,22 @@ def build_rows(nodes, taus, feeds, blended_column, hf,
                     samp[q] = np.interp(TphC, T_GRID, col[q])
                 blend = (samp * w).sum(axis=1) / w.sum()
                 x_qs, y1q, y2q, dh = chem_from_blend(blend, xf, hf)
-                mw_in, cfed, _ = inlet(xf)
+                mw_in, cfed, w_in = inlet(xf)
                 rho = float(np.mean(PRESSURE_PA*mw_in/(R_GAS*Tph)))
                 mdot = rho*VOID_CM3*1e-6/tau
+                # process duty per gram: outflow-weighted mixture enthalpy at
+                # T(t) minus the cold feed, absolute convention, so sensible
+                # heating and reaction enthalpy arrive as one difference
+                h_mix_ph = sum(samp[1+si]*h_at[sp]
+                               for si, sp in enumerate(RECORD_SPECIES))
+                h_out = float((h_mix_ph*w).sum()/w.sum())
+                if xf not in h_in_cache:
+                    h_in_cache[xf] = sum(
+                        w_in[sp]*float(np.interp(T_IN_K, hT, hsp[sp]))
+                        for sp in ('CH4', 'CO2'))
+                duty_g = h_out - h_in_cache[xf]
                 rows.append((v, P, du, tau, xf, d['t_peak_c'], d['t_min_c'],
-                             x_qs, y1q, y2q, pe, dh, mdot, cfed, rho))
+                             x_qs, y1q, y2q, pe, dh, mdot, cfed, rho, duty_g))
         if progress and ni % 300 == 0:
             progress(ni, len(nodes), len(rows))
     return np.array(rows)
@@ -168,14 +190,16 @@ def corrected_yields(rows, correction):
 
 
 def productivities(rows, y1, y2):
-    """kg of product per kWh of element electricity, and the mass rates.
-    g/s per W equals kg per kWh times 1/3600."""
+    """kg of product per kWh of steady electric draw, and the mass rates.
+    The draw is element losses plus process duty; g/s per W equals kg per
+    kWh times 1/3600."""
     m1 = y1*rows[:, COL['cfed']]*rows[:, COL['mdot_g_s']]*MW['C2H2']/2.0
     m2 = y2*rows[:, COL['cfed']]*rows[:, COL['mdot_g_s']]*MW['CO']
-    pe = rows[:, COL['pe_W']]
-    q1 = m1/pe*3600.0
-    q2 = m2/pe*3600.0
-    return q1, q2, m1, m2
+    p_total = (rows[:, COL['pe_W']]
+               + rows[:, COL['duty_J_per_g']]*rows[:, COL['mdot_g_s']])
+    q1 = m1/p_total*3600.0
+    q2 = m2/p_total*3600.0
+    return q1, q2, m1, m2, p_total
 
 
 def pareto_max(a, b, idx):
