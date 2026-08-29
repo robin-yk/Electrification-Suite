@@ -10,3 +10,7 @@ dist-ssr
 playwright-report
 test-results
 __pycache__/
+
+# live campaign logs; the data files themselves are committed
+tools/openmkm_dynamic/data/feed-grid/*.log
+tools/openmkm_dynamic/data/wide/*.log
