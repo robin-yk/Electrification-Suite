@@ -27,8 +27,10 @@ SHEET_X = [0.40, 0.50, 0.60, 5/7, 0.80]
 LABELS = ["x040", "x050", "x060", "x071", "x080"]
 COL = {n: i for i, n in enumerate(
     "voltage period_s duty tau_s feed_x t_peak_c t_min_c x_qs y_c2h2_qs "
-    "y_co_qs pe_W dh_J_per_g mdot_g_s cfed rho duty_J_per_g".split())}
+    "y_co_qs pe_W dh_J_per_g mdot_g_s cfed rho duty_J_per_g x_co2_qs "
+    "mean_invT havg_CH4 havg_CO2 havg_CO havg_C2H2 havg_H2 havg_H2O".split())}
 T_IN_K = 298.15
+CLOSURE_SPECIES = ('CH4', 'CO2', 'CO', 'C2H2', 'H2', 'H2O')
 
 lgt = lambda v: math.log(min(1-EPS, max(EPS, v)) / (1 - min(1-EPS, max(EPS, v))))
 sig = lambda v: 1.0/(1.0+np.exp(-v))
@@ -72,7 +74,31 @@ def load_atlas(feed_grid_dir):
     return blended_column
 
 
-def load_gp(model_path, targets=("y_c2h2", "y_co")):
+def training_box(model_path, targets=("y_c2h2", "y_co", "x_ch4", "x_co2")):
+    """Per-feature [min, max] over every live training point of the frozen
+    model, reconstructed from the stored standardized features. Predictions
+    outside this box are extrapolations: the round trip refuted exactly the
+    two front members beyond the trained log10(P/tau) reach, so the
+    optimizer flags and demotes such candidates instead of trusting them."""
+    M = json.load(open(model_path))
+    mu, sd = np.array(M['feature_mean']), np.array(M['feature_std'])
+    lo = np.full(len(mu), np.inf)
+    hi = np.full(len(mu), -np.inf)
+    for tgt in targets:
+        Z = np.array(M['targets'][tgt]['train_z'])*sd + mu
+        lo = np.minimum(lo, Z.min(0))
+        hi = np.maximum(hi, Z.max(0))
+    return lo, hi
+
+
+def in_domain(rows, box):
+    """True where every GP feature lies inside the trained box."""
+    Z = gp_features(rows)
+    lo, hi = box
+    return ((Z >= lo) & (Z <= hi)).all(axis=1)
+
+
+def load_gp(model_path, targets=("y_c2h2", "y_co", "x_ch4", "x_co2")):
     """Frozen-model batch predictor. Returns predict(target, features)."""
     M = json.load(open(model_path))
     mu, sd = np.array(M['feature_mean']), np.array(M['feature_std'])
@@ -110,9 +136,10 @@ def chem_from_blend(blend, xf, hf):
     _, cfed, w_in = inlet(xf)
     y1 = 2*wm['C2H2']/MW['C2H2']/cfed
     y2 = wm['CO']/MW['CO']/cfed
+    x_co2 = max(0.0, 1.0 - wm['CO2']/w_in['CO2'])
     dh = sum((wm.get(sp, 0.0)-w_in.get(sp, 0.0))/MW[sp]*hf[sp]*1000.0
              for sp in RECORD_SPECIES)
-    return blend[0], y1, y2, dh
+    return blend[0], y1, y2, dh, x_co2
 
 
 def load_h_table(path):
@@ -148,7 +175,7 @@ def build_rows(nodes, taus, feeds, blended_column, hf, h_table,
                 for q in range(len(QTY)):
                     samp[q] = np.interp(TphC, T_GRID, col[q])
                 blend = (samp * w).sum(axis=1) / w.sum()
-                x_qs, y1q, y2q, dh = chem_from_blend(blend, xf, hf)
+                x_qs, y1q, y2q, dh, x2q = chem_from_blend(blend, xf, hf)
                 mw_in, cfed, w_in = inlet(xf)
                 # density must use the reacted-mixture molecular weight:
                 # Cantera defines mdot = reactor.mass/tau on the actual
@@ -170,7 +197,10 @@ def build_rows(nodes, taus, feeds, blended_column, hf, h_table,
                         for sp in ('CH4', 'CO2'))
                 duty_g = h_out - h_in_cache[xf]
                 rows.append((v, P, du, tau, xf, d['t_peak_c'], d['t_min_c'],
-                             x_qs, y1q, y2q, pe, dh, mdot, cfed, rho, duty_g))
+                             x_qs, y1q, y2q, pe, dh, mdot, cfed, rho, duty_g,
+                             x2q, float(np.mean(1.0/Tph)))
+                            + tuple(float((h_at[sp]*w).sum()/w.sum())
+                                    for sp in CLOSURE_SPECIES))
         if progress and ni % 300 == 0:
             progress(ni, len(nodes), len(rows))
     return np.array(rows)
@@ -186,26 +216,66 @@ def gp_features(rows):
 
 
 def corrected_yields(rows, correction):
-    """Apply the logit-space GP memory correction to both yield targets."""
+    """Apply the logit-space GP memory correction to all four targets."""
     Z = gp_features(rows)
     out = {}
-    for tgt, base_col in (("y_c2h2", COL['y_c2h2_qs']), ("y_co", COL['y_co_qs'])):
+    for tgt, base_col in (("y_c2h2", COL['y_c2h2_qs']), ("y_co", COL['y_co_qs']),
+                          ("x_ch4", COL['x_qs']), ("x_co2", COL['x_co2_qs'])):
         base = np.clip(rows[:, base_col], EPS, 1-EPS)
         out[tgt] = sig(np.log(base/(1-base)) + correction(tgt, Z))
-    return out['y_c2h2'], out['y_co']
+    return out
 
 
-def productivities(rows, y1, y2):
-    """kg of product per kWh of steady electric draw, and the mass rates.
-    The draw is element losses plus process duty; g/s per W equals kg per
-    kWh times 1/3600."""
-    m1 = y1*rows[:, COL['cfed']]*rows[:, COL['mdot_g_s']]*MW['C2H2']/2.0
-    m2 = y2*rows[:, COL['cfed']]*rows[:, COL['mdot_g_s']]*MW['CO']
-    p_total = (rows[:, COL['pe_W']]
-               + rows[:, COL['duty_J_per_g']]*rows[:, COL['mdot_g_s']])
-    q1 = m1/p_total*3600.0
-    q2 = m2/p_total*3600.0
-    return q1, q2, m1, m2, p_total
+def balance_closure(xf, x1, x2, y1, y2):
+    """Six-species outlet estimate from the four corrected targets by O and
+    H element balance, per mol of feed (which carries exactly 1 mol C).
+    Neglects C2H4, C2H6 and radicals; every mole count is clamped at zero.
+    Returns moles {sp: n} in CLOSURE_SPECIES order as a stacked array."""
+    n_ch4 = xf*(1.0-x1)
+    n_co2 = (1.0-xf)*(1.0-x2)
+    n_co = np.asarray(y2, dtype=float)
+    n_c2h2 = np.asarray(y1, dtype=float)/2.0
+    n_h2o = np.maximum(0.0, 2.0*(1.0-xf)*x2 - n_co)
+    n_h2 = np.maximum(0.0, 2.0*xf*x1 - n_h2o - n_c2h2)
+    return np.stack([n_ch4, n_co2, n_co, n_c2h2, n_h2, n_h2o])
+
+
+def corrected_productivities(rows, correction, h_table):
+    """kg of product per kWh of steady electric draw, with throughput and
+    process duty on the CORRECTED composition, not the quasi-steady one.
+
+    The round trip localized the deep-swing q bias to exactly this: yields
+    matched Cantera to a few percent while q_CO missed by a third, because
+    the quasi-steady mixture at deep swing is nearly unreacted (feed
+    molecular weight) while the true outflow carries enough H2 to sink the
+    mixture MW. The element-balance closure repairs the density and, with
+    the same 1/T-averaged per-species enthalpies as the truth arm, the
+    duty. The draw is element losses plus process duty; g/s per W equals
+    kg per kWh times 1/3600."""
+    c = corrected_yields(rows, correction)
+    y1, y2 = c['y_c2h2'], c['y_co']
+    xf = rows[:, COL['feed_x']]
+    n = balance_closure(xf, c['x_ch4'], c['x_co2'], y1, y2)
+    mws = np.array([MW[sp] for sp in CLOSURE_SPECIES])
+    mass = n*mws[:, None]
+    mw_mix = mass.sum(0)/np.maximum(n.sum(0), 1e-12)
+    w_out = mass/np.maximum(mass.sum(0), 1e-30)
+    rho = PRESSURE_PA*mw_mix/R_GAS*rows[:, COL['mean_invT']]
+    mdot = rho*VOID_CM3*1e-6/rows[:, COL['tau_s']]
+    havg = np.stack([rows[:, COL['havg_'+sp]] for sp in CLOSURE_SPECIES])
+    hT, hsp = h_table
+    h_in = (xf*MW['CH4']*float(np.interp(T_IN_K, hT, hsp['CH4']))
+            + (1-xf)*MW['CO2']*float(np.interp(T_IN_K, hT, hsp['CO2'])))         / (xf*MW['CH4'] + (1-xf)*MW['CO2'])
+    duty_g = (w_out*havg).sum(0) - h_in
+    m1 = y1*rows[:, COL['cfed']]*mdot*MW['C2H2']/2.0
+    m2 = y2*rows[:, COL['cfed']]*mdot*MW['CO']
+    duty_W = duty_g*mdot
+    p_total = rows[:, COL['pe_W']] + duty_W
+    return {"y_c2h2": y1, "y_co": y2, "x_ch4": c['x_ch4'], "x_co2": c['x_co2'],
+            "mw_out_est": mw_mix, "mdot_g_s": mdot, "duty_W": duty_W,
+            "p_total_W": p_total,
+            "m1_g_s": m1, "m2_g_s": m2,
+            "q1": m1/p_total*3600.0, "q2": m2/p_total*3600.0}
 
 
 def pareto_max(a, b, idx):

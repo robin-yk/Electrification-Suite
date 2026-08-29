@@ -12,7 +12,7 @@ import { SERIES_DEFAULTS, seriesRateConstants, steadySeriesCSTR, integrateSeries
 import { predictRphConversion } from "../../apps/rphcjh/surrogate.js";
 import { workflow, drive, comparison, window_, consequence, detailed, verification,
          cjhmap, memory, finalparity, method, designspace, cost, specsheet,
-         twopaths, steering, rtparity } from "./draw.mjs";
+         twopaths, steering, rtparity , pulseq } from "./draw.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const p = (x, n = 4) => Number(x.toPrecision(n));
@@ -434,6 +434,24 @@ const DATA = {
              nSealed: final3.x_co2.n };
   })(),
   frontier: { front: sweepRep.front, picks: sweepRep.picks, rt: roundtrip },
+  pulseq: (function () {
+    /* the pulse-only energy plane: optimizer report plus its Cantera
+       round-trip. The scorer already refuses stale joins; here we only
+       require both reports to exist and the verified count to be sane. */
+    const rep = readJSON("tools/openmkm_dynamic/data/wide/pulse-optimizer-report.json");
+    const rt = readJSON("tools/openmkm_dynamic/data/wide/pulsefront-roundtrip-report.json");
+    if (!rt.n_verified || rt.n_verified < 20)
+      throw new Error("pulse-front round trip too small: " + rt.n_verified);
+    if (!rep.front_fidelity_le_01 || !rep.front_fidelity_le_01.length)
+      throw new Error("optimizer report carries no trusted-waveform front");
+    return { cloud: rep.cloud, front: rep.front,
+             frontF: rep.front_fidelity_le_01,
+             balanced: rep.picks_fidelity_le_01.balanced,
+             rt: rt.cases,
+             nVerified: rt.n_verified,
+             spearman: Math.min(rt.ordering.spearman_q_c2h2,
+                                rt.ordering.spearman_q_co) };
+  })(),
   map: {
     tLo: gridRows.reduce((a, r) => Math.min(a, r.T_C), Infinity),
     tHi: gridRows.reduce((a, r) => Math.max(a, r.T_C), -Infinity),
@@ -595,7 +613,11 @@ const PLATES = [
   { id: "rphFigG", label: "Spec sheet", draw: specsheet },
   { id: "rphFigT", label: "Two paths", draw: twopaths },
   { id: "rphFigF", label: "Steering", draw: steering },
-  { id: "rphFigR", label: "Round trip", draw: rtparity }
+  { id: "rphFigR", label: "Round trip", draw: rtparity },
+  /* the energy answer: among pulses on fixed hardware, which conditions
+     make both products cheapest in electricity, and which of those can
+     the one-way-coupled waveform actually be trusted to deliver */
+  { id: "rphFigQ", label: "Energy plane", draw: pulseq }
 ];
 for (const plate of PLATES) {
   const svg = plate.draw(DATA);

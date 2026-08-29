@@ -1,13 +1,258 @@
 {
  "convention": "truth-side duty pairs cycle-average composition with 1/T-weighted cycle-average enthalpy; the phase correlation term is unrecorded in the campaign files",
+ "provenance": {
+  "validation": "development-consulted (gated iterations, steered aimed round 1)",
+  "final": "development-consulted (triggered aimed round 2)",
+  "final3": "sealed (never consulted before the model froze)"
+ },
+ "validation": {
+  "all": {
+   "q_c2h2": {
+    "n": 199,
+    "spearman": 0.9935252017664079,
+    "kendall": 0.9564489112227808,
+    "median_rel_q_err": 0.02042219528680389,
+    "p90_rel_q_err": 55.61600061979725,
+    "true_best_kg_kwh": 0.07246484553533701,
+    "regret_at_1": 0.0010852970337105056,
+    "regret_at_5": 0.0,
+    "top5_overlap": 5,
+    "top10_overlap": 10
+   },
+   "q_co": {
+    "n": 199,
+    "spearman": 0.9916445865692098,
+    "kendall": 0.9533018628496016,
+    "median_rel_q_err": 0.012237153484855101,
+    "p90_rel_q_err": 89.4340285795058,
+    "true_best_kg_kwh": 0.13722929241392448,
+    "regret_at_1": 0.0,
+    "regret_at_5": 0.0,
+    "top5_overlap": 4,
+    "top10_overlap": 10
+   }
+  },
+  "dT100": {
+   "q_c2h2": {
+    "n": 116,
+    "spearman": 0.997854918694499,
+    "kendall": 0.9718140929535232,
+    "median_rel_q_err": 0.02805930257918815,
+    "p90_rel_q_err": 0.39264222223744516,
+    "true_best_kg_kwh": 0.07246484553533701,
+    "regret_at_1": 0.0,
+    "regret_at_5": 0.0,
+    "top5_overlap": 5,
+    "top10_overlap": 10
+   },
+   "q_co": {
+    "n": 116,
+    "spearman": 0.9983239149655941,
+    "kendall": 0.9796101949025486,
+    "median_rel_q_err": 0.013898599765076736,
+    "p90_rel_q_err": 1.4494359226865983,
+    "true_best_kg_kwh": 0.13722929241392448,
+    "regret_at_1": 0.0,
+    "regret_at_5": 0.0,
+    "top5_overlap": 5,
+    "top10_overlap": 10
+   }
+  },
+  "dT200": {
+   "q_c2h2": {
+    "n": 94,
+    "spearman": 0.9972979807101832,
+    "kendall": 0.9679707160832762,
+    "median_rel_q_err": 0.04037549009915231,
+    "p90_rel_q_err": 0.4383055990241618,
+    "true_best_kg_kwh": 0.07246484553533701,
+    "regret_at_1": 0.0,
+    "regret_at_5": 0.0,
+    "top5_overlap": 5,
+    "top10_overlap": 9
+   },
+   "q_co": {
+    "n": 94,
+    "spearman": 0.9980493443629664,
+    "kendall": 0.9780370624571035,
+    "median_rel_q_err": 0.017338942261563073,
+    "p90_rel_q_err": 1.6260966765763547,
+    "true_best_kg_kwh": 0.13722929241392448,
+    "regret_at_1": 0.0,
+    "regret_at_5": 0.0,
+    "top5_overlap": 5,
+    "top10_overlap": 10
+   }
+  }
+ },
+ "final": {
+  "all": {
+   "q_c2h2": {
+    "n": 197,
+    "spearman": 0.9880709090281246,
+    "kendall": 0.941365378638765,
+    "median_rel_q_err": 0.02018390838211348,
+    "p90_rel_q_err": 1158553.0182225097,
+    "true_best_kg_kwh": 0.08134944672610374,
+    "regret_at_1": 0.0,
+    "regret_at_5": 0.0,
+    "top5_overlap": 5,
+    "top10_overlap": 10
+   },
+   "q_co": {
+    "n": 197,
+    "spearman": 0.9869721769649255,
+    "kendall": 0.9397078628405675,
+    "median_rel_q_err": 0.010218806492453658,
+    "p90_rel_q_err": 15049.222155835218,
+    "true_best_kg_kwh": 0.19824309191264716,
+    "regret_at_1": 0.0,
+    "regret_at_5": 0.0,
+    "top5_overlap": 5,
+    "top10_overlap": 10
+   }
+  },
+  "dT100": {
+   "q_c2h2": {
+    "n": 115,
+    "spearman": 0.997956285015387,
+    "kendall": 0.9765064836003052,
+    "median_rel_q_err": 0.020467998122765563,
+    "p90_rel_q_err": 0.1755305635099098,
+    "true_best_kg_kwh": 0.07628636048512769,
+    "regret_at_1": 0.0,
+    "regret_at_5": 0.0,
+    "top5_overlap": 5,
+    "top10_overlap": 10
+   },
+   "q_co": {
+    "n": 115,
+    "spearman": 0.9987532549514717,
+    "kendall": 0.9838291380625478,
+    "median_rel_q_err": 0.011872287237429058,
+    "p90_rel_q_err": 0.11268933803185358,
+    "true_best_kg_kwh": 0.19824309191264716,
+    "regret_at_1": 0.0,
+    "regret_at_5": 0.0,
+    "top5_overlap": 5,
+    "top10_overlap": 10
+   }
+  },
+  "dT200": {
+   "q_c2h2": {
+    "n": 84,
+    "spearman": 0.9985623164928622,
+    "kendall": 0.9781985083189904,
+    "median_rel_q_err": 0.02436343495731741,
+    "p90_rel_q_err": 0.15976695040043581,
+    "true_best_kg_kwh": 0.07275345780878033,
+    "regret_at_1": 0.0,
+    "regret_at_5": 0.0,
+    "top5_overlap": 5,
+    "top10_overlap": 9
+   },
+   "q_co": {
+    "n": 84,
+    "spearman": 0.9987445580641896,
+    "kendall": 0.9816408491107287,
+    "median_rel_q_err": 0.014990017994461147,
+    "p90_rel_q_err": 0.0866594536963299,
+    "true_best_kg_kwh": 0.1881890007974384,
+    "regret_at_1": 0.0,
+    "regret_at_5": 0.0,
+    "top5_overlap": 5,
+    "top10_overlap": 10
+   }
+  }
+ },
+ "final3": {
+  "all": {
+   "q_c2h2": {
+    "n": 195,
+    "spearman": 0.9819417695706354,
+    "kendall": 0.9256674596880784,
+    "median_rel_q_err": 0.019556726341985797,
+    "p90_rel_q_err": 1791199.991617063,
+    "true_best_kg_kwh": 0.08480778214901791,
+    "regret_at_1": 0.0,
+    "regret_at_5": 0.0,
+    "top5_overlap": 5,
+    "top10_overlap": 10
+   },
+   "q_co": {
+    "n": 195,
+    "spearman": 0.9866545825308709,
+    "kendall": 0.9392016917790117,
+    "median_rel_q_err": 0.01216653187384742,
+    "p90_rel_q_err": 10053.536707330235,
+    "true_best_kg_kwh": 0.15358449328760032,
+    "regret_at_1": 0.0,
+    "regret_at_5": 0.0,
+    "top5_overlap": 4,
+    "top10_overlap": 10
+   }
+  },
+  "dT100": {
+   "q_c2h2": {
+    "n": 126,
+    "spearman": 0.9951526059242595,
+    "kendall": 0.964952380952381,
+    "median_rel_q_err": 0.019177215258718017,
+    "p90_rel_q_err": 0.3794681695009997,
+    "true_best_kg_kwh": 0.08480778214901791,
+    "regret_at_1": 0.0,
+    "regret_at_5": 0.0,
+    "top5_overlap": 5,
+    "top10_overlap": 10
+   },
+   "q_co": {
+    "n": 126,
+    "spearman": 0.9976902887139109,
+    "kendall": 0.9768888888888889,
+    "median_rel_q_err": 0.01191715206026428,
+    "p90_rel_q_err": 0.29154646887762214,
+    "true_best_kg_kwh": 0.15358449328760032,
+    "regret_at_1": 0.0,
+    "regret_at_5": 0.0,
+    "top5_overlap": 5,
+    "top10_overlap": 10
+   }
+  },
+  "dT200": {
+   "q_c2h2": {
+    "n": 89,
+    "spearman": 0.9944841675178756,
+    "kendall": 0.963738508682329,
+    "median_rel_q_err": 0.019915016433210253,
+    "p90_rel_q_err": 0.3786160008612209,
+    "true_best_kg_kwh": 0.06990358323896056,
+    "regret_at_1": 0.0,
+    "regret_at_5": 0.0,
+    "top5_overlap": 5,
+    "top10_overlap": 10
+   },
+   "q_co": {
+    "n": 89,
+    "spearman": 0.9983486550902283,
+    "kendall": 0.9805924412665987,
+    "median_rel_q_err": 0.01537381425895834,
+    "p90_rel_q_err": 0.20585863147040875,
+    "true_best_kg_kwh": 0.14565320223870049,
+    "regret_at_1": 0.0,
+    "regret_at_5": 0.0,
+    "top5_overlap": 5,
+    "top10_overlap": 10
+   }
+  }
+ },
  "pooled": {
   "all": {
    "q_c2h2": {
     "n": 591,
-    "spearman": 0.9885093860960675,
-    "kendall": 0.9340961885915856,
-    "median_rel_q_err": 0.03382508515841365,
-    "p90_rel_q_err": 27417.56625366039,
+    "spearman": 0.9886511716052281,
+    "kendall": 0.9423556740944679,
+    "median_rel_q_err": 0.019928427211291844,
+    "p90_rel_q_err": 27477.071942626164,
     "true_best_kg_kwh": 0.08480778214901791,
     "regret_at_1": 0.0,
     "regret_at_5": 0.0,
@@ -16,10 +261,10 @@
    },
    "q_co": {
     "n": 591,
-    "spearman": 0.987297901876754,
-    "kendall": 0.926203791333276,
-    "median_rel_q_err": 0.029307616645241508,
-    "p90_rel_q_err": 3150.078021329172,
+    "spearman": 0.9885049680154214,
+    "kendall": 0.943617539935186,
+    "median_rel_q_err": 0.011726500027026354,
+    "p90_rel_q_err": 3153.229300062758,
     "true_best_kg_kwh": 0.19824309191264716,
     "regret_at_1": 0.0,
     "regret_at_5": 0.0,
@@ -30,10 +275,10 @@
   "dT100": {
    "q_c2h2": {
     "n": 357,
-    "spearman": 0.9963756515097407,
-    "kendall": 0.9582035061215497,
-    "median_rel_q_err": 0.05315169546347431,
-    "p90_rel_q_err": 0.4789360185839312,
+    "spearman": 0.9969936000261634,
+    "kendall": 0.9701948195008341,
+    "median_rel_q_err": 0.020907999610691563,
+    "p90_rel_q_err": 0.2644923858270685,
     "true_best_kg_kwh": 0.08480778214901791,
     "regret_at_1": 0.0,
     "regret_at_5": 0.0,
@@ -42,10 +287,10 @@
    },
    "q_co": {
     "n": 357,
-    "spearman": 0.9961699324133647,
-    "kendall": 0.9541749283983256,
-    "median_rel_q_err": 0.051953831310392884,
-    "p90_rel_q_err": 0.5531350237537221,
+    "spearman": 0.9979705019915192,
+    "kendall": 0.9770874641991629,
+    "median_rel_q_err": 0.012390661886527043,
+    "p90_rel_q_err": 0.31595575206374793,
     "true_best_kg_kwh": 0.19824309191264716,
     "regret_at_1": 0.0,
     "regret_at_5": 0.0,
@@ -56,10 +301,10 @@
   "dT200": {
    "q_c2h2": {
     "n": 267,
-    "spearman": 0.9966075258580798,
-    "kendall": 0.958660696685534,
-    "median_rel_q_err": 0.07372827666882942,
-    "p90_rel_q_err": 0.4835211474553674,
+    "spearman": 0.9971787173787225,
+    "kendall": 0.9694179268395707,
+    "median_rel_q_err": 0.025333606298563627,
+    "p90_rel_q_err": 0.2524991546005484,
     "true_best_kg_kwh": 0.07275345780878033,
     "regret_at_1": 0.0,
     "regret_at_5": 0.0,
@@ -68,10 +313,10 @@
    },
    "q_co": {
     "n": 267,
-    "spearman": 0.9961296415615595,
-    "kendall": 0.9526907155529272,
-    "median_rel_q_err": 0.07541108916716999,
-    "p90_rel_q_err": 0.5113519405890458,
+    "spearman": 0.998453495805588,
+    "kendall": 0.9783728985384811,
+    "median_rel_q_err": 0.016007002281912652,
+    "p90_rel_q_err": 0.3133848526518175,
     "true_best_kg_kwh": 0.1881890007974384,
     "regret_at_1": 0.0,
     "regret_at_5": 0.0,

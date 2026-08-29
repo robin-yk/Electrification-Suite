@@ -12,8 +12,9 @@ truths) and answers, in order:
      when re-evaluated with true q, and the true-q regret of the three
      named picks against the best verified point
 
-Run after the shards:
-  python3 tools/openmkm_dynamic/score_pulsefront.py
+Run after the shards, naming the campaign (default the first, pre-closure
+one; pulsefront2 is the closure-and-domain-flag campaign):
+  python3 tools/openmkm_dynamic/score_pulsefront.py [pulsefront|pulsefront2]
 """
 import json, glob
 import os
@@ -24,10 +25,14 @@ import numpy as np
 from scipy.stats import spearmanr
 from q_ranking_validation import one_case
 
-T = json.load(open(HERE + '/data/wide/targets-pulsefront.json'))['targets']
+CAMPAIGN = sys.argv[1] if len(sys.argv) > 1 else 'pulsefront'
+if CAMPAIGN not in ('pulsefront', 'pulsefront2'):
+    raise SystemExit('unknown campaign ' + CAMPAIGN)
+
+T = json.load(open(HERE + f'/data/wide/targets-{CAMPAIGN}.json'))['targets']
 pred = {t['design_index']: t for t in T}
 runs = [json.loads(l) for f in sorted(glob.glob(
-    HERE + '/data/wide/design-wide-pulsefront-w*.jsonl')) for l in open(f)]
+    HERE + f'/data/wide/design-wide-{CAMPAIGN}-w*.jsonl')) for l in open(f)]
 runs = {r['design_index']: r for r in runs if r.get('converged')}
 print(f"targets {len(pred)}, converged runs {len(runs)}")
 
@@ -106,7 +111,7 @@ report = {
         "lost": sorted(rows[i]['design_index'] for i in pred_front - survive)},
     "cases": rows,
 }
-json.dump(report, open(HERE + '/data/wide/pulsefront-roundtrip-report.json', 'w'),
+json.dump(report, open(HERE + f'/data/wide/{CAMPAIGN}-roundtrip-report.json', 'w'),
           indent=1)
 print(f"yield parity mean/max: C2H2 {e1.mean():.4f}/{e1.max():.4f}, "
       f"CO {e2.mean():.4f}/{e2.max():.4f}")
@@ -115,4 +120,4 @@ print(f"q parity median/max rel: q1 {np.median(rel1):.3f}/{rel1.max():.3f}, "
 print(f"ordering spearman: q1 {report['ordering']['spearman_q_c2h2']:.3f}, "
       f"q2 {report['ordering']['spearman_q_co']:.3f}")
 print(f"front survival: {len(survive)}/{len(pred_front)}")
-print("SCORE DONE -> data/wide/pulsefront-roundtrip-report.json")
+print(f"SCORE DONE -> data/wide/{CAMPAIGN}-roundtrip-report.json")

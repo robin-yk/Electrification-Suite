@@ -1307,9 +1307,9 @@ export function steering(DATA) {
   b += '<circle cx="' + lx + '" cy="' + 189 + '" r="3.2" fill="none" stroke="' + C.ink + '" stroke-width="0.9"/>';
   b += T(lx + 10, 192, "rings: re-solved with full", { size: 8, fill: C.grey });
   b += T(lx + 10, 202, "chemistry; lands within " + F.rt.maxErr.toFixed(2), { size: 8, fill: C.grey });
-  b += T(lx + 10, 218, "every point here is continuous", { size: 8, fill: C.grey });
-  b += T(lx + 10, 228, "heating; pulsing never reached", { size: 8, fill: C.grey });
-  b += T(lx + 10, 238, "this frontier", { size: 8, fill: C.grey });
+  b += T(lx + 10, 218, "yield-only frontier, energy-blind:", { size: 8, fill: C.grey });
+  b += T(lx + 10, 228, "high duty and near-steady T win", { size: 8, fill: C.grey });
+  b += T(lx + 10, 238, "here; the energy plate differs", { size: 8, fill: C.grey });
   return svgDoc(W, H, b);
 }
 
@@ -1343,5 +1343,78 @@ export function rtparity(DATA) {
   b += T(40, 110, "checked after the fact", { size: 8, fill: C.grey });
   b += T(40, 126, "mean miss " + R.meanErr.toFixed(3), { size: 8, fill: C.grey });
   b += T(40, 136, "worst miss " + R.maxErr.toFixed(3), { size: 8, fill: C.grey });
+  return svgDoc(W, H, b);
+}
+
+
+/* ------------------------------------------------------------------ */
+/* pulseq(). The pulse-only energy productivity plane: one dot per     */
+/* pulse condition, kg of product per kWh of steady electric draw on   */
+/* fixed hardware. Rings are Cantera truths of the committed targets.  */
+/* ------------------------------------------------------------------ */
+export function pulseq(DATA) {
+  const ns = "rpq", W = 505, H = 288, Q = DATA.pulseq;
+  let b = defs(ns);
+  const x0 = 66, pw = 250, ptop = 30, pbot = 244, ph = pbot - ptop;
+  /* log axes: q spans decades */
+  const q1lo = -4, q1hi = 0, q2lo = -4, q2hi = 0;
+  const X = (v) => lin(Math.max(q1lo, Math.min(q1hi, lg(v))), q1lo, q1hi, x0, x0 + pw);
+  const Y = (v) => lin(Math.max(q2lo, Math.min(q2hi, lg(v))), q2lo, q2hi, pbot, ptop);
+  b += rect(x0, ptop, pw, ph, { stroke: C.grey, fill: "#FFFFFF", sw: 0.8, rx: 0 });
+  [-4, -3, -2, -1, 0].forEach(function (e) {
+    const lab = e === 0 ? "1" : "10\u207B" + "\u2074\u00B3\u00B2\u00B9"[-e - 1];
+    b += T(lin(e, q1lo, q1hi, x0, x0 + pw), pbot + 12, lab, { size: 8, anchor: "middle" });
+    b += T(x0 - 5, lin(e, q2lo, q2hi, pbot, ptop) + 3, lab, { size: 8, anchor: "end" });
+  });
+  b += T(x0 + pw / 2, pbot + 24, "acetylene made per unit electricity (kg C\u2082H\u2082 / kWh)", { size: 8.5, anchor: "middle" });
+  b += '<text x="' + (x0 - 36) + '" y="' + ((ptop + pbot) / 2) + '" font-size="8.5" text-anchor="middle" transform="rotate(-90 ' + (x0 - 36) + ' ' + ((ptop + pbot) / 2) + ')">CO made per unit electricity (kg CO / kWh)</text>';
+
+  /* the searched cloud, colour by peak temperature, size by swing */
+  const hexLerp = function (a, c, f) {
+    const pa = [1, 3, 5].map((i) => parseInt(a.slice(i, i + 2), 16));
+    const pc = [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));
+    return "#" + pa.map((v, i) => Math.round(v + (pc[i] - v) * f)
+      .toString(16).padStart(2, "0")).join("");
+  };
+  Q.cloud.forEach(function (r) {
+    const f = Math.max(0, Math.min(1, (r.t_peak_c - 900) / 900));
+    const col = hexLerp("#D8D3CC", C.thermal, f);
+    const rad = 0.9 + 1.6 * Math.min(1, r.dT_K / 1200);
+    b += '<circle cx="' + X(r.q1) + '" cy="' + Y(r.q2) + '" r="' + rad.toFixed(2) +
+      '" fill="' + col + '" fill-opacity="0.35"/>';
+  });
+  /* reach of the model: unconstrained front, faint */
+  Q.front.forEach(function (r) {
+    b += '<circle cx="' + X(r.q_c2h2_kg_kwh) + '" cy="' + Y(r.q_co_kg_kwh) + '" r="1.8" fill="' + C.grey + '"/>';
+  });
+  /* the primary result: trusted-waveform front */
+  Q.frontF.forEach(function (r) {
+    b += '<circle cx="' + X(r.q_c2h2_kg_kwh) + '" cy="' + Y(r.q_co_kg_kwh) + '" r="3.2" fill="' + C.gas + '"/>';
+  });
+  /* Cantera truths of the committed targets */
+  Q.rt.forEach(function (r) {
+    b += '<circle cx="' + X(r.q1_true) + '" cy="' + Y(r.q2_true) + '" r="3.4" fill="none" stroke="' + C.ink + '" stroke-width="0.9"/>';
+  });
+
+  const lx = x0 + pw + 22;
+  b += '<circle cx="' + lx + '" cy="43" r="3.2" fill="' + C.gas + '"/>';
+  b += T(lx + 9, 46, "trustworthy pulses:", { size: 8, weight: "bold", fill: SHADE.gas });
+  b += T(lx + 9, 56, "all are deep pulses", { size: 8, fill: C.grey });
+  b += T(lx + 9, 66, "(duty 0.05, \u0394T > 1200 K)", { size: 8, fill: C.grey });
+  b += '<circle cx="' + lx + '" cy="83" r="1.8" fill="' + C.grey + '"/>';
+  b += T(lx + 9, 86, "model reach, waveform", { size: 8, fill: C.grey });
+  b += T(lx + 9, 96, "not yet trustworthy", { size: 8, fill: C.grey });
+  b += '<circle cx="' + lx + '" cy="113" r="3.4" fill="none" stroke="' + C.ink + '" stroke-width="0.9"/>';
+  b += T(lx + 9, 116, String(Q.nVerified) + " checked with full", { size: 8, fill: C.grey });
+  b += T(lx + 9, 126, "chemistry; ordering " + Q.spearman.toFixed(2), { size: 8, fill: C.grey });
+  b += T(lx + 9, 146, "picked balanced pulse:", { size: 8, weight: "bold", fill: C.ink });
+  const bp = Q.balanced;
+  b += T(lx + 9, 156, bp.voltage.toFixed(0) + " V, period " + bp.period_s.toFixed(1) + " s, duty " + bp.duty.toFixed(2), { size: 8, fill: C.grey });
+  b += T(lx + 9, 166, "\u03C4 " + bp.tau_s.toFixed(1) + " s, CH\u2084:CO\u2082 " + (bp.feed_x / (1 - bp.feed_x)).toFixed(1) + ":1", { size: 8, fill: C.grey });
+  b += T(lx + 9, 176, bp.t_peak_c.toFixed(0) + " \u00B0C peak, swing " + bp.dT_K.toFixed(0) + " K", { size: 8, fill: C.grey });
+  b += T(lx + 9, 192, "fixed hardware, element +", { size: 8, fill: C.faint });
+  b += T(lx + 9, 202, "process power only; GRI-", { size: 8, fill: C.faint });
+  b += T(lx + 9, 212, "screened, gas phase, no", { size: 8, fill: C.faint });
+  b += T(lx + 9, 222, "coke chemistry in the model", { size: 8, fill: C.faint });
   return svgDoc(W, H, b);
 }

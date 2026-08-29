@@ -4,8 +4,13 @@ pulse_ranking_validation.py certified the yield ordering. The optimizer's
 objective is q = mdot_product/P_total in kg/kWh, whose prediction stacks
 three more model layers on the yields: the element loss power, the
 throughput from the reacted-mixture density, and the process duty from the
-quasi-steady composition. This scores the q ordering on the same three
-sealed sets, 591 blind Cantera cases the frozen model never saw.
+quasi-steady composition. This scores the q ordering on the three
+held-out sets. Provenance matters and is carried in the report: the
+'validation' set gated every development iteration and steered aimed round
+one, and the 'final' set triggered aimed round two, so both are
+development-consulted; only 'final3' is a sealed set in the strict sense.
+Quote sealed evidence from final3 alone; the pooled table is a secondary
+all-campaigns view.
 
 Two arms per case, identical element waveform (the ODE is shared):
   predicted  the deployment path exactly as pulse_optimizer computes it:
@@ -37,7 +42,8 @@ from element_drive import (integrate_pulsed_element, cfp_resistance,
                            drive_defaults, profile_function)
 from run_cstr_case import waveform_temperature, MW, RECORD_SPECIES
 from pulse_common import (load_atlas, load_gp, load_h_table, inlet,
-                          chem_from_blend, QTY, T_GRID, R_GAS, VOID_CM3,
+                          chem_from_blend, balance_closure, CLOSURE_SPECIES,
+                          QTY, T_GRID, R_GAS, VOID_CM3,
                           PRESSURE_PA, T_IN_K, EPS, lgt, sig)
 
 HF = json.load(open(HERE + '/data/hf-nist.json'))['hf']
@@ -49,6 +55,9 @@ hT, hsp = load_h_table(HERE + '/data/enthalpy-gri30.json')
 SETS = {"validation": "design-wide-validation-w*.jsonl",
         "final": "design-wide-final-w*.jsonl",
         "final3": "design-wide-final3-w*.jsonl"}
+PROVENANCE = {"validation": "development-consulted (gated iterations, steered aimed round 1)",
+              "final": "development-consulted (triggered aimed round 2)",
+              "final3": "sealed (never consulted before the model froze)"}
 
 def fx(s):
     p = dict(kv.split(':') for kv in s.replace(' ', '').split(','))
@@ -83,24 +92,31 @@ def one_case(r):
     h_in = sum(w_in[sp]*float(np.interp(T_IN_K, hT, hsp[sp]))
                for sp in ('CH4', 'CO2'))
 
-    # predicted arm: deployment path
+    # predicted arm: deployment path with the element-balance closure
     col = blended_column(xf, tau)
     samp = np.empty((len(QTY), N_PHASE))
     for q in range(len(QTY)):
         samp[q] = np.interp(TphC, T_GRID, col[q])
     blend = (samp * w).sum(axis=1) / w.sum()
-    x_qs, y1q, y2q, _ = chem_from_blend(blend, xf, HF)
-    inv_mw_ph = sum(samp[1+si]/MW[sp] for si, sp in enumerate(RECORD_SPECIES))
-    rho_p = float(np.mean(PRESSURE_PA/(R_GAS*Tph*inv_mw_ph)))
-    mdot_p = rho_p*VOID_CM3*1e-6/tau
-    h_mix_ph = sum(samp[1+si]*h_at[sp] for si, sp in enumerate(RECORD_SPECIES))
-    duty_p = float((h_mix_ph*w).sum()/w.sum()) - h_in
+    x_qs, y1q, y2q, _, x2q = chem_from_blend(blend, xf, HF)
     Z = np.array([[lgt(x_qs), math.log10(P/tau), du,
                    d['t_peak_c'], d['t_min_c'], xf]])
-    c1 = float(correction('y_c2h2', Z)[0])
-    c2 = float(correction('y_co', Z)[0])
-    y1p = 1.0/(1.0 + math.exp(-(lgt(y1q) + c1)))
-    y2p = 1.0/(1.0 + math.exp(-(lgt(y2q) + c2)))
+    def corr(tgt, base):
+        return 1.0/(1.0 + math.exp(-(lgt(base) + float(correction(tgt, Z)[0]))))
+    y1p = corr('y_c2h2', y1q)
+    y2p = corr('y_co', y2q)
+    x1p = corr('x_ch4', x_qs)
+    x2p = corr('x_co2', x2q)
+    n = balance_closure(np.array([xf]), np.array([x1p]), np.array([x2p]),
+                        np.array([y1p]), np.array([y2p]))[:, 0]
+    mws = np.array([MW[sp] for sp in CLOSURE_SPECIES])
+    mass = n*mws
+    mw_mix = mass.sum()/max(n.sum(), 1e-12)
+    w_out_p = mass/max(mass.sum(), 1e-30)
+    rho_p = PRESSURE_PA*mw_mix/R_GAS*float(np.mean(1.0/Tph))
+    mdot_p = rho_p*VOID_CM3*1e-6/tau
+    duty_p = float(sum(w_out_p[k]*havg[sp]
+                       for k, sp in enumerate(CLOSURE_SPECIES))) - h_in
     pt_p = pe + duty_p*mdot_p
     q1p = y1p*cfed*mdot_p*MW['C2H2']/2.0/pt_p*3600.0
     q2p = y2p*cfed*mdot_p*MW['CO']/pt_p*3600.0
@@ -146,8 +162,10 @@ if __name__ == '__main__':
     t0 = time.time()
     report = {"convention": "truth-side duty pairs cycle-average composition "
               "with 1/T-weighted cycle-average enthalpy; the phase correlation "
-              "term is unrecorded in the campaign files"}
+              "term is unrecorded in the campaign files",
+              "provenance": PROVENANCE}
     pooled = []
+    per_set = {}
     for name, pat in SETS.items():
         rows = [json.loads(l) for f in sorted(glob.glob(HERE+'/data/wide/'+pat))
                 for l in open(f)]
@@ -155,12 +173,27 @@ if __name__ == '__main__':
         with Pool(3) as pool:
             recs = [c for c in pool.map(one_case, rows) if c]
         pooled += recs
+        per_set[name] = recs
         print(f"{name}: {len(recs)} cases, {time.time()-t0:.0f}s", flush=True)
-    report_sets = {}
-    for cls, lo in (("all", 0.0), ("dT100", 100.0), ("dT200", 200.0)):
-        sub = [c for c in pooled if c['dT'] >= lo]
-        report_sets[cls] = {"q_c2h2": score(sub, 'q1'), "q_co": score(sub, 'q2')}
+    def classed(recs):
+        out = {}
+        for cls, lo in (("all", 0.0), ("dT100", 100.0), ("dT200", 200.0)):
+            sub = [c for c in recs if c['dT'] >= lo]
+            out[cls] = {"q_c2h2": score(sub, 'q1'), "q_co": score(sub, 'q2')}
+        return out
+    for name, recs in per_set.items():
+        report[name] = classed(recs)
+    report_sets = classed(pooled)
     report["pooled"] = report_sets
+    print("--- sealed evidence (final3 only) ---")
+    for cls in ("all", "dT100"):
+        for obj in ("q_c2h2", "q_co"):
+            s = report["final3"][cls][obj]
+            if 'spearman' in s:
+                print(f"final3 {cls:6s} {obj:7s} n={s['n']:4d} spearman {s['spearman']:.3f} "
+                      f"top10 {s['top10_overlap']}/10 regret@1 {s['regret_at_1']:.4f} "
+                      f"regret@5 {s['regret_at_5']:.4f} medrel {s['median_rel_q_err']:.3f}")
+    print("--- pooled, all campaigns (secondary) ---")
     for cls in ("all", "dT100", "dT200"):
         for obj in ("q_c2h2", "q_co"):
             s = report_sets[cls][obj]

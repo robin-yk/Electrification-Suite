@@ -32,8 +32,9 @@ Three named picks from the front:
   lean_co     the max-q_CO end
   balanced    argmax of J = min(q_C2H2/q_C2H2_max, q_CO/q_CO_max)
 
-The 20 to 30 front picks are written to targets-pulsefront.json (indices
-8000001+, the first free million block) for Cantera round-trip verification; matching there is what
+The 20 to 30 front picks are written to targets-pulsefront2.json (indices
+8100001+; the 8000001 block belongs to the first, pre-closure campaign and
+is never reused because its truths are already on disk) for Cantera round-trip verification; matching there is what
 licenses the claim that the GP accelerated the global pulse search.
 
 Scope: GRI-Mech 3.0, gas-phase CSTR, the trained box. No C4+/PAH/coke
@@ -52,8 +53,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 warnings.filterwarnings("ignore")
 sys.path.insert(0, HERE)
 import numpy as np
-from pulse_common import (load_atlas, load_gp, build_rows, corrected_yields,
-                          productivities, pareto_max, load_h_table,
+from pulse_common import (load_atlas, load_gp, build_rows,
+                          corrected_productivities, pareto_max, load_h_table,
+                          training_box, in_domain,
                           COL, VOID_CM3, PRESSURE_PA, MW)
 
 OUTDIR = HERE + '/data/wide'
@@ -61,7 +63,7 @@ HF = json.load(open(HERE + '/data/hf-nist.json'))['hf']
 TAUS = np.exp(np.linspace(math.log(0.01), math.log(10.0), 20))
 FEEDS = np.linspace(0.40, 0.80, 9)
 N_VERIFY = 28
-BASE_INDEX = 8000001
+BASE_INDEX = 8100001
 
 cache_path = sys.argv[1] if len(sys.argv) > 1 else OUTDIR + '/element-cache.pkl'
 nodes = pickle.load(open(cache_path, 'rb'))
@@ -71,6 +73,7 @@ print(f"element cache: {len(nodes)} nodes, elec-vs-loss power mismatch max {mis:
 t0 = time.time()
 blended_column = load_atlas(HERE + '/data/feed-grid')
 correction = load_gp(HERE + '/models/wide-surrogate-atlas.json')
+BOX = training_box(HERE + '/models/wide-surrogate-atlas.json')
 H_TABLE = load_h_table(HERE + '/data/enthalpy-gri30.json')
 rows = build_rows(nodes, TAUS, FEEDS, blended_column, HF, H_TABLE,
                   progress=lambda ni, nn, nr: print(
@@ -79,17 +82,19 @@ t_build = time.time()-t0
 print(f"candidates: {len(rows)} in {t_build:.0f}s")
 
 t1 = time.time()
-y1, y2 = corrected_yields(rows, correction)
-q1, q2, m1, m2, p_total = productivities(rows, y1, y2)
+CP = corrected_productivities(rows, correction, H_TABLE)
+y1, y2, q1, q2 = CP['y_c2h2'], CP['y_co'], CP['q1'], CP['q2']
+m1, m2, p_total, duty_W = CP['m1_g_s'], CP['m2_g_s'], CP['p_total_W'], CP['duty_W']
+mdot_c = CP['mdot_g_s']
 t_pred = time.time()-t1
 print(f"GP-corrected yields and productivities in {t_pred:.0f}s")
 
 pe = rows[:, COL['pe_W']]
-duty_W = rows[:, COL['duty_J_per_g']]*rows[:, COL['mdot_g_s']]
 chem_W = rows[:, COL['dh_J_per_g']]*rows[:, COL['mdot_g_s']]
 fidelity = duty_W/pe
 dT = rows[:, COL['t_peak_c']] - rows[:, COL['t_min_c']]
 
+dom = in_domain(rows, BOX)
 finite = (q1 > 0) & (q2 > 0) & np.isfinite(q1) & np.isfinite(q2)
 idx = np.where(finite)[0]
 front = pareto_max(q1, q2, idx)
@@ -99,13 +104,16 @@ front = pareto_max(q1, q2, idx)
 # pe, so the He-vs-feed double count is negligible), but it never feels the
 # CH4/CO2 stream; at fidelity 1 the waveform would sag badly, so 0.1 is the
 # defensible cut until the coupling is two-way.
-idx_f = np.where(finite & (fidelity <= 0.1))[0]
+idx_f = np.where(finite & (fidelity <= 0.1) & dom)[0]
 front_f = pareto_max(q1, q2, idx_f)
-q1max, q2max = q1[idx].max(), q2[idx].max()
+# named picks come only from in-domain candidates: the round trip refuted
+# the extrapolated corner that previously supplied lean_c2h2
+idx_d = np.where(finite & dom)[0]
+q1max, q2max = q1[idx_d].max(), q2[idx_d].max()
 J = np.minimum(q1/q1max, q2/q2max)
-i_bal = idx[np.argmax(J[idx])]
-i_c2h2 = idx[np.argmax(q1[idx])]
-i_co = idx[np.argmax(q2[idx])]
+i_bal = idx_d[np.argmax(J[idx_d])]
+i_c2h2 = idx_d[np.argmax(q1[idx_d])]
+i_co = idx_d[np.argmax(q2[idx_d])]
 # primary-front picks, normalized inside the trusted set
 q1max_f, q2max_f = q1[idx_f].max(), q2[idx_f].max()
 Jf = np.minimum(q1/q1max_f, q2/q2max_f)
@@ -130,12 +138,14 @@ def point(i):
         "pe_W": float(pe[i]), "duty_W": float(duty_W[i]),
         "p_total_W": float(p_total[i]),
         "waveform_fidelity": float(fidelity[i]),
-        "mdot_g_s": float(rows[i, COL['mdot_g_s']]),
+        "mdot_g_s": float(mdot_c[i]),
+        "mw_out_est": float(CP['mw_out_est'][i]),
         "y_c2h2": float(y1[i]), "y_co": float(y2[i]),
         "m_c2h2_g_h": float(m1[i]*3600.0), "m_co_g_h": float(m2[i]*3600.0),
         "q_c2h2_kg_kwh": float(q1[i]), "q_co_kg_kwh": float(q2[i]),
         "sec_c2h2_kwh_kg": float(1.0/q1[i]), "sec_co_kwh_kg": float(1.0/q2[i]),
         "chem_W": float(chem_W[i]),
+        "in_domain": bool(dom[i]),
         "J_balance": float(J[i]),
     }
 
@@ -154,14 +164,17 @@ report = {
                         "element": "shared CFP element and lumped-loss model",
                         "yields": "fraction of total fed carbon"},
         "power": "P_total = element loss power E_cycle/period PLUS process duty mdot*(h_out(T)-h_in(298.15K)) from GRI NASA polynomials; PSU, startup and auxiliaries excluded",
-        "chain": "(V,P,d) -> element ODE T(t) -> steady CJH atlas blend (internal GP baseline, not a comparison arm) -> frozen GP correction -> yields",
+        "chain": "(V,P,d) -> element ODE T(t) -> steady CJH atlas blend (internal GP baseline, not a comparison arm) -> frozen GP correction on all four targets -> element-balance closure of the outlet (CH4, CO2, CO, C2H2, H2, H2O) -> throughput, duty and yields on the corrected composition",
         "interpretation_rule": "no candidate was removed for high duty or low swing; if such a condition tops the front, the finding is that the searched pulse space is optimal there, not that continuous heating won",
         "scope": "GRI-Mech 3.0 gas-phase CSTR, trained box; no C4+/PAH/coke sink, so the front is GRI-screened; waveform_fidelity = duty_W/pe marks where the one-way-coupled T(t) is optimistic, and front_fidelity_le_01 is the primary result until the element ODE feels the feed",
         "known_mismatch": "the process duty uses the quasi-steady composition while the yields carry the GP memory correction; the Cantera round-trip recomputes q from true outlet compositions to bound this",
         "element_cache": {"nodes": len(nodes), "max_power_mismatch": float(mis)},
         "timing_s": {"row_build": round(t_build, 1), "gp_predict": round(t_pred, 1)},
         "candidates": int(len(rows)), "usable": int(len(idx)),
+        "in_domain": int(dom.sum()),
+        "front_out_of_domain": int(sum(1 for i in front if not dom[i])),
         "front_fidelity_le_01": int(len(front_f)),
+        "domain_note": "in_domain means every GP feature inside the trained box reconstructed from the frozen model; the round trip refuted exactly the extrapolated front members (8000001, 8000005 at log10(P/tau) past the trained 2.744), so out-of-domain candidates are reported but never picked",
     },
     "front": [point(int(i)) for i in front],
     "front_fidelity_le_01": [point(int(i)) for i in front_f],
@@ -206,8 +219,8 @@ for k, i in enumerate(sel):
         "predicted": {"y_c2h2": float(y1[i]), "y_co": float(y2[i]),
                       "q_c2h2_kg_kwh": float(q1[i]), "q_co_kg_kwh": float(q2[i]),
                       "pe_W": float(pe[i]), "p_total_W": float(p_total[i]),
-                      "mdot_g_s": float(rows[i, COL['mdot_g_s']])}})
+                      "mdot_g_s": float(mdot_c[i])}})
 json.dump({"purpose": "round-trip verification of the pulse energy-productivity front",
            "targets": targets},
-          open(f'{OUTDIR}/targets-pulsefront.json', 'w'), indent=1)
+          open(f'{OUTDIR}/targets-pulsefront2.json', 'w'), indent=1)
 print(f"PULSE OPTIMIZER DONE: front {len(front)}, verify targets {len(targets)}")
