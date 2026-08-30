@@ -1,21 +1,13 @@
 # Dynamic pulsed-CSTR pipeline and web surrogate
 
-> **STATUS: model, web inference, and independent final test implemented.**
+> **STATUS: legacy prescribed-temperature, mass-based-residence-time GRI
+> pipeline.** The code, records, browser bundle, and historical validation
+> reports remain reproducible. They do not establish a fixed-inlet-flow biogas
+> optimum or a closed device-energy result.
 >
-> The canonical dataset contains 2,251 steady Cantera CSTR states and 285
-> transient physical-drive cases. After dropping 43 dead-zero cases, the GP
-> correction fits 194 cases and evaluates on 48 fixed development cases. It
-> passes the pre-stated conversion gates (mean 0.0027, p95 0.0105, max
-> 0.0276), and the dependency-free JavaScript inference path reproduces the
-> Python model. A sealed 64-case final test then passed all four pre-stated
-> gates: mean absolute conversion error 0.00293, p95 0.01287, maximum 0.02015,
-> and at least 30% improvement over the CJH baseline. The exact cases and
-> predictions are stored in `data/canonical/final-validation-report.json`.
->
-> The shipped scope is one computational model: constant-pressure CSTR,
-> CH4:CO2 = 1:1, 1 atm, GRI-Mech 3.0, physical CFP drive, and element peak at
-> or below 1800 C. This does not establish that constant pressure is the
-> experimental reactor closure.
+> Read `../../CURRENT_STATE.md` and `data/wide/README.md` before using a
+> wide-model file. The next study must validate its new reactor closure before
+> reusing any of these labels, gates, optima, or sealed sets.
 
 Generates the *transient* half of the ML dataset family: an ideal-gas CSTR
 under a prescribed trapezoidal temperature pulse train, integrated to
