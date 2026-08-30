@@ -24,6 +24,7 @@ recorded with every case.
 """
 import argparse
 import datetime
+import hashlib
 import json
 import math
 import sys
@@ -40,6 +41,54 @@ MW = {"CH4": 16.043, "CO2": 44.010, "CO": 28.010, "H2": 2.016, "H2O": 18.015,
       "C2H2": 26.038, "C2H4": 28.054, "C2H6": 30.070,
       "CH3": 15.035, "H": 1.008, "OH": 17.007}
 C2_SPECIES = ("C2H2", "C2H4", "C2H6")
+
+# Schema 2 adds the whole-mechanism carbon audit. RECORD_SPECIES stays as it
+# is: eleven species is the right trajectory payload for GRI-Mech, and every
+# schema-1 file on disk remains readable. What schema 1 cannot do is account
+# for a mechanism whose carbon leaves through species it never names. Under
+# AramcoMech a fifth of the fed carbon does exactly that, so the audit below
+# integrates every gas species in the mechanism rather than a chosen subset.
+SCHEMA_VERSION = 2
+MAJOR_PRODUCTS = ("CH4", "CO2", "CO", "C2H2", "C2H4", "C2H6")
+# C0 carries the carbon-free species (H2, H2O, O2, radicals). Naming it keeps
+# the groups a partition of the mechanism instead of a selection from it, which
+# is what makes the group sum checkable against the all-species sum.
+CARBON_GROUPS = ("C0", "C1", "C2", "C3", "C4", "C5", "C6", "C7+")
+
+
+def carbon_group(n_c):
+    """Bucket one species by its carbon count."""
+    if n_c <= 0:
+        return "C0"
+    return f"C{n_c}" if n_c <= 6 else "C7+"
+
+
+def mechanism_fingerprint(mech, gas):
+    """Pin the mechanism: file digest plus a digest of the ordered species list.
+
+    The file digest ties a result to the exact thermo and rate data. The
+    species digest is the cheaper thing to compare across files and catches a
+    mechanism substituted under the same path.
+    """
+    path = Path(mech)
+    if not path.exists():          # a built-in name such as gri30.yaml
+        import cantera as ct
+        cand = Path(ct.__file__).resolve().parent / "data" / path.name
+        path = cand if cand.exists() else None
+    names = "\n".join(gas.species_names).encode()
+    return {
+        "mechanism_file": str(path) if path is not None else str(mech),
+        "mechanism_sha256": (hashlib.sha256(path.read_bytes()).hexdigest()
+                             if path is not None else None),
+        "species_list_sha256": hashlib.sha256(names).hexdigest(),
+        "n_species": int(gas.n_species),
+        "n_reactions": int(gas.n_reactions),
+        # Every mechanism here is a gas phase alone. Carbon that would become
+        # soot has nowhere to go, so it stays in the heaviest gas species the
+        # mechanism carries. C4 and C6 counts below are gas hydrocarbons and
+        # must not be reported as soot or solid carbon.
+        "solid_carbon_modeled": False,
+    }
 
 
 def waveform_temperature(phase, p):
@@ -120,12 +169,104 @@ def make_reactor(ct, mech, p):
     return gas, reactor, mfc_in, mfc_out, net
 
 
+def carbon_audit(gas, mw_all, n_atom, n_c_species, y_feed,
+                 w_all, w_total, inv_start, inv_end, top_n=6):
+    """Where every carbon atom went over one cycle, for the whole mechanism.
+
+    w_all[i] is the integral of mdot Y_i dt over the cycle, so moles out are
+    w_all/W. Moles in use the same integrated mass with the fixed feed
+    composition. Element closure is stated against the reactor inventory
+    change rather than against zero, because only at periodic steady state is
+    the inventory term itself negligible, and how negligible is the thing
+    worth reporting.
+    """
+    import numpy as np
+    n_out = w_all / mw_all                      # kmol of each species, per cycle
+    n_in = w_total * y_feed / mw_all
+    d_inv = (inv_end - inv_start) / mw_all
+
+    elements = {}
+    for e, counts in n_atom.items():
+        e_in, e_out = float(counts @ n_in), float(counts @ n_out)
+        e_dinv = float(counts @ d_inv)
+        scale = max(abs(e_in), 1e-30)
+        elements[e] = {
+            "in_kmol": e_in, "out_kmol": e_out,
+            "reactor_inventory_change_kmol": e_dinv,
+            # in - out - d_inventory, which is zero for an exactly closed cycle
+            "residual_kmol": e_in - e_out - e_dinv,
+            "residual_fraction_of_in": (e_in - e_out - e_dinv) / scale,
+        }
+
+    c_counts = n_atom.get("C")
+    if c_counts is None:
+        return {"schema_version": SCHEMA_VERSION, "elements": elements}
+    c_out = c_counts * n_out                    # kmol C carried by each species
+    c_total = float(c_out.sum())
+    c_in = float(c_counts @ n_in)
+    denom = max(c_total, 1e-30)
+
+    groups, checksum = {}, 0.0
+    for label in CARBON_GROUPS:
+        sel = np.array([carbon_group(int(n)) == label for n in n_c_species])
+        c_g = float(c_out[sel].sum())
+        checksum += c_g
+        members = np.flatnonzero(sel)
+        order = members[np.argsort(-c_out[members])][:top_n]
+        groups[label] = {
+            "carbon_kmol": c_g,
+            "fraction_of_carbon_out": c_g / denom,
+            "n_species_in_group": int(sel.sum()),
+            "top_carriers": [
+                {"species": gas.species_name(int(i)),
+                 "carbon_kmol": float(c_out[i]),
+                 "fraction_of_carbon_out": float(c_out[i]) / denom}
+                for i in order if c_out[i] > 0.0],
+        }
+
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "carbon_out_kmol": c_total,
+        "carbon_in_kmol": c_in,
+        "groups": groups,
+        # Partition check: the eight group sums must reproduce the sum over all
+        # species. A mismatch means a species fell outside every bucket.
+        "group_partition_residual_kmol": checksum - c_total,
+        "group_partition_ok": abs(checksum - c_total) <= 1e-12 * denom,
+        "major_products": {
+            sp: {"out_kmol": float(n_out[gas.species_index(sp)]),
+                 "carbon_fraction_of_carbon_out":
+                     float(c_out[gas.species_index(sp)]) / denom}
+            for sp in MAJOR_PRODUCTS if sp in gas.species_names},
+        # What schema 1 would have missed: carbon leaving through species the
+        # eleven-name recorder never asks about.
+        "carbon_outside_record_species": float(
+            c_out.sum() - sum(c_out[gas.species_index(sp)]
+                              for sp in RECORD_SPECIES
+                              if sp in gas.species_names)) / denom,
+        "species_out_kmol": {gas.species_name(i): float(n_out[i])
+                             for i in range(gas.n_species) if n_out[i] > 0.0},
+        "elements": elements,
+    }
+
+
 def integrate(ct, mech, p, on_sample=None):
     """March cycles until the cycle-boundary state stops moving."""
+    import numpy as np
     gas, reactor, mfc_in, mfc_out, net = make_reactor(ct, mech, p)
     y_feed_ch4 = gas.Y[gas.species_index("CH4")]
     i_ch4 = gas.species_index("CH4")
     i_rec = {sp: gas.species_index(sp) for sp in RECORD_SPECIES}
+    # Whole-mechanism audit arrays, built once. y_feed has to be copied here:
+    # gas is the reactor's own phase and stops being the feed on the first step.
+    mw_all = np.asarray(gas.molecular_weights, dtype=float)     # kg/kmol
+    elements = [e for e in ("C", "H", "O") if e in gas.element_names]
+    n_atom = {e: np.array([gas.n_atoms(i, e) for i in range(gas.n_species)],
+                          dtype=float) for e in elements}
+    y_feed = np.asarray(gas.Y, dtype=float).copy()
+    n_c_species = (n_atom["C"] if "C" in n_atom
+                   else np.zeros(gas.n_species)).astype(int)
+    audit = None
     grid = phase_grid(p)
     cycles = []
     prev_boundary = None
@@ -134,6 +275,12 @@ def integrate(ct, mech, p, on_sample=None):
         w_ch4 = w_feed = w_total = 0.0
         c2_carbon = conv_carbon = 0.0
         w_out = {sp: 0.0 for sp in RECORD_SPECIES}
+        # Outflow mass of every species, integrated with the same mdot dt
+        # weight the conversion integral uses, and the reactor's element
+        # inventory at both ends of the cycle so the balance can be closed
+        # against the inventory change rather than assumed to be zero.
+        w_all = np.zeros(gas.n_species)
+        inv_start = reactor.mass * np.asarray(reactor.phase.Y, dtype=float)
         for phase, dphase in grid:
             dt = dphase * p["period_s"]
             T = waveform_temperature(phase, p)
@@ -151,11 +298,15 @@ def integrate(ct, mech, p, on_sample=None):
             w_total += mdot * dt
             for sp in RECORD_SPECIES:
                 w_out[sp] += mdot * y[i_rec[sp]] * dt
+            w_all += mdot * y * dt
             conv_carbon += mdot * (y_feed_ch4 - y[i_ch4]) / MW["CH4"] * dt
             c2_carbon += mdot * sum(
                 2 * y[gas.species_index(sp)] / MW[sp] for sp in C2_SPECIES) * dt
             if on_sample:
                 on_sample(cycle, t, T, reactor)
+        inv_end = reactor.mass * np.asarray(reactor.phase.Y, dtype=float)
+        audit = carbon_audit(gas, mw_all, n_atom, n_c_species, y_feed,
+                             w_all, w_total, inv_start, inv_end)
         boundary = reactor.phase.Y.copy()
         residual = (float(abs(boundary - prev_boundary).max())
                     if prev_boundary is not None else float("inf"))
@@ -176,7 +327,7 @@ def integrate(ct, mech, p, on_sample=None):
                            sp: w_out[sp] / w_total for sp in RECORD_SPECIES}})
         if cycle >= p["min_cycles"] and residual < p["cycle_tolerance"]:
             break
-    return gas, reactor, cycles
+    return gas, reactor, cycles, audit
 
 
 def run_case(mech, p):
@@ -205,7 +356,7 @@ def run_case(mech, p):
             for sp in RECORD_SPECIES:
                 buf["mole_fractions"][sp].append(float(x[idx_cache[sp]]))
 
-        gas, reactor, cycles = integrate(ct, mech, p, on_sample=sample)
+        gas, reactor, cycles, audit = integrate(ct, mech, p, on_sample=sample)
         trajectory = {"time_s": [], "temperature_K": [], "pressure_Pa": [],
                       "mole_fractions": {sp: [] for sp in RECORD_SPECIES}}
         for buf in ring:
@@ -220,7 +371,11 @@ def run_case(mech, p):
         return {
             "engine": f"cantera-{ct.__version__} transient CSTR "
                       f"({p['closure']}, prescribed T(t), mass-based tau)",
-            "mechanism": "GRI-Mech 3.0",
+            # Was hardcoded to GRI-Mech 3.0, which silently mislabelled every
+            # run made with --mechanism pointing anywhere else.
+            "mechanism": str(mech),
+            "mechanism_provenance": mechanism_fingerprint(mech, gas),
+            "schema_version": SCHEMA_VERSION,
             "generated": datetime.date.today().isoformat(),
             # voltage_V and drive_cycles exist only under --waveform physical,
             # so the comprehension takes what the case actually has.
@@ -240,6 +395,11 @@ def run_case(mech, p):
                 "outflow_mass_fractions": last["outflow_mass_fractions"],
                 "radical_carryover_at_cycle_start": first_boundary,
             },
+            # Whole-mechanism carbon accounting for the last converged cycle.
+            # Under GRI-Mech this restates what outflow_mass_fractions already
+            # carries; under a mechanism with a C4+ pool it is the only place
+            # that carbon appears at all.
+            "carbon_audit": audit,
             "convergence_history": [
                 {k: c[k] for k in ("cycle", "boundary_residual",
                                    "ch4_conversion")}
