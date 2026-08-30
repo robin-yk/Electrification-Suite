@@ -31,6 +31,16 @@ from run_cstr_case import MW
 from pulse_common import inlet
 from plain_numbers import plain
 
+# Biogas is CH4 plus CO2 with the CH4 fraction set by the digester, not by
+# the experimenter. Anaerobic digestion and landfill gas do not reach the
+# 0.80 the design box allows, so the composition ceiling is a constraint to
+# tighten rather than an axis to open. The bands here are placeholders until
+# the feedstock is cited; --feed-band overrides them.
+FEED_BANDS = [('current design box', 0.40, 0.80),
+              ('wide biogas', 0.45, 0.75),
+              ('typical biogas', 0.50, 0.70),
+              ('core biogas', 0.55, 0.65)]
+
 SWING_BINS = [(0, 50), (50, 150), (150, 400), (400, 700), (700, 1000), (1000, 3000)]
 FID_BINS = [(0.0, 0.1, 'in use, <= 0.1'), (0.1, 0.5, '0.1 to 0.5'),
             (0.5, 1.0, '0.5 to 1.0'), (1.0, np.inf, 'above 1.0')]
@@ -78,8 +88,24 @@ def load(patterns, with_power=True):
     return out
 
 
+def gain(z):
+    return (z['y1']/z['y1_qs']) if z['y1_qs'] and z['y1_qs'] > 1e-6 else None
+
+
 if __name__ == '__main__':
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--feed-band', nargs=2, type=float, metavar=('LO', 'HI'),
+                    default=None,
+                    help='restrict every question to this CH4 fraction band')
+    ap.add_argument('--top', type=int, default=6)
+    a = ap.parse_args()
     R = load([HERE + '/data/wide/design-wide-*.jsonl'])
+    ALL = R
+    if a.feed_band:
+        lo, hi = a.feed_band
+        R = [z for z in R if lo - 1e-9 <= z['feed_x'] <= hi + 1e-9]
+        print(f"restricted to CH4 fraction {lo} to {hi}\n")
     print(f"{len(R)} converged Cantera cases, no surrogate anywhere\n")
     y1 = np.array([z['y1'] for z in R])
     print(f"acetylene yield on fed carbon: max {100*y1.max():.2f} percent, "
@@ -140,6 +166,28 @@ if __name__ == '__main__':
           f"{max(z['q1'] for z in out):.5f}, best yield "
           f"{100*max(z['y1'] for z in out):.2f} percent")
 
-    json.dump({"cases": len(R), "records": R},
-              open(HERE + '/data/wide/objective-survey.json', 'w'))
-    print("\n-> data/wide/objective-survey.json")
+    print("\n4. what the feedstock composition allows")
+    h = (f"{'band':>22} {'n':>5} {'best y_C2H2':>12} {'best gain':>10} "
+         f"{'best kg/kWh':>12} {'best g/h':>9}")
+    print('   ' + h); print('   ' + '-'*len(h))
+    for lab, lo, hi in FEED_BANDS:
+        m = [z for z in ALL if lo - 1e-9 <= z['feed_x'] <= hi + 1e-9]
+        if not m:
+            continue
+        g = [v for v in (gain(z) for z in m) if v]
+        print(f"   {lab:>22} {len(m):>5} "
+              f"{100*max(z['y1'] for z in m):>11.2f}% {max(g):>10.1f} "
+              f"{max(z['q1'] for z in m):>12.5f} "
+              f"{max(z['c2h2_g_h'] for z in m):>9.3f}")
+    print("   the yield ceiling is the feedstock's, not the pulse's: every "
+          "step toward real biogas")
+    print("   takes it down, because there is less methane carbon fed per "
+          "carbon fed at all.")
+
+    # a band run is a subset, so it must not overwrite the full-corpus file
+    name = ('objective-survey.json' if not a.feed_band else
+            'objective-survey-x%03d-%03d.json' % (round(1000*a.feed_band[0]),
+                                                  round(1000*a.feed_band[1])))
+    json.dump({"cases": len(R), "feed_band": a.feed_band, "records": R},
+              open(HERE + '/data/wide/' + name, 'w'))
+    print(f"\n-> data/wide/{name}")
