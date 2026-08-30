@@ -56,6 +56,47 @@ page copy. Use a comma, a colon, a semicolon, or two sentences.
 `figure-data.json` and `verification-data.json` are outputs. Edit
 `docs/figures/draw.mjs` or the templates and re-run the build.
 
+## Surgical changes and expensive research runs
+
+Make the smallest change that fully solves the stated problem. Do not refactor
+adjacent code, rename unrelated symbols, redesign interfaces, or regenerate
+unrelated artifacts. Read the target, its callers, its tests, and the data
+products it invalidates before editing. State the exact files and outputs that
+should change.
+
+Do not launch a bulk simulation, retraining run, sweep, active-learning batch,
+or optimization campaign until all of these gates pass:
+
+1. Freeze the research question and claim boundary.
+2. State the reactor, flow, pressure, thermal, and mechanism closures.
+3. Pass one analytic or nonreacting case.
+4. Pass one reacting case with mass and elemental closure.
+5. Pass time-step and phase-grid convergence.
+6. Fix the output schema, manifest, hashes, and durable storage paths.
+7. Use a small pilot to measure variance or ranking error.
+8. Use a learning curve to show that more samples are needed.
+9. Obtain the human author's approval for the run count and estimated cost.
+
+Use this execution ladder: analytic check, one nonreacting case, one reacting
+low-fidelity case, one paired higher-fidelity case, small pilot, learning curve,
+then an approved bulk run. Do not skip a rung.
+
+Stop when a gate fails. Preserve completed outputs, prevent queued follow-on
+jobs from starting, and report the failed gate. Check bookkeeping, units,
+convergence, closure, and domain support before explaining an unexpected result
+as physics.
+
+Treat a changed reactor closure, mechanism, objective, or design axis as a new
+model. Do not transfer feature importance, validation status, optimum points,
+or sealed tests without proving that they remain applicable. A test set stops
+being sealed as soon as its results influence model development.
+
+Any run expected to exceed 20 cases or 10 CPU-minutes requires a written run
+card with its purpose, inputs, outputs, acceptance gates, estimated cost, cache
+policy, and invalidated artifacts. The generator and run card must be committed
+before the run starts. Do not use an uncommitted scratch script to produce
+citable data.
+
 ## Commit messages
 
 The log is the design record for this project, and it is the most complete one
