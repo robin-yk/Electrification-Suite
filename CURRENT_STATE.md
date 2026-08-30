@@ -1,59 +1,79 @@
 # Current state
 
-One page. Read this first; do not re-read the repository to reconstruct it.
+Read this file before using the dynamic-chemistry study.
 
-## Sequence in force
+## Decision in force
 
-low-duty support -> freeze model -> new sealed validation -> optimization.
-Nothing outside this sequence: no figures, no web changes, no CJH comparison.
+The wide GRI-Mech study is a **legacy low-fidelity corpus**. It remains useful
+for code development, surrogate architecture, and a later multi-fidelity model.
+It does not establish a physical biogas optimum, a fixed-MFC operating map, or
+an energy-optimal device.
 
-## Model
+No bulk campaign may start from these files. Follow the run gates in
+`CLAUDE.md` and `AGENTS.md`.
 
-| | |
-|---|---|
-| development model | `models/wide-surrogate-atlas-v3.json` (sha 9c38ad5545ec) |
-| training cases | 1137 (pilot 479, batch2 486, aimed 60, aimed2 40, aimed-lowduty 60, pinned-duty 12) |
-| development gates, 199 validation cases | x_ch4 0.00583/0.01918/0.04620, x_co2 0.00620/0.02815/0.06345, y_c2h2 0.00271/0.00933/0.03608, y_co 0.00239/0.00995/0.02616 (mean/p95/max, gates 0.02/0.05/0.10) |
-| frozen domain gate | `data/wide/gate-wide-surrogate-atlas-v3.json`, worst-target posterior sigma <= 0.7409 |
-| status | DEVELOPMENT. Not a final model. No optimum is claimed from it. |
+## What is current
 
-v3 is superseded once the 160 recomputed labels land; that model will be v4.
+| item | status | use |
+|---|---|---|
+| browser RPH/CJH visualizer | shipping, narrow prescribed model | interactive illustration only |
+| `models/wide-surrogate-atlas-v4.json` | last legacy wide model | development reference, not a final model |
+| v4 development gate | 1,137 training and 199 development cases | internal diagnostic only |
+| `targets-final4-200.json` | unopened | preserve as a legacy fixed-tau test set; do not open for the new model |
+| GRI steady and transient records | retained | low-fidelity data and regression cases |
+| Aramco schema-2 audit | implemented for new runs | required before any new Aramco campaign |
 
-## Data
+The v4 model and every result in `data/wide/` use a prescribed temperature
+trajectory, constant-pressure CSTR, and instantaneous mass-based `tau_s`.
+They are not a fixed-inlet-MFC model.
 
-| | |
-|---|---|
-| Cantera transient cases | 1849 converged, 56 files, `data/wide/design-wide-*.jsonl` |
-| quasi-steady sidecar | `data/wide/atlas-qs-sidecar.json`, 1849 cases |
-| element node cache | x1 grid, 2399 feasible nodes, duty 0.02 to 0.85 |
-| sweep candidates | 406449 |
-| sealed, never opened | `data/wide/targets-final4-200.json` (block 8400001, seed 20260904) |
+## Blocking physical decisions
 
-Index blocks in use: 2000001 wide walk, 3000001 validation, 4000001 aimed,
-5000001 final, 6000001 frontier2, 6100001 aimed2, 6300001 frontier (relabelled),
-7000001 final3, 8000001 pulsefront, 8100001 pulsefront2, 8200001 pulsefront3,
-8300001 aimed-lowduty, 8350001 pinned-duty, 8400001 final4 sealed,
-8500001 pulsefront4, 8600001 pulsefront5 (withdrawn, no truths). Never reused.
+1. Define the final reactor closure: fixed geometric volume, fixed inlet mass
+   flow, pressure-controlled outlet, pressure, and inlet state.
+2. Decide whether this paper stops at chemical yield and productivity, or also
+   claims electrical energy. The latter requires two-way element-gas coupling.
+3. Define the biogas composition and hardware bounds.
+4. Run the required one-case ladder under the new closure before any pilot:
+   analytic or nonreacting, reacting GRI, then paired Aramco with full
+   whole-mechanism carbon accounting.
 
-## Gates passing
+A changed closure, objective, mechanism, or design axis creates a new model.
+Do not transfer the legacy model's feature importance, optimum, domain gate,
+or sealed test to it without a direct validation.
 
-`python tools/openmkm_dynamic/preflight.py --model <model>` runs all four.
+## Data map
 
-- time grid: 12 extreme conditions against an 8x reference, worst yield error 0.57 percent against a 1 percent gate; peak resolved within 5 K everywhere
-- thermodynamic floor: caps q_C2H2 0.249, q_CO 0.815 kg/kWh from the reaction enthalpies
-- domain: frozen sigma gate exists and is calibrated on held-out cases
-- indices: 1868 indices, 0 carrying two different sets of conditions
+- `data/feed-grid/`: steady GRI CSTR atlas, indexed by temperature and
+  mass-based residence time. Low-fidelity only.
+- `data/wide/`: legacy wide-box transient GRI campaigns, targets, gates,
+  reports, and historical optimization outputs. Read its README before use.
+- `data/canonical/` and `data/runs/<commit>/`: earlier narrow-model
+  provenance layout. These records remain immutable historical evidence.
+- `models/`: serialized legacy model snapshots. Version suffixes describe
+  acquisition rounds, not publication-ready releases.
 
-## Next
+## Known limits of the legacy wide study
 
-1. finish recomputing the 160 audit-flagged labels, rebuild sidecar, train v4
-2. recalibrate and freeze the v4 gate, rerun preflight
-3. basin map, then per-basin Bayesian optimization with Cantera in the loop
-4. only then open final4 and any further sealed set
+- `tau_s` is held constant by changing mass flow every phase step. It is not
+  an MFC setpoint.
+- The prescribed element temperature does not receive reaction or process-gas
+  heat feedback. Existing `kg/kWh` outputs are screening bookkeeping, not a
+  closed device-energy result.
+- GRI-Mech 3.0 omits the larger gas-phase carbon pool that appears in Aramco.
+  Historical C2H2 yields are not physical product-yield claims.
+- Pre-schema-2 records retain only eleven named trajectory species. New Aramco
+  results must include the whole-mechanism carbon audit and mechanism hash.
 
-## Standing rules beyond CLAUDE.md
+## Historical results
 
-- Validation lives in code, state lives in this file, chat carries decisions only.
-- No campaign starts until preflight passes.
-- Do not recompute data or caches whose inputs are unchanged.
-- Explain physics only from a diagnostic's output, never from a guess.
+The files named `final`, `final3`, `pulsefront*`, `basin*`, and
+`objective-survey*` record completed development rounds. They are not current
+optimization conclusions. Preserve them for auditability; do not cite or extend
+them as though they belonged to the next fixed-flow model.
+
+## Next permitted action
+
+Write and approve a run card for the new closure. Its first execution may only
+be the one-case validation ladder stated above. No validation set is opened and
+no surrogate is retrained before that ladder passes.
