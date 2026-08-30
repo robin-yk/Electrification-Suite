@@ -30,8 +30,22 @@ Taken from the paper's own captions, not from this repository's design box.
 | feed, Figure 3 | 5 percent CH4 and 5 percent CO2 in He | Figure 3 caption |
 | flow | Q = 50 sccm | Figure 2, Figure 3 captions |
 | pressure | 1 bar | Figure 2 caption |
-| pulse | 50 ms on, 950 ms off, so period 1.0 s at duty 0.05 | author |
+| flow detail | 2.5 sccm CH4 and 2.5 sccm CO2, partial pressure 5.06 kPa each, 50 sccm referenced at 0 C and 1 atm | SI, Flow Control |
+| pulse | 1 Hz at 5 percent duty, so 50 ms on and 950 ms off | SI, Scheme S1e |
+| RPH operating point | 70 V, T_peak about 1800 C, T_avg about 880 C | SI, Fig. S9 caption |
+| supply | Volteq 75 V, 20 A, 1500 W, Tektronix waveform generator | SI, Experimental Setup |
+| element | Freudenberg H23 CFP, 38 x 8 x 0.21 mm, 28.8 mg | SI, Experimental Setup |
+| element resistance | R(T) = -aT + b, a = 7.24e-4 ohm/C, b = 4.22 ohm | SI, Fig. S11a |
+| RPH power | P = V^2 t_heating / (R(T_avg) t_cycle) | SI, Experimental Setup |
+| reactor | quartz, 19 mm OD, 17 mm ID | SI, Experimental Setup |
 | biogas band | 40 to 75 percent CH4, 25 to 60 percent CO2 | paper, ref 11 |
+
+The CFP geometry and the resistance fit are the six constants already frozen
+in `element_drive.py`, and they match the SI exactly. The supply reaches 75 V,
+which is worth noting against the 55 V ceiling of `DESIGN_BOX`.
+
+Two numbers the SI does not give: the reactor void volume and any residence
+time. `VOID_CM3 = 11.03` in `pulse_common.py` has no source in the paper.
 
 Two of these contradict what the transient campaign in this repository
 actually ran. The design box used a CH4/CO2 binary at `feed_x` between 0.40 and
@@ -42,8 +56,31 @@ concentration, which is exactly the pathway under test. The 50 sccm helium in
 
 The pulse itself is not the problem: period 1.0 s and duty 0.05 sit inside the
 existing box. The abstract's phrase "microsecond pulses" disagrees with the
-body text's "millisecond-scale", and the author's figure is the millisecond
-one.
+body text's "millisecond-scale", and the SI settles it at 1 Hz and 5 percent
+duty.
+
+`T_min = 400 C` in the twelve committed cases is an assumption made before the
+SI was read, and it is wrong. T_peak about 1800 C with T_avg about 880 C at 5
+percent duty implies a quench floor near 830 C, so the gas in the real device
+is never cold between pulses. The results below are therefore at a colder and
+deeper swing than the experiment. Rerunning them on the SI operating point is
+the obvious next step and has not been done.
+
+## How selectivity is defined, and why it decided a conclusion
+
+SI page S6:
+
+    S_CxHy = ([CxHy] * x) / (sum_i [CiHj] * i) * 100
+    X_CH4  = ([CH4,in]/[He,in] - [CH4,out]/[He,out]) / ([CH4,in]/[He,in]) * 100
+
+The selectivity denominator sums carbon over hydrocarbons. **CO is not in it**,
+and helium is the internal standard for conversion. An earlier version of this
+note used carbon converted from CH4 as the denominator, which does include CO,
+and on that basis adding CO2 appears to destroy about a quarter of the
+acetylene selectivity. On the paper's denominator the same twelve results move
+by about two points and one moves up. The quarter was an artefact of the
+denominator, not a statement about the mechanism. `premise_probe.py` now
+reports both, and the CH4-converted columns are labelled `conv:`.
 
 ## Reproducing
 
@@ -113,13 +150,21 @@ hydrocarbons to CO, and since acetylene is the dominant hydrocarbon there, it
 absorbs most of the loss. `S_CO` passing 100 percent on a CH4-converted basis
 is CO2's own carbon arriving as CO.
 
-**The CH4/CO2 case does not reproduce cleanly.** The paper reports C2+
-selectivity as unaffected by CO2 and describes CO2 scission as kinetically
-slow and limited. This model loses roughly a quarter of the acetylene
-selectivity to CO2 at matched conversion, with a CO2 conversion of about 16
-percent at the reference point. That points at CO2 activation rates in the
-mechanism. The decisive comparison is against the measured `X_CO2` in the
-paper's Figure S4, which is not in hand.
+**The CH4/CO2 case reproduces too, on the paper's basis.** The paper reports
+C2+ hydrocarbon selectivity as unaffected by CO2. On the hydrocarbon
+denominator every one of the six pairs moves by about two points or less, and
+the longest-residence pair moves up. The acetylene share of the C2 pool, the
+Figure S5a metric, is flat to within a tenth of a point. Benzene rises with
+CO2 rather than falling, which agrees in sign with the measured reaction order
+in Figure S9: the CO2 order is +0.37 for C6H6, +0.18 for C2H2 and -0.12 for
+C2H4.
+
+That last table is the sharpest validation target in the paper and has not
+been run. It fits `r = a [CO2]^n` over [CO2] from 5.06 to 40.24 kPa at fixed
+[CH4] = 5.06 kPa, and separately over [CH4] at fixed [CO2], and reports five
+exponents each with an R squared. Matching five exponents is a much stronger
+test than matching one selectivity, and the comparison here spans only the
+step from zero to 5.06 kPa, which is not on that power law at all.
 
 **The reactor idealisation is not neutral.** At matched conversion the
 plug-flow limit produces markedly less benzene than the CSTR, because a CSTR
@@ -130,9 +175,19 @@ benzene claim has to state which idealisation it came from.
 
 ## Standing caveats
 
-- `T_min = 400 C` in the pulsed cases is an assumption, not a measurement. The
-  selectivity results depend on it weakly; any claim about mean temperature
-  depends on it strongly and is not made here.
+- `T_min = 400 C` in the twelve committed cases is wrong, as above. The SI
+  operating point implies roughly 830 C. No claim about mean temperature is
+  made from these runs.
+- Benzene is quantified on an Agilent 7890 FID covering C1 to C10+, with
+  Effective Carbon Number response factors for species lacking a standard,
+  which the SI itself calls semi-quantitative. The MicroGC TCD sees only
+  permanent gases and hydrocarbons below C4, so it is not the benzene
+  instrument.
+- The SI states the limitation this note tests, in its Computational Setup:
+  predictions align with observed C1 to C2 distributions, but heavier species
+  such as aromatics "exceed the mechanism's validation scope and require
+  cautious interpretation". The paper was explicit. What had not happened was
+  running a mechanism whose scope covers them.
 - Twelve pulsed cases, two feeds, one waveform. This is a premise check, not a
   validated model.
 - No mechanism used here has a condensed phase. Results carry

@@ -22,9 +22,20 @@ Two modes:
 Conversion and selectivity are taken from moles per kg (Y_i / W_i), not from
 mole fractions. This is a constant-pressure system and methane coupling raises
 the total mole count, so a mole-fraction basis would report dilution as
-conversion. Selectivity is carbon to the product over carbon converted from
-CH4, the paper's convention, so CO2 carbon does not enter the denominator and
-S_CO can exceed 100 percent once CO2 is being reduced.
+conversion.
+
+Selectivity follows the paper's definition, SI page S6:
+
+    S_CxHy = ([CxHy] * x) / (sum_i [CiHj] * i) * 100
+
+The denominator sums carbon over hydrocarbons only. CO is not in it. That
+matters more than it looks: on a denominator of carbon converted from CH4,
+which does include CO, adding CO2 appears to destroy a quarter of the
+acetylene selectivity, and on the paper's denominator the same results move
+by about two points. The first reading is an artefact of the denominator.
+Both are reported here, `s_c2h2` on the paper's basis and `s_c2h2_conv` on the
+CH4-converted basis, so the difference stays visible instead of being a
+silent convention.
 """
 import argparse
 import json
@@ -42,20 +53,35 @@ FEEDS = {
     "ch4": "CH4:0.05, HE:0.95",
     "ch4co2": "CH4:0.05, CO2:0.05, HE:0.90",
 }
-TRACKED = ("CH4", "CO2", "CO", "H2", "H2O", "C2H2", "C2H4", "C6H6")
+TRACKED = ("CH4", "CO2", "CO", "H2", "H2O", "C2H2", "C2H4", "C2H6", "C6H6")
 
 
-def _basis(gas, n_atom, idx, n_in, Y_out, X_out):
-    """Conversion and CH4-based carbon selectivities from one outlet state."""
+def hydrocarbon_mask(gas):
+    """The CiHj set the paper's selectivity denominator sums over: carries
+    carbon, carries no oxygen. CH4 is excluded at the point of use, being the
+    reactant rather than a product."""
+    return [gas.n_atoms(i, "C") > 0 and gas.n_atoms(i, "O") == 0
+            for i in range(gas.n_species)]
+
+
+def _basis(gas, n_atom, idx, n_in, Y_out, X_out, is_hc):
+    """Conversion and both selectivity bases from one outlet state."""
     n = Y_out / gas.molecular_weights
     d_ch4 = n_in[idx["CH4"]] - n[idx["CH4"]]
-    sel = (lambda sp: float(n_atom[idx[sp]] * n[idx[sp]] / d_ch4)
-           if d_ch4 > 1e-14 else (lambda sp: 0.0))
+    conv = (lambda sp: float(n_atom[idx[sp]] * n[idx[sp]] / d_ch4)
+            if d_ch4 > 1e-14 else (lambda sp: 0.0))
+    hc_carbon = sum(n_atom[i] * n[i] for i in range(gas.n_species)
+                    if is_hc[i] and i != idx["CH4"])
+    sel = (lambda sp: float(n_atom[idx[sp]] * n[idx[sp]] / hc_carbon)
+           if hc_carbon > 1e-20 else (lambda sp: 0.0))
+    c2 = sel("C2H2") + sel("C2H4") + sel("C2H6")
     co2_in = n_in[idx["CO2"]]
     return {
         "x_ch4": float(d_ch4 / n_in[idx["CH4"]]),
-        "s_c2h2": sel("C2H2"), "s_c2h4": sel("C2H4"),
-        "s_c6h6": sel("C6H6"), "s_co": sel("CO"),
+        "s_c2h2": sel("C2H2"), "s_c2h4": sel("C2H4"), "s_c6h6": sel("C6H6"),
+        "s_c2h2_conv": conv("C2H2"), "s_co_conv": conv("CO"),
+        # the Figure S5 metric: acetylene share of the C2 pool
+        "c2h2_of_c2": sel("C2H2") / c2 if c2 > 0 else 0.0,
         "x_co2": (float((co2_in - n[idx["CO2"]]) / co2_in)
                   if co2_in > 1e-14 else None),
         "x_h2": float(X_out[idx["H2"]]), "x_h2o": float(X_out[idx["H2O"]]),
@@ -72,6 +98,7 @@ def steady(ct, gas, mech, feed, t_c, tau, kind):
     for the quantity under test.
     """
     n_atom = [gas.n_atoms(i, "C") for i in range(gas.n_species)]
+    is_hc = hydrocarbon_mask(gas)
     idx = {s: gas.species_index(s) for s in TRACKED}
     gas.TPX = t_c + 273.15, PRESSURE_PA, feed
     n_in = gas.Y / gas.molecular_weights
@@ -88,48 +115,65 @@ def steady(ct, gas, mech, feed, t_c, tau, kind):
         ct.ReactorNet([r]).advance(tau)
     import numpy as np
     return _basis(gas, np.asarray(n_atom, float), idx, n_in,
-                  r.thermo.Y, r.thermo.X)
+                  r.thermo.Y, r.thermo.X, is_hc)
 
 
-def audit_basis(case):
+def audit_basis(case, mechanism=None):
     """Same quantities, read from a run_cstr_case.py schema-2 result.
 
-    species_out_kmol is the whole-mechanism cycle outflow, so this needs no
-    assumption about which species were worth recording.
+    species_out_kmol is the whole-mechanism cycle outflow, so the hydrocarbon
+    denominator can be summed over the real species set rather than over a
+    chosen shortlist. That needs the mechanism loaded to know which species
+    carry oxygen; without it, only the CH4-converted basis is available.
     """
     audit = case.get("carbon_audit")
     if audit is None or "species_out_kmol" not in audit:
         raise SystemExit(f"{case.get('mechanism')}: schema-1 result, no "
                          "carbon_audit; rerun with the current solver")
     n = audit["species_out_kmol"]
-    feed = case["inputs"]["feed"]
-    has_co2 = "CO2" in feed
+    has_co2 = "CO2" in case["inputs"]["feed"]
     # The feed is CH4 alone or CH4 and CO2 at 1:1, so carbon in splits evenly.
     ch4_in = audit["carbon_in_kmol"] / (2.0 if has_co2 else 1.0)
     d_ch4 = ch4_in - n.get("CH4", 0.0)
-    sel = lambda sp, k: k * n.get(sp, 0.0) / d_ch4 if d_ch4 > 0 else 0.0
+    conv = lambda sp, k: k * n.get(sp, 0.0) / d_ch4 if d_ch4 > 0 else 0.0
+
+    import cantera as ct
+    import warnings
+    warnings.simplefilter("ignore")
+    gas = ct.Solution(mechanism or case["mechanism"])
+    is_hc = hydrocarbon_mask(gas)
+    hc_carbon = sum(gas.n_atoms(gas.species_index(sp), "C") * v
+                    for sp, v in n.items()
+                    if sp != "CH4" and is_hc[gas.species_index(sp)])
+    sel = (lambda sp, k: k * n.get(sp, 0.0) / hc_carbon
+           if hc_carbon > 1e-20 else lambda sp, k: 0.0)
+    c2 = sel("C2H2", 2) + sel("C2H4", 2) + sel("C2H6", 2)
     total = sum(n.values())
     return {
         "x_ch4": d_ch4 / ch4_in,
         "s_c2h2": sel("C2H2", 2), "s_c2h4": sel("C2H4", 2),
-        "s_c6h6": sel("C6H6", 6), "s_co": sel("CO", 1),
+        "s_c6h6": sel("C6H6", 6),
+        "s_c2h2_conv": conv("C2H2", 2), "s_co_conv": conv("CO", 1),
+        "c2h2_of_c2": sel("C2H2", 2) / c2 if c2 > 0 else 0.0,
         "x_co2": ((ch4_in - n.get("CO2", 0.0)) / ch4_in) if has_co2 else None,
         "x_h2": n.get("H2", 0.0) / total, "x_h2o": n.get("H2O", 0.0) / total,
     }
 
 
 HEAD = (f"{'T_C':>6}{'tau_s':>7}  {'feed':<8}{'X_CH4':>8}{'S_C2H2':>8}"
-        f"{'S_C2H4':>8}{'C2H2/C2H4':>11}{'S_C6H6':>8}{'S_CO':>7}"
-        f"{'X_CO2':>7}{'x_H2':>8}{'x_H2O':>8}")
+        f"{'S_C2H4':>8}{'S_C6H6':>8}{'C2H2/C2':>9}{'|conv:':>7}"
+        f"{'S_C2H2':>8}{'S_CO':>7}{'|':>2}{'X_CO2':>7}{'x_H2':>8}{'x_H2O':>8}")
 
 
 def line(t_c, tau, label, r):
-    ratio = r["s_c2h2"] / r["s_c2h4"] if r["s_c2h4"] > 1e-12 else float("inf")
+    """Columns left of 'conv:' are the paper's hydrocarbon basis; the two to
+    its right are the CH4-converted basis, which includes CO."""
     xco2 = "     ." if r["x_co2"] is None else f"{100 * r['x_co2']:6.1f}%"
     return (f"{t_c:6.0f}{tau:7.2f}  {label:<8}{100 * r['x_ch4']:7.2f}%"
-            f"{100 * r['s_c2h2']:7.2f}%{100 * r['s_c2h4']:7.2f}%{ratio:11.2f}"
-            f"{100 * r['s_c6h6']:7.2f}%{100 * r['s_co']:6.1f}%{xco2}"
-            f"{100 * r['x_h2']:7.3f}%{100 * r['x_h2o']:7.3f}%")
+            f"{100 * r['s_c2h2']:7.2f}%{100 * r['s_c2h4']:7.2f}%"
+            f"{100 * r['s_c6h6']:7.2f}%{100 * r['c2h2_of_c2']:8.2f}%{'':>7}"
+            f"{100 * r['s_c2h2_conv']:7.2f}%{100 * r['s_co_conv']:6.1f}%{'':>2}"
+            f"{xco2}{100 * r['x_h2']:7.3f}%{100 * r['x_h2o']:7.3f}%")
 
 
 def cmd_sweep(args):
@@ -164,7 +208,7 @@ def cmd_summarize(args):
         label = "ch4co2" if "CO2" in case["inputs"]["feed"] else "ch4"
         cases.append((case["inputs"]["t_peak_K"] - 273.15,
                       case["inputs"]["tau_s"], label, case,
-                      audit_basis(case)))
+                      audit_basis(case, args.mechanism)))
     print(HEAD)
     for t_pk, tau, label, case, r in sorted(cases, key=lambda c: (c[0], c[1])):
         print(line(t_pk, tau, label, r))
@@ -205,6 +249,8 @@ def main():
 
     m = sub.add_parser("summarize", help="tabulate pulsed cases")
     m.add_argument("cases", nargs="+", type=Path)
+    m.add_argument("--mechanism", help="override the path recorded in the "
+                   "results, for reading them on another machine")
     m.set_defaults(func=cmd_summarize)
 
     args = ap.parse_args()
