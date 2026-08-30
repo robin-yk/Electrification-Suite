@@ -189,13 +189,18 @@ def carbon_audit(gas, mw_all, n_atom, n_c_species, y_feed,
     for e, counts in n_atom.items():
         e_in, e_out = float(counts @ n_in), float(counts @ n_out)
         e_dinv = float(counts @ d_inv)
-        scale = max(abs(e_in), 1e-30)
+        residual = e_in - e_out - e_dinv
+        # An element absent from the feed has no scale to be relative to:
+        # dividing a rounding-level residual by a rounding-level inlet gives a
+        # number that looks like a gross imbalance. Report it as unscaled
+        # instead of inventing a denominator.
         elements[e] = {
             "in_kmol": e_in, "out_kmol": e_out,
             "reactor_inventory_change_kmol": e_dinv,
             # in - out - d_inventory, which is zero for an exactly closed cycle
-            "residual_kmol": e_in - e_out - e_dinv,
-            "residual_fraction_of_in": (e_in - e_out - e_dinv) / scale,
+            "residual_kmol": residual,
+            "residual_fraction_of_in": (residual / e_in if e_in > 1e-20
+                                        else None),
         }
 
     c_counts = n_atom.get("C")
