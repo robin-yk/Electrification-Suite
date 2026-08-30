@@ -32,7 +32,9 @@ Taken from the paper's own captions, not from this repository's design box.
 | pressure | 1 bar | Figure 2 caption |
 | flow detail | 2.5 sccm CH4 and 2.5 sccm CO2, partial pressure 5.06 kPa each, 50 sccm referenced at 0 C and 1 atm | SI, Flow Control |
 | pulse | 1 Hz at 5 percent duty, so 50 ms on and 950 ms off | SI, Scheme S1e |
-| RPH operating point | 70 V, T_peak about 1800 C, T_avg about 880 C | SI, Fig. S9 caption |
+| RPH operating point | 70 V, T_peak about 1800 C, T_avg about 880 C | SI, Fig. S9 and Table S1 captions |
+| element T(t) | sawtooth, peak about 1050 C and floor about 477 C at a lower-power point | SI, Scheme S1e, digitized |
+| IR camera | Optris PI 1M, 500 to 1800 C, 80 Hz, emissivity 0.57 | SI, Experimental Setup |
 | supply | Volteq 75 V, 20 A, 1500 W, Tektronix waveform generator | SI, Experimental Setup |
 | element | Freudenberg H23 CFP, 38 x 8 x 0.21 mm, 28.8 mg | SI, Experimental Setup |
 | element resistance | R(T) = -aT + b, a = 7.24e-4 ohm/C, b = 4.22 ohm | SI, Fig. S11a |
@@ -59,12 +61,45 @@ existing box. The abstract's phrase "microsecond pulses" disagrees with the
 body text's "millisecond-scale", and the SI settles it at 1 Hz and 5 percent
 duty.
 
-`T_min = 400 C` in the twelve committed cases is an assumption made before the
-SI was read, and it is wrong. T_peak about 1800 C with T_avg about 880 C at 5
-percent duty implies a quench floor near 830 C, so the gas in the real device
-is never cold between pulses. The results below are therefore at a colder and
-deeper swing than the experiment. Rerunning them on the SI operating point is
-the obvious next step and has not been done.
+## The quench floor, and how not to infer it
+
+`T_min = 400 C` in the twelve committed cases was assumed before the SI was
+read. Correcting it took two attempts and the first one was worse than the
+assumption.
+
+The first attempt inverted `T_avg = duty * T_peak + (1 - duty) * T_min` for
+`T_min`, which with T_peak 1800 C and T_avg 880 C at 5 percent duty gives about
+830 C. That formula describes a square wave: it asserts the element sits flat
+at its floor for the whole 950 ms. Scheme S1e shows what it actually does. The
+trace is a sawtooth, rising in less time than the plot resolves and then
+decaying continuously for the rest of the period, with no dwell at either end
+and no asymptote. The decay is still falling when the next pulse interrupts it,
+so the floor is set by the period rather than by any equilibrium, and the time
+average of that shape sits far above its minimum. The 830 C figure is withdrawn.
+
+Scheme S1e is the only published temperature history in either document. Read
+off the panel at 1 Hz and 5 percent duty it peaks near 1050 C and floors near
+477 C, against its own red dashed steady-state line which the caption places at
+700 C and which reads back as 695 C. That panel is not the operating point: it
+is a lower-power case, and the operating point has no published trace.
+
+`calibrate_element_si.py` fits the lumped element model to those two numbers
+with two free parameters, the unstated drive voltage for that panel and a scale
+on the radiating area, the latter because the model uses the bare strip
+footprint and the real CFP is porous with the feed passing through it. The fit
+is then asked for two numbers it never saw, the voltage that reaches T_peak
+1800 C and the T_avg that comes with it, and both land within a few percent of
+the 70 V and 880 C the SI states. On that calibration the operating-point floor
+is near 530 C, not 830 C and not 400 C, over a swing of roughly 1270 C.
+
+The floor is not published, and there is a reason it could not be. The Optris
+PI 1M covers 500 to 1800 C, so both ends of the operating pulse sit on the
+instrument's limits and the quench floor is at or below the bottom of its
+range. Any floor quoted for this device is inferred, including this one.
+
+The twelve committed cases are therefore wrong at both ends, with peaks 300 to
+400 C low and a floor about 130 C cold. Rerunning them on the calibrated
+operating point has not been done.
 
 ## How selectivity is defined, and why it decided a conclusion
 
@@ -113,6 +148,12 @@ set. Those 12 results are committed. Tabulate them:
 python3 tools/openmkm_dynamic/premise_probe.py summarize \
     tools/openmkm_dynamic/data/premise/rph-ch4/*.json \
     tools/openmkm_dynamic/data/premise/rph-ch4co2/*.json
+```
+
+The element calibration and its held-out test:
+
+```bash
+python3 tools/openmkm_dynamic/calibrate_element_si.py
 ```
 
 Audit checks on the schema-2 carbon accounting:
@@ -175,9 +216,12 @@ benzene claim has to state which idealisation it came from.
 
 ## Standing caveats
 
-- `T_min = 400 C` in the twelve committed cases is wrong, as above. The SI
-  operating point implies roughly 830 C. No claim about mean temperature is
-  made from these runs.
+- `T_min = 400 C` and T_peak 1400 to 1500 C in the twelve committed cases are
+  both wrong, as above. The calibrated operating point is T_peak 1800 C over a
+  floor near 530 C. No claim about mean temperature is made from these runs.
+- The element calibration is fitted to two digitized points and tested on two
+  stated ones. It is not a measurement, and the digitized pair carries the
+  thickness of a printed trace.
 - Benzene is quantified on an Agilent 7890 FID covering C1 to C10+, with
   Effective Carbon Number response factors for species lacking a standard,
   which the SI itself calls semi-quantitative. The MicroGC TCD sees only
