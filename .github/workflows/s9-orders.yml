@@ -13,6 +13,10 @@
 # one case each.
 name: S9 reaction orders
 
+permissions:
+  contents: write
+  actions: read
+
 # Dispatching by hand needs actions:write, which the token here does not carry,
 # so a committed request file triggers it instead, as rph-scan.yml does. The
 # file's history is then the record of what was asked for and when.
@@ -67,11 +71,56 @@ jobs:
         run: |
           mkdir -p out
           python tools/openmkm_dynamic/run_cstr_case.py             --mechanism tools/cantera/mechanisms/aramco20.yaml             --waveform physical --voltage ${{ matrix.voltage }}             --element-loss-scale si             --period-s 1.0 --duty 0.05 --t-min-c 25             --residence-time-s ${{ matrix.tau }} --pressure-atm 1.0             --feed "CH4:0.05, CO2:0.05, HE:0.90"             --output "out/cond-v${{ matrix.voltage }}-tau${{ matrix.tau }}.json"
+      - name: The selectivities, in the log as well as the artifact
+        run: python tools/openmkm_dynamic/summarize_cases.py out/*.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: s9-cond-v${{ matrix.voltage }}-tau${{ matrix.tau }}
           path: out/
+
+  # Gathers a finished run's artifacts and commits them. Artifacts expire and
+  # cannot be fetched from every environment; a committed result can be read
+  # by anything, forever, and is what the repository's own rules ask for.
+  collect:
+    needs: mode
+    if: ${{ needs.mode.outputs.mode == 'collect' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r tools/cantera/requirements.txt
+      - id: src
+        run: |
+          echo "run_id=$(python -c "import json;print(json.load(open('tools/openmkm_dynamic/s9-request.json'))['collect_run_id'])")" >> "$GITHUB_OUTPUT"
+          echo "dest=$(python -c "import json;print(json.load(open('tools/openmkm_dynamic/s9-request.json'))['collect_dest'])")" >> "$GITHUB_OUTPUT"
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: ${{ steps.src.outputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          pattern: s9-*
+          merge-multiple: true
+          path: ${{ steps.src.outputs.dest }}
+      - name: Summarize what was gathered
+        run: |
+          ls -la "${{ steps.src.outputs.dest }}"
+          python tools/openmkm_dynamic/summarize_cases.py "${{ steps.src.outputs.dest }}"/*.json
+      - name: Commit the results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "${{ steps.src.outputs.dest }}"
+          git diff --cached --quiet && { echo "nothing new"; exit 0; }
+          git commit -m "Collect run ${{ steps.src.outputs.run_id }} results
+
+          Gathered from that run's artifacts and committed, because artifacts
+          expire and cannot be fetched from every environment that has to read
+          them. The numbers are in the job log above as well."
+          git push
 
   plan:
     needs: mode
@@ -132,8 +181,8 @@ jobs:
           path: tools/openmkm_dynamic/data/s9/
 
   fit:
-    needs: case
-    if: always()
+    needs: [mode, case]
+    if: ${{ always() && needs.mode.outputs.mode == 'orders' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
