@@ -160,6 +160,12 @@ def make_reactor(ct, mech, p):
     closure = p.get("closure", "const-pressure")
     if closure not in CLOSURES:
         raise SystemExit(f"unknown closure {closure!r}; choose from {sorted(CLOSURES)}")
+    if p.get("frozen"):
+        # Rung one of the execution ladder in CLAUDE.md: every reaction rate
+        # multiplied by zero, so composition can only change by flow. Whatever
+        # the outlet reports then is the closure's own bookkeeping error, with
+        # no chemistry to hide it.
+        gas.set_multiplier(0.0)
     reactor = getattr(ct, CLOSURES[closure])(gas, energy="off", clone=False)
     inlet = ct.Reservoir(feed)
     outlet = ct.Reservoir(feed)
@@ -386,6 +392,11 @@ def run_case(mech, p):
             # so the comprehension takes what the case actually has.
             "inputs": {k: p[k] for k in
                        ("closure", "voltage_V", "drive_cycles",
+                        # Without this the calibrated element is not
+                        # reproducible from the record: two cases at the same
+                        # voltage reach different temperatures under different
+                        # loss scales, and nothing on file would say which.
+                        "element_loss_scale", "frozen",
                         "t_min_K", "t_peak_K", "period_s", "duty", "waveform",
                         "mean_temperature_K", "ramp_up_fraction",
                         "ramp_down_fraction", "pressure_Pa", "tau_s", "feed",
@@ -509,15 +520,22 @@ def build_params(args):
         "cycle_tolerance": args.cycle_tolerance,
         "record_cycles": args.record_cycles,
         "closure": getattr(args, "closure", "const-pressure"),
+        "frozen": getattr(args, "frozen", False),
     }
     if p["waveform"] == "physical":
         # T_peak and T_min stop being inputs here: the element decides them from
         # the voltage, the period and its own thermal mass. They are recorded as
         # results so a case still reports the temperatures it actually reached.
         from element_drive import integrate_pulsed_element, profile_function
+        loss_scale = args.element_loss_scale
+        if isinstance(loss_scale, str):
+            # "si" means the value fitted to the measured trace rather than a
+            # number typed here. Computed, not transcribed.
+            from calibrate_element_si import calibrate
+            loss_scale, _, _ = calibrate()
         drive = integrate_pulsed_element(
             voltage=args.voltage, period=args.period_s, duty=args.duty,
-            ambient_c=args.t_min_c)
+            ambient_c=args.t_min_c, loss_scale=loss_scale)
         if not drive["converged"]:
             raise SystemExit("element drive did not reach a periodic state")
         p["_profile"] = profile_function(drive)
@@ -525,6 +543,7 @@ def build_params(args):
         p["t_min_K"] = drive["t_min_c"] + 273.15
         p["voltage_V"] = args.voltage
         p["drive_cycles"] = drive["cycles"]
+        p["element_loss_scale"] = loss_scale
     p["mean_temperature_K"] = mean_temperature(p)
     p["substeps_per_cycle"] = len(phase_grid(p))
     return p
@@ -537,6 +556,14 @@ def add_common_args(parser):
     parser.add_argument("--duty", type=float, default=0.10)
     parser.add_argument("--waveform", default="trapezoid",
                         choices=["trapezoid", "square", "sine", "double", "physical"])
+    parser.add_argument("--element-loss-scale", default=1.0,
+                        type=lambda v: v if v == "si" else float(v),
+                        help="scale on the element's radiating area under "
+                             "--waveform physical; 'si' uses the value fitted "
+                             "to the measured trace by calibrate_element_si.py")
+    parser.add_argument("--frozen", action="store_true",
+                        help="zero every reaction rate: the nonreacting rung "
+                             "of the execution ladder")
     parser.add_argument("--voltage", type=float, default=40.0,
                         help="drive voltage; only used by --waveform physical, where "
                              "it replaces --t-peak-c as the thing you actually set")
