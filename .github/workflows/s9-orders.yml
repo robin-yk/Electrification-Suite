@@ -1,0 +1,123 @@
+# The Fig. S9 reaction-order study on AramcoMech 2.0.
+#
+# Table S1 of the SI reports fifteen power-law exponents, five species across
+# three series. An exponent is a derivative, so matching them tests whether the
+# mechanism responds correctly when a knob moves, which is the property an
+# optimizer consumes and the one a single matched selectivity never
+# establishes. RUNCARD-S9.md holds the claim boundary, the gates and the risks.
+#
+# Sharded one condition per runner. A single Aramco pulsed case on the physical
+# waveform ran past twenty minutes locally, far above the 413 s the trapezoid
+# cases took, because the sawtooth never rests and the integrator never gets a
+# cheap step. Thirteen sequential cases would be hours; thirteen runners are
+# one case each.
+name: S9 reaction orders
+
+# Dispatching by hand needs actions:write, which the token here does not carry,
+# so a committed request file triggers it instead, as rph-scan.yml does. The
+# file's history is then the record of what was asked for and when.
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      # Only the request file. Listing the workflow itself here would start a
+      # campaign every time the workflow is edited, which is how a run begins
+      # before the ladder that is supposed to gate it has finished.
+      - "tools/openmkm_dynamic/s9-request.json"
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      keys: ${{ steps.list.outputs.keys }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r tools/cantera/requirements.txt
+      - id: list
+        name: The conditions, from the generator rather than typed here
+        run: |
+          python tools/openmkm_dynamic/run_s9_orders.py plan
+          KEYS=$(python - <<'PY'
+          import json, sys
+          sys.path.insert(0, "tools/openmkm_dynamic")
+          from run_s9_orders import cases
+          print(json.dumps([c["key"] for c in cases()]))
+          PY
+          )
+          echo "keys=$KEYS" >> "$GITHUB_OUTPUT"
+          echo "$KEYS"
+
+  case:
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    strategy:
+      fail-fast: false
+      matrix:
+        key: ${{ fromJSON(needs.plan.outputs.keys) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r tools/cantera/requirements.txt
+      - name: One condition, whole-mechanism carbon audit included
+        run: |
+          python - <<'PY'
+          import subprocess, sys
+          sys.path.insert(0, "tools/openmkm_dynamic")
+          from run_s9_orders import cases, command, ARAMCO, DATA
+          DATA.mkdir(parents=True, exist_ok=True)
+          want = "${{ matrix.key }}"
+          rec = next(c for c in cases() if c["key"] == want)
+          print(rec["feed"], flush=True)
+          sys.exit(subprocess.run(command(rec, ARAMCO)).returncode)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: s9-${{ matrix.key }}
+          path: tools/openmkm_dynamic/data/s9/
+
+  fit:
+    needs: case
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r tools/cantera/requirements.txt
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: s9-*
+          merge-multiple: true
+          path: tools/openmkm_dynamic/data/s9/
+      - name: What arrived
+        run: ls -la tools/openmkm_dynamic/data/s9/
+      # `fit` exits nonzero when a gated exponent misses. That is a reported
+      # failed validation, not a broken job: the whole point is to find out
+      # which species the mechanism gets wrong, so the report is uploaded
+      # either way and the step does not mask the exit code.
+      - name: Fit the exponents against Table S1
+        id: fit
+        continue-on-error: true
+        run: |
+          python tools/openmkm_dynamic/run_s9_orders.py fit \
+            --report tools/openmkm_dynamic/data/s9/s9-report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: s9-results
+          path: tools/openmkm_dynamic/data/s9/
+      - name: Say plainly whether the gate passed
+        run: |
+          if [ "${{ steps.fit.outcome }}" = "success" ]; then
+            echo "GATE PASSED: every gated exponent within tolerance"
+          else
+            echo "GATE NOT PASSED: see the table above and s9-report.json"
+          fi

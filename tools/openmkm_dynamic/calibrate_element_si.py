@@ -39,9 +39,36 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from scipy.optimize import brentq
-
 from element_drive import integrate_pulsed_element
+
+
+def bisect(f, lo, hi, tol=1e-4, max_iter=200):
+    """Root of a monotone f on [lo, hi].
+
+    scipy would do this in one import, but this tool has to run on a CI runner
+    whose only dependency is Cantera, and adding scipy to that image to solve
+    two scalar roots on monotone functions is the wrong trade. Both functions
+    here are monotone by construction: the element's peak rises with voltage,
+    and at a fixed peak its floor falls as the loss area grows.
+    """
+    f_lo, f_hi = f(lo), f(hi)
+    if f_lo == 0.0:
+        return lo
+    if f_hi == 0.0:
+        return hi
+    if (f_lo > 0) == (f_hi > 0):
+        raise ValueError(f"root not bracketed on [{lo}, {hi}]: "
+                         f"f(lo)={f_lo:.6g}, f(hi)={f_hi:.6g}")
+    for _ in range(max_iter):
+        mid = 0.5 * (lo + hi)
+        f_mid = f(mid)
+        if f_mid == 0.0 or (hi - lo) < tol:
+            return mid
+        if (f_mid > 0) == (f_lo > 0):
+            lo, f_lo = mid, f_mid
+        else:
+            hi = mid
+    return 0.5 * (lo + hi)
 
 # Digitized from Scheme S1e, the RPH trace at 1 Hz and 5 percent duty. The
 # panel's y axis was calibrated on its own red dashed steady-state line, which
@@ -67,8 +94,8 @@ def run(voltage, loss_scale):
 
 
 def voltage_for_peak(peak_c, loss_scale):
-    return brentq(lambda v: run(v, loss_scale)["t_peak_c"] - peak_c,
-                  10.0, 200.0, xtol=1e-4)
+    return bisect(lambda v: run(v, loss_scale)["t_peak_c"] - peak_c,
+                  10.0, 200.0)
 
 
 def calibrate():
@@ -77,7 +104,7 @@ def calibrate():
         v = voltage_for_peak(S1E_PEAK_C, loss_scale)
         return run(v, loss_scale)["t_min_c"] - S1E_FLOOR_C
 
-    loss_scale = brentq(floor_error, 1.0, 4.0, xtol=1e-4)
+    loss_scale = bisect(floor_error, 1.0, 4.0)
     voltage = voltage_for_peak(S1E_PEAK_C, loss_scale)
     return loss_scale, voltage, run(voltage, loss_scale)
 
