@@ -41,7 +41,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from scipy.optimize import brentq
 
-from element_drive import CFP_ELEMENT, integrate_pulsed_element
+from element_drive import integrate_pulsed_element
 
 # Digitized from Scheme S1e, the RPH trace at 1 Hz and 5 percent duty. The
 # panel's y axis was calibrated on its own red dashed steady-state line, which
@@ -62,10 +62,8 @@ DUTY = 0.05
 
 def run(voltage, loss_scale):
     """The element at one drive, with its loss area scaled by loss_scale."""
-    element = dict(CFP_ELEMENT)
-    element["width"] = CFP_ELEMENT["width"] * loss_scale
     return integrate_pulsed_element(voltage=voltage, period=PERIOD_S,
-                                    duty=DUTY, element=element)
+                                    duty=DUTY, loss_scale=loss_scale)
 
 
 def voltage_for_peak(peak_c, loss_scale):
@@ -88,6 +86,9 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--json", action="store_true", help="machine-readable output")
+    ap.add_argument("--tolerance-percent", type=float, default=5.0,
+                    help="how far the held-out numbers may miss before this "
+                         "exits nonzero")
     args = ap.parse_args()
 
     loss_scale, v_fit, fit = calibrate()
@@ -150,6 +151,20 @@ def main():
           f"   T_avg {u['t_avg_c']:7.0f} C")
     print("  It reaches roughly the right peak by under-cooling, which is why "
           "the floor\n  and the mean both come out high.")
+
+    # The held-out numbers are the whole point, so missing them is a failure and
+    # not a remark. This also pins loss_scale as a real knob: with the radiating
+    # area fixed, no voltage reaches the S1e peak and floor together, the fit
+    # cannot be made, and the misses below go far outside any sane tolerance.
+    misses = {"voltage": h["voltage_error_percent"],
+              "t_avg": h["t_avg_error_percent"]}
+    bad = {k: v for k, v in misses.items() if abs(v) > args.tolerance_percent}
+    if bad:
+        print("\nFAIL: held-out numbers outside "
+              f"{args.tolerance_percent:.1f} percent: "
+              + ", ".join(f"{k} {v:+.1f}" for k, v in bad.items()))
+        return 1
+    print(f"\nok: both held-out numbers within {args.tolerance_percent:.1f} percent")
     return 0
 
 

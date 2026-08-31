@@ -66,7 +66,13 @@ def cfp_heat_capacity(t_c):
 def lumped_loss_power(t_c, p):
     el = p["element"]
     tk, tak = t_c + K2C, p["ambient_c"] + K2C
-    area = 2 * el["length"] * el["width"]        # both strip faces
+    # Both strip faces, times a calibration factor. The bare footprint treats
+    # the element as a solid rectangle, but the carbon fibre paper is porous
+    # and the feed passes through it rather than over it, so the surface that
+    # actually sheds heat is larger than the outline. loss_scale defaults to 1
+    # and the port agreement with apps/rphcjh/solver.js holds at that value;
+    # calibrate_element_si.py fits it against the measured trace.
+    area = 2 * el["length"] * el["width"] * p["loss_scale"]
     rad = SIGMA_SB * el["emissivity"] * area * (tk ** 4 - tak ** 4)
     gas = p["gas_capacity_rate"] * max(0.0, t_c - p["gas_inlet_c"])
     contact = p["contact_conductance"] * (t_c - p["ambient_c"])
@@ -80,6 +86,7 @@ def drive_defaults(**overrides):
         "element": CFP_ELEMENT,
         "gas_capacity_rate": HE_CAPACITY_RATE,
         "contact_conductance": 0.0,
+        "loss_scale": 1.0,
     }
     p.update({k: v for k, v in overrides.items() if v is not None})
     return p
@@ -157,12 +164,16 @@ def main():
     ap.add_argument("--period-s", type=float, default=1.0)
     ap.add_argument("--duty", type=float, default=0.05)
     ap.add_argument("--ambient-c", type=float, default=25.0)
+    ap.add_argument("--loss-scale", type=float, default=1.0,
+                    help="scale on the radiating area; see calibrate_element_si.py")
     ap.add_argument("--samples", type=int, default=0,
                     help="print this many evenly spaced (phase, T) points")
     args = ap.parse_args()
     r = integrate_pulsed_element(voltage=args.voltage, period=args.period_s,
-                                 duty=args.duty, ambient_c=args.ambient_c)
+                                 duty=args.duty, ambient_c=args.ambient_c,
+                                 loss_scale=args.loss_scale)
     out = {"voltage": args.voltage, "period_s": args.period_s, "duty": args.duty,
+           "loss_scale": args.loss_scale,
            "t_peak_c": r["t_peak_c"], "t_min_c": r["t_min_c"], "t_avg_c": r["t_avg_c"],
            "cycles": r["cycles"], "converged": r["converged"]}
     if args.samples:
