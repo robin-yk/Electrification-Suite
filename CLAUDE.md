@@ -97,6 +97,42 @@ policy, and invalidated artifacts. The generator and run card must be committed
 before the run starts. Do not use an uncommitted scratch script to produce
 citable data.
 
+## Reporting to the human author
+
+These are corrections the author has made more than once. They cost a session
+each time they had to be repeated.
+
+**Take a position.** Do not end with a menu of options for the author to pick
+from. Offering three paths reads as deference and is usually avoidance: it
+means the analysis was not carried far enough to have a recommendation. Say
+which one and why, then say what would change your mind. If the author's
+proposal is worse than an alternative, say so and give the number that decides
+it; agreeing with a plan you can improve is not politeness.
+
+**Say the thing they did not ask about.** The most useful sentence is often the
+warning attached to the answer, not the answer. If the operating point sits in
+the region where the baseline is known to be weakest, that belongs in the reply
+even when the question was about something else.
+
+**Write `미확인` when it is unverified.** Not "probably", not "should be", not
+an estimate dressed as a measurement. A number without a command that
+reproduces it is a guess, and the report must say which it is.
+
+**Report facts, gates, decisions and results.** Not narrative, not
+self-reflection, not "I will do X soon". If it is done, say what it produced.
+If it failed, say which gate. Work in progress is one line, not a paragraph.
+
+**Length is not thoroughness.** The author has repeatedly capped replies at 700
+to 1,200 characters. A long answer to a short question is a failure to
+compress, and volume is how an unclear answer hides.
+
+**Plain words.** The author reads faster than any of this writes. Ordinary
+language, short sentences, the number first.
+
+**Do not scale before one case works.** Proposing campaign sizes, publication
+strategy or optimizer architecture before a single reactor closes its mass
+balance is the pattern that produced this repository's largest wasted effort.
+
 ## Commit messages
 
 The log is the design record for this project, and it is the most complete one
