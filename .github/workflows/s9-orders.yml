@@ -26,7 +26,56 @@ on:
       - "tools/openmkm_dynamic/s9-request.json"
 
 jobs:
+  # Which mode the request file asks for. The orders campaign must not run on
+  # an operating point that has not been settled: at tau 0.2 s the calibrated
+  # element reproduces the paper's conversion and misses its benzene by three
+  # times, and thirteen exponents fitted on top of that would all inherit it.
+  mode:
+    runs-on: ubuntu-latest
+    outputs:
+      mode: ${{ steps.read.outputs.mode }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: read
+        run: |
+          M=$(python -c "import json;print(json.load(open('tools/openmkm_dynamic/s9-request.json')).get('mode','conditions'))")
+          echo "mode=$M" >> "$GITHUB_OUTPUT"
+          echo "requested mode: $M"
+
+  # Six cases over the two knobs that were chosen rather than measured: the
+  # residence time, and the quench floor, which the calibration puts near 525 C
+  # but which the IR camera could not have seen, its range stopping at 500 C.
+  # Voltage is the only handle on the floor, since the element decides its own
+  # temperatures.
+  conditions:
+    needs: mode
+    if: ${{ needs.mode.outputs.mode == 'conditions' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    strategy:
+      fail-fast: false
+      matrix:
+        tau: ["0.05", "0.2", "1.0"]
+        voltage: ["60", "70"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r tools/cantera/requirements.txt
+      - name: One condition at the paper's feed
+        run: |
+          mkdir -p out
+          python tools/openmkm_dynamic/run_cstr_case.py             --mechanism tools/cantera/mechanisms/aramco20.yaml             --waveform physical --voltage ${{ matrix.voltage }}             --element-loss-scale si             --period-s 1.0 --duty 0.05 --t-min-c 25             --residence-time-s ${{ matrix.tau }} --pressure-atm 1.0             --feed "CH4:0.05, CO2:0.05, HE:0.90"             --output "out/cond-v${{ matrix.voltage }}-tau${{ matrix.tau }}.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: s9-cond-v${{ matrix.voltage }}-tau${{ matrix.tau }}
+          path: out/
+
   plan:
+    needs: mode
+    if: ${{ needs.mode.outputs.mode == 'orders' }}
     runs-on: ubuntu-latest
     outputs:
       keys: ${{ steps.list.outputs.keys }}

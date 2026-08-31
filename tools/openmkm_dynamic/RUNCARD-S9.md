@@ -85,10 +85,16 @@ knowing which species the mechanism gets wrong is the useful output either way.
 
 ## Estimated cost
 
-13 cases. The premise campaign measured 413 s per Aramco pulsed case at 6
-substeps per phase point; ladder rung 3 is running the exact settings of this
-campaign and will replace that figure before the run starts. At 413 s the
-campaign is about 90 minutes wall clock, single process.
+13 cases at about 30 minutes each, measured on ladder rung 3 at this
+campaign's exact settings, two processes on four cores. That is four times the
+413 s the premise campaign took, and the waveform is why: a trapezoid rests at
+both ends and lets the integrator take cheap steps, while the sawtooth moves
+the temperature at every instant and never does.
+
+Sequential that is six and a half hours, which is more than a session container
+can be trusted to survive. The campaign therefore runs on Actions, sharded one
+condition per runner, so the wall clock is one case rather than thirteen.
+See `.github/workflows/s9-orders.yml`.
 
 ## Cache policy
 
@@ -107,6 +113,17 @@ premise document already says so.
 
 ## Risks and what is assumed rather than known
 
+- **The operating point is not settled, and this is the largest risk.** At
+  tau 0.2 s with the calibrated element, ladder rung 3b reproduces the paper's
+  conversion, 18.6 percent against about 20, but not its selectivity: `S_C6H6`
+  comes out at 16.2 percent against a published figure below 5, and `S_C2H2` at
+  71.3 against above 80. The earlier trapezoid cases at 1400 to 1500 C were
+  closer on selectivity while being wrong about the waveform, so this is not a
+  regression to undo but a sign that a condition is still off. Two candidates:
+  tau, which is chosen rather than measured, and the quench floor, which the
+  calibration puts at about 525 C but which the IR camera could not have
+  measured, its range stopping at 500 C. A conditions scan settles which before
+  the orders campaign runs on top of either.
 - **Residence time.** 0.2 s is chosen, not measured. `VOID_CM3 = 11.03` in
   `pulse_common.py` has no source in either document, and no residence time is
   published. The exponents are the ratio of a response to a change in feed at
