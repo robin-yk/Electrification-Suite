@@ -280,6 +280,25 @@ the plate temperature is the calibrated element temperature. The Aramco
 version of the same scan, which carries the C4 and C6 sinks GRI lacks, is
 the test that decides whether this picture reproduces the CJH points.
 
+The first number that test checks is not a selectivity but a slope. From
+1150 to 1470 C the measured conversion rises eight times, an apparent
+activation energy of 134 kJ/mol (`bl_compare.py`, last table, on
+`fig2_by_eye.json`). The mechanism's conversion at a fixed residence time
+rises with 400 to 470 kJ/mol over the same interval, in a CSTR or in plug
+flow (the `cjh_inversion.py` sweeps). A device three times less sensitive to
+its element temperature than its own chemistry is transport-limited: the
+conversion is set by how much methane reaches the hot layer, not by how fast
+it reacts there. The cold-inlet stagnation scan on Aramco does not show that
+yet. At 1150 C it converts 0.09 percent at the sccm velocity against 2.5
+measured, and between 1150 and 1230 C its slope is about 450 kJ/mol, the
+kinetic one. That is the regime in which the gas crosses a thin hot layer
+once; the device holds the gas next to the strip for 3 to 10 s along its 38
+mm length with the quartz wall, not a cold tube, as the far boundary. The
+scan that tests the picture properly, a hot far boundary at the low
+velocities that residence time implies, is gated in `RUNCARD-BL.md` on the
+cold scan finishing. The wall temperature is unmeasured (미확인) and is
+scanned, not set.
+
 Consequences. The S9 exponent campaign is held: exponents computed on the
 CSTR would inherit the wrong reactor. Any pulsed optimization on the CSTR is
 off the table for the same reason. The transient CSTR results in this
