@@ -92,9 +92,27 @@ shortening the period leaves the peak below 1250 C, where nothing converts
 in 0.2 s; raising the duty to 20 percent drives the peak past 3000 C,
 which no carbon paper survives, so that row is outside the element's
 domain. Between those, the anchor's advantage stands: 18.8 against 52.0
-percent benzene at the same 22 percent conversion. Round 2 steps inside
-the window (70 V; 2 s period; 10 percent duty at 78 and 70 V) and is
-running; its rows are added from `compare` when it finishes.
+percent benzene at the same 22 percent conversion.
+
+Round 2, smaller steps:
+
+| drive | peak, C | X, % | S_C6H6 pulse / steady, % | S_C2H2 pulse / steady, % | element W |
+|---|---|---|---|---|---|
+| 70 V, 1 s, 5 % | 1534 | 17.9 | 23.8 / 47.0 | 61.9 / 18.8 | 71 |
+| 78 V, 2 s, 5 % | 2595 | 10.4 | 15.5 / 37.7 | 68.5 / 17.3 | 101 |
+| 78 V, 1 s, 10 % | 2707 | 30.3 | 15.0 / 59.3 | 68.8 / 22.2 | 213 |
+| 70 V, 1 s, 10 % | 2340 | 28.7 | 15.6 / 60.3 | 68.7 / 20.9 | 160 |
+
+Only the 70 V row stays inside the element's domain, and it is worse than
+the anchor: benzene at 0.51 of the steady value against the anchor's 0.36.
+Every row that overshoots the peak protects more (0.25 to 0.41), so the
+trend is one line: the higher the peak, the less benzene at matched
+conversion, and the element's material ceiling is the constraint that
+binds. Doubling the period or the duty at fixed voltage moves the peak by
+800 to 900 C, which is why single-knob steps keep leaving the window. The
+right comparison is at fixed peak: for each period and duty, the voltage
+that reaches 1800 C, and then the waveform shape is the only thing that
+differs. That is round 3.
 
 ## Standing caveats
 
