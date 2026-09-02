@@ -68,6 +68,18 @@ at 5 percent. Their solved voltages are 57.7, 44.8, 97.1 and 61.4 V
 under test. The element's floor and mean differ widely across these:
 mean temperature 635 to 1128 C at the same peak.
 
+## Round 3 result
+
+All four cases converged (cycle boundary residual below 1e-12) with carbon
+closed to round-off. At a fixed 1800 C peak the pulse selectivity is flat:
+benzene 16.5 to 18.8 percent, acetylene 66 to 68 percent, while conversion
+runs from 8.5 percent (2 s, 5 percent duty) to 47.2 percent (0.5 s, 5
+percent). The pulse-over-steady benzene ratio (0.27 to 0.52) tracks the
+steady comparator, not the pulse. Conclusion for the claim boundary: the
+peak fixes the product split, the shape fixes throughput. No round 4 on
+shape is warranted; the next question, if any, is the peak itself, which
+the element cannot raise. Numbers: `run_pulse_c2.py compare`.
+
 ## Cost
 
 4 cases per round, about 45 min each measured on the si-op sawtooth

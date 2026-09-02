@@ -114,6 +114,29 @@ right comparison is at fixed peak: for each period and duty, the voltage
 that reaches 1800 C, and then the waveform shape is the only thing that
 differs. That is round 3.
 
+Round 3, peak held at 1800 C, voltage solved per shape
+(`calibrate_element_si.operating_point`), anchor repeated for reference:
+
+| drive | T_min / T_mean, C | X, % | S_C6H6 pulse / steady, % | S_C2H2 pulse / steady, % | element W |
+|---|---|---|---|---|---|
+| 78 V, 1 s, 5 % (anchor) | 502 / 887 | 22.0 | 18.8 / 52.0 | 66.3 / 19.6 | 91 |
+| 57.7 V, 1 s, 10 % | 523 / 924 | 23.8 | 18.1 / 54.2 | 66.7 / 19.9 | 100 |
+| 44.8 V, 1 s, 20 % | 570 / 1006 | 28.7 | 16.5 / 60.2 | 67.9 / 20.9 | 123 |
+| 97.1 V, 0.5 s, 5 % | 780 / 1128 | 47.2 | 17.7 / 46.3 | 67.5 / 36.6 | 144 |
+| 61.4 V, 2 s, 5 % | 235 / 635 | 8.5 | 18.4 / 35.3 | 66.5 / 16.9 | 55 |
+
+The pulse column barely moves: benzene 16.5 to 18.8 percent and acetylene
+66 to 68 percent across a shape family whose conversion spans 8.5 to 47
+percent and whose mean temperature spans 635 to 1128 C. The peak sets the
+product split; the shape sets only how much methane passes through the
+hot part of the cycle. Everything that changes in the ratio column (0.27
+to 0.52) comes from the steady comparator, which needs a different
+temperature to reach each conversion and makes a different amount of
+benzene there. So the waveform is a conversion knob, not a selectivity
+knob, and the one selectivity knob the element has, the peak, is pinned
+by its material ceiling. The 0.5 s case needs 97 V against the SI's 75 V
+supply; it is a model point, not an operable one.
+
 ## Standing caveats
 
 - Uniform-temperature CSTR at the element temperature. The device is not
