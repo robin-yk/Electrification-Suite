@@ -174,7 +174,7 @@ def main():
     ap.add_argument("--lump", type=Path, required=True,
                     help="lump_fit.py output with the fitted series constants")
     ap.add_argument("--voltage", nargs="+", type=float,
-                    default=list(np.round(np.arange(30, 81, 5), 1)))
+                    default=[float(v) for v in range(30, 81, 5)])
     ap.add_argument("--period-s", nargs="+", type=float,
                     default=[0.02, 0.05, 0.1, 0.2, 0.5, 1.0, 2.0, 5.0])
     ap.add_argument("--duty", nargs="+", type=float,
@@ -238,8 +238,11 @@ def main():
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(json.dumps(
             {"series": p, "element": {k: cal[k] for k in ("loss_scale", "cp_scale", "contact_w_per_k")},
-             "grid": {"voltage": args.voltage, "period_s": args.period_s, "duty": args.duty,
-                      "tau_s": args.tau_s, "cjh_temperature": args.cjh_temperature},
+             "grid": {"voltage": [float(v) for v in args.voltage],
+                      "period_s": [float(v) for v in args.period_s],
+                      "duty": [float(v) for v in args.duty],
+                      "tau_s": [float(v) for v in args.tau_s],
+                      "cjh_temperature": [float(v) for v in args.cjh_temperature]},
              "best_steady": best_cjh, "best_pulse": best_pulse, "per_tau": per_tau,
              "steady_front": fc, "pulse_front": fp,
              "steady": cjh, "pulses": pulses}, indent=1) + "\n")

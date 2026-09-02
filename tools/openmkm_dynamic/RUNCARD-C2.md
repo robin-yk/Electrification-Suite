@@ -1,0 +1,58 @@
+# Run card: the C2 pulse study on AramcoMech 2.0
+
+Required by `CLAUDE.md`: four sawtooth cases at about 45 minutes each is
+three CPU-hours. Generator `run_pulse_c2.py`, committed before the run.
+
+## Purpose
+
+Which drive protects C2 best, on the full mechanism, at matched feed,
+residence time and conversion. One anchor (the SI operating point: the
+voltage at which the calibrated element peaks at 1800 C, 1 Hz, 5 percent
+duty) and three single-knob moves: peak down (60 V), cycle shorter (0.2 s),
+hot fraction longer (20 percent duty). Feed is the paper's methane feed, 5
+percent CH4 in helium, 1 bar; residence time 0.2 s.
+
+## Claim boundary
+
+Passing licenses: in a uniform-temperature CSTR on the calibrated element
+trajectory, this mechanism ranks these four drives in the stated order for
+C2 protection at their own conversions. Nothing about the device's absolute
+conversion (the reactor picture is open, `RUNCARD-BL.md`), nothing about
+other residence times or feeds.
+
+## Inputs
+
+| | value | source |
+|---|---|---|
+| mechanism | AramcoMech 2.0 | `tools/cantera/mechanisms/aramco20.yaml` |
+| element | S1f calibration: loss scale, clamp conduction, heat-capacity scale | `calibrate_element_si.py` |
+| drives | see `run_pulse_c2.py plan` | anchor from the SI; moves chosen by hand |
+| feed, pressure, tau | CH4 0.05 He 0.95, 1 bar, 0.2 s | SI flow control; tau as in `RUNCARD-S9.md` |
+| steady comparison | `data/premise/cjh-inversion/cjh-cstr.json`, tau 0.2 s, 1000 to 1470 C | `premise_probe.py sweep` |
+
+## Acceptance gates
+
+1. Each case converges to a periodic state and closes carbon (schema 2 audit).
+2. Its conversion lies inside the steady sweep's range at tau 0.2 s, so the
+   matched steady point exists by interpolation and not extrapolation.
+3. Output: the four product slates beside their matched steady slates
+   (`run_pulse_c2.py compare`). The ranking on benzene at matched conversion
+   is the result, whichever way it comes out.
+
+## Cost
+
+4 cases, about 45 min each measured on the si-op sawtooth locally, four in
+parallel on four cores: about one wall hour. Cache: a finished case file is
+not recomputed.
+
+## What this invalidates
+
+Nothing. Writes only to `data/c2pulse/`.
+
+## Screen
+
+`series_pulse.py` on the lumped constants of `data/lump/aramco-ch4-he.json`
+was run over the same knobs first. Its two activation energies are equal
+(368 and 362 kJ/mol above 1300 C), so it cannot express the low-temperature
+benzene the steady element makes and its ranking is not used to choose or
+exclude cases here.
