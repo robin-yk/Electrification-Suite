@@ -129,17 +129,18 @@ def load_s1f():
         return json.load(f)
 
 
-def run(voltage, loss_scale, cp_scale=1.0, contact=0.0):
-    key = (round(voltage, 5), round(loss_scale, 8), round(cp_scale, 8), round(contact, 10))
+def run(voltage, loss_scale, cp_scale=1.0, contact=0.0, period=PERIOD_S, duty=DUTY):
+    key = (round(voltage, 5), round(loss_scale, 8), round(cp_scale, 8), round(contact, 10),
+           round(period, 8), round(duty, 8))
     if key not in _RUN_CACHE:
         # Start from the floor of the last run at this parameter set: the
         # periodic state is reached in fewer cycles than from ambient.
         start = None
-        for (v, ls, cp, h), r in _RUN_CACHE.items():
-            if (ls, cp, h) == key[1:]:
+        for k, r in _RUN_CACHE.items():
+            if k[1:] == key[1:]:
                 start = r["t_min_c"]
         _RUN_CACHE[key] = integrate_pulsed_element(
-            voltage=voltage, period=PERIOD_S, duty=DUTY, loss_scale=loss_scale,
+            voltage=voltage, period=period, duty=duty, loss_scale=loss_scale,
             cp_scale=cp_scale, contact_conductance=contact, start_c=start)
     return _RUN_CACHE[key]
 
@@ -221,11 +222,18 @@ def fit_cp_scale(data, ls, h, key):
                   1.0, 1.2, tol=1e-3, lo=0.3, hi=3.0)
 
 
-def operating_point(ls, cp, h, peak_c):
-    v = secant(lambda vv: run(vv, ls, cp, h)["t_peak_c"] - peak_c, 65.0, 75.0,
-               tol=1e-3, lo=10.0, hi=200.0)
-    r = run(v, ls, cp, h)
-    return {"voltage_v": v, "t_peak_c": r["t_peak_c"], "t_min_c": r["t_min_c"],
+def operating_point(ls, cp, h, peak_c, period=PERIOD_S, duty=DUTY):
+    """The voltage at which the element peaks at peak_c on this waveform.
+
+    The peak is set by the energy per pulse against a T^4 loss, so the
+    starting guess scales the 1 Hz, 5 percent pair by the on-time.
+    """
+    scale = (PERIOD_S * DUTY / (period * duty)) ** 0.5
+    v = secant(lambda vv: run(vv, ls, cp, h, period, duty)["t_peak_c"] - peak_c,
+               65.0 * scale, 75.0 * scale, tol=1e-3, lo=5.0, hi=400.0)
+    r = run(v, ls, cp, h, period, duty)
+    return {"voltage_v": v, "period_s": period, "duty": duty,
+            "t_peak_c": r["t_peak_c"], "t_min_c": r["t_min_c"],
             "t_avg_c": r["t_avg_c"], "p_avg_w": r["p_avg_w"],
             "p_reported_w": r["p_reported_w"]}
 

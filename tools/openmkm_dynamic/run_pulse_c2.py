@@ -49,6 +49,13 @@ CASES = [
     {"key": "period-siop-2s-d0.05", "voltage": "si-op", "period_s": 2.0, "duty": 0.05},
     {"key": "duty-siop-1s-d0.1", "voltage": "si-op", "period_s": 1.0, "duty": 0.1},
     {"key": "duty-70V-1s-d0.1", "voltage": "70", "period_s": 1.0, "duty": 0.1},
+    # Round 3: waveform shape at a fixed 1800 C peak. "si-op" now solves the
+    # voltage for the case's own period and duty, so only the shape differs:
+    # the on-time, the floor the element falls to, and the mean temperature.
+    {"key": "peak1800-1s-d0.1", "voltage": "si-op", "period_s": 1.0, "duty": 0.1},
+    {"key": "peak1800-1s-d0.2", "voltage": "si-op", "period_s": 1.0, "duty": 0.2},
+    {"key": "peak1800-0.5s-d0.05", "voltage": "si-op", "period_s": 0.5, "duty": 0.05},
+    {"key": "peak1800-2s-d0.05", "voltage": "si-op", "period_s": 2.0, "duty": 0.05},
 ]
 
 

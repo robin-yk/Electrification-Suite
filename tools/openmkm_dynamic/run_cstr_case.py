@@ -543,7 +543,12 @@ def build_params(args):
         if isinstance(voltage, str):
             if not isinstance(args.element_loss_scale, str):
                 raise SystemExit("--voltage si-op needs --element-loss-scale si")
-            voltage = cal["operating_point"]["voltage_v"]
+            # The SI's peak on this case's own waveform: the voltage is
+            # solved for the period and duty given, so a case at another
+            # period or duty still peaks at 1800 C and only the shape differs.
+            from calibrate_element_si import operating_point, OP_PEAK_C
+            voltage = operating_point(loss_scale, cp_scale, contact, OP_PEAK_C,
+                                      period=args.period_s, duty=args.duty)["voltage_v"]
         drive = integrate_pulsed_element(
             voltage=voltage, period=args.period_s, duty=args.duty,
             ambient_c=args.t_min_c, loss_scale=loss_scale, cp_scale=cp_scale,

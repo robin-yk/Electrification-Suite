@@ -53,6 +53,21 @@ T^4 loss. Round 2 steps inside the window: 70 V at 5 percent duty, 2 s
 period at the SI voltage, 10 percent duty at 78 and at 70 V. Same gates,
 same cost.
 
+## Round 2 result, and round 3
+
+Round 2: 70 V at 5 percent peaks at 1534 C and protects less than the
+anchor (benzene 0.51 of the matched steady value against 0.36); the three
+cases that overshoot the peak (2340 to 2707 C) protect more (0.25 to
+0.41). One trend, higher peak less benzene, with the element's ceiling as
+the binding constraint. Round 3 therefore holds the peak at 1800 C and
+varies only the waveform shape: `operating_point` solves the voltage for
+each period and duty. Cases: 1 s at 10 and 20 percent duty, 0.5 s and 2 s
+at 5 percent. Their solved voltages are 57.7, 44.8, 97.1 and 61.4 V
+(`calibrate_element_si.operating_point`); the 0.5 s case exceeds the SI's
+75 V supply and is kept because the element, not the supply, is the model
+under test. The element's floor and mean differ widely across these:
+mean temperature 635 to 1128 C at the same peak.
+
 ## Cost
 
 4 cases per round, about 45 min each measured on the si-op sawtooth
