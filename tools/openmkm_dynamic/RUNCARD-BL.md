@@ -1,5 +1,18 @@
 # Run card: the boundary-layer picture against the steady CJH points
 
+**Status: CLOSED, picture dropped.** Gate 2 failed at every velocity with
+the cold inlet (slope 412 to 464 kJ/mol against 154 measured between 1150
+and 1230 C). The opposite limit, the conduction-heated well-mixed slab of
+`transverse_zones.py`, over-predicts the 1470 C point instead (GRI, wall
+500 C: 83 percent conversion at 1 s against 20 measured), and the Aramco
+stagnation case at 1470 C and the sccm velocity gave 55 percent with 39
+percent benzene. The device sits between two limits that no single fitted
+number connects, and what separates them is flow information neither the
+paper nor the SI contains: where the feed enters relative to the strip, the
+wall temperature, and the strip's temperature distribution. Modelling
+stopped here rather than fitting further. The 1400 and 1470 C scans were
+stopped after 3.4 CPU-hours each with one case finished between them.
+
 Required by `CLAUDE.md` because the study exceeds ten CPU-minutes. Generator:
 `tools/openmkm_dynamic/boundary_layer_probe.py`; comparison:
 `tools/openmkm_dynamic/bl_compare.py`. The first scan (cold inlet, four plate
