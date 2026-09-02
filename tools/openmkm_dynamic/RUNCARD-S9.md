@@ -114,18 +114,26 @@ premise document already says so.
 
 ## Risks and what is assumed rather than known
 
-- **The operating point was 71 C cold, and the rerun that checks the fix is
-  the gate.** The conditions scan and ladder rung 3b were driven at the stated
-  70 V on a two-point calibration and peaked at 1729 C. At tau 0.2 s they
-  reproduced the paper's conversion, 18.6 percent against about 20, but not its
-  selectivity: `S_C6H6` 16.2 percent against below 5, `S_C2H2` 71.3 against
-  above 80. The scan showed selectivity is set by temperature and conversion by
-  tau, and benzene moves 4.4 times per 100 C of peak, so a 71 C shortfall is a
-  factor of about three in benzene, which is the size of the miss. The S1f
-  calibration removes the shortfall by defining the operating point by its
-  peak. Three tau cases at that point decide whether the miss was the
-  temperature; if benzene is still above 10 percent at 20 percent conversion,
-  the next suspect is the reactor picture, not the mechanism.
+- **Gate 1 failed: the benzene miss is not the temperature.** The
+  conditions scan and ladder rung 3b were driven at the stated 70 V on a
+  two-point calibration and peaked at 1729 C. Rerun at the S1f operating point
+  (1800 C peak, 78 V, `data/s9/conditions-siop/`), tau 0.2 s reproduces the
+  paper's conversion exactly, 20.3 percent, and moves benzene from 16.2 to
+  17.0 percent against a published figure below 5. At tau 0.05 s benzene goes
+  from 24.6 to 25.4. A 71 C hotter peak did nothing to benzene on the sawtooth,
+  because the gas spends almost no time at the peak and most of the cycle in
+  the 700 to 1300 C decay, which hardly moved. The 4.4 times per 100 C
+  sensitivity was measured on a trapezoid that dwells at its peak and does not
+  transfer to the physical waveform. The next suspect is the reactor picture.
+- **The claim under test was misread.** The paper's benzene suppression is
+  Joule heating against the furnace, not pulsed against continuous: at about
+  20 percent conversion Figure 2d reads S_C6H6 near 27 percent for CH, 7.5 for
+  CJH and 2 for RPH. RPH against CJH is a 2 against 7.5 difference; the factor
+  of ten is the furnace. A CSTR held at the element temperature is closer to
+  a furnace than to a strip in a cold tube, and it gives 17 percent for both
+  RPH and, in the steady inversion, CJH. This campaign's exponents are only
+  meaningful once a reactor picture reproduces the CJH points, which are
+  steady and carry no pulse dynamics, and so are the cheaper test.
 - **Temperature is known to about 60 C at the peak.** That is the calibration
   residual, and it is a factor of about 2.4 on benzene. The exponents are less
   exposed than absolute selectivities because the temperature is the same in

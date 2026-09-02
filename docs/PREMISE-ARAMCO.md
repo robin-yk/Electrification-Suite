@@ -244,7 +244,16 @@ benzene claim has to state which idealisation it came from.
   factor of about 2.4 on any benzene number before the mechanism is consulted.
 - The six conditions-scan cases and ladder rung 3b were run on the earlier
   two-point calibration, at 70 V, and reached a peak of 1729 C rather than
-  1800. They are 71 C cold at the peak and 48 C cold on the mean.
+  1800. Rerun at the S1f point (`data/s9/conditions-siop/`), tau 0.2 s gives
+  conversion 20.3 percent and benzene 17.0 percent, against 18.6 and 16.2
+  before. The temperature was not the benzene miss.
+- The claim this document set out to reproduce was misread. Figure 2d of the
+  paper puts benzene selectivity near 20 percent conversion at about 27
+  percent under the furnace, 7.5 under continuous Joule heating and 2 under
+  pulsed. The suppression is Joule against furnace; pulsed against continuous
+  is the smaller step. A CSTR at the element temperature reproduces neither,
+  and the steady CJH points are the cheaper place to find a reactor picture
+  that does, since they carry no pulse dynamics.
 - Benzene is quantified on an Agilent 7890 FID covering C1 to C10+, with
   Effective Carbon Number response factors for species lacking a standard,
   which the SI itself calls semi-quantitative. The MicroGC TCD sees only
