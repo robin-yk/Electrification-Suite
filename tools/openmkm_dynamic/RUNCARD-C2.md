@@ -39,11 +39,25 @@ other residence times or feeds.
    (`run_pulse_c2.py compare`). The ranking on benzene at matched conversion
    is the result, whichever way it comes out.
 
+## Round 1 result, and round 2
+
+Round 1 (45 wall minutes, four cores): the anchor converts 22.0 percent
+with 18.8 percent benzene against 52.0 for the steady element at 1207 C.
+The three moves left the chemistry's window: 60 V peaks at 1233 C and
+converts 0.29 percent, a 0.2 s period peaks at 1131 C and converts 0.13,
+and 20 percent duty peaks at 3063 C, which no carbon paper survives, so
+its 38.7 percent conversion and 13.1 percent benzene are outside the
+element's domain and are reported, not used. The knob steps were too
+coarse for an element whose peak is set by the energy per pulse against a
+T^4 loss. Round 2 steps inside the window: 70 V at 5 percent duty, 2 s
+period at the SI voltage, 10 percent duty at 78 and at 70 V. Same gates,
+same cost.
+
 ## Cost
 
-4 cases, about 45 min each measured on the si-op sawtooth locally, four in
-parallel on four cores: about one wall hour. Cache: a finished case file is
-not recomputed.
+4 cases per round, about 45 min each measured on the si-op sawtooth
+locally, four in parallel on four cores: about one wall hour per round.
+Cache: a finished case file is not recomputed.
 
 ## What this invalidates
 

@@ -78,8 +78,23 @@ element at its own conversion.
     python3 tools/openmkm_dynamic/run_pulse_c2.py run
     python3 tools/openmkm_dynamic/run_pulse_c2.py compare
 
-Results: 실행 중, this section is filled from `compare` when the four
-cases finish.
+Round 1, methane feed, tau 0.2 s, benzene at matched conversion:
+
+| drive | peak, C | X, % | S_C6H6 pulse / steady, % | S_C2H2 pulse / steady, % | element W |
+|---|---|---|---|---|---|
+| anchor, 78 V, 1 s, 5 % | 1800 | 22.0 | 18.8 / 52.0 | 66.3 / 19.6 | 91 |
+| 60 V, 1 s, 5 % | 1233 | 0.29 | 1.4 / 1.5 | 8.9 / 1.0 | 50 |
+| 78 V, 0.2 s, 5 % | 1131 | 0.13 | 0.0 / 0.6 | 1.7 / 0.5 | 87 |
+| 78 V, 1 s, 20 % | 3063 | 38.7 | 13.1 / 52.8 | 67.6 / 29.4 | 510 |
+
+The element answered before the chemistry did. Dropping the voltage or
+shortening the period leaves the peak below 1250 C, where nothing converts
+in 0.2 s; raising the duty to 20 percent drives the peak past 3000 C,
+which no carbon paper survives, so that row is outside the element's
+domain. Between those, the anchor's advantage stands: 18.8 against 52.0
+percent benzene at the same 22 percent conversion. Round 2 steps inside
+the window (70 V; 2 s period; 10 percent duty at 78 and 70 V) and is
+running; its rows are added from `compare` when it finishes.
 
 ## Standing caveats
 

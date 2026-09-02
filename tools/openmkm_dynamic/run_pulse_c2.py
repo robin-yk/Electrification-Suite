@@ -33,12 +33,22 @@ STEADY = HERE / "data" / "premise" / "cjh-inversion" / "cjh-cstr.json"
 FEED = "CH4:0.05, HE:0.95"      # Figure 2 feed, 50 sccm, 1 bar
 TAU_S = 0.2                     # the residence time the S9 card settled on
 
-# The anchor is the SI operating point; each other case moves one knob.
+# Round 1: the anchor is the SI operating point; each other case moves one
+# knob by a large step. The element answered before the chemistry did: 60 V
+# peaks at 1233 C and a 0.2 s period at 1131 C, both below the temperature
+# at which anything converts in 0.2 s, and 20 percent duty peaks at 3063 C,
+# past anything carbon paper survives. The useful window is narrow and
+# round 2 steps inside it: peaks between about 1400 and 1800 C.
 CASES = [
     {"key": "anchor-siop-1s-d0.05", "voltage": "si-op", "period_s": 1.0, "duty": 0.05},
     {"key": "peak-60V-1s-d0.05", "voltage": "60", "period_s": 1.0, "duty": 0.05},
     {"key": "period-siop-0.2s-d0.05", "voltage": "si-op", "period_s": 0.2, "duty": 0.05},
     {"key": "duty-siop-1s-d0.2", "voltage": "si-op", "period_s": 1.0, "duty": 0.2},
+    # round 2
+    {"key": "peak-70V-1s-d0.05", "voltage": "70", "period_s": 1.0, "duty": 0.05},
+    {"key": "period-siop-2s-d0.05", "voltage": "si-op", "period_s": 2.0, "duty": 0.05},
+    {"key": "duty-siop-1s-d0.1", "voltage": "si-op", "period_s": 1.0, "duty": 0.1},
+    {"key": "duty-70V-1s-d0.1", "voltage": "70", "period_s": 1.0, "duty": 0.1},
 ]
 
 
