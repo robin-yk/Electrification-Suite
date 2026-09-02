@@ -140,6 +140,9 @@ def main():
     ap.add_argument("--temperature", nargs="+", type=float,
                     default=[1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800])
     ap.add_argument("--t-max-s", type=float, default=100.0)
+    ap.add_argument("--fit-above-c", type=float, default=None,
+                    help="Arrhenius lines through the temperatures at or above this; "
+                         "every temperature is still run and reported")
     ap.add_argument("--per-decade", type=int, default=12)
     ap.add_argument("--output", type=Path)
     args = ap.parse_args()
@@ -164,10 +167,13 @@ def main():
               f"{100 * fit['c2_rms']:7.2f} {wall:6.1f}")
         sys.stdout.flush()
 
-    temps = [p["t_c"] for p in per_t]
-    a1 = arrhenius(temps, [p["k1"] for p in per_t])
-    a2 = arrhenius(temps, [p["k2"] for p in per_t])
-    print(f"\nC1 -> C2: k1Ref {a1['k_ref']:.3g} 1/s at 1100 C, Ea {a1['ea_kj_mol']:.0f} kJ/mol, "
+    used = [p for p in per_t if args.fit_above_c is None or p["t_c"] >= args.fit_above_c]
+    temps = [p["t_c"] for p in used]
+    a1 = arrhenius(temps, [p["k1"] for p in used])
+    a2 = arrhenius(temps, [p["k2"] for p in used])
+    print(f"\nArrhenius lines through {len(used)} of {len(per_t)} temperatures"
+          + (f" ({args.fit_above_c:.0f} C and above)" if args.fit_above_c is not None else ""))
+    print(f"C1 -> C2: k1Ref {a1['k_ref']:.3g} 1/s at 1100 C, Ea {a1['ea_kj_mol']:.0f} kJ/mol, "
           f"rms {a1['rms_ln_k']:.2f} in ln k (max {a1['max_abs_ln_k']:.2f})")
     print(f"C2 -> C3+: k2Ref {a2['k_ref']:.3g} 1/s at 1100 C, Ea {a2['ea_kj_mol']:.0f} kJ/mol, "
           f"rms {a2['rms_ln_k']:.2f} in ln k (max {a2['max_abs_ln_k']:.2f})")
@@ -180,7 +186,8 @@ def main():
                                                     "C3+: every species with three or more carbons"],
              "series": {"k1_ref": a1["k_ref"], "ea1_kj_mol": a1["ea_kj_mol"],
                         "k2_ref": a2["k_ref"], "ea2_kj_mol": a2["ea_kj_mol"],
-                        "fit_k1": a1, "fit_k2": a2},
+                        "fit_k1": a1, "fit_k2": a2,
+                        "fitted_temperatures_c": temps},
              "per_temperature": per_t}, indent=1) + "\n")
         print(f"wrote {args.output}")
 
