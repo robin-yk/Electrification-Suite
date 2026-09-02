@@ -53,7 +53,13 @@ P_HIGH_KPA = 40.24
 N_POINTS = 5
 
 # SI, Table S1 caption: 70 V, 5 percent duty, 1 Hz.
-DRIVE = {"voltage": 70.0, "period_s": 1.0, "duty": 0.05}
+DRIVE = {
+    # "si-op" is the voltage at which the calibrated element peaks at the SI's
+    # stated 1800 C, computed by calibrate_element_si.py at run time. The SI
+    # states 70 V, but its 70 V, 1800 C and 880 C do not agree with each other
+    # under its own pulsed power formula, and the temperatures are the
+    # measured ones. See RUNCARD-S9.md.
+    "voltage": "si-op", "period_s": 1.0, "duty": 0.05}
 TAU_S = 0.2
 DILUENT = "HE"
 
