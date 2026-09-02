@@ -1,5 +1,15 @@
 # Run card: Fig. S9 reaction orders on AramcoMech 2.0
 
+**Status: HELD.** The reactor closure every case here uses, the gas at the
+element temperature in a CSTR, is falsified by the paper's steady CJH points
+(`cjh_inversion.py`): at the residence time that reproduces the measured
+conversion, no single-temperature state carries the measured ethylene
+alongside its acetylene. Exponents computed on that closure would inherit
+the wrong reactor. The campaign does not run until a reactor picture that
+reproduces the CJH points exists; `boundary_layer_probe.py` is the pilot of
+that picture. The rest of this card stands as written for the day it does.
+
+
 Required by `CLAUDE.md` because the campaign exceeds ten CPU-minutes. Written
 and committed before the run starts, with the generator
 `tools/openmkm_dynamic/run_s9_orders.py`.

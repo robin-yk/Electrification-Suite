@@ -169,6 +169,14 @@ python3 tools/openmkm_dynamic/premise_probe.py summarize \
     tools/openmkm_dynamic/data/premise/rph-ch4co2/*.json
 ```
 
+The steady CJH inversion and the boundary-layer pilot:
+
+```bash
+python3 tools/openmkm_dynamic/cjh_inversion.py
+python3 tools/openmkm_dynamic/boundary_layer_probe.py --mechanism gri30.yaml \
+    --diluent AR --plate-c 1400 1470 --velocity-cm-s 0.4 1 2 5
+```
+
 The element calibration and its held-out test:
 
 ```bash
@@ -232,6 +240,51 @@ holds the whole charge at the outlet conversion, which is the state that makes
 benzene. Every one of the 1959 transient cases in this repository is a CSTR,
 and the physical device is a flow past a small carbon-fibre strip. Any
 benzene claim has to state which idealisation it came from.
+
+## The reactor picture, falsified by the steady CJH points
+
+Everything above, and every case in this repository, puts the reacting gas at
+the element's temperature: a CSTR, or the plug-flow limit, held at T(t) for
+a residence time. The paper's continuous Joule heating data are steady, so
+they test that picture with no pulse dynamics in the way. `cjh_inversion.py`
+does the test on the four CJH points of Figure 2 with a selectivity above
+zero. At each element temperature it finds the residence time that
+reproduces the measured conversion and reads the selectivities there.
+
+It fails, and in a way that names the physics. At the 1470 C point the
+measured conversion is 20 percent and needs a residence time of a few
+milliseconds; the model there has acetylene selectivity of 22 percent
+against a measured 63 and ethylene 49 against 19. Matching acetylene
+instead requires 77 percent conversion, where the model's ethylene is 2
+percent. Ethylene is a low-severity product and acetylene a high-severity
+one. No state of the mechanism at one temperature has both at the measured
+levels, in a CSTR or in plug flow. The reacting gas spans a range of
+severities at once, which is what a thermal boundary layer on a hot strip in
+a cold tube is and what a reactor at one temperature is not. The furnace
+points fail differently, with the model making two to three times the
+measured benzene at 1150 to 1200 C over seconds; the SI's own carbon balance
+declines there as solid carbon forms, and the mechanism has no solid phase,
+so the furnace is not a clean test and is not used as one.
+
+The cheapest model of the right class already exists and is verified:
+Cantera's one-dimensional stagnation solver, a cold feed flowing onto a
+plate held at the strip temperature, heating through the boundary layer and
+reacting where it is hot, with transport from the mechanism's own data.
+`boundary_layer_probe.py` runs it. On GRI, which has both C2 products, the
+1470 C plate at an inlet velocity of 1 cm/s gives conversion 21 percent with
+acetylene 86 and ethylene 12; the same mechanism in a CSTR at that
+conversion has ethylene near 2. The coexistence appears as soon as the gas
+has a temperature profile. The velocity is an effective parameter, one per
+case, standing in for contact time in a geometry that is not the device's;
+the plate temperature is the calibrated element temperature. The Aramco
+version of the same scan, which carries the C4 and C6 sinks GRI lacks, is
+the test that decides whether this picture reproduces the CJH points.
+
+Consequences. The S9 exponent campaign is held: exponents computed on the
+CSTR would inherit the wrong reactor. Any pulsed optimization on the CSTR is
+off the table for the same reason. The transient CSTR results in this
+repository remain valid as what they are, the response of the mechanism to
+a prescribed uniform temperature history, and are not the device.
 
 ## Standing caveats
 

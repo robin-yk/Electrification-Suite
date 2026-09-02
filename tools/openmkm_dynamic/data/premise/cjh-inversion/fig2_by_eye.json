@@ -1,0 +1,17 @@
+{"source": "Kwak et al. 2025 main text Figure 2, read by eye from the page raster; about +/- 1 unit on each axis; scoping data, not citable",
+ "feed": "CH4:0.05, HE:0.95", "flow_sccm": 50, "pressure_bar": 1,
+ "cjh": [
+  {"power_w": 110, "t_c": 1000, "x_ch4": 1.0,  "s_c2h2": null, "s_c2h4": null, "s_c6h6": null},
+  {"power_w": 150, "t_c": 1150, "x_ch4": 2.5,  "s_c2h2": 9,  "s_c2h4": 43, "s_c6h6": 0.0},
+  {"power_w": 180, "t_c": 1230, "x_ch4": 5.0,  "s_c2h2": 27, "s_c2h4": 42, "s_c6h6": 0.2},
+  {"power_w": 215, "t_c": 1400, "x_ch4": 16.0, "s_c2h2": 57, "s_c2h4": 27, "s_c6h6": 4.5},
+  {"power_w": 235, "t_c": 1470, "x_ch4": 20.0, "s_c2h2": 63, "s_c2h4": 19, "s_c6h6": 7.5}],
+ "rph": [
+  {"power_w": 35, "t_avg_c": 700, "t_peak_c": 1050, "x_ch4": 1.0,  "s_c2h2": null, "s_c2h4": null, "s_c6h6": null},
+  {"power_w": 52, "t_avg_c": 780, "t_peak_c": 1335, "x_ch4": 8.0,  "s_c2h2": 37, "s_c2h4": 37, "s_c6h6": 1.0},
+  {"power_w": 63, "t_avg_c": 830, "t_peak_c": 1510, "x_ch4": 19.0, "s_c2h2": 68, "s_c2h4": 19, "s_c6h6": 2.3},
+  {"power_w": 72, "t_avg_c": 845, "t_peak_c": 1596, "x_ch4": 27.0, "s_c2h2": 80, "s_c2h4": 13, "s_c6h6": 1.3}],
+ "ch": [
+  {"power_w": 375, "t_c": 1060, "x_ch4": 5.0,  "s_c2h2": 33, "s_c2h4": 26, "s_c6h6": 16},
+  {"power_w": 420, "t_c": 1150, "x_ch4": 17.0, "s_c2h2": 48, "s_c2h4": 15, "s_c6h6": 27},
+  {"power_w": 470, "t_c": 1200, "x_ch4": 35.0, "s_c2h2": 61, "s_c2h4": 9,  "s_c6h6": 25}]}
