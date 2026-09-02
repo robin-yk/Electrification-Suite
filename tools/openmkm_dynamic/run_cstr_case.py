@@ -396,7 +396,9 @@ def run_case(mech, p):
                         # reproducible from the record: two cases at the same
                         # voltage reach different temperatures under different
                         # loss scales, and nothing on file would say which.
-                        "element_loss_scale", "frozen",
+                        "element_loss_scale", "element_cp_scale",
+                        "element_contact_w_per_k", "element_p_avg_w",
+                        "element_p_reported_w", "frozen",
                         "t_min_K", "t_peak_K", "period_s", "duty", "waveform",
                         "mean_temperature_K", "ramp_up_fraction",
                         "ramp_down_fraction", "pressure_Pa", "tau_s", "feed",
@@ -527,23 +529,37 @@ def build_params(args):
         # the voltage, the period and its own thermal mass. They are recorded as
         # results so a case still reports the temperatures it actually reached.
         from element_drive import integrate_pulsed_element, profile_function
-        loss_scale = args.element_loss_scale
-        if isinstance(loss_scale, str):
-            # "si" means the value fitted to the measured trace rather than a
-            # number typed here. Computed, not transcribed.
+        loss_scale, cp_scale, contact = args.element_loss_scale, 1.0, 0.0
+        voltage = args.voltage
+        if isinstance(loss_scale, str) or isinstance(voltage, str):
+            # "si" means the values fitted to Scheme S1f rather than numbers
+            # typed here, and "si-op" the voltage that reaches the SI's
+            # operating peak with them. Computed, not transcribed.
             from calibrate_element_si import calibrate
-            loss_scale, _, _ = calibrate()
+            cal = calibrate()
+        if isinstance(loss_scale, str):
+            loss_scale, cp_scale, contact = (cal["loss_scale"], cal["cp_scale"],
+                                             cal["contact_w_per_k"])
+        if isinstance(voltage, str):
+            if not isinstance(args.element_loss_scale, str):
+                raise SystemExit("--voltage si-op needs --element-loss-scale si")
+            voltage = cal["operating_point"]["voltage_v"]
         drive = integrate_pulsed_element(
-            voltage=args.voltage, period=args.period_s, duty=args.duty,
-            ambient_c=args.t_min_c, loss_scale=loss_scale)
+            voltage=voltage, period=args.period_s, duty=args.duty,
+            ambient_c=args.t_min_c, loss_scale=loss_scale, cp_scale=cp_scale,
+            contact_conductance=contact)
         if not drive["converged"]:
             raise SystemExit("element drive did not reach a periodic state")
         p["_profile"] = profile_function(drive)
         p["t_peak_K"] = drive["t_peak_c"] + 273.15
         p["t_min_K"] = drive["t_min_c"] + 273.15
-        p["voltage_V"] = args.voltage
+        p["voltage_V"] = voltage
         p["drive_cycles"] = drive["cycles"]
         p["element_loss_scale"] = loss_scale
+        p["element_cp_scale"] = cp_scale
+        p["element_contact_w_per_k"] = contact
+        p["element_p_avg_w"] = drive["p_avg_w"]
+        p["element_p_reported_w"] = drive["p_reported_w"]
     p["mean_temperature_K"] = mean_temperature(p)
     p["substeps_per_cycle"] = len(phase_grid(p))
     return p
@@ -564,9 +580,13 @@ def add_common_args(parser):
     parser.add_argument("--frozen", action="store_true",
                         help="zero every reaction rate: the nonreacting rung "
                              "of the execution ladder")
-    parser.add_argument("--voltage", type=float, default=40.0,
+    parser.add_argument("--voltage", default=40.0,
+                        type=lambda v: v if v == "si-op" else float(v),
                         help="drive voltage; only used by --waveform physical, where "
-                             "it replaces --t-peak-c as the thing you actually set")
+                             "it replaces --t-peak-c as the thing you actually set. "
+                             "'si-op' is the voltage at which the calibrated element "
+                             "reaches the SI operating peak, computed by "
+                             "calibrate_element_si.py rather than typed")
     parser.add_argument("--ramp-up-fraction", type=float, default=0.05)
     parser.add_argument("--ramp-down-fraction", type=float, default=0.05)
     parser.add_argument("--pressure-atm", type=float, default=1.0)

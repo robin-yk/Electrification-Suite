@@ -87,6 +87,10 @@ def drive_defaults(**overrides):
         "gas_capacity_rate": HE_CAPACITY_RATE,
         "contact_conductance": 0.0,
         "loss_scale": 1.0,
+        # Scale on the element's heat capacity (mass times cp). The mass is
+        # stated in the SI and the cp table is generic carbon fibre, so this
+        # is the knob a pulsed measurement can move; the steady loss cannot.
+        "cp_scale": 1.0,
     }
     p.update({k: v for k, v in overrides.items() if v is not None})
     return p
@@ -101,15 +105,16 @@ def integrate_pulsed_element(max_cycles=400, tol_c=0.02, start_c=None, **overrid
 
     def deriv(t_c, on):
         pin = p["voltage"] ** 2 / cfp_resistance(t_c, p["element"]) if on else 0.0
-        return (pin - lumped_loss_power(t_c, p)) / (p["element"]["mass"] * cfp_heat_capacity(t_c))
+        return (pin - lumped_loss_power(t_c, p)) / (
+            p["element"]["mass"] * cfp_heat_capacity(t_c) * p["cp_scale"])
 
     T = p["ambient_c"] if start_c is None else start_c
     samples, cycles, converged = [], 0, False
-    t_peak = t_min = t_avg = 0.0
+    t_peak = t_min = t_avg = e_in = 0.0
     for c in range(max_cycles):
         start_t = T
         record = []
-        t_peak, t_min, t_avg = -1e30, 1e30, 0.0
+        t_peak, t_min, t_avg, e_in = -1e30, 1e30, 0.0, 0.0
         for i in range(steps):
             on = i < on_steps
             if i % 6 == 0:
@@ -117,6 +122,8 @@ def integrate_pulsed_element(max_cycles=400, tol_c=0.02, start_c=None, **overrid
             t_peak = max(t_peak, T)
             t_min = min(t_min, T)
             t_avg += T * dt
+            if on:
+                e_in += p["voltage"] ** 2 / cfp_resistance(T, p["element"]) * dt
             k1 = deriv(T, on)
             k2 = deriv(T + dt / 2 * k1, on)
             k3 = deriv(T + dt / 2 * k2, on)
@@ -130,8 +137,30 @@ def integrate_pulsed_element(max_cycles=400, tol_c=0.02, start_c=None, **overrid
     t_peak = max(t_peak, T)
     t_min = min(t_min, T)
     samples.append((1.0, T))
+    t_avg /= p["period"]
     return {"samples": samples, "t_peak_c": t_peak, "t_min_c": t_min,
-            "t_avg_c": t_avg / p["period"], "cycles": cycles, "converged": converged}
+            "t_avg_c": t_avg, "cycles": cycles, "converged": converged,
+            # Two powers. p_avg_w is the electrical energy per cycle over the
+            # period, integrated with R(T) as it actually was during the on
+            # time. p_reported_w is the SI's bookkeeping for pulsed power,
+            # P = V^2 t_heating / (R(T_avg) t_cycle), which evaluates R at the
+            # cycle-mean temperature; the x axis of Scheme S1f is this one.
+            "p_avg_w": e_in / p["period"],
+            "p_reported_w": p["voltage"] ** 2 * p["duty"]
+            / cfp_resistance(t_avg, p["element"])}
+
+
+def steady_temperature(power_w, tol_c=1e-3, **overrides):
+    """Continuous heating: the T at which the lumped loss equals power_w."""
+    p = drive_defaults(**overrides)
+    lo, hi = p["ambient_c"], 4000.0
+    while hi - lo > tol_c:
+        mid = 0.5 * (lo + hi)
+        if lumped_loss_power(mid, p) < power_w:
+            lo = mid
+        else:
+            hi = mid
+    return 0.5 * (lo + hi)
 
 
 def profile_function(profile):
@@ -166,15 +195,18 @@ def main():
     ap.add_argument("--ambient-c", type=float, default=25.0)
     ap.add_argument("--loss-scale", type=float, default=1.0,
                     help="scale on the radiating area; see calibrate_element_si.py")
+    ap.add_argument("--cp-scale", type=float, default=1.0,
+                    help="scale on the heat capacity; see calibrate_element_si.py")
     ap.add_argument("--samples", type=int, default=0,
                     help="print this many evenly spaced (phase, T) points")
     args = ap.parse_args()
     r = integrate_pulsed_element(voltage=args.voltage, period=args.period_s,
                                  duty=args.duty, ambient_c=args.ambient_c,
-                                 loss_scale=args.loss_scale)
+                                 loss_scale=args.loss_scale, cp_scale=args.cp_scale)
     out = {"voltage": args.voltage, "period_s": args.period_s, "duty": args.duty,
-           "loss_scale": args.loss_scale,
+           "loss_scale": args.loss_scale, "cp_scale": args.cp_scale,
            "t_peak_c": r["t_peak_c"], "t_min_c": r["t_min_c"], "t_avg_c": r["t_avg_c"],
+           "p_avg_w": r["p_avg_w"], "p_reported_w": r["p_reported_w"],
            "cycles": r["cycles"], "converged": r["converged"]}
     if args.samples:
         at = profile_function(r)

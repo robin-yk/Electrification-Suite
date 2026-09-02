@@ -36,10 +36,11 @@ one run, or about the plug-flow limit.
 | | value | source |
 |---|---|---|
 | mechanism | AramcoMech 2.0, 493 species, 2716 reactions | `tools/cantera/mechanisms/aramco20.yaml`, sha256 recorded per case |
-| drive | 70 V, 1 Hz, 5 percent duty | SI, Table S1 caption |
+| drive | `si-op`: the voltage at which the calibrated element peaks at 1800 C, 1 Hz, 5 percent duty | Fig. S9 caption states 70 V, T_peak about 1800 C, T_avg about 880 C; the three disagree under the SI's own power formula and the temperatures are the measured ones |
 | waveform | `physical`, integrated from the element energy balance | not a drawn trapezoid, see below |
-| element loss scale | `si`, fitted, not typed | `calibrate_element_si.py` |
-| element trajectory | T_peak 1729 C, T_min 525 C, T_avg 839 C | output of the above at 70 V |
+| element parameters | `si`: loss scale, clamp conduction and heat-capacity scale fitted to Scheme S1f, not typed | `calibrate_element_si.py` |
+| element trajectory | T_peak 1800 C by definition, T_avg 887 C, T_min about 500 C, 78 V | output of the above; T_avg is held out and the SI states 880 |
+| temperature uncertainty | 59 C rms on the peak, 31 C on the mean, the calibration's own residual | `calibrate_element_si.py` |
 | pressure | 1 atm | SI, Flow Control |
 | residence time | 0.2 s, fixed across every case | assumption, see risks |
 | diluent | helium | SI, Flow Control |
@@ -113,17 +114,22 @@ premise document already says so.
 
 ## Risks and what is assumed rather than known
 
-- **The operating point is not settled, and this is the largest risk.** At
-  tau 0.2 s with the calibrated element, ladder rung 3b reproduces the paper's
-  conversion, 18.6 percent against about 20, but not its selectivity: `S_C6H6`
-  comes out at 16.2 percent against a published figure below 5, and `S_C2H2` at
-  71.3 against above 80. The earlier trapezoid cases at 1400 to 1500 C were
-  closer on selectivity while being wrong about the waveform, so this is not a
-  regression to undo but a sign that a condition is still off. Two candidates:
-  tau, which is chosen rather than measured, and the quench floor, which the
-  calibration puts at about 525 C but which the IR camera could not have
-  measured, its range stopping at 500 C. A conditions scan settles which before
-  the orders campaign runs on top of either.
+- **The operating point was 71 C cold, and the rerun that checks the fix is
+  the gate.** The conditions scan and ladder rung 3b were driven at the stated
+  70 V on a two-point calibration and peaked at 1729 C. At tau 0.2 s they
+  reproduced the paper's conversion, 18.6 percent against about 20, but not its
+  selectivity: `S_C6H6` 16.2 percent against below 5, `S_C2H2` 71.3 against
+  above 80. The scan showed selectivity is set by temperature and conversion by
+  tau, and benzene moves 4.4 times per 100 C of peak, so a 71 C shortfall is a
+  factor of about three in benzene, which is the size of the miss. The S1f
+  calibration removes the shortfall by defining the operating point by its
+  peak. Three tau cases at that point decide whether the miss was the
+  temperature; if benzene is still above 10 percent at 20 percent conversion,
+  the next suspect is the reactor picture, not the mechanism.
+- **Temperature is known to about 60 C at the peak.** That is the calibration
+  residual, and it is a factor of about 2.4 on benzene. The exponents are less
+  exposed than absolute selectivities because the temperature is the same in
+  every case of a series, but any benzene row is still read with that band.
 - **Residence time.** 0.2 s is chosen, not measured. `VOID_CM3 = 11.03` in
   `pulse_common.py` has no source in either document, and no residence time is
   published. The exponents are the ratio of a response to a change in feed at
@@ -141,7 +147,7 @@ premise document already says so.
 - **No condensed phase.** Results carry `solid_carbon_modeled: false`. The C4
   and C6 numbers are gas hydrocarbons and are not soot. The experimental carbon
   balance itself declines above 1150 to 1200 C where solid carbon appears, and
-  this element runs to 1729 C.
+  this element runs to 1800 C.
 - **Benzene is quantified semi-quantitatively.** The SI says so: the FID uses
   Effective Carbon Number response factors for species lacking a standard. The
   C6H6 exponents carry that on the measured side.

@@ -83,14 +83,33 @@ off the panel at 1 Hz and 5 percent duty it peaks near 1050 C and floors near
 700 C and which reads back as 695 C. That panel is not the operating point: it
 is a lower-power case, and the operating point has no published trace.
 
-`calibrate_element_si.py` fits the lumped element model to those two numbers
-with two free parameters, the unstated drive voltage for that panel and a scale
-on the radiating area, the latter because the model uses the bare strip
-footprint and the real CFP is porous with the feed passing through it. The fit
-is then asked for two numbers it never saw, the voltage that reaches T_peak
-1800 C and the T_avg that comes with it, and both land within a few percent of
-the 70 V and 880 C the SI states. On that calibration the operating-point floor
-is near 530 C, not 830 C and not 400 C, over a swing of roughly 1270 C.
+`calibrate_element_si.py` once fitted the lumped element model to those two
+numbers with two free parameters, which is a solve, not a calibration, and
+then reported agreement with the stated operating point as if it were a test.
+It now fits Scheme S1f instead, the panel that plots temperature against
+electrical power: the steady-state line under continuous heating, read at 29
+powers by `digitize_s1f.py`, and the pulsed peak and cycle mean at five powers
+each. The steady line has no thermal mass in it and fixes the loss function
+alone; radiation from the strip outline is not enough, and a linear conduction
+term into the copper clamps is needed to bring its residual from 29 C to 9 C.
+The pulsed points then test the thermal mass, and the SI's mass with a generic
+carbon-fibre cp is 19 percent short, so a scale on the heat capacity is fitted
+to the peaks. What is left over is the calibration's honest error: 59 C rms on
+the peaks and 31 C on the means, over a factor of 2.5 in power. The largest
+single miss, 108 C at the highest power, is on the point that sits under the
+IR camera's 1800 C ceiling and may be the instrument rather than the model;
+that is unverified.
+
+The operating point is defined by its temperatures, not its voltage. The SI's
+three stated numbers do not agree with each other under the SI's own pulsed
+power formula, P = V^2 t_heating / (R(T_avg) t_cycle): 70 V comes to 68 W,
+which on Scheme S1f reaches a peak near 1560 C, while the 1780 C point sits at
+91 W, which the formula turns into 81 V on a 75 V supply. The camera measured
+the temperatures and the voltage is a setting, so T_peak 1800 C is the anchor.
+At that peak the fitted model gives T_avg 887 C against the stated 880, a
+held-out agreement on the shape of the pulse, and a floor near 500 C. The
+voltage it needs is 78 V. Every number in this paragraph is printed by the
+command in the reproduction section.
 
 The floor is not published, and there is a reason it could not be. The Optris
 PI 1M covers 500 to 1800 C, so both ends of the operating pulse sit on the
@@ -218,10 +237,14 @@ benzene claim has to state which idealisation it came from.
 
 - `T_min = 400 C` and T_peak 1400 to 1500 C in the twelve committed cases are
   both wrong, as above. The calibrated operating point is T_peak 1800 C over a
-  floor near 530 C. No claim about mean temperature is made from these runs.
-- The element calibration is fitted to two digitized points and tested on two
-  stated ones. It is not a measurement, and the digitized pair carries the
-  thickness of a printed trace.
+  floor near 500 C. No claim about mean temperature is made from these runs.
+- The element calibration is fitted to Scheme S1f and its residual is the
+  temperature uncertainty of every pulsed case: about 60 C on the peak and 30 C
+  on the mean. With benzene selectivity moving 4.4 times per 100 C, that is a
+  factor of about 2.4 on any benzene number before the mechanism is consulted.
+- The six conditions-scan cases and ladder rung 3b were run on the earlier
+  two-point calibration, at 70 V, and reached a peak of 1729 C rather than
+  1800. They are 71 C cold at the peak and 48 C cold on the mean.
 - Benzene is quantified on an Agilent 7890 FID covering C1 to C10+, with
   Effective Carbon Number response factors for species lacking a standard,
   which the SI itself calls semi-quantitative. The MicroGC TCD sees only
