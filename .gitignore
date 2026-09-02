@@ -14,3 +14,6 @@ __pycache__/
 # live campaign logs; the data files themselves are committed
 tools/openmkm_dynamic/data/feed-grid/*.log
 tools/openmkm_dynamic/data/wide/*.log
+
+# per-case solver logs of the C2 pulse study; the JSON results are the record
+tools/openmkm_dynamic/data/c2pulse/*.log
