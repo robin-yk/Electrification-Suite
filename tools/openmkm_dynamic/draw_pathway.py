@@ -27,7 +27,7 @@ FONT = "Arial, Helvetica, 'Liberation Sans', sans-serif"
 NAME = {"CH4": "CH4", "CHx": "CH3", "COx": "CO2, CO", "C2H6": "C2H6", "C2H4": "C2H4", "C2H2": "C2H2",
         "C3": "C3", "C4H2": "C4H2", "C4": "C4", "C5": "C5", "C6H6": "C6H6",
         "polyyne": "C6H2", "C6": "C6", "C7+": "C7+"}
-NOTE = {"CHx": "methyl", "COx": "oxygenates", "C3": "C3H3, C3H4", "C4": "C4H4, C4H6", "C4H2": "diacetylene",
+NOTE = {"CHx": "methyl", "COx": "CO2 in, CO out", "C3": "C3H3, C3H4", "C4": "C4H4, C4H6", "C4H2": "diacetylene",
         "C6H6": "benzene", "polyyne": "triacetylene", "C6": "fulvene, C6H4", "C5": "C5H6",
         "C7+": "larger"}
 KIND = {"CH4": "ladder", "CHx": "ladder", "COx": "ladder", "C2H6": "ladder", "C2H4": "ladder", "C2H2": "ladder",
@@ -121,9 +121,17 @@ def edge_kind(a, b):
     return "ladder"
 
 
-def panel(r, title, threshold, ox, oy):
+def co2_carbon_pct(feed):
+    """Carbon fed as CO2, as percent of the carbon fed as methane."""
+    x = {m.group(1).upper(): float(m.group(2)) for m in re.finditer(r"(\w+):([\d.]+)", feed)}
+    return 100 * x.get("CO2", 0.0) / x["CH4"]
+
+
+def panel(r, title, threshold, ox, oy, co2_pct):
     edges = r["edges_pct_fed"]
-    out = r["outflow_pct_fed"]
+    # The COx lump leaves with the CO2 carbon it was fed; show only what it
+    # gained from methane carbon, so the box reads the same way as the others.
+    out = {l: (v - co2_pct if l == "COx" else v) for l, v in r["outflow_pct_fed"].items()}
     drawn, dropped = [], 0.0
     for k, v in edges.items():
         if v >= threshold:
@@ -168,8 +176,9 @@ def panel(r, title, threshold, ox, oy):
             parts.append(f'<text x="{x}" y="{y + 6}" text-anchor="middle" font-size="9.5" '
                          f'fill="#666">{sub(note)}</text>')
         if share >= 0.05:
+            word = "net +" if l == "COx" else "out "
             parts.append(f'<text x="{x}" y="{y + 19}" text-anchor="middle" font-size="10" '
-                         f'fill="#222">out {share:.1f} %</text>')
+                         f'fill="#222">{word}{share:.1f} %</text>')
     parts.append(f'<text x="{W/2}" y="{H - 10}" text-anchor="middle" font-size="10" fill="#777">'
                  f'edges under {threshold} % not drawn, {dropped:.1f} % of fed carbon in total</text>')
     parts.append("</g>")
@@ -208,6 +217,7 @@ def main():
     left = f"CJH steady, {s['t_c']:.0f} °C, X = {100 * s['x_ch4']:.1f} %"
     right = (f"RPH pulse, peak {p['t_peak_c']:.0f} °C, X = "
              f"{100 * p['x_ch4_last_cycle']:.1f} %")
+    co2_pct = co2_carbon_pct(r["feed"])
     feed = re.sub(r"(\w+):([\d.]+)",
                   lambda m: f"{100 * float(m.group(2)):.0f} % {sub(m.group(1).replace('HE', 'He'))}",
                   r["feed"])
@@ -218,9 +228,9 @@ def main():
            f'viewBox="0 0 {total_w} {total_h}" font-family="{FONT}">',
            markers(),
            '<rect width="100%" height="100%" fill="#fff"/>',
-           panel(s, left, args.threshold, 0, 0),
+           panel(s, left, args.threshold, 0, 0, co2_pct),
            f'<line x1="{W + 12}" y1="16" x2="{W + 12}" y2="{H - 4}" stroke="#d0d0d0" stroke-dasharray="4 4"/>',
-           panel(p, right, args.threshold, W + 24, 0),
+           panel(p, right, args.threshold, W + 24, 0, co2_pct),
            f'<text x="{total_w/2}" y="{H + 22}" text-anchor="middle" font-size="11" fill="#444">{sub_title}</text>',
            legend(total_w / 2 - 380, H + 48),
            "</svg>"]

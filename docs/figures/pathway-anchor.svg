@@ -185,7 +185,7 @@
 <text x="424.0" y="601.2" text-anchor="middle" font-size="10" fill="#222">out 0.1 %</text>
 <text x="300.0" y="630" text-anchor="middle" font-size="10" fill="#777">edges under 0.3 % not drawn, 1.4 % of fed carbon in total</text>
 </g>
-<text x="612.0" y="662" text-anchor="middle" font-size="11" fill="#444">Carbon flux as percent of the carbon fed. Feed 5 % CH<tspan dy="3.2" font-size="72%">4</tspan><tspan dy="-3.2">​</tspan>, 95 % He, residence time 0.2 s, 1 atm, AramcoMech 2.0.</text>
+<text x="612.0" y="662" text-anchor="middle" font-size="11" fill="#444">Carbon flux as percent of the carbon fed as methane. Feed 5 % CH<tspan dy="3.2" font-size="72%">4</tspan><tspan dy="-3.2">​</tspan>, 95 % He, residence time 0.2 s, 1 atm, AramcoMech 2.0.</text>
 <line x1="232.0" y1="688" x2="260.0" y2="688" stroke="#555555" stroke-width="3" marker-end="url(#arr-ladder)"/>
 <text x="270.0" y="692" font-size="11" fill="#333">dehydrogenation and growth</text>
 <line x1="422.0" y1="688" x2="450.0" y2="688" stroke="#c0392b" stroke-width="3" marker-end="url(#arr-ring)"/>

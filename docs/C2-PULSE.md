@@ -170,6 +170,35 @@ nothing about the shape, sets the split (round 3), and it is also why the
 polyyne route matters: the carbon that leaves as C4H2 and C6H2 in the model
 is the carbon that would deposit in the device.
 
+### The same diagram for the CH4/CO2 feed
+
+`docs/figures/pathway-ch4co2-tau0.2.svg` repeats the analysis for the feed the
+device actually runs, 5 % CH4, 5 % CO2 in helium at tau 0.2 s
+(`data/c2pulse/pathway-ch4co2-tau0.2.json`, steady matched at 1202 C to the
+pulse's 20.3 % conversion). Numbers are percent of the carbon fed as methane;
+the CO2 carbon, another 100 %, enters and leaves the CO2/CO box and only the
+net gain of that box is quoted.
+
+| carbon flow | steady 1202 C | pulse, peak 1800 C |
+|---|---|---|
+| into benzene | 11.2 | 8.6 |
+| out of benzene | 0.6 | 7.0 |
+| benzene leaving the reactor | 10.8 | 1.2 |
+| C4H2 back to C2H2 | 0.2 | 5.3 |
+| acetylene leaving the reactor | 3.7 | 5.1 |
+| methane carbon leaving as CO | 0.1 | 13.1 |
+
+The ring picture is the one above: benzene forms both ways and the pulse
+cracks it at the peak. CO2 changes one thing, and only in the pulse. Steady at
+1202 C the CO2 is a spectator, 0.1 % of the methane carbon reaches CO. At the
+1800 C peak the CO2 oxidises the intermediates, 5.5 from acetylene, 2.0 from
+methyl, 1.7 from C3, and 13.1 % of the methane carbon leaves as CO. That is
+the largest single sink in the pulse, larger than benzene and acetylene
+together, and it is where the pulse's carbon selectivity to hydrocarbons goes.
+The CO2 conversion this implies is about 19 % in the pulse (from the CO2 and CO
+mass fractions in the case file); the steady CO2 conversion at the matched
+temperature was not computed separately.
+
 ## Standing caveats
 
 - Uniform-temperature CSTR at the element temperature. The device is not
