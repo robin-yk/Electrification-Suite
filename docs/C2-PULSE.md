@@ -37,9 +37,11 @@ percent duty), AramcoMech 2.0:
 The pulse protects C2 by three to thirty times at matched conversion and
 moves the C2 from ethylene to acetylene. The steady element reaches the
 same conversion at about 1200 C, held for the whole residence time, which
-is the temperature and time at which benzene forms; the pulse converts at
-1500 to 1800 C for tens of milliseconds and spends the rest of the cycle
-too cold to make benzene.
+is the temperature at which benzene forms and survives. The pulse also
+forms benzene, on the way through 1200 to 1400 C, and then takes it apart
+at the peak; the flux section below has the numbers. An earlier draft of
+this paragraph said the pulse was too cold for most of the cycle to make
+benzene, which the flux diagram showed to be wrong.
 
 ## The lumped series model, and why it is a screen
 

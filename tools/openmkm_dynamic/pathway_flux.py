@@ -7,8 +7,9 @@ moved from each reactant to each product is charged to a species-to-species
 edge, integrated over one converged cycle of the pulsed case and over unit
 time for the steady CSTR solved at the same conversion. Edges are then summed
 into a dozen lumps (CH4, CHx, C2H6, C2H4, C2H2, C3, C4H2, other C4, C5, C6H6,
-polyynes, other C6, C7+) and written as percent of the carbon fed, so the two
-diagrams share a scale.
+polyynes, other C6, C7+) and written as percent of the carbon fed as
+methane, so the two diagrams share a scale, and so do plates for feeds with
+and without CO2.
 
 Element-flux convention, the same one Cantera's ReactionPathDiagram uses: a
 reaction with net rate q moves q nu_i nC_i carbon out of reactant i and
@@ -40,7 +41,7 @@ sys.path.insert(0, str(HERE))
 import run_cstr_case as rc                                    # noqa: E402
 
 PRESSURE_PA = 101325.0
-LUMP_ORDER = ["CH4", "CHx", "C2H6", "C2H4", "C2H2", "C3", "C4H2", "C4",
+LUMP_ORDER = ["CH4", "CHx", "COx", "C2H6", "C2H4", "C2H2", "C3", "C4H2", "C4",
               "C5", "C6H6", "polyyne", "C6", "C7+"]
 
 
@@ -50,7 +51,9 @@ def lump_of(name, n_c):
     if name == "CH4":
         return "CH4"
     if n_c == 1:
-        return "CHx"
+        # CO2 and CO carry one carbon each; on the CH4/CO2 feed they are
+        # the feed and its reforming product, not methane fragments.
+        return "COx" if "O" in name else "CHx"
     if n_c == 2:
         if name in ("C2H6", "C2H5"):
             return "C2H6"
@@ -127,6 +130,16 @@ class FluxAccumulator:
         return out
 
 
+def methane_carbon(gas, n_feed):
+    """Carbon fed as methane, the basis of every percentage written here.
+
+    On the CH4/CO2 feed half the fed carbon is CO2, which barely reacts at
+    these temperatures; normalising on methane carbon keeps a plate for that
+    feed on the same scale as one for methane in helium.
+    """
+    return float(n_feed[gas.species_index("CH4")])
+
+
 def steady_fluxes(ct, mech, feed, t_c, tau):
     gas = ct.Solution(mech)
     gas.TPX = t_c + 273.15, PRESSURE_PA, feed
@@ -142,7 +155,7 @@ def steady_fluxes(ct, mech, feed, t_c, tau):
     mw = np.asarray(gas.molecular_weights)
     n_feed = mdot * np.asarray(f.Y) / mw                     # kmol/s per species
     n_out = mdot * np.asarray(r.phase.Y) / mw
-    carbon_fed = float((n_feed * acc.n_c).sum())
+    carbon_fed = methane_carbon(gas, n_feed)
     x = 1.0 - n_out[gas.species_index("CH4")] / n_feed[gas.species_index("CH4")]
     out = acc.outflow_lumps(n_out)
     return {"t_c": t_c, "tau_s": tau, "x_ch4": float(x),
@@ -207,7 +220,7 @@ def pulsed_fluxes(ct, mech, case, cycles):
     y_feed.TPX = p["t_min_K"], p["pressure_Pa"], p["feed"]
     n_feed = state["mdot_dt"] * np.asarray(y_feed.Y) / mw
     n_out = state["w_out"] / mw
-    carbon_fed = float((n_feed * acc.n_c).sum())
+    carbon_fed = methane_carbon(gas, n_feed)
     out = acc.outflow_lumps(n_out)
     return {"cycles_integrated": cycles,
             "x_ch4_last_cycle": cyc[-1]["ch4_conversion"],

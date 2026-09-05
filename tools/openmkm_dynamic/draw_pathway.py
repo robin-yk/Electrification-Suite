@@ -24,13 +24,13 @@ from pathlib import Path
 FONT = "Arial, Helvetica, 'Liberation Sans', sans-serif"
 
 # Display names; digits after an element letter become subscripts.
-NAME = {"CH4": "CH4", "CHx": "CH3", "C2H6": "C2H6", "C2H4": "C2H4", "C2H2": "C2H2",
+NAME = {"CH4": "CH4", "CHx": "CH3", "COx": "CO2, CO", "C2H6": "C2H6", "C2H4": "C2H4", "C2H2": "C2H2",
         "C3": "C3", "C4H2": "C4H2", "C4": "C4", "C5": "C5", "C6H6": "C6H6",
         "polyyne": "C6H2", "C6": "C6", "C7+": "C7+"}
-NOTE = {"CHx": "methyl", "C3": "C3H3, C3H4", "C4": "C4H4, C4H6", "C4H2": "diacetylene",
+NOTE = {"CHx": "methyl", "COx": "oxygenates", "C3": "C3H3, C3H4", "C4": "C4H4, C4H6", "C4H2": "diacetylene",
         "C6H6": "benzene", "polyyne": "triacetylene", "C6": "fulvene, C6H4", "C5": "C5H6",
         "C7+": "larger"}
-KIND = {"CH4": "ladder", "CHx": "ladder", "C2H6": "ladder", "C2H4": "ladder", "C2H2": "ladder",
+KIND = {"CH4": "ladder", "CHx": "ladder", "COx": "ladder", "C2H6": "ladder", "C2H4": "ladder", "C2H2": "ladder",
         "C3": "grow", "C4": "grow", "C5": "grow", "C6H6": "ring", "C6": "ring", "C7+": "ring",
         "C4H2": "polyyne", "polyyne": "polyyne"}
 FILL = {"ladder": "#f4f4f4", "grow": "#fbf6ea", "ring": "#fbeeec", "polyyne": "#eaf1f7"}
@@ -38,7 +38,7 @@ EDGE = {"ladder": "#555555", "ring": "#c0392b", "crack": "#e67e22", "polyyne": "
 
 # (column, row): the dehydrogenation ladder runs down the left, growth to
 # the right, rings top right, polyynes bottom.
-POS = {"CH4": (0, 0), "CHx": (0, 1), "C2H6": (0, 2), "C2H4": (0, 3), "C2H2": (0, 4.2),
+POS = {"CH4": (0, 0), "CHx": (0, 1), "COx": (1.05, 0), "C2H6": (0, 2), "C2H4": (0, 3), "C2H2": (0, 4.2),
        "C3": (1.05, 3.3), "C4": (2.05, 2.6), "C6H6": (2.0, 0.9), "C6": (3.05, 1.6),
        "C5": (3.05, 3.2), "C7+": (3.05, 4.2), "C4H2": (1.2, 5.3), "polyyne": (2.4, 5.3)}
 W, H = 600, 640
@@ -211,7 +211,7 @@ def main():
     feed = re.sub(r"(\w+):([\d.]+)",
                   lambda m: f"{100 * float(m.group(2)):.0f} % {sub(m.group(1).replace('HE', 'He'))}",
                   r["feed"])
-    sub_title = (f"Carbon flux as percent of the carbon fed. Feed {feed}, "
+    sub_title = (f"Carbon flux as percent of the carbon fed as methane. Feed {feed}, "
                  f"residence time {r['tau_s']} s, 1 atm, AramcoMech 2.0.")
     total_w, total_h = 2 * W + 24, H + 70
     svg = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{total_w}" height="{total_h}" '
