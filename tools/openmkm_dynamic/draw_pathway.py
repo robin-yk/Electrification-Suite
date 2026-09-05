@@ -27,9 +27,9 @@ LABEL = {"CH4": "CH4", "CHx": "CH3 / CHx", "C2H6": "C2H6", "C2H4": "C2H4",
 POS = {"CH4": (0, 0), "CHx": (0, 1), "C2H6": (0, 2), "C2H4": (0, 3), "C2H2": (0, 4),
        "C3": (1, 2), "C4": (2, 2), "C4H2": (1, 5), "C5": (2, 3.5),
        "C6H6": (2, 1), "polyyne": (2, 5), "C6": (3, 1.5), "C7+": (3, 3)}
-W, H = 560, 520
-X0, Y0, DX, DY = 90, 60, 135, 88
-NODE_W, NODE_H = 96, 30
+W, H = 580, 600
+X0, Y0, DX, DY = 90, 70, 140, 96
+NODE_W, NODE_H = 100, 40
 
 
 def xy(l):
@@ -73,7 +73,14 @@ def panel(r, title, threshold, ox, oy):
             "#1f5f8b" if b in ("C4H2", "polyyne") else "#444")
         parts.append(f'<path d="{d}" fill="none" stroke="{color}" stroke-width="{width:.1f}" '
                      f'stroke-opacity="0.75" marker-end="url(#arr)"/>')
-        parts.append(f'<text x="{mx:.1f}" y="{my - 4:.1f}" text-anchor="middle" font-size="11" '
+        # label beside the curve, pushed off the line so the ladder edges
+        # do not print on top of their own stroke
+        ax, ay = xy(a)
+        bx, by = xy(b)
+        n = math.hypot(bx - ax, by - ay) or 1.0
+        px, py = -(by - ay) / n, (bx - ax) / n
+        lx, ly = mx + px * 11, my + py * 11 + 4
+        parts.append(f'<text x="{lx:.1f}" y="{ly:.1f}" text-anchor="middle" font-size="11" '
                      f'fill="{color}" paint-order="stroke" stroke="#fff" stroke-width="3">{v:.1f}</text>')
     for l in r.get("lumps", POS):
         if l not in POS:
@@ -83,9 +90,9 @@ def panel(r, title, threshold, ox, oy):
         fill = "#fff"
         parts.append(f'<rect x="{x - NODE_W/2}" y="{y - NODE_H/2}" width="{NODE_W}" height="{NODE_H}" '
                      f'rx="5" fill="{fill}" stroke="#222" stroke-width="1.2"/>')
-        parts.append(f'<text x="{x}" y="{y + 4}" text-anchor="middle" font-size="11.5">{LABEL[l]}</text>')
+        parts.append(f'<text x="{x}" y="{y - 2}" text-anchor="middle" font-size="11.5">{LABEL[l]}</text>')
         if share >= 0.05:
-            parts.append(f'<text x="{x}" y="{y + NODE_H/2 + 13}" text-anchor="middle" font-size="10.5" '
+            parts.append(f'<text x="{x}" y="{y + 13}" text-anchor="middle" font-size="10.5" '
                          f'fill="#555">out {share:.1f} %</text>')
     parts.append(f'<text x="8" y="{H - 8}" font-size="10" fill="#666">'
                  f'edges under {threshold} % not drawn: {dropped:.1f} % of fed carbon in total</text>')
@@ -110,8 +117,8 @@ def main():
            f"AramcoMech 2.0. Red: into rings. Blue: into polyynes.")
     svg = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{2*W + 20}" height="{H + 40}" '
            f'viewBox="0 0 {2*W + 20} {H + 40}" font-family="Helvetica, Arial, sans-serif">',
-           '<defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" '
-           'markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#333"/></marker></defs>',
+           '<defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" '
+           'markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#333"/></marker></defs>',
            f'<rect width="100%" height="100%" fill="#fff"/>',
            f'<text x="{W + 10}" y="{H + 28}" text-anchor="middle" font-size="11" fill="#444">{sub}</text>',
            panel(s, left, args.threshold, 0, 0),

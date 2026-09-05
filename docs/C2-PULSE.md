@@ -137,6 +137,37 @@ knob, and the one selectivity knob the element has, the peak, is pinned
 by its material ceiling. The 0.5 s case needs 97 V against the SI's 75 V
 supply; it is a model point, not an operable one.
 
+## Where the carbon goes: the flux diagram
+
+`pathway_flux.py` charges every reaction's rate to species-to-species carbon
+edges and integrates them over one cycle of the anchor case and over unit
+time for the steady CSTR at the same conversion; `draw_pathway.py` draws
+both as `docs/figures/pathway-anchor.svg`. Numbers below are percent of the
+carbon fed and come from `data/c2pulse/pathway-anchor.json`.
+
+The route to benzene is the same in both: acetylene and methyl make C3
+(propargyl, C3H3), and C3 pairs into the ring. What differs is what happens
+to the ring afterwards.
+
+| carbon flow | steady 1209 C | pulse, peak 1800 C |
+|---|---|---|
+| into benzene (C3 and C6 to C6H6) | 12.5 | 14.5 |
+| out of benzene (to C4H2, C2H2, other C6) | under 0.3 | 10.3 |
+| benzene leaving the reactor | 12.1 | 4.1 |
+| C4H2 back to C2H2 | under 0.3 | 6.7 |
+| acetylene leaving the reactor | 4.2 | 14.6 |
+
+The pulse makes more benzene than the steady element, not less: 14.5
+against 12.5 percent of the fed carbon enters the ring, most of it on the
+way up and down through 1200 to 1400 C. At the 1800 C peak the ring cracks,
+5.9 to diacetylene and 3.1 straight back to acetylene, and the diacetylene
+cracks too, 6.7 back to acetylene. So the low benzene of the pulse is not
+the ring failing to form, it is the ring being taken apart at the peak and
+the fragments frozen as acetylene in the quench. This is why the peak, and
+nothing about the shape, sets the split (round 3), and it is also why the
+polyyne route matters: the carbon that leaves as C4H2 and C6H2 in the model
+is the carbon that would deposit in the device.
+
 ## Standing caveats
 
 - Uniform-temperature CSTR at the element temperature. The device is not

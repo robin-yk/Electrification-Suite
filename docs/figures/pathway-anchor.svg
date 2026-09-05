@@ -1,0 +1,186 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="640" viewBox="0 0 1180 640" font-family="Helvetica, Arial, sans-serif">
+<defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#333"/></marker></defs>
+<rect width="100%" height="100%" fill="#fff"/>
+<text x="590" y="628" text-anchor="middle" font-size="11" fill="#444">Carbon flux, percent of carbon fed. Feed CH4:0.05, HE:0.95, tau 0.2 s, AramcoMech 2.0. Red: into rings. Blue: into polyynes.</text>
+<g transform="translate(0,0)">
+<text x="290.0" y="24" text-anchor="middle" font-size="16" font-weight="600">CJH steady, 1209 C, X 21.4 %</text>
+<path d="M90.0,102.0 Q76.0,118.0 90.0,134.0" fill="none" stroke="#444" stroke-width="9.1" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="65.0" y="122.0" text-anchor="middle" font-size="11" fill="#444" paint-order="stroke" stroke="#fff" stroke-width="3">25.4</text>
+<path d="M90.0,198.0 Q76.0,214.0 90.0,230.0" fill="none" stroke="#444" stroke-width="7.4" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="65.0" y="218.0" text-anchor="middle" font-size="11" fill="#444" paint-order="stroke" stroke="#fff" stroke-width="3">16.2</text>
+<path d="M90.0,294.0 Q76.0,310.0 90.0,326.0" fill="none" stroke="#444" stroke-width="7.1" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="65.0" y="314.0" text-anchor="middle" font-size="11" fill="#444" paint-order="stroke" stroke="#fff" stroke-width="3">14.3</text>
+<path d="M90.0,390.0 Q76.0,406.0 90.0,422.0" fill="none" stroke="#444" stroke-width="6.2" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="65.0" y="410.0" text-anchor="middle" font-size="11" fill="#444" paint-order="stroke" stroke="#fff" stroke-width="3">10.7</text>
+<path d="M122.4,428.1 Q171.3,366.2 197.6,287.9" fill="none" stroke="#444" stroke-width="5.7" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="180.2" y="376.7" text-anchor="middle" font-size="11" fill="#444" paint-order="stroke" stroke="#fff" stroke-width="3">8.8</text>
+<path d="M275.4,243.9 Q300.0,214.0 324.6,184.1" fill="none" stroke="#b03a2e" stroke-width="5.6" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="306.2" y="227.1" text-anchor="middle" font-size="11" fill="#b03a2e" paint-order="stroke" stroke="#fff" stroke-width="3">8.3</text>
+<path d="M135.4,184.1 Q152.1,225.5 184.6,243.9" fill="none" stroke="#444" stroke-width="5.0" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="145.9" y="238.6" text-anchor="middle" font-size="11" fill="#444" paint-order="stroke" stroke="#fff" stroke-width="3">6.2</text>
+<path d="M284.2,256.6 Q372.4,251.8 455.8,219.4" fill="none" stroke="#b03a2e" stroke-width="4.3" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="374.2" y="266.6" text-anchor="middle" font-size="11" fill="#b03a2e" paint-order="stroke" stroke="#fff" stroke-width="3">4.4</text>
+<path d="M458.0,203.6 Q444.5,176.8 422.0,176.4" fill="none" stroke="#b03a2e" stroke-width="4.3" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="448.1" y="170.4" text-anchor="middle" font-size="11" fill="#b03a2e" paint-order="stroke" stroke="#fff" stroke-width="3">4.3</text>
+<path d="M135.4,339.9 Q167.9,321.5 184.6,280.1" fill="none" stroke="#444" stroke-width="4.0" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="174.1" y="334.6" text-anchor="middle" font-size="11" fill="#444" paint-order="stroke" stroke="#fff" stroke-width="3">3.4</text>
+<path d="M285.0,262.0 Q300.0,276.0 315.0,262.0" fill="none" stroke="#444" stroke-width="3.9" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="300.0" y="291.0" text-anchor="middle" font-size="11" fill="#444" paint-order="stroke" stroke="#fff" stroke-width="3">3.4</text>
+<path d="M318.0,272.4 Q225.5,296.8 142.0,347.6" fill="none" stroke="#444" stroke-width="3.3" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="221.9" y="290.4" text-anchor="middle" font-size="11" fill="#444" paint-order="stroke" stroke="#fff" stroke-width="3">2.0</text>
+<path d="M324.6,280.1 Q222.1,346.5 135.4,435.9" fill="none" stroke="#444" stroke-width="3.1" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="215.9" y="341.4" text-anchor="middle" font-size="11" fill="#444" paint-order="stroke" stroke="#fff" stroke-width="3">1.8</text>
+<path d="M90.0,230.0 Q90.0,166.0 90.0,102.0" fill="none" stroke="#444" stroke-width="3.0" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="101.0" y="170.0" text-anchor="middle" font-size="11" fill="#444" paint-order="stroke" stroke="#fff" stroke-width="3">1.6</text>
+<path d="M90.0,134.0 Q104.0,118.0 90.0,102.0" fill="none" stroke="#444" stroke-width="2.9" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="115.0" y="122.0" text-anchor="middle" font-size="11" fill="#444" paint-order="stroke" stroke="#fff" stroke-width="3">1.4</text>
+<path d="M142.0,176.4 Q225.5,227.2 318.0,251.6" fill="none" stroke="#444" stroke-width="2.8" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="221.9" y="241.6" text-anchor="middle" font-size="11" fill="#444" paint-order="stroke" stroke="#fff" stroke-width="3">1.2</text>
+<path d="M90.0,198.0 Q76.0,262.0 90.0,326.0" fill="none" stroke="#444" stroke-width="2.7" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="65.0" y="266.0" text-anchor="middle" font-size="11" fill="#444" paint-order="stroke" stroke="#fff" stroke-width="3">1.1</text>
+<path d="M90.0,326.0 Q104.0,214.0 90.0,102.0" fill="none" stroke="#444" stroke-width="2.7" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="115.0" y="218.0" text-anchor="middle" font-size="11" fill="#444" paint-order="stroke" stroke="#fff" stroke-width="3">1.1</text>
+<path d="M184.6,280.1 Q152.1,298.5 135.4,339.9" fill="none" stroke="#444" stroke-width="2.7" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="145.9" y="293.4" text-anchor="middle" font-size="11" fill="#444" paint-order="stroke" stroke="#fff" stroke-width="3">1.1</text>
+<path d="M184.6,243.9 Q167.9,202.5 135.4,184.1" fill="none" stroke="#444" stroke-width="2.4" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="174.1" y="197.4" text-anchor="middle" font-size="11" fill="#444" paint-order="stroke" stroke="#fff" stroke-width="3">0.8</text>
+<path d="M346.0,290.8 Q287.4,399.9 254.0,521.2" fill="none" stroke="#1f5f8b" stroke-width="2.0" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="277.5" y="399.1" text-anchor="middle" font-size="11" fill="#1f5f8b" paint-order="stroke" stroke="#fff" stroke-width="3">0.4</text>
+<rect x="40.0" y="50.0" width="100" height="40" rx="5" fill="#fff" stroke="#222" stroke-width="1.2"/>
+<text x="90" y="68" text-anchor="middle" font-size="11.5">CH4</text>
+<text x="90" y="83" text-anchor="middle" font-size="10.5" fill="#555">out 78.6 %</text>
+<rect x="40.0" y="146.0" width="100" height="40" rx="5" fill="#fff" stroke="#222" stroke-width="1.2"/>
+<text x="90" y="164" text-anchor="middle" font-size="11.5">CH3 / CHx</text>
+<text x="90" y="179" text-anchor="middle" font-size="10.5" fill="#555">out 0.1 %</text>
+<rect x="40.0" y="242.0" width="100" height="40" rx="5" fill="#fff" stroke="#222" stroke-width="1.2"/>
+<text x="90" y="260" text-anchor="middle" font-size="11.5">C2H6</text>
+<text x="90" y="275" text-anchor="middle" font-size="10.5" fill="#555">out 0.3 %</text>
+<rect x="40.0" y="338.0" width="100" height="40" rx="5" fill="#fff" stroke="#222" stroke-width="1.2"/>
+<text x="90" y="356" text-anchor="middle" font-size="11.5">C2H4</text>
+<text x="90" y="371" text-anchor="middle" font-size="10.5" fill="#555">out 3.3 %</text>
+<rect x="40.0" y="434.0" width="100" height="40" rx="5" fill="#fff" stroke="#222" stroke-width="1.2"/>
+<text x="90" y="452" text-anchor="middle" font-size="11.5">C2H2</text>
+<text x="90" y="467" text-anchor="middle" font-size="10.5" fill="#555">out 4.2 %</text>
+<rect x="180.0" y="242.0" width="100" height="40" rx="5" fill="#fff" stroke="#222" stroke-width="1.2"/>
+<text x="230" y="260" text-anchor="middle" font-size="11.5">C3 (C3H4, C3H3)</text>
+<text x="230" y="275" text-anchor="middle" font-size="10.5" fill="#555">out 0.8 %</text>
+<rect x="180.0" y="530.0" width="100" height="40" rx="5" fill="#fff" stroke="#222" stroke-width="1.2"/>
+<text x="230" y="548" text-anchor="middle" font-size="11.5">C4H2</text>
+<text x="230" y="563" text-anchor="middle" font-size="10.5" fill="#555">out 0.5 %</text>
+<rect x="320.0" y="242.0" width="100" height="40" rx="5" fill="#fff" stroke="#222" stroke-width="1.2"/>
+<text x="370" y="260" text-anchor="middle" font-size="11.5">C4 (C4H4, C4H6)</text>
+<text x="370" y="275" text-anchor="middle" font-size="10.5" fill="#555">out 0.1 %</text>
+<rect x="320.0" y="386.0" width="100" height="40" rx="5" fill="#fff" stroke="#222" stroke-width="1.2"/>
+<text x="370" y="404.0" text-anchor="middle" font-size="11.5">C5</text>
+<rect x="320.0" y="146.0" width="100" height="40" rx="5" fill="#fff" stroke="#222" stroke-width="1.2"/>
+<text x="370" y="164" text-anchor="middle" font-size="11.5">C6H6 benzene</text>
+<text x="370" y="179" text-anchor="middle" font-size="10.5" fill="#555">out 12.1 %</text>
+<rect x="320.0" y="530.0" width="100" height="40" rx="5" fill="#fff" stroke="#222" stroke-width="1.2"/>
+<text x="370" y="548" text-anchor="middle" font-size="11.5">C6H2 polyyne</text>
+<rect x="460.0" y="194.0" width="100" height="40" rx="5" fill="#fff" stroke="#222" stroke-width="1.2"/>
+<text x="510" y="212.0" text-anchor="middle" font-size="11.5">C6 other</text>
+<text x="510" y="227.0" text-anchor="middle" font-size="10.5" fill="#555">out 0.1 %</text>
+<rect x="460.0" y="338.0" width="100" height="40" rx="5" fill="#fff" stroke="#222" stroke-width="1.2"/>
+<text x="510" y="356" text-anchor="middle" font-size="11.5">C7+</text>
+<text x="8" y="592" font-size="10" fill="#666">edges under 0.3 % not drawn: 2.2 % of fed carbon in total</text>
+</g>
+<line x1="590" y1="10" x2="590" y2="600" stroke="#ccc"/>
+<g transform="translate(600,0)">
+<text x="290.0" y="24" text-anchor="middle" font-size="16" font-weight="600">RPH pulse, peak 1800 C, X 22.0 %</text>
+<path d="M90.0,102.0 Q76.0,118.0 90.0,134.0" fill="none" stroke="#444" stroke-width="7.7" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="65.0" y="122.0" text-anchor="middle" font-size="11" fill="#444" paint-order="stroke" stroke="#fff" stroke-width="3">17.4</text>
+<path d="M122.4,428.1 Q171.3,366.2 197.6,287.9" fill="none" stroke="#444" stroke-width="6.6" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="180.2" y="376.7" text-anchor="middle" font-size="11" fill="#444" paint-order="stroke" stroke="#fff" stroke-width="3">12.3</text>
+<path d="M275.4,243.9 Q300.0,214.0 324.6,184.1" fill="none" stroke="#b03a2e" stroke-width="6.5" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="306.2" y="227.1" text-anchor="middle" font-size="11" fill="#b03a2e" paint-order="stroke" stroke="#fff" stroke-width="3">11.8</text>
+<path d="M90.0,390.0 Q76.0,406.0 90.0,422.0" fill="none" stroke="#444" stroke-width="5.9" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="65.0" y="410.0" text-anchor="middle" font-size="11" fill="#444" paint-order="stroke" stroke="#fff" stroke-width="3">9.4</text>
+<path d="M90.0,198.0 Q76.0,214.0 90.0,230.0" fill="none" stroke="#444" stroke-width="5.8" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="65.0" y="218.0" text-anchor="middle" font-size="11" fill="#444" paint-order="stroke" stroke="#fff" stroke-width="3">9.2</text>
+<path d="M90.0,294.0 Q76.0,310.0 90.0,326.0" fill="none" stroke="#444" stroke-width="5.8" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="65.0" y="314.0" text-anchor="middle" font-size="11" fill="#444" paint-order="stroke" stroke="#fff" stroke-width="3">8.8</text>
+<path d="M135.4,184.1 Q152.1,225.5 184.6,243.9" fill="none" stroke="#444" stroke-width="5.2" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="145.9" y="238.6" text-anchor="middle" font-size="11" fill="#444" paint-order="stroke" stroke="#fff" stroke-width="3">6.8</text>
+<path d="M184.6,531.9 Q167.9,490.5 135.4,472.1" fill="none" stroke="#444" stroke-width="5.2" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="174.1" y="485.4" text-anchor="middle" font-size="11" fill="#444" paint-order="stroke" stroke="#fff" stroke-width="3">6.7</text>
+<path d="M351.2,196.1 Q286.8,353.2 248.8,519.9" fill="none" stroke="#1f5f8b" stroke-width="4.9" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="276.5" y="353.4" text-anchor="middle" font-size="11" fill="#1f5f8b" paint-order="stroke" stroke="#fff" stroke-width="3">5.9</text>
+<path d="M285.0,262.0 Q300.0,276.0 315.0,262.0" fill="none" stroke="#444" stroke-width="3.9" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="300.0" y="291.0" text-anchor="middle" font-size="11" fill="#444" paint-order="stroke" stroke="#fff" stroke-width="3">3.4</text>
+<path d="M284.2,256.6 Q372.4,251.8 455.8,219.4" fill="none" stroke="#b03a2e" stroke-width="3.8" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="374.2" y="266.6" text-anchor="middle" font-size="11" fill="#b03a2e" paint-order="stroke" stroke="#fff" stroke-width="3">3.1</text>
+<path d="M331.7,188.9 Q220.0,300.2 128.3,431.1" fill="none" stroke="#444" stroke-width="3.8" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="212.1" y="296.6" text-anchor="middle" font-size="11" fill="#444" paint-order="stroke" stroke="#fff" stroke-width="3">3.1</text>
+<path d="M458.0,203.6 Q444.5,176.8 422.0,176.4" fill="none" stroke="#b03a2e" stroke-width="3.6" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="448.1" y="170.4" text-anchor="middle" font-size="11" fill="#b03a2e" paint-order="stroke" stroke="#fff" stroke-width="3">2.7</text>
+<path d="M324.6,280.1 Q222.1,346.5 135.4,435.9" fill="none" stroke="#444" stroke-width="3.3" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="215.9" y="341.4" text-anchor="middle" font-size="11" fill="#444" paint-order="stroke" stroke="#fff" stroke-width="3">2.1</text>
+<path d="M318.0,272.4 Q225.5,296.8 142.0,347.6" fill="none" stroke="#444" stroke-width="3.0" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="221.9" y="290.4" text-anchor="middle" font-size="11" fill="#444" paint-order="stroke" stroke="#fff" stroke-width="3">1.5</text>
+<path d="M346.0,290.8 Q287.4,399.9 254.0,521.2" fill="none" stroke="#1f5f8b" stroke-width="2.9" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="277.5" y="399.1" text-anchor="middle" font-size="11" fill="#1f5f8b" paint-order="stroke" stroke="#fff" stroke-width="3">1.5</text>
+<path d="M422.0,176.4 Q435.5,203.2 458.0,203.6" fill="none" stroke="#b03a2e" stroke-width="2.8" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="431.9" y="217.6" text-anchor="middle" font-size="11" fill="#b03a2e" paint-order="stroke" stroke="#fff" stroke-width="3">1.3</text>
+<path d="M135.4,339.9 Q167.9,321.5 184.6,280.1" fill="none" stroke="#444" stroke-width="2.8" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="174.1" y="334.6" text-anchor="middle" font-size="11" fill="#444" paint-order="stroke" stroke="#fff" stroke-width="3">1.2</text>
+<path d="M142.0,176.4 Q225.5,227.2 318.0,251.6" fill="none" stroke="#444" stroke-width="2.7" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="221.9" y="241.6" text-anchor="middle" font-size="11" fill="#444" paint-order="stroke" stroke="#fff" stroke-width="3">1.2</text>
+<path d="M197.6,287.9 Q148.7,349.8 122.4,428.1" fill="none" stroke="#444" stroke-width="2.3" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="139.8" y="347.3" text-anchor="middle" font-size="11" fill="#444" paint-order="stroke" stroke="#fff" stroke-width="3">0.7</text>
+<path d="M184.6,243.9 Q167.9,202.5 135.4,184.1" fill="none" stroke="#444" stroke-width="2.2" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="174.1" y="197.4" text-anchor="middle" font-size="11" fill="#444" paint-order="stroke" stroke="#fff" stroke-width="3">0.6</text>
+<path d="M488.8,243.5 Q427.1,376.6 391.2,520.5" fill="none" stroke="#1f5f8b" stroke-width="2.1" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="416.9" y="376.4" text-anchor="middle" font-size="11" fill="#1f5f8b" paint-order="stroke" stroke="#fff" stroke-width="3">0.5</text>
+<path d="M90.0,198.0 Q76.0,262.0 90.0,326.0" fill="none" stroke="#444" stroke-width="2.1" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="65.0" y="266.0" text-anchor="middle" font-size="11" fill="#444" paint-order="stroke" stroke="#fff" stroke-width="3">0.5</text>
+<path d="M474.8,238.6 Q359.2,373.0 265.2,525.4" fill="none" stroke="#1f5f8b" stroke-width="2.1" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="350.8" y="370.0" text-anchor="middle" font-size="11" fill="#1f5f8b" paint-order="stroke" stroke="#fff" stroke-width="3">0.5</text>
+<path d="M90.0,134.0 Q104.0,118.0 90.0,102.0" fill="none" stroke="#444" stroke-width="2.1" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="115.0" y="122.0" text-anchor="middle" font-size="11" fill="#444" paint-order="stroke" stroke="#fff" stroke-width="3">0.5</text>
+<path d="M184.6,280.1 Q152.1,298.5 135.4,339.9" fill="none" stroke="#444" stroke-width="2.1" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="145.9" y="293.4" text-anchor="middle" font-size="11" fill="#444" paint-order="stroke" stroke="#fff" stroke-width="3">0.4</text>
+<path d="M90.0,326.0 Q104.0,214.0 90.0,102.0" fill="none" stroke="#444" stroke-width="2.0" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="115.0" y="218.0" text-anchor="middle" font-size="11" fill="#444" paint-order="stroke" stroke="#fff" stroke-width="3">0.4</text>
+<path d="M462.2,229.9 Q293.1,321.8 137.8,438.1" fill="none" stroke="#444" stroke-width="2.0" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="287.6" y="316.3" text-anchor="middle" font-size="11" fill="#444" paint-order="stroke" stroke="#fff" stroke-width="3">0.4</text>
+<path d="M458.0,224.4 Q435.5,224.8 422.0,251.6" fill="none" stroke="#444" stroke-width="1.9" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="431.9" y="218.4" text-anchor="middle" font-size="11" fill="#444" paint-order="stroke" stroke="#fff" stroke-width="3">0.3</text>
+<path d="M90.0,230.0 Q104.0,166.0 90.0,102.0" fill="none" stroke="#444" stroke-width="1.9" stroke-opacity="0.75" marker-end="url(#arr)"/>
+<text x="115.0" y="170.0" text-anchor="middle" font-size="11" fill="#444" paint-order="stroke" stroke="#fff" stroke-width="3">0.3</text>
+<rect x="40.0" y="50.0" width="100" height="40" rx="5" fill="#fff" stroke="#222" stroke-width="1.2"/>
+<text x="90" y="68" text-anchor="middle" font-size="11.5">CH4</text>
+<text x="90" y="83" text-anchor="middle" font-size="10.5" fill="#555">out 78.0 %</text>
+<rect x="40.0" y="146.0" width="100" height="40" rx="5" fill="#fff" stroke="#222" stroke-width="1.2"/>
+<text x="90" y="164" text-anchor="middle" font-size="11.5">CH3 / CHx</text>
+<rect x="40.0" y="242.0" width="100" height="40" rx="5" fill="#fff" stroke="#222" stroke-width="1.2"/>
+<text x="90" y="260" text-anchor="middle" font-size="11.5">C2H6</text>
+<rect x="40.0" y="338.0" width="100" height="40" rx="5" fill="#fff" stroke="#222" stroke-width="1.2"/>
+<text x="90" y="356" text-anchor="middle" font-size="11.5">C2H4</text>
+<text x="90" y="371" text-anchor="middle" font-size="10.5" fill="#555">out 0.4 %</text>
+<rect x="40.0" y="434.0" width="100" height="40" rx="5" fill="#fff" stroke="#222" stroke-width="1.2"/>
+<text x="90" y="452" text-anchor="middle" font-size="11.5">C2H2</text>
+<text x="90" y="467" text-anchor="middle" font-size="10.5" fill="#555">out 14.6 %</text>
+<rect x="180.0" y="242.0" width="100" height="40" rx="5" fill="#fff" stroke="#222" stroke-width="1.2"/>
+<text x="230" y="260" text-anchor="middle" font-size="11.5">C3 (C3H4, C3H3)</text>
+<text x="230" y="275" text-anchor="middle" font-size="10.5" fill="#555">out 0.5 %</text>
+<rect x="180.0" y="530.0" width="100" height="40" rx="5" fill="#fff" stroke="#222" stroke-width="1.2"/>
+<text x="230" y="548" text-anchor="middle" font-size="11.5">C4H2</text>
+<text x="230" y="563" text-anchor="middle" font-size="10.5" fill="#555">out 2.0 %</text>
+<rect x="320.0" y="242.0" width="100" height="40" rx="5" fill="#fff" stroke="#222" stroke-width="1.2"/>
+<text x="370" y="260" text-anchor="middle" font-size="11.5">C4 (C4H4, C4H6)</text>
+<text x="370" y="275" text-anchor="middle" font-size="10.5" fill="#555">out 0.2 %</text>
+<rect x="320.0" y="386.0" width="100" height="40" rx="5" fill="#fff" stroke="#222" stroke-width="1.2"/>
+<text x="370" y="404.0" text-anchor="middle" font-size="11.5">C5</text>
+<rect x="320.0" y="146.0" width="100" height="40" rx="5" fill="#fff" stroke="#222" stroke-width="1.2"/>
+<text x="370" y="164" text-anchor="middle" font-size="11.5">C6H6 benzene</text>
+<text x="370" y="179" text-anchor="middle" font-size="10.5" fill="#555">out 4.1 %</text>
+<rect x="320.0" y="530.0" width="100" height="40" rx="5" fill="#fff" stroke="#222" stroke-width="1.2"/>
+<text x="370" y="548" text-anchor="middle" font-size="11.5">C6H2 polyyne</text>
+<text x="370" y="563" text-anchor="middle" font-size="10.5" fill="#555">out 0.1 %</text>
+<rect x="460.0" y="194.0" width="100" height="40" rx="5" fill="#fff" stroke="#222" stroke-width="1.2"/>
+<text x="510" y="212.0" text-anchor="middle" font-size="11.5">C6 other</text>
+<rect x="460.0" y="338.0" width="100" height="40" rx="5" fill="#fff" stroke="#222" stroke-width="1.2"/>
+<text x="510" y="356" text-anchor="middle" font-size="11.5">C7+</text>
+<text x="8" y="592" font-size="10" fill="#666">edges under 0.3 % not drawn: 1.4 % of fed carbon in total</text>
+</g>
+</svg>
